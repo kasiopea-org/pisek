@@ -1,4 +1,17 @@
 import argparse
+import pisek.tests
+import os
+import unittest
+
+
+def run_tests(args):
+    cwd = os.getcwd()
+    print("Testuji úlohu {}".format(cwd))
+
+    suite = pisek.tests.kasiopea_test_suite(cwd)
+
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
 
 
 def main():
@@ -22,7 +35,7 @@ def main():
     elif args.subcommand == "gen":
         print("Generuji vstupy: {}".format(args))
     elif args.subcommand is None:
-        print("Defaultni prikaz: {}".format(args))
+        run_tests(args)
     else:
         raise RuntimeError("Neznámý podpříkaz {}".format(args.subcommand))
     print(args)
