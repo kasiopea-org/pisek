@@ -11,4 +11,4 @@ pip3 install --user  git+https://github.com/kasiopea-org/pisek
 
 ## Použití 
 
-¯\_(ツ)_/¯
+¯\\\_(ツ)\_/¯
