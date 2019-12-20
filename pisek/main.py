@@ -2,6 +2,7 @@ import argparse
 import pisek.tests
 import os
 import unittest
+from . import task_config
 
 
 def run_tests(args):
@@ -12,6 +13,8 @@ def run_tests(args):
 
     runner = unittest.TextTestRunner()
     runner.run(suite)
+
+    config = task_config.TaskConfig(cwd)
 
 
 def main():
