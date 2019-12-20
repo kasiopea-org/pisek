@@ -1,0 +1,31 @@
+# Open-data task configuration
+# Source: $(KSP)/opendata/config for more information
+#
+# Fill out all the information. Please, delete the TODO line after fixing it.
+#
+# Task author: Karel Tesař
+# Task implementation: Václav Volhejn
+
+[task]
+name=2019-doma-H
+tests=2
+
+solutions=solve
+
+[tests]
+in_mode=online
+in_gen=gen
+out_mode=solve
+out_format=text
+online_validity=360
+out_check=diff
+
+[test01]
+name=Lehký vstup
+file_name=H-lehky.txt
+points=4
+
+[test02]
+name=Těžký vstup
+file_name=H-tezky.txt
+points=6
