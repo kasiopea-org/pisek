@@ -7,7 +7,7 @@ from . import task_config
 
 def run_tests(args):
     cwd = os.getcwd()
-    print("Testuji úlohu {}".format(cwd))
+    print(f"Testuji úlohu {cwd}")
 
     suite = pisek.tests.kasiopea_test_suite(cwd)
 
@@ -34,11 +34,11 @@ def main():
 
     args = parser.parse_args()
     if args.subcommand == "run":
-        print("Spoustim reseni: {}".format(args))
+        print(f"Spouštím řešení: {args}")
     elif args.subcommand == "gen":
-        print("Generuji vstupy: {}".format(args))
+        print(f"Generuji vstupy: {args}")
     elif args.subcommand is None:
         run_tests(args)
     else:
-        raise RuntimeError("Neznámý podpříkaz {}".format(args.subcommand))
+        raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
     print(args)

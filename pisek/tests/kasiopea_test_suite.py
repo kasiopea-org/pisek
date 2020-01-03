@@ -25,7 +25,7 @@ def resolve_extension(path, name):
 def assertFileExists(self, path):
     self.assertTrue(
         os.path.isfile(os.path.join(self.task_dir, path)),
-        "Ve složce úlohy musí existovat soubor '{}'".format(path),
+        f"Ve složce úlohy musí existovat soubor '{path}'",
     )
 
 
@@ -85,11 +85,11 @@ class SolutionWorks(test_case.SolutionTestCase):
     def runTest(self):
         filename = resolve_extension(self.task_dir, self.solution_name)
         self.assertIsNotNone(
-            filename, "Nepodařilo se najít řešení {}".format(self.solution_name)
+            filename, f"Nepodařilo se najít řešení {self.solution_name}"
         )
         executable = compile(os.path.join(self.task_dir, filename))
         self.assertIsNotNone(
-            executable, "Chyba při kompilaci řešení {}".format(self.solution_name)
+            executable, f"Chyba při kompilaci řešení {self.solution_name}"
         )
         expected_score = self.expected_score()
         if expected_score > 0:
