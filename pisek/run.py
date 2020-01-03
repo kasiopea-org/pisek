@@ -8,7 +8,7 @@ def run(executable: str, input_file: str, output_file: str, timeout: int = 100) 
     with open(input_file, "r") as inp:
         with open(output_file, "w") as outp:
             result = subprocess.run(
-                [f"./{executable}"],
+                executable,
                 stdin=inp,
                 stdout=outp,
                 stderr=subprocess.PIPE,

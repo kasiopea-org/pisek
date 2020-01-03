@@ -31,10 +31,8 @@ class PythonCompileRules(CompileRules):
         result_filepath = os.path.join(dirname, "build", filename)
 
         if not self.valid_shebang(filepath):
-            print(f"{filename} has an invalid shebang!")
-            return None
+            raise RuntimeError(f"{filename} má neplatný shebang")
 
-        # TODO: raise an exception
         shutil.copyfile(filepath, result_filepath)
         self._chmod_exec(result_filepath)
         return result_filepath

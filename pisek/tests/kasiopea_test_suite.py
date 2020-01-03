@@ -1,9 +1,12 @@
-from . import test_case
 import unittest
 import os
+import re
+
+from . import test_case
 from ..compile import compile
 from ..run import run
 from ..task_config import TaskConfig
+from ..diff import files_are_equal
 
 
 def resolve_extension(path, name):
@@ -40,17 +43,44 @@ class SampleExists(test_case.TestCase):
 
 class SolutionWorks(test_case.SolutionTestCase):
     def run_solution(self, executable, input_file):
-        data_dir = os.path.join(self.task_dir, "data")
+        data_dir = os.path.join(self.task_dir, "data/")
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
         output_filename = "{}.{}.out".format(
-            os.path.splitext(input_file[0], self.solution_name)
+            os.path.splitext(os.path.basename(input_file))[0], self.solution_name
         )
-        run(executable, input_file, os.path.join(data_dir, output_filename))
+        output_file = os.path.join(data_dir, output_filename)
+        run(executable, input_file, output_file)
+        return output_file
 
     def test_passes_sample(self, executable):
-        self.run_solution(executable, os.path.join(self.task_dir, "sample.in"))
+        sample_in = os.path.join(self.task_dir, "sample.in")
+        sample_out = os.path.join(self.task_dir, "sample.out")
+        output_filename = self.run_solution(executable, sample_in)
+        self.assertTrue(
+            files_are_equal(output_filename, sample_out),
+            f"Špatná odpověď řešení {self.solution_name} na sample.in",
+        )
+
+    def expected_score(self) -> int:
+        """
+        solve -> 10
+        solve_0b -> 0
+        solve_jirka_4b -> 4
+        """
+        matches = re.findall(r"_([0-9]{1,2})b$", self.solution_name)
+        if matches:
+            assert len(matches) == 1
+            score = int(matches[0])
+            self.assertIn(
+                score,
+                [0, 4, 6, 10],
+                f"Řešení {self.solution_name} by mělo získat {score} bodů, což nelze",
+            )
+            return score
+        else:
+            return 10
 
     def runTest(self):
         filename = resolve_extension(self.task_dir, self.solution_name)
@@ -61,7 +91,10 @@ class SolutionWorks(test_case.SolutionTestCase):
         self.assertIsNotNone(
             executable, "Chyba při kompilaci řešení {}".format(self.solution_name)
         )
-        self.test_passes_sample(executable)
+        expected_score = self.expected_score()
+        if expected_score > 0:
+            # Solutions with an expected score of 0 might not even pass the samples.
+            self.test_passes_sample(executable)
 
 
 def kasiopea_test_suite(task_dir):
