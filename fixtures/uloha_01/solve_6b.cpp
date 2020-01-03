@@ -5,7 +5,8 @@ int main() {
     int t;
     cin >> t;
     while (t--) {
-        long long a, b;
+        // overflow
+        int a, b;
         cin >> a >> b;
         cout << (a + b) << endl;
     }
