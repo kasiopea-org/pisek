@@ -41,6 +41,19 @@ class SampleExists(test_case.TestCase):
         assertFileExists(self, "sample.out")
 
 
+class GeneratorWorks(test_case.GeneratorTestCase):
+    def runTest(self):
+        filename = resolve_extension(self.task_dir, self.generator_name)
+        self.assertIsNotNone(
+            filename, f"Nepodařilo se najít generátor {self.generator_name}"
+        )
+
+        executable = compile(os.path.join(self.task_dir, filename))
+        self.assertIsNotNone(
+            executable, f"Chyba při kompilaci generátoru {self.generator_name}"
+        )
+
+
 class SolutionWorks(test_case.SolutionTestCase):
     def run_solution(self, executable, input_file):
         data_dir = os.path.join(self.task_dir, "data/")
@@ -106,5 +119,7 @@ def kasiopea_test_suite(task_dir):
 
     for solution_name in config.solutions:
         suite.addTest(SolutionWorks(task_dir, solution_name))
+
+    suite.addTest(GeneratorWorks(task_dir, config.generator))
 
     return suite

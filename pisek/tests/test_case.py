@@ -12,3 +12,10 @@ class SolutionTestCase(TestCase):
         super().__init__(task_dir)
         self.task_dir = task_dir
         self.solution_name = solution_name
+
+
+class GeneratorTestCase(TestCase):
+    def __init__(self, task_dir, generator_name):
+        super().__init__(task_dir)
+        self.task_dir = task_dir
+        self.generator_name = generator_name

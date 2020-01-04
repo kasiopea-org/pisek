@@ -11,5 +11,6 @@ class TaskConfig:
             config.read(os.path.join(task_dir, CONFIG_FILENAME))
 
             self.solutions = config["task"]["solutions"].split()
+            self.generator = config["tests"]["in_gen"]
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
