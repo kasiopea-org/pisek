@@ -5,22 +5,8 @@ import re
 from . import test_case
 from ..compile import compile
 from ..generate import generate
-from ..run import run
 from ..task_config import TaskConfig
-from ..diff import files_are_equal
-
-
-def resolve_extension(path, name):
-    """
-    Given a directory and `name`, finds a file named `name`.[ext],
-    where [ext] is a file extension for one of the supported languages
-    """
-    extensions = [".cpp", ".py"]
-    for ext in extensions:
-        if os.path.isfile(os.path.join(path, name + ext)):
-            return name + ext
-
-    return None
+from .. import util
 
 
 def assertFileExists(self, path):
@@ -44,7 +30,7 @@ class SampleExists(test_case.TestCase):
 
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
-        filename = resolve_extension(self.task_dir, self.generator_name)
+        filename = util.resolve_extension(self.task_dir, self.generator_name)
         self.assertIsNotNone(
             filename, f"Nepodařilo se najít generátor {self.generator_name}"
         )
@@ -89,29 +75,16 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def run_solution(self, executable, input_file):
-        data_dir = os.path.join(self.task_dir, "data/")
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
-        output_filename = "{}.{}.out".format(
-            os.path.splitext(os.path.basename(input_file))[0], self.solution_name
-        )
-        output_file = os.path.join(data_dir, output_filename)
-
-        self.assertTrue(
-            run(executable, input_file, output_file),
-            f"Chyba při spuštění {self.solution_name} na {input_file}",
-        )
-        return output_file
-
-    def test_passes_sample(self, executable):
+    def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
         sample_out = os.path.join(self.task_dir, "sample.out")
-        output_filename = self.run_solution(executable, sample_in)
+        output_file = self.solution.run_on_file(sample_in)
+        self.assertIsNotNone(
+            output_file, f"Chyba při spouštění {self.solution.name} na sample.in"
+        )
         self.assertTrue(
-            files_are_equal(output_filename, sample_out),
-            f"Špatná odpověď řešení {self.solution_name} na sample.in",
+            util.files_are_equal(output_file, sample_out),
+            f"Špatná odpověď řešení {self.solution.name} na sample.in",
         )
 
     def expected_score(self) -> int:
@@ -120,33 +93,26 @@ class SolutionWorks(test_case.SolutionTestCase):
         solve_0b -> 0
         solve_jirka_4b -> 4
         """
-        matches = re.findall(r"_([0-9]{1,2})b$", self.solution_name)
+        matches = re.findall(r"_([0-9]{1,2})b$", self.solution.name)
         if matches:
             assert len(matches) == 1
             score = int(matches[0])
             self.assertIn(
                 score,
                 [0, 4, 6, 10],
-                f"Řešení {self.solution_name} by mělo získat {score} bodů, což nelze",
+                f"Řešení {self.solution.name} by mělo získat {score} bodů, což nelze",
             )
             return score
         else:
             return 10
 
     def runTest(self):
-        filename = resolve_extension(self.task_dir, self.solution_name)
-        self.assertIsNotNone(
-            filename, f"Nepodařilo se najít řešení {self.solution_name}"
-        )
-        executable = compile(os.path.join(self.task_dir, filename))
-        self.assertIsNotNone(
-            executable, f"Chyba při kompilaci řešení {self.solution_name}"
-        )
+        self.solution.compile()
         expected_score = self.expected_score()
         if expected_score == 10:
             # Solutions which don't pass one of the subtasks might not even pass the samples.
             # For example, the sample might contain tests which would not appear in the easy version
-            self.test_passes_sample(executable)
+            self.test_passes_sample()
 
 
 def kasiopea_test_suite(task_dir):

@@ -1,12 +1,19 @@
 import argparse
-import pisek.tests
 import os
 import unittest
+import sys
+
+import pisek.tests
+from pisek.solution import Solution
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def run_tests(args):
     cwd = os.getcwd()
-    print(f"Testuji úlohu {cwd}")
+    eprint(f"Testuji úlohu {cwd}")
 
     suite = pisek.tests.kasiopea_test_suite(cwd)
 
@@ -14,28 +21,27 @@ def run_tests(args):
     runner.run(suite)
 
 
+def run_solution(args):
+    eprint(f"Spouštím řešení: {args.solution}")
+    cwd = os.getcwd()
+    sol = Solution(cwd, args.solution)
+    ok = sol.run()
+    exit(0 if ok else 1)
+
+
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
-    parser_run = subparsers.add_parser("run", help="spusť řešení a ulož výstup")
+    parser_run = subparsers.add_parser("run", help="spusť řešení")
     parser_gen = subparsers.add_parser("gen", help="vygeneruj vstupy")
-    parser_gen = subparsers.add_parser("None", help="default")
-    parser_run.add_argument("command", type=str)
-    parser_run.add_argument(
-        "--input",
-        type=str,
-        help="vstupní soubor (default: spustit na všech vstupech v ./data/)",
-    )
-
-    parser_gen.add_argument("bar", type=int, help="bar help 1")
+    parser_run.add_argument("solution", type=str, help="název řešení ke spuštění")
 
     args = parser.parse_args()
     if args.subcommand == "run":
-        print(f"Spouštím řešení: {args}")
+        run_solution(args)
     elif args.subcommand == "gen":
         print(f"Generuji vstupy: {args}")
     elif args.subcommand is None:
         run_tests(args)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
-    print(args)

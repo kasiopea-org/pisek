@@ -1,3 +1,6 @@
+import os
+
+
 def files_are_equal(file_a: str, file_b: str) -> bool:
     """
     Checks if the contents of `file_a` and `file_b` are equal,
@@ -16,3 +19,22 @@ def files_are_equal(file_a: str, file_b: str) -> bool:
                 lb = lb.strip()
                 if la != lb:
                     return False
+
+
+def resolve_extension(path, name):
+    """
+    Given a directory and `name`, finds a file named `name`.[ext],
+    where [ext] is a file extension for one of the supported languages.
+
+    If a name with a valid extension is given, it is returned unchanged
+    """
+    # TODO: warning/error if there are multiple candidates
+    extensions = [".cpp", ".py"]
+    for ext in extensions:
+        if os.path.isfile(os.path.join(path, name + ext)):
+            return name + ext
+        if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
+            # Extension already present
+            return name
+
+    return None

@@ -11,7 +11,19 @@ pip3 install --user  git+https://github.com/kasiopea-org/pisek
 
 ## Použití 
 
-Spusť `pisek` ve složce s úlohou.
+### Otestovat úlohu
+Ve složce úlohy spusť jednoduše
+```
+pisek
+```
+
+### Spouštění jednotlivých řešení
+Může se hodit třeba když chcete při vývoji spustit své řešení jen na konkrétním vstupu.
+Pokud chceš spustit `solve.cpp` na vstupu `foo.in`, použij
+```
+pisek run solve.cpp < foo.in
+```
+Příponu `.cpp` není potřeba psát.
 
 ## Testování
 
