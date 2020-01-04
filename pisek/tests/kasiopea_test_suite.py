@@ -55,12 +55,14 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         )
 
         self.generate_any(executable)
+        self.test_is_deterministic(executable)
 
     def generate_any(self, executable):
         data_dir = os.path.join(self.task_dir, "data/")
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
+        # easy
         easy_input_filename = os.path.join(data_dir, "tmp_easy.in")
         self.assertTrue(
             generate(executable, easy_input_filename, seed=1, isHard=False),
@@ -74,6 +76,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
         )
 
+        # hard
         hard_input_filename = os.path.join(data_dir, "tmp_hard.in")
         self.assertTrue(
             generate(executable, hard_input_filename, seed=1, isHard=False),
@@ -85,6 +88,49 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             hard_file_size,
             0,
             f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
+        )
+
+    def test_is_deterministic(self, executable, N=20, seed=1):
+        data_dir = os.path.join(self.task_dir, "data/")
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+
+        # easy
+        filenames = [
+            os.path.join(data_dir, f"tmp_deterministic_easy_{i}.in") for i in range(N)
+        ]
+        for filename in filenames:
+            self.assertTrue(
+                generate(executable, filename, seed=seed, isHard=False),
+                f"Chyba při generování vstupu lehké verze se seedem {seed}",
+            )
+
+        unequal_files = [
+            filenames[i]
+            for i in range(1, N)
+            if not files_are_equal(filenames[0], filenames[i])
+        ]
+        self.assertListEqual(
+            unequal_files, [], f"Generování lehké verze není deterministické"
+        )
+
+        # hard
+        filenames = [
+            os.path.join(data_dir, f"tmp_deterministic_hard_{i}.in") for i in range(N)
+        ]
+        for filename in filenames:
+            self.assertTrue(
+                generate(executable, filename, seed=seed, isHard=True),
+                f"Chyba při generování vstupu těžké verze se seedem {seed}",
+            )
+
+        unequal_files = [
+            filenames[i]
+            for i in range(1, N)
+            if not files_are_equal(filenames[0], filenames[i])
+        ]
+        self.assertListEqual(
+            unequal_files, [], f"Generování těžké verze není deterministické"
         )
 
 
