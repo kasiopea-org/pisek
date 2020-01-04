@@ -3,8 +3,6 @@ import os
 import re
 
 from . import test_case
-from ..compile import compile
-from ..generate import generate
 from ..task_config import TaskConfig
 from .. import util
 
@@ -30,20 +28,10 @@ class SampleExists(test_case.TestCase):
 
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
-        filename = util.resolve_extension(self.task_dir, self.generator_name)
-        self.assertIsNotNone(
-            filename, f"Nepodařilo se najít generátor {self.generator_name}"
-        )
+        self.generate_any()
+        self.test_is_deterministic()
 
-        executable = compile(os.path.join(self.task_dir, filename))
-        self.assertIsNotNone(
-            executable, f"Chyba při kompilaci generátoru {self.generator_name}"
-        )
-
-        self.generate_any(executable)
-        self.test_is_deterministic(executable)
-
-    def generate_any(self, executable):
+    def generate_any(self):
         data_dir = os.path.join(self.task_dir, "data/")
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
@@ -51,7 +39,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         # easy
         easy_input_filename = os.path.join(data_dir, "tmp_easy.in")
         self.assertTrue(
-            generate(executable, easy_input_filename, seed=1, isHard=False),
+            self.generator.generate(easy_input_filename, seed=1, is_hard=False),
             f"Chyba při generování vstupu lehké verze se seedem 1",
         )
 
@@ -65,7 +53,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         # hard
         hard_input_filename = os.path.join(data_dir, "tmp_hard.in")
         self.assertTrue(
-            generate(executable, hard_input_filename, seed=1, isHard=False),
+            self.generator.generate(hard_input_filename, seed=1, is_hard=False),
             f"Chyba při generování těžké verze se seedem 1",
         )
 
@@ -76,7 +64,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
         )
 
-    def test_is_deterministic(self, executable, N=20, seed=1):
+    def test_is_deterministic(self, N=20, seed=1):
         data_dir = os.path.join(self.task_dir, "data/")
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
@@ -87,7 +75,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         ]
         for filename in filenames:
             self.assertTrue(
-                generate(executable, filename, seed=seed, isHard=False),
+                self.generator.generate(filename, seed=seed, is_hard=False),
                 f"Chyba při generování vstupu lehké verze se seedem {seed}",
             )
 
@@ -106,7 +94,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         ]
         for filename in filenames:
             self.assertTrue(
-                generate(executable, filename, seed=seed, isHard=True),
+                self.generator.generate(filename, seed=seed, is_hard=True),
                 f"Chyba při generování vstupu těžké verze se seedem {seed}",
             )
 
