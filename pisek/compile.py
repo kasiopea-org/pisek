@@ -54,7 +54,7 @@ class CPPCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str,) -> Optional[str]:
+    def compile(self, filepath: str) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         result_filepath = os.path.join(dirname, "build", filename)
 
@@ -67,6 +67,15 @@ COMPILE_RULES: List[CompileRules] = [
     PythonCompileRules([".py"]),
     CPPCompileRules([".cpp", ".cc"]),
 ]
+
+
+def supported_extensions() -> List[str]:
+    result = []
+
+    for rule in COMPILE_RULES:
+        result += rule.supported
+
+    return result
 
 
 def _split_path(filepath: str) -> Tuple[str, str, str]:

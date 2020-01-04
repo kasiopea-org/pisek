@@ -1,5 +1,7 @@
 import os
 
+from .compile import supported_extensions
+
 
 def files_are_equal(file_a: str, file_b: str) -> bool:
     """
@@ -29,7 +31,7 @@ def resolve_extension(path, name):
     If a name with a valid extension is given, it is returned unchanged
     """
     # TODO: warning/error if there are multiple candidates
-    extensions = [".cpp", ".py"]
+    extensions = supported_extensions()
     for ext in extensions:
         if os.path.isfile(os.path.join(path, name + ext)):
             return name + ext

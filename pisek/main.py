@@ -17,7 +17,7 @@ def run_tests(args):
 
     suite = pisek.tests.kasiopea_test_suite(cwd)
 
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=args.verbose)
     runner.run(suite)
 
 
@@ -31,6 +31,8 @@ def run_solution(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", "-v", action="count", default=1)
+
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení")
     parser_gen = subparsers.add_parser("gen", help="vygeneruj vstupy")
