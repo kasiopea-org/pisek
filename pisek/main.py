@@ -16,7 +16,7 @@ def run_tests(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", "-v", action="count")
+    parser.add_argument("--verbose", "-v", action="count", default=1)
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení a ulož výstup")
