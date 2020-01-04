@@ -3,7 +3,7 @@ import os
 import re
 
 from . import test_case
-from ..compile import compile
+from ..compile import compile, supported_extensions
 from ..generate import generate
 from ..run import run
 from ..task_config import TaskConfig
@@ -15,7 +15,7 @@ def resolve_extension(path, name):
     Given a directory and `name`, finds a file named `name`.[ext],
     where [ext] is a file extension for one of the supported languages
     """
-    extensions = [".cpp", ".py"]
+    extensions = supported_extensions()
     for ext in extensions:
         if os.path.isfile(os.path.join(path, name + ext)):
             return name + ext
