@@ -4,6 +4,7 @@ import re
 
 from . import test_case
 from ..compile import compile
+from ..generate import generate
 from ..run import run
 from ..task_config import TaskConfig
 from ..diff import files_are_equal
@@ -51,6 +52,39 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         executable = compile(os.path.join(self.task_dir, filename))
         self.assertIsNotNone(
             executable, f"Chyba při kompilaci generátoru {self.generator_name}"
+        )
+
+        self.generate_any(executable)
+
+    def generate_any(self, executable):
+        data_dir = os.path.join(self.task_dir, "data/")
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+
+        easy_input_filename = os.path.join(data_dir, "tmp_easy.in")
+        self.assertTrue(
+            generate(executable, easy_input_filename, seed=1, isHard=False),
+            f"Chyba při generování vstupu lehké verze se seedem 1",
+        )
+
+        easy_file_size = os.path.getsize(easy_input_filename)
+        self.assertNotEqual(
+            easy_file_size,
+            0,
+            f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
+        )
+
+        hard_input_filename = os.path.join(data_dir, "tmp_hard.in")
+        self.assertTrue(
+            generate(executable, hard_input_filename, seed=1, isHard=False),
+            f"Chyba při generování těžké verze se seedem 1",
+        )
+
+        hard_file_size = os.path.getsize(easy_input_filename)
+        self.assertNotEqual(
+            hard_file_size,
+            0,
+            f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
         )
 
 
