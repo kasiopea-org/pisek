@@ -69,5 +69,36 @@ class TestMissingSampleOut(TestTask1):
         os.remove(os.path.join(self.task_dir, "sample.out"))
 
 
+class TestMissingGenerator(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "gen.cpp"))
+
+
+class TestBadGenerator(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        generator_filename = os.path.join(self.task_dir, "gen.cpp")
+        os.remove(generator_filename)
+
+        with open(generator_filename, "w") as f:
+            f.write("int main() { return 0; }\n")
+
+
+class TestPythonGenerator(TestTask1):
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "gen.cpp"))
+
+        with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
+            f.write("#!/usr/bin/env python3\nimport sys\nprint(sys.argv[1])\n")
+
+
 if __name__ == "__main__":
     unittest.main()
