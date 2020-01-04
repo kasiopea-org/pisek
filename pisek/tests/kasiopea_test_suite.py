@@ -109,8 +109,9 @@ class SolutionWorks(test_case.SolutionTestCase):
             executable, f"Chyba při kompilaci řešení {self.solution_name}"
         )
         expected_score = self.expected_score()
-        if expected_score > 0:
-            # Solutions with an expected score of 0 might not even pass the samples.
+        if expected_score == 10:
+            # Solutions which don't pass one of the subtasks might not even pass the samples.
+            # For example, the sample might contain tests which would not appear in the easy version
             self.test_passes_sample(executable)
 
 
