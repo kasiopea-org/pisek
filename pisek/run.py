@@ -4,7 +4,7 @@ import subprocess
 #       to limit the memory of the subprocess
 
 
-def run(executable: str, input_file: str, output_file: str, timeout: int = 100) -> None:
+def run(executable: str, input_file: str, output_file: str, timeout: int = 100) -> bool:
     with open(input_file, "r") as inp:
         with open(output_file, "w") as outp:
             result = subprocess.run(
@@ -14,4 +14,5 @@ def run(executable: str, input_file: str, output_file: str, timeout: int = 100) 
                 stderr=subprocess.PIPE,
                 timeout=timeout,
             )
-            result.check_returncode()  # raises an exception if return code != 0
+
+            return result.returncode == 0

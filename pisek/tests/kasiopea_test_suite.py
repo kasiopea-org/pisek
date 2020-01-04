@@ -64,7 +64,11 @@ class SolutionWorks(test_case.SolutionTestCase):
             os.path.splitext(os.path.basename(input_file))[0], self.solution_name
         )
         output_file = os.path.join(data_dir, output_filename)
-        run(executable, input_file, output_file)
+
+        self.assertTrue(
+            run(executable, input_file, output_file),
+            f"Chyba při spuštění {self.solution_name} na {input_file}",
+        )
         return output_file
 
     def test_passes_sample(self, executable):

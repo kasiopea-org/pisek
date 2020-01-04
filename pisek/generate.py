@@ -4,7 +4,7 @@ import random
 
 def generate(
     executable: str, output_file: str, seed: int, isHard: bool, timeout: int = 100
-) -> None:
+) -> bool:
     assert seed > 0
 
     with open(output_file, "w") as outp:
@@ -18,12 +18,11 @@ def generate(
             timeout=timeout,
         )
 
-        # raise an exception if return code != 0
-        result.check_returncode()
+        return result.returncode == 0
 
 
 def generate_random(
     executable: str, output_file: str, isHard: bool, timeout: int = 100
-) -> None:
+) -> bool:
     seed = random.randint(0, 16 ** 4 - 1)
-    generate(executable, output_file, seed, isHard, timeout=timeout)
+    return generate(executable, output_file, seed, isHard, timeout=timeout)
