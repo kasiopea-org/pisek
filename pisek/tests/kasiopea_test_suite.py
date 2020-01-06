@@ -1,10 +1,12 @@
 import unittest
 import os
 import re
+from typing import Optional
 
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
+from ..generator import Generator
 
 
 def assertFileExists(self, path):
@@ -12,6 +14,10 @@ def assertFileExists(self, path):
         os.path.isfile(os.path.join(self.task_dir, path)),
         f"Ve složce úlohy musí existovat soubor '{path}'",
     )
+
+
+def get_data_dir(task_dir):
+    return os.path.join(task_dir, "data/")
 
 
 class ConfigIsValid(test_case.TestCase):
@@ -26,6 +32,28 @@ class SampleExists(test_case.TestCase):
         assertFileExists(self, "sample.out")
 
 
+def generate_checked(
+    case: test_case.GeneratorTestCase,
+    seed: int,
+    is_hard: bool,
+    filename: Optional[str] = None,
+) -> str:
+    """
+    If `filename` is not given, a reasonable name is chosen automatically.
+    Then generates into `filename` and returns the file's path.
+    """
+    data_dir = get_data_dir(case.task_dir)
+    if not filename:
+        filename = f"{seed}_{int(is_hard)+1}.in"
+    path = os.path.join(data_dir, filename)
+
+    case.assertTrue(
+        case.generator.generate(path, seed=seed, is_hard=is_hard),
+        f"Chyba při generování vstupu {'těžké' if is_hard else 'lehké'} verze se seedem {seed}",
+    )
+    return path
+
+
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         self.generate_any()
@@ -33,59 +61,34 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         self.test_is_deterministic()
 
     def generate_any(self):
-        data_dir = os.path.join(self.task_dir, "data/")
+        data_dir = get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        # easy
-        easy_input_filename = os.path.join(data_dir, "tmp_easy.in")
-        self.assertTrue(
-            self.generator.generate(easy_input_filename, seed=1, is_hard=False),
-            f"Chyba při generování vstupu lehké verze se seedem 1",
-        )
+        for is_hard in [False, True]:
+            filename = generate_checked(self, seed=1, is_hard=is_hard)
 
-        easy_file_size = os.path.getsize(easy_input_filename)
-        self.assertNotEqual(
-            easy_file_size,
-            0,
-            f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
-        )
-
-        # hard
-        hard_input_filename = os.path.join(data_dir, "tmp_hard.in")
-        self.assertTrue(
-            self.generator.generate(hard_input_filename, seed=1, is_hard=False),
-            f"Chyba při generování těžké verze se seedem 1",
-        )
-
-        hard_file_size = os.path.getsize(easy_input_filename)
-        self.assertNotEqual(
-            hard_file_size,
-            0,
-            f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
-        )
+            easy_file_size = os.path.getsize(filename)
+            self.assertNotEqual(
+                easy_file_size,
+                0,
+                "Generátor vygeneroval prázdný vstup pro"
+                f"{'těžkou' if is_hard else 'lehkou'} verzi se seedem 1",
+            )
 
     def test_respects_hex_seed(self):
-        # Poznámka:
-        # Tady je malá šance, že 'FF' fakt vygeneruje to samý jako '0'.
+        # Note: There is a small chance that 'FF' will really generate the same input as '0'.
+        # TODO: this 'accidentally' also tests that different seeds generate different inputs
+        #   (hexadecimal or otherwise), maybe we should test that more thoroughly
 
-        data_dir = os.path.join(self.task_dir, "data/")
+        data_dir = get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        zero_filename = os.path.join(data_dir, "tmp_zero.in")
-        self.assertTrue(
-            self.generator.generate(zero_filename, seed=0, is_hard=False),
-            f"Chyba při generování vstupu lehké verze se seedem 0",
-        )
+        zero_filename = generate_checked(self, seed=0, is_hard=False)
 
         hexa = int("0xFF", 16)
-
-        hexa_filename = os.path.join(data_dir, "tmp_hexa.in")
-        self.assertTrue(
-            self.generator.generate(hexa_filename, seed=hexa, is_hard=False),
-            f"Chyba při generování vstupu lehké verze se seedem {hexa:x}",
-        )
+        hexa_filename = generate_checked(self, seed=hexa, is_hard=False)
 
         self.assertFalse(
             util.files_are_equal(zero_filename, hexa_filename),
@@ -93,47 +96,41 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         )
 
     def test_is_deterministic(self, N=20, seed=1):
-        data_dir = os.path.join(self.task_dir, "data/")
+        data_dir = get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        # easy
-        filenames = [
-            os.path.join(data_dir, f"tmp_deterministic_easy_{i}.in") for i in range(N)
-        ]
-        for filename in filenames:
-            self.assertTrue(
-                self.generator.generate(filename, seed=seed, is_hard=False),
-                f"Chyba při generování vstupu lehké verze se seedem {seed}",
+        for is_hard in [False, True]:
+            filenames = [
+                generate_checked(
+                    self,
+                    seed,
+                    is_hard,
+                    filename=f"{seed}_{int(is_hard)+1}_iteration_{it}.in",
+                )
+                for it in range(N)
+            ]
+            unequal_files = [
+                filenames[i]
+                for i in range(1, N)
+                if not util.files_are_equal(filenames[0], filenames[i])
+            ]
+            self.assertListEqual(
+                unequal_files,
+                [],
+                f"Generování {'těžké' if is_hard else 'lehké'} verze není deterministické",
             )
 
-        unequal_files = [
-            filenames[i]
-            for i in range(1, N)
-            if not util.files_are_equal(filenames[0], filenames[i])
-        ]
-        self.assertListEqual(
-            unequal_files, [], f"Generování lehké verze není deterministické"
-        )
 
-        # hard
-        filenames = [
-            os.path.join(data_dir, f"tmp_deterministic_hard_{i}.in") for i in range(N)
-        ]
-        for filename in filenames:
-            self.assertTrue(
-                self.generator.generate(filename, seed=seed, is_hard=True),
-                f"Chyba při generování vstupu těžké verze se seedem {seed}",
-            )
+class GeneratesInputs(test_case.GeneratorTestCase):
+    def __init__(self, task_dir, generator, seeds):
+        super().__init__(task_dir, generator)
+        self.seeds = seeds
 
-        unequal_files = [
-            filenames[i]
-            for i in range(1, N)
-            if not util.files_are_equal(filenames[0], filenames[i])
-        ]
-        self.assertListEqual(
-            unequal_files, [], f"Generování těžké verze není deterministické"
-        )
+    def runTest(self):
+        for is_hard in [False, True]:
+            for seed in self.seeds:
+                generate_checked(self, seed, is_hard)
 
 
 class SolutionWorks(test_case.SolutionTestCase):
@@ -184,9 +181,12 @@ def kasiopea_test_suite(task_dir):
 
     config = TaskConfig(task_dir)
 
+    seeds = [1, 2, 3, 10, 123]
+    generator = Generator(task_dir, config.generator)
+    suite.addTest(GeneratorWorks(task_dir, generator))
+    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
+
     for solution_name in config.solutions:
         suite.addTest(SolutionWorks(task_dir, solution_name))
-
-    suite.addTest(GeneratorWorks(task_dir, config.generator))
 
     return suite
