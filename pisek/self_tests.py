@@ -103,7 +103,7 @@ class TestPythonGenerator(TestTask1):
             "print(int(sys.argv[2], 16))",
         ]
         with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
-            f.write('\n'.join(new_program))
+            f.write("\n".join(new_program))
 
 
 class TestNonHexaPythonGenerator(TestTask1):
@@ -120,7 +120,7 @@ class TestNonHexaPythonGenerator(TestTask1):
             "print(int(sys.argv[2], 10))",
         ]
         with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
-            f.write('\n'.join(new_program))
+            f.write("\n".join(new_program))
 
 
 class TestNonHexaGenerator(TestTask1):
@@ -140,7 +140,7 @@ class TestNonHexaGenerator(TestTask1):
             "return 0;}",
         ]
         with open(os.path.join(self.task_dir, "gen.cpp"), "w") as f:
-            f.write('\n'.join(new_program))
+            f.write("\n".join(new_program))
 
 
 if __name__ == "__main__":
