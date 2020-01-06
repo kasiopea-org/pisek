@@ -29,6 +29,7 @@ class SampleExists(test_case.TestCase):
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         self.generate_any()
+        self.test_respects_hex_seed()
         self.test_is_deterministic()
 
     def generate_any(self):
@@ -62,6 +63,33 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             hard_file_size,
             0,
             f"Generátor vygeneroval prázdný vstup pro lehkou verzi se seedem 1",
+        )
+
+    def test_respects_hex_seed(self):
+        # Poznámka:
+        # Tady je malá šance, že 'FF' fakt vygeneruje to samý jako '0'.
+
+        data_dir = os.path.join(self.task_dir, "data/")
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+
+        zero_filename = os.path.join(data_dir, "tmp_zero.in")
+        self.assertTrue(
+            self.generator.generate(zero_filename, seed=0, is_hard=False),
+            f"Chyba při generování vstupu lehké verze se seedem 0",
+        )
+
+        hexa = int("0xFF", 16)
+
+        hexa_filename = os.path.join(data_dir, "tmp_hexa.in")
+        self.assertTrue(
+            self.generator.generate(hexa_filename, seed=hexa, is_hard=False),
+            f"Chyba při generování vstupu lehké verze se seedem {hexa:x}",
+        )
+
+        self.assertFalse(
+            util.files_are_equal(zero_filename, hexa_filename),
+            "Generátor nerespektuje hexadecimální seed",
         )
 
     def test_is_deterministic(self, N=20, seed=1):

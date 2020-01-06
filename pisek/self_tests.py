@@ -96,8 +96,51 @@ class TestPythonGenerator(TestTask1):
     def modify_task(self):
         os.remove(os.path.join(self.task_dir, "gen.cpp"))
 
+        new_program = [
+            "#!/usr/bin/env python3",
+            "import sys",
+            "print(sys.argv[1])",
+            "print(int(sys.argv[2], 16))",
+        ]
         with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
-            f.write("#!/usr/bin/env python3\nimport sys\nprint(sys.argv[1])\n")
+            f.write('\n'.join(new_program))
+
+
+class TestNonHexaPythonGenerator(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "gen.cpp"))
+
+        new_program = [
+            "#!/usr/bin/env python3",
+            "import sys",
+            "print(sys.argv[1])",
+            "print(int(sys.argv[2], 10))",
+        ]
+        with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
+            f.write('\n'.join(new_program))
+
+
+class TestNonHexaGenerator(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "gen.cpp"))
+
+        new_program = [
+            "#include <iostream>",
+            "#include <string>",
+            "int main(int argc, char* argv[]) {",
+            "if (argc != 3) { return 1; }",
+            "std::cout << argv[1] << std::endl;"
+            "std::cout << std::strtoull(argv[2], NULL, 10) << std::endl;"
+            "return 0;}",
+        ]
+        with open(os.path.join(self.task_dir, "gen.cpp"), "w") as f:
+            f.write('\n'.join(new_program))
 
 
 if __name__ == "__main__":

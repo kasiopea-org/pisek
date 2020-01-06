@@ -8,7 +8,7 @@ class Generator(Program):
     def generate(
         self, output_file: str, seed: int, is_hard: bool, timeout: int = 100
     ) -> bool:
-        assert seed > 0
+        assert seed >= 0
         self.compile_if_needed()
 
         with open(output_file, "w") as outp:
