@@ -10,6 +10,7 @@ class Generator(Program):
     ) -> bool:
         assert seed >= 0
         self.compile_if_needed()
+        assert self.executable is not None
 
         with open(output_file, "w") as outp:
             difficulty = "2" if is_hard else "1"

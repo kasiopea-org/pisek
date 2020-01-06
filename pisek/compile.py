@@ -70,7 +70,7 @@ COMPILE_RULES: List[CompileRules] = [
 
 
 def supported_extensions() -> List[str]:
-    result = []
+    result: List[str] = []
 
     for rule in COMPILE_RULES:
         result += rule.supported

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from .compile import supported_extensions
 
@@ -23,7 +24,7 @@ def files_are_equal(file_a: str, file_b: str) -> bool:
                     return False
 
 
-def resolve_extension(path, name):
+def resolve_extension(path: str, name: str) -> Optional[str]:
     """
     Given a directory and `name`, finds a file named `name`.[ext],
     where [ext] is a file extension for one of the supported languages.
