@@ -69,6 +69,15 @@ class TestMissingSampleOut(TestTask1):
         os.remove(os.path.join(self.task_dir, "sample.out"))
 
 
+class TestWrongSampleOut(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        with open(os.path.join(self.task_dir, "sample.out"), "a") as f:
+            f.write("0\n")
+
+
 class TestMissingGenerator(TestTask1):
     def expecting_success(self):
         return False
@@ -95,15 +104,10 @@ class TestPythonGenerator(TestTask1):
 
     def modify_task(self):
         os.remove(os.path.join(self.task_dir, "gen.cpp"))
-
-        new_program = [
-            "#!/usr/bin/env python3",
-            "import sys",
-            "print(sys.argv[1])",
-            "print(int(sys.argv[2], 16))",
-        ]
-        with open(os.path.join(self.task_dir, "gen.py"), "w") as f:
-            f.write("\n".join(new_program))
+        shutil.copy(
+            os.path.join(self.task_dir, "gen_2.py"),
+            os.path.join(self.task_dir, "gen.py"),
+        )
 
 
 class TestNonHexaPythonGenerator(TestTask1):
@@ -141,6 +145,18 @@ class TestNonHexaGenerator(TestTask1):
         ]
         with open(os.path.join(self.task_dir, "gen.cpp"), "w") as f:
             f.write("\n".join(new_program))
+
+
+class TestScoreCounting(TestTask1):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "solve_0b.py"))
+        shutil.copy(
+            os.path.join(self.task_dir, "solve_4b.cpp"),
+            os.path.join(self.task_dir, "solve_0b.cpp"),
+        )
 
 
 if __name__ == "__main__":

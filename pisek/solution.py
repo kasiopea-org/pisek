@@ -1,19 +1,18 @@
 import os
 from typing import Optional
 
+from . import util
 from . import program
 
 
 class Solution(program.Program):
     def run_on_file(self, input_file: str) -> Optional[str]:
         """ Runs the solution and stores the output in a reasonably named file in data/ """
-        data_dir = os.path.join(self.task_dir, "data/")
+        data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        output_filename = "{}.{}.out".format(
-            os.path.splitext(os.path.basename(input_file))[0], self.name
-        )
+        output_filename = util.get_output_name(input_file, solution_name=self.name)
         output_file = os.path.join(data_dir, output_filename)
 
         self.compile_if_needed()

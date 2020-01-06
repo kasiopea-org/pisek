@@ -16,10 +16,6 @@ def assertFileExists(self, path):
     )
 
 
-def get_data_dir(task_dir):
-    return os.path.join(task_dir, "data/")
-
-
 class ConfigIsValid(test_case.TestCase):
     def runTest(self):
         assertFileExists(self, "config")
@@ -32,6 +28,10 @@ class SampleExists(test_case.TestCase):
         assertFileExists(self, "sample.out")
 
 
+def get_input_name(seed: int, is_hard: bool) -> str:
+    return util.get_input_name(seed, int(is_hard) + 1)
+
+
 def generate_checked(
     case: test_case.GeneratorTestCase,
     seed: int,
@@ -42,7 +42,7 @@ def generate_checked(
     If `filename` is not given, a reasonable name is chosen automatically.
     Then generates into `filename` and returns the file's path.
     """
-    data_dir = get_data_dir(case.task_dir)
+    data_dir = util.get_data_dir(case.task_dir)
     if not filename:
         filename = f"{seed}_{int(is_hard)+1}.in"
     path = os.path.join(data_dir, filename)
@@ -61,7 +61,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         self.test_is_deterministic()
 
     def generate_any(self):
-        data_dir = get_data_dir(self.task_dir)
+        data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
@@ -81,7 +81,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         # TODO: this 'accidentally' also tests that different seeds generate different inputs
         #   (hexadecimal or otherwise), maybe we should test that more thoroughly
 
-        data_dir = get_data_dir(self.task_dir)
+        data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
@@ -96,7 +96,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         )
 
     def test_is_deterministic(self, N=20, seed=1):
-        data_dir = get_data_dir(self.task_dir)
+        data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
@@ -134,6 +134,11 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
+    def __init__(self, task_dir, solution_name, model_solution_name, seeds):
+        super().__init__(task_dir, solution_name)
+        self.model_solution_name = model_solution_name
+        self.seeds = seeds
+
     def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
         sample_out = os.path.join(self.task_dir, "sample.out")
@@ -165,6 +170,38 @@ class SolutionWorks(test_case.SolutionTestCase):
         else:
             return 10
 
+    def generate_outputs(self):
+        data_dir = util.get_data_dir(self.task_dir)
+        for is_hard in [False, True]:
+            for seed in self.seeds:
+                path = os.path.join(data_dir, get_input_name(seed, is_hard))
+                self.solution.run_on_file(path)
+
+    def get_score(self):
+        data_dir = util.get_data_dir(self.task_dir)
+
+        total_score = 0
+        for subtask_score, is_hard in [(4, False), (6, True)]:
+            ok = True
+            for seed in self.seeds:
+                output_filename = util.get_output_name(
+                    get_input_name(seed, is_hard), solution_name=self.solution.name
+                )
+                model_output_filename = util.get_output_name(
+                    get_input_name(seed, is_hard),
+                    solution_name=self.model_solution_name,
+                )
+                output_file = os.path.join(data_dir, output_filename)
+                model_output_file = os.path.join(data_dir, model_output_filename)
+
+                if not util.files_are_equal(output_file, model_output_file):
+                    ok = False
+
+            if ok:
+                total_score += subtask_score
+
+        return total_score
+
     def runTest(self):
         self.solution.compile()
         expected_score = self.expected_score()
@@ -172,6 +209,20 @@ class SolutionWorks(test_case.SolutionTestCase):
             # Solutions which don't pass one of the subtasks might not even pass the samples.
             # For example, the sample might contain tests which would not appear in the easy version
             self.test_passes_sample()
+
+        self.generate_outputs()
+
+        if self.solution.name != self.model_solution_name:
+            score = self.get_score()
+        else:
+            # Maximum score by definition
+            score = 10
+
+        self.assertEqual(
+            score,
+            expected_score,
+            f"Řešení {self.solution.name} mělo získat {expected_score}b, ale získalo {score}b",
+        )
 
 
 def kasiopea_test_suite(task_dir):
@@ -187,6 +238,13 @@ def kasiopea_test_suite(task_dir):
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
     for solution_name in config.solutions:
-        suite.addTest(SolutionWorks(task_dir, solution_name))
+        suite.addTest(
+            SolutionWorks(
+                task_dir,
+                solution_name,
+                model_solution_name=(config.solutions[0]),
+                seeds=seeds,
+            )
+        )
 
     return suite
