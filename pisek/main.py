@@ -17,7 +17,7 @@ def run_tests(args):
 
     suite = pisek.tests.kasiopea_test_suite(cwd)
 
-    runner = unittest.TextTestRunner(verbosity=args.verbose)
+    runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
 
 

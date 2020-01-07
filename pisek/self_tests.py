@@ -36,7 +36,7 @@ class TestTask1(unittest.TestCase):
         suite = pisek.tests.kasiopea_test_suite(self.task_dir)
 
         with open(os.devnull, "w") as devnull:
-            runner = unittest.TextTestRunner(stream=devnull)
+            runner = unittest.TextTestRunner(stream=devnull, failfast=True)
 
             result = runner.run(suite)
 
