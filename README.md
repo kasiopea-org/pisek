@@ -28,7 +28,7 @@ Tento příkaz zkontroluje mimo jiné, že
 
 ### Spouštění jednotlivých programů
 
-Může se hodit třeba když chcete při vývoji spustit své řešení jen na konkrétním vstupu,
+Může se hodit třeba když chceš při vývoji spustit své řešení jen na konkrétním vstupu,
 nebo generátorem vygenerovat jeden vstup.
 Pokud chceš spustit `solve.cpp` na vstupu `foo.in`, použij
 ```
@@ -39,6 +39,24 @@ Příponu `.cpp` není potřeba psát.
 Pokud chceš generátorem `gen.cpp` vygenerovat těžký vstup se seedem `123`, použij
 ```
 pisek run gen 2 123
+```
+
+### Rychlé testování jednolivých programů
+
+Pokud chceš jen rychle otestovat pouze své řešení `solve_cool.cpp`, abys ušetřil čas, použij
+```
+pisek test solution solve_cool
+```
+Příponu `.cpp` není potřeba psát.
+
+Dokonce si můžeš řešení nechat otestovat na hodně seedech, třeba na 42 následovně
+```
+pisek test solution solve_cool -n 42
+```
+
+Podobně jdou také otestovat malé změny generátoru pomocí
+```
+pisek test generator
 ```
 
 ## Testování

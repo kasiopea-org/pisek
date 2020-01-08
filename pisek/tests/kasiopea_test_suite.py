@@ -2,11 +2,13 @@ import unittest
 import os
 import re
 import sys
-from typing import Optional, Iterator, Tuple, Dict
+import random
+from typing import Optional, Tuple, Dict, List
 
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
+from ..solution import Solution
 from ..generator import Generator
 
 
@@ -53,6 +55,23 @@ def generate_checked(
         f"Chyba při generování vstupu {'těžké' if is_hard else 'lehké'} verze se seedem {seed}",
     )
     return path
+
+
+def generate_outputs(solution: Solution, seeds: List[int]) -> List[Optional[str]]:
+    """
+    Generates all the possible outputs for the given seeds and subtasks
+    """
+    results = []
+    data_dir = util.get_data_dir(solution.task_dir)
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    for is_hard in [False, True]:  # subtasks
+        for seed in seeds:
+            path = os.path.join(data_dir, get_input_name(seed, is_hard))
+            result = solution.run_on_file(path)
+            results.append(result)
+    return results
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
@@ -129,6 +148,10 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         self.seeds = seeds
 
     def runTest(self):
+        data_dir = util.get_data_dir(self.task_dir)
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+
         for is_hard in [False, True]:
             for seed in self.seeds:
                 generate_checked(self, seed, is_hard)
@@ -139,6 +162,7 @@ class SolutionWorks(test_case.SolutionTestCase):
         super().__init__(task_dir, solution_name)
         self.model_solution_name = model_solution_name
         self.seeds = seeds
+        self.expected_score = None
 
     def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
@@ -152,7 +176,7 @@ class SolutionWorks(test_case.SolutionTestCase):
             f"Špatná odpověď řešení {self.solution.name} na sample.in",
         )
 
-    def expected_score(self) -> int:
+    def get_expected_score(self) -> int:
         """
         solve -> 10
         solve_0b -> 0
@@ -170,13 +194,6 @@ class SolutionWorks(test_case.SolutionTestCase):
             return score
         else:
             return 10
-
-    def generate_outputs(self):
-        data_dir = util.get_data_dir(self.task_dir)
-        for is_hard in [False, True]:
-            for seed in self.seeds:
-                path = os.path.join(data_dir, get_input_name(seed, is_hard))
-                self.solution.run_on_file(path)
 
     def get_score(self) -> Tuple[int, Dict[int, Tuple[bool, str]]]:
         data_dir = util.get_data_dir(self.task_dir)
@@ -219,13 +236,13 @@ class SolutionWorks(test_case.SolutionTestCase):
 
     def runTest(self):
         self.solution.compile()
-        expected_score = self.expected_score()
-        if expected_score == 10:
+        self.expected_score = self.get_expected_score()
+        if self.expected_score == 10:
             # Solutions which don't pass one of the subtasks might not even pass the samples.
             # For example, the sample might contain tests which would not appear in the easy version
             self.test_passes_sample()
 
-        self.generate_outputs()
+        generate_outputs(self.solution, self.seeds)
 
         if self.solution.name != self.model_solution_name:
             score, diffs = self.get_score()
@@ -246,12 +263,30 @@ class SolutionWorks(test_case.SolutionTestCase):
 
         self.assertEqual(
             score,
-            expected_score,
-            f"Řešení {self.solution.name} mělo získat {expected_score}b, ale získalo {score}b\n{formatted_diffs}",
+            self.expected_score,
+            f"Řešení {self.solution.name} mělo získat {self.expected_score}b, ale získalo {score}b\n{formatted_diffs}",
         )
 
 
+# used for adding a dependency to model solution
+# subsumed by SolutionWorks which is more general
+class SolutionOutputs(test_case.SolutionTestCase):
+    def __init__(self, task_dir, solution_name, seeds):
+        super().__init__(task_dir, solution_name)
+        self.seeds = seeds
+
+    def runTest(self):
+        self.solution.compile_if_needed()
+        generate_outputs(self.solution, self.seeds)
+
+
 def kasiopea_test_suite(task_dir):
+    """
+    Tests the complete task:
+    all solutions, the generator,
+    config, sample inputs/outputs, etc.
+    """
+
     suite = unittest.TestSuite()
     suite.addTest(ConfigIsValid(task_dir))
     suite.addTest(SampleExists(task_dir))
@@ -272,5 +307,50 @@ def kasiopea_test_suite(task_dir):
                 seeds=seeds,
             )
         )
+
+    return suite
+
+
+def solution_test_suite(task_dir, solution_name, n):
+    """
+    Tests _only_ the solution! (minimal test)
+    Cannot test the correctness of the first solver in config. 
+    """
+    suite = unittest.TestSuite()
+
+    config = TaskConfig(task_dir)
+
+    seeds = random.sample(range(0, 16 ** 4), n)
+
+    generator = Generator(task_dir, config.generator)
+    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
+
+    # Generate the gold data from the first (model/gold) solution
+    suite.addTest(SolutionOutputs(task_dir, config.solutions[0], seeds))
+
+    suite.addTest(
+        SolutionWorks(
+            task_dir,
+            solution_name,
+            model_solution_name=(config.solutions[0]),
+            seeds=seeds,
+        )
+    )
+
+    return suite
+
+
+def generator_test_suite(task_dir):
+    """
+    Tests _only_ the generator!
+    """
+    suite = unittest.TestSuite()
+
+    config = TaskConfig(task_dir)
+
+    seeds = [1, 2, 3, 10, 123]
+    generator = Generator(task_dir, config.generator)
+    suite.addTest(GeneratorWorks(task_dir, generator))
+    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
     return suite
