@@ -4,7 +4,7 @@ import unittest
 import sys
 
 import pisek.tests
-from pisek.solution import Solution
+from pisek.program import Program
 
 
 def eprint(*args, **kwargs):
@@ -21,11 +21,15 @@ def run_tests(args):
     runner.run(suite)
 
 
-def run_solution(args):
-    eprint(f"Spouštím řešení: {args.solution}")
+def run_solution(args, unknown_args):
+    eprint(f"Spouštím program: {args.solution}")
+
     cwd = os.getcwd()
-    sol = Solution(cwd, args.solution)
-    ok = sol.run()
+    sol = Program(cwd, args.solution)
+    ok = sol.run(unknown_args)
+
+    if not ok:
+        eprint("Chyba při běhu.")
     exit(0 if ok else 1)
 
 
@@ -35,14 +39,11 @@ def main():
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení")
-    parser_gen = subparsers.add_parser("gen", help="vygeneruj vstupy")
     parser_run.add_argument("solution", type=str, help="název řešení ke spuštění")
 
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
     if args.subcommand == "run":
-        run_solution(args)
-    elif args.subcommand == "gen":
-        print(f"Generuji vstupy: {args}")
+        run_solution(args, unknown_args)
     elif args.subcommand is None:
         run_tests(args)
     else:
