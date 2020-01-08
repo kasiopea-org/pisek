@@ -1,7 +1,8 @@
 import unittest
 import os
 import re
-from typing import Optional
+import sys
+from typing import Optional, Iterator, Tuple, Dict
 
 from . import test_case
 from ..task_config import TaskConfig
@@ -177,10 +178,12 @@ class SolutionWorks(test_case.SolutionTestCase):
                 path = os.path.join(data_dir, get_input_name(seed, is_hard))
                 self.solution.run_on_file(path)
 
-    def get_score(self):
+    def get_score(self) -> Tuple[int, Dict[int, Tuple[bool, str]]]:
         data_dir = util.get_data_dir(self.task_dir)
 
         total_score = 0
+        diffs: Dict[int, Tuple[bool, str]] = {}  # seed -> (is_hard, diff)
+
         for subtask_score, is_hard in [(4, False), (6, True)]:
             ok = True
             for seed in self.seeds:
@@ -197,10 +200,22 @@ class SolutionWorks(test_case.SolutionTestCase):
                 if not util.files_are_equal(output_file, model_output_file):
                     ok = False
 
+                    diffs[seed] = (
+                        is_hard,
+                        "".join(
+                            util.diff_files(
+                                model_output_file,
+                                output_file,
+                                "správné řešení",
+                                "řešení solveru '{self.solution.name}'",
+                            )
+                        ),
+                    )
+
             if ok:
                 total_score += subtask_score
 
-        return total_score
+        return total_score, diffs
 
     def runTest(self):
         self.solution.compile()
@@ -213,15 +228,26 @@ class SolutionWorks(test_case.SolutionTestCase):
         self.generate_outputs()
 
         if self.solution.name != self.model_solution_name:
-            score = self.get_score()
+            score, diffs = self.get_score()
         else:
-            # Maximum score by definition
+            # Maximum score and no diffs by definition
             score = 10
+            diffs = None
+
+        # TODO: make this a bit nicer
+        formatted_diffs = (
+            "\n".join(
+                f"Diff seedu {seed} na obtížnosti {'těžká' if is_hard else 'lehká'}:\n{diff}"
+                for (seed, (is_hard, diff)) in diffs.items()
+            )
+            if diffs is not None
+            else ""
+        )
 
         self.assertEqual(
             score,
             expected_score,
-            f"Řešení {self.solution.name} mělo získat {expected_score}b, ale získalo {score}b",
+            f"Řešení {self.solution.name} mělo získat {expected_score}b, ale získalo {score}b\n{formatted_diffs}",
         )
 
 

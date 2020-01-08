@@ -1,5 +1,6 @@
 import os
-from typing import Optional
+import difflib
+from typing import Optional, Iterator
 
 from .compile import supported_extensions
 
@@ -22,6 +23,34 @@ def files_are_equal(file_a: str, file_b: str) -> bool:
                 lb = lb.strip()
                 if la != lb:
                     return False
+
+
+def diff_files(
+    file_a: str,
+    file_b: str,
+    file_a_name: Optional[str] = None,
+    file_b_name: Optional[str] = None,
+) -> Iterator[str]:
+    """
+    Produces a human-friendly diff of 
+    `file_a` and `file_b` as a string iterator.
+
+    Uses `file_a_name` and `file_b_name` for specifying 
+    a human-friendly name for the files.
+    """
+    if file_a_name is None:
+        file_a_name = file_a
+    if file_b_name is None:
+        file_b_name = file_b
+
+    with open(file_a, "r") as fa:
+        lines_a = [line.strip() + "\n" for line in fa.readlines()]
+    with open(file_b, "r") as fb:
+        lines_b = [line.strip() + "\n" for line in fb.readlines()]
+
+    diff = difflib.unified_diff(lines_a, lines_b, fromfile=file_a, tofile=file_b, n=2)
+
+    return diff
 
 
 def resolve_extension(path: str, name: str) -> Optional[str]:
