@@ -72,14 +72,14 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
     return None
 
 
-def get_data_dir(task_dir):
+def get_data_dir(task_dir: str) -> str:
     return os.path.join(task_dir, "data/")
 
 
 def get_input_name(seed: int, subtask: int) -> str:
     # Here we have `subtask` rather than `is_hard` to allow support for contests
     # with more than two subtasks
-    return f"{seed}_{subtask}.in"
+    return f"{seed:x}_{subtask}.in"
 
 
 def get_output_name(input_file: str, solution_name: str) -> str:

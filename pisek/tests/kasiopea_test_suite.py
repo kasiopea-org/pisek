@@ -47,12 +47,12 @@ def generate_checked(
     """
     data_dir = util.get_data_dir(case.task_dir)
     if not filename:
-        filename = f"{seed}_{int(is_hard)+1}.in"
+        filename = f"{seed:x}_{int(is_hard)+1}.in"
     path = os.path.join(data_dir, filename)
 
     case.assertTrue(
         case.generator.generate(path, seed=seed, is_hard=is_hard),
-        f"Chyba při generování vstupu {'těžké' if is_hard else 'lehké'} verze se seedem {seed}",
+        f"Chyba při generování vstupu {'těžké' if is_hard else 'lehké'} verze se seedem {seed:x}",
     )
     return path
 
@@ -126,7 +126,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
                     self,
                     seed,
                     is_hard,
-                    filename=f"{seed}_{int(is_hard)+1}_iteration_{it}.in",
+                    filename=f"{seed:x}_{int(is_hard)+1}_iteration_{it}.in",
                 )
                 for it in range(N)
             ]
@@ -254,7 +254,7 @@ class SolutionWorks(test_case.SolutionTestCase):
         # TODO: make this a bit nicer
         formatted_diffs = (
             "\n".join(
-                f"Diff seedu {seed} na obtížnosti {'těžká' if is_hard else 'lehká'}:\n{diff}"
+                f"Diff seedu {seed:x} na obtížnosti {'těžká' if is_hard else 'lehká'}:\n{diff}"
                 for (seed, (is_hard, diff)) in diffs.items()
             )
             if diffs is not None
