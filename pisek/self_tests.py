@@ -7,6 +7,7 @@ import unittest
 import shutil
 import tempfile
 import os
+import io
 
 import pisek.tests
 
@@ -36,20 +37,25 @@ class TestTask1(unittest.TestCase):
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
         # and we want to consider it a timeout
-        suite = pisek.tests.kasiopea_test_suite(self.task_dir, timeout=10)
+        suite = pisek.tests.kasiopea_test_suite(self.task_dir, timeout=1)
 
-        with open(os.devnull, "w") as devnull:
-            runner = unittest.TextTestRunner(stream=devnull, failfast=True)
+        # with open(os.devnull, "w") as devnull:
+        output = io.StringIO()
+        runner = unittest.TextTestRunner(stream=output, failfast=True)
 
-            result = runner.run(suite)
+        result = runner.run(suite)
+
+        out = output.getvalue()
+        out = "\n".join([f"> {x}" for x in out.split("\n")])
 
         self.assertEqual(
             result.wasSuccessful(),
             self.expecting_success(),
-            "Neočekávaný výsledek testu: test {}měl projít, ale {}prošel".format(
+            "Neočekávaný výsledek testu: test {}měl projít, ale {}prošel.".format(
                 "" if self.expecting_success() else "ne",
                 "" if result.wasSuccessful() else "ne",
-            ),
+            )
+            + " Výstup testu:\n{}".format(out),
         )
 
     def tearDown(self):
