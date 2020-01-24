@@ -3,14 +3,13 @@
 #
 # Fill out all the information. Please, delete the TODO line after fixing it.
 #
-# Task author: Karel Tesař
-# Task implementation: Václav Volhejn
+# Task author: Kasiopea Org
 
 [task]
 name=2019-doma-H
 tests=2
 
-solutions=solve solve_4b solve_0b
+solutions=solve solve_4b solve_slow_4b solve_0b
 
 [tests]
 in_mode=online

@@ -10,6 +10,7 @@ from ..task_config import TaskConfig
 from .. import util
 from ..solution import Solution
 from ..generator import Generator
+from ..program import RunResult
 
 
 def assertFileExists(self, path):
@@ -57,11 +58,15 @@ def generate_checked(
     return path
 
 
-def generate_outputs(solution: Solution, seeds: List[int]) -> List[Optional[str]]:
+def generate_outputs(
+    solution: Solution, seeds: List[int], timeout: int, quit_on_timeout: bool = True
+) -> List[str]:
     """
-    Generates all the possible outputs for the given seeds and subtasks
+    Generates all the possible outputs for the given seeds and subtasks.
+    if `quit_on_timeout` is set, we assume that if the solution times out for a given seed,
+    it will time out for others as well, and stop running it for the specific subtask
     """
-    results = []
+    output_files = []
     data_dir = util.get_data_dir(solution.task_dir)
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
@@ -69,9 +74,14 @@ def generate_outputs(solution: Solution, seeds: List[int]) -> List[Optional[str]
     for is_hard in [False, True]:  # subtasks
         for seed in seeds:
             path = os.path.join(data_dir, get_input_name(seed, is_hard))
-            result = solution.run_on_file(path)
-            results.append(result)
-    return results
+            result, output_file = solution.run_on_file(path, timeout)
+            if quit_on_timeout and result == RunResult.TIMEOUT:
+                break
+
+            if output_file is not None:
+                output_files.append(output_file)
+
+    return output_files
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
@@ -158,18 +168,21 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(self, task_dir, solution_name, model_solution_name, seeds):
+    def __init__(self, task_dir, solution_name, model_solution_name, seeds, timeout):
         super().__init__(task_dir, solution_name)
         self.model_solution_name = model_solution_name
         self.seeds = seeds
+        self.timeout = timeout
         self.expected_score = None
 
     def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
         sample_out = os.path.join(self.task_dir, "sample.out")
-        output_file = self.solution.run_on_file(sample_in)
-        self.assertIsNotNone(
-            output_file, f"Chyba při spouštění {self.solution.name} na sample.in"
+        result, output_file = self.solution.run_on_file(sample_in, self.timeout)
+        self.assertEqual(
+            result,
+            RunResult.OK,
+            f"Chyba při spouštění {self.solution.name} na sample.in",
         )
         self.assertTrue(
             util.files_are_equal(output_file, sample_out),
@@ -242,7 +255,7 @@ class SolutionWorks(test_case.SolutionTestCase):
             # For example, the sample might contain tests which would not appear in the easy version
             self.test_passes_sample()
 
-        generate_outputs(self.solution, self.seeds)
+        generate_outputs(self.solution, self.seeds, self.timeout)
 
         if self.solution.name != self.model_solution_name:
             score, diffs = self.get_score()
@@ -264,23 +277,25 @@ class SolutionWorks(test_case.SolutionTestCase):
         self.assertEqual(
             score,
             self.expected_score,
-            f"Řešení {self.solution.name} mělo získat {self.expected_score}b, ale získalo {score}b\n{formatted_diffs}",
+            f"Řešení {self.solution.name} mělo získat {self.expected_score}b,"
+            f" ale získalo {score}b\n{formatted_diffs}",
         )
 
 
 # used for adding a dependency to model solution
 # subsumed by SolutionWorks which is more general
 class SolutionOutputs(test_case.SolutionTestCase):
-    def __init__(self, task_dir, solution_name, seeds):
+    def __init__(self, task_dir, solution_name, seeds, timeout):
         super().__init__(task_dir, solution_name)
         self.seeds = seeds
+        self.timeout = timeout
 
     def runTest(self):
         self.solution.compile_if_needed()
-        generate_outputs(self.solution, self.seeds)
+        generate_outputs(self.solution, self.seeds, self.timeout)
 
 
-def kasiopea_test_suite(task_dir):
+def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
     """
     Tests the complete task:
     all solutions, the generator,
@@ -305,16 +320,17 @@ def kasiopea_test_suite(task_dir):
                 solution_name,
                 model_solution_name=(config.solutions[0]),
                 seeds=seeds,
+                timeout=timeout,
             )
         )
 
     return suite
 
 
-def solution_test_suite(task_dir, solution_name, n):
+def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT):
     """
     Tests _only_ the solution! (minimal test)
-    Cannot test the correctness of the first solver in config. 
+    Cannot test the correctness of the first solver in config.
     """
     suite = unittest.TestSuite()
 
@@ -326,7 +342,7 @@ def solution_test_suite(task_dir, solution_name, n):
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
     # Generate the gold data from the first (model/gold) solution
-    suite.addTest(SolutionOutputs(task_dir, config.solutions[0], seeds))
+    suite.addTest(SolutionOutputs(task_dir, config.solutions[0], seeds, timeout))
 
     suite.addTest(
         SolutionWorks(

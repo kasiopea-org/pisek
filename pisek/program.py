@@ -1,32 +1,53 @@
 import os
 import subprocess
 from typing import Optional, List
+from enum import Enum
 
 from . import util
 from . import compile
 
 
-def run(executable: str, input_file: str, output_file: str, timeout: int = 100) -> bool:
+class RunResult(Enum):
+    OK = 0
+    NONZERO_EXIT_CODE = 1
+    TIMEOUT = 2
+
+
+def run(
+    executable: str,
+    input_file: str,
+    output_file: str,
+    timeout: int = util.DEFAULT_TIMEOUT,
+) -> RunResult:
     # TODO: Adapt the code from https://gist.github.com/s3rvac/f97d6cbdfdb15c0a32e7e941f7f4a3fa
     #       to limit the memory of the subprocess
     with open(input_file, "r") as inp:
         with open(output_file, "w") as outp:
-            result = subprocess.run(
-                executable,
-                stdin=inp,
-                stdout=outp,
-                stderr=subprocess.PIPE,
-                timeout=timeout,
-            )
+            try:
+                result = subprocess.run(
+                    executable,
+                    stdin=inp,
+                    stdout=outp,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                return RunResult.TIMEOUT
 
-            return result.returncode == 0
+            if result.returncode == 0:
+                return RunResult.OK
+            else:
+                return RunResult.NONZERO_EXIT_CODE
 
 
-def run_direct(executable: str, args: List[str] = []) -> bool:
+def run_direct(executable: str, args: List[str] = []) -> RunResult:
     """ like run(), but with no redirections or timeout """
     result = subprocess.run([executable] + args)
 
-    return result.returncode == 0
+    if result.returncode == 0:
+        return RunResult.OK
+    else:
+        return RunResult.NONZERO_EXIT_CODE
 
 
 class Program:
@@ -50,7 +71,7 @@ class Program:
         if not self.executable:
             self.compile()
 
-    def run(self, args: List[str] = []) -> bool:
+    def run(self, args: List[str] = []) -> RunResult:
         self.compile_if_needed()
         assert self.executable is not None
         return run_direct(self.executable, args)

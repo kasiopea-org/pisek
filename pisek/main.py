@@ -4,7 +4,8 @@ import unittest
 import sys
 
 import pisek.tests
-from pisek.program import Program
+from .util import DEFAULT_TIMEOUT
+from pisek.program import Program, RunResult
 
 
 def eprint(*args, **kwargs):
@@ -15,7 +16,7 @@ def run_tests(args, full=False):
     cwd = os.getcwd()
     eprint(f"Testuji úlohu {cwd}")
 
-    suite = pisek.tests.kasiopea_test_suite(cwd)
+    suite = pisek.tests.kasiopea_test_suite(cwd, timeout=args.timeout)
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=full)
     runner.run(suite)
@@ -26,11 +27,13 @@ def run_solution(args, unknown_args):
 
     cwd = os.getcwd()
     sol = Program(cwd, args.solution)
-    ok = sol.run(unknown_args)
+    result = sol.run(unknown_args)
 
-    if not ok:
+    if result != RunResult.OK:
         eprint("Chyba při běhu.")
-    exit(0 if ok else 1)
+        exit(1)
+    else:
+        exit(0)
 
 
 def test_solution(args):
@@ -59,6 +62,12 @@ def test_generator(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v", action="count", default=1)
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help="po kolika sekundách ukončit běžící řešení",
+    )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení")
@@ -92,6 +101,7 @@ def main():
         else:
             assert False
     elif args.subcommand is None:
+
         run_tests(args, full=False)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")

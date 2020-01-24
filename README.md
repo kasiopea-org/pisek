@@ -12,6 +12,8 @@ pip3 install --user  git+https://github.com/kasiopea-org/pisek
 
 ## Použití
 
+Zde uvedeme základní použití. Všechny možnosti Písku vám vypíše příkaz `pisek --help`. 
+
 ### Testování úloh
 
 Ve složce úlohy spusť jednoduše

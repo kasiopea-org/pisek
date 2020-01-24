@@ -2,11 +2,16 @@ import subprocess
 import random
 
 from .program import Program
+from . import util
 
 
 class Generator(Program):
     def generate(
-        self, output_file: str, seed: int, is_hard: bool, timeout: int = 100
+        self,
+        output_file: str,
+        seed: int,
+        is_hard: bool,
+        timeout: int = util.DEFAULT_TIMEOUT,
     ) -> bool:
         assert seed >= 0
         self.compile_if_needed()
@@ -26,7 +31,7 @@ class Generator(Program):
             return result.returncode == 0
 
     def generate_random(
-        self, output_file: str, is_hard: bool, timeout: int = 100
+        self, output_file: str, is_hard: bool, timeout: int = util.DEFAULT_TIMEOUT
     ) -> bool:
         seed = random.randint(0, 16 ** 4 - 1)
         return self.generate(output_file, seed, is_hard, timeout=timeout)

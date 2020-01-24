@@ -6,7 +6,9 @@ from . import program
 
 
 class Solution(program.Program):
-    def run_on_file(self, input_file: str) -> Optional[str]:
+    def run_on_file(
+        self, input_file: str, timeout: int = util.DEFAULT_TIMEOUT
+    ) -> (program.RunResult, Optional[str]):
         """ Runs the solution and stores the output in a reasonably named file in data/ """
         data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
@@ -18,6 +20,9 @@ class Solution(program.Program):
         self.compile_if_needed()
         assert self.executable is not None
 
-        # self.assertTrue(f"Chyba při spuštění {self.name} na {input_file}",)
-        ok = program.run(self.executable, input_file, output_file)
-        return output_file if ok else None
+        res = program.run(self.executable, input_file, output_file, timeout)
+
+        if res == program.RunResult.OK:
+            return res, output_file
+        else:
+            return res, None

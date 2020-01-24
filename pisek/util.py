@@ -4,6 +4,8 @@ from typing import Optional, Iterator
 
 from .compile import supported_extensions
 
+DEFAULT_TIMEOUT = 360
+
 
 def files_are_equal(file_a: str, file_b: str) -> bool:
     """
@@ -32,10 +34,10 @@ def diff_files(
     file_b_name: Optional[str] = None,
 ) -> Iterator[str]:
     """
-    Produces a human-friendly diff of 
-    `file_a` and `file_b` as a string iterator.
+    Produces a human-friendly diff of `file_a` and `file_b`
+    as a string iterator.
 
-    Uses `file_a_name` and `file_b_name` for specifying 
+    Uses `file_a_name` and `file_b_name` for specifying
     a human-friendly name for the files.
     """
     if file_a_name is None:

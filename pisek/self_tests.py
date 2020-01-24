@@ -33,7 +33,10 @@ class TestTask1(unittest.TestCase):
 
     def runTest(self):
         self.modify_task()
-        suite = pisek.tests.kasiopea_test_suite(self.task_dir)
+        # We lower the timeout to make the self-tests run faster. The solutions
+        # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
+        # and we want to consider it a timeout
+        suite = pisek.tests.kasiopea_test_suite(self.task_dir, timeout=0.1)
 
         with open(os.devnull, "w") as devnull:
             runner = unittest.TextTestRunner(stream=devnull, failfast=True)
