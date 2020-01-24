@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 from . import util
 from . import program
@@ -8,7 +8,7 @@ from . import program
 class Solution(program.Program):
     def run_on_file(
         self, input_file: str, timeout: int = util.DEFAULT_TIMEOUT
-    ) -> (program.RunResult, Optional[str]):
+    ) -> Tuple[program.RunResult, Optional[str]]:
         """ Runs the solution and stores the output in a reasonably named file in data/ """
         data_dir = util.get_data_dir(self.task_dir)
         if not os.path.exists(data_dir):
