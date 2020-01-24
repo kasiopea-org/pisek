@@ -1,7 +1,7 @@
 import unittest
 import os
 import re
-import sys
+import shutil
 import random
 from typing import Optional, Tuple, Dict, List
 
@@ -64,7 +64,7 @@ def generate_outputs(
     """
     Generates all the possible outputs for the given seeds and subtasks.
     if `quit_on_timeout` is set, we assume that if the solution times out for a given seed,
-    it will time out for others as well, and stop running it for the specific subtask
+    it will time out for others as well, so we don't run the solution on the other seeds
     """
     output_files = []
     data_dir = util.get_data_dir(solution.task_dir)
@@ -237,7 +237,7 @@ class SolutionWorks(test_case.SolutionTestCase):
                                 model_output_file,
                                 output_file,
                                 "správné řešení",
-                                "řešení solveru '{self.solution.name}'",
+                                f"řešení solveru '{self.solution.name}'",
                             )
                         ),
                     )
@@ -335,6 +335,8 @@ def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT
     suite = unittest.TestSuite()
 
     config = TaskConfig(task_dir)
+    # Make sure we don't have stale files
+    shutil.rmtree(os.path.join(task_dir, "data"))
 
     seeds = random.sample(range(0, 16 ** 4), n)
 
@@ -363,6 +365,8 @@ def generator_test_suite(task_dir):
     suite = unittest.TestSuite()
 
     config = TaskConfig(task_dir)
+    # Make sure we don't have stale files
+    shutil.rmtree(os.path.join(task_dir, "data"))
 
     seeds = [1, 2, 3, 10, 123]
     generator = Generator(task_dir, config.generator)

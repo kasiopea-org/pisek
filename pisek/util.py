@@ -10,21 +10,27 @@ DEFAULT_TIMEOUT = 360
 def files_are_equal(file_a: str, file_b: str) -> bool:
     """
     Checks if the contents of `file_a` and `file_b` are equal,
-    ignoring leading and trailing whitespace
+    ignoring leading and trailing whitespace.
+
+    If one or both files don't exist, False is returned.
     """
-    with open(file_a, "r") as fa:
-        with open(file_b, "r") as fb:
-            while True:
-                la = fa.readline()
-                lb = fb.readline()
-                if not la and not lb:
-                    # We have reached the end of both files
-                    return True
-                # ignore leading/trailing whitespace
-                la = la.strip()
-                lb = lb.strip()
-                if la != lb:
-                    return False
+
+    try:
+        with open(file_a, "r") as fa:
+            with open(file_b, "r") as fb:
+                while True:
+                    la = fa.readline()
+                    lb = fb.readline()
+                    if not la and not lb:
+                        # We have reached the end of both files
+                        return True
+                    # ignore leading/trailing whitespace
+                    la = la.strip()
+                    lb = lb.strip()
+                    if la != lb:
+                        return False
+    except FileNotFoundError:
+        return False
 
 
 def diff_files(
@@ -45,12 +51,21 @@ def diff_files(
     if file_b_name is None:
         file_b_name = file_b
 
-    with open(file_a, "r") as fa:
-        lines_a = [line.strip() + "\n" for line in fa.readlines()]
-    with open(file_b, "r") as fb:
-        lines_b = [line.strip() + "\n" for line in fb.readlines()]
+    try:
+        with open(file_a, "r") as fa:
+            lines_a = [line.strip() + "\n" for line in fa.readlines()]
+    except FileNotFoundError:
+        lines_a = [f"({file_a_name} neexistuje)"]
 
-    diff = difflib.unified_diff(lines_a, lines_b, fromfile=file_a, tofile=file_b, n=2)
+    try:
+        with open(file_b, "r") as fb:
+            lines_b = [line.strip() + "\n" for line in fb.readlines()]
+    except FileNotFoundError:
+        lines_b = [f"({file_b_name} neexistuje)"]
+
+    diff = difflib.unified_diff(
+        lines_a, lines_b, fromfile=file_a_name, tofile=file_b_name, n=2
+    )
 
     return diff
 
