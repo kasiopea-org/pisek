@@ -84,6 +84,15 @@ def generate_outputs(
     return output_files
 
 
+def clear_data_dir(task_dir: str):
+    data_dir = util.get_data_dir(task_dir)
+    try:
+        shutil.rmtree(data_dir)
+    except FileNotFoundError:
+        pass
+    os.mkdir(data_dir)
+
+
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         self.generate_any()
@@ -301,12 +310,14 @@ def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
     all solutions, the generator,
     config, sample inputs/outputs, etc.
     """
+    config = TaskConfig(task_dir)
+    # Make sure we don't have stale files. We run this after loading `config`
+    # to make sure `task_dir` is a valid task directory
+    clear_data_dir(task_dir)
 
     suite = unittest.TestSuite()
     suite.addTest(ConfigIsValid(task_dir))
     suite.addTest(SampleExists(task_dir))
-
-    config = TaskConfig(task_dir)
 
     seeds = [1, 2, 3, 10, 123]
     generator = Generator(task_dir, config.generator)
@@ -332,14 +343,13 @@ def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT
     Tests _only_ the solution! (minimal test)
     Cannot test the correctness of the first solver in config.
     """
-    suite = unittest.TestSuite()
-
     config = TaskConfig(task_dir)
-    # Make sure we don't have stale files
-    shutil.rmtree(os.path.join(task_dir, "data"))
+    # Make sure we don't have stale files. We run this after loading `config`
+    # to make sure `task_dir` is a valid task directory
+    clear_data_dir(task_dir)
 
+    suite = unittest.TestSuite()
     seeds = random.sample(range(0, 16 ** 4), n)
-
     generator = Generator(task_dir, config.generator)
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
@@ -352,6 +362,7 @@ def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT
             solution_name,
             model_solution_name=(config.solutions[0]),
             seeds=seeds,
+            timeout=timeout,
         )
     )
 
@@ -362,12 +373,12 @@ def generator_test_suite(task_dir):
     """
     Tests _only_ the generator!
     """
-    suite = unittest.TestSuite()
-
     config = TaskConfig(task_dir)
-    # Make sure we don't have stale files
-    shutil.rmtree(os.path.join(task_dir, "data"))
+    # Make sure we don't have stale files. We run this after loading `config`
+    # to make sure `task_dir` is a valid task directory
+    clear_data_dir(task_dir)
 
+    suite = unittest.TestSuite()
     seeds = [1, 2, 3, 10, 123]
     generator = Generator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator))

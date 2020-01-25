@@ -45,7 +45,9 @@ def test_solution(args):
     eprint(f"Testuji řešení: {args.solution}")
     cwd = os.getcwd()
 
-    suite = pisek.tests.solution_test_suite(cwd, args.solution, args.number_of_tests)
+    suite = pisek.tests.solution_test_suite(
+        cwd, args.solution, args.number_of_tests, args.timeout
+    )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
 
