@@ -94,8 +94,6 @@ def get_data_dir(task_dir: str) -> str:
 
 
 def get_input_name(seed: int, subtask: int) -> str:
-    # Here we have `subtask` rather than `is_hard` to allow support for contests
-    # with more than two subtasks
     return f"{seed:x}_{subtask}.in"
 
 

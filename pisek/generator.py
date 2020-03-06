@@ -10,7 +10,7 @@ class Generator(Program):
         self,
         output_file: str,
         seed: int,
-        is_hard: bool,
+        subtask: int,
         timeout: int = util.DEFAULT_TIMEOUT,
     ) -> bool:
         assert seed >= 0
@@ -18,7 +18,7 @@ class Generator(Program):
         assert self.executable is not None
 
         with open(output_file, "w") as outp:
-            difficulty = "2" if is_hard else "1"
+            difficulty = str(subtask)
             hexa_seed = f"{seed:x}"
 
             result = subprocess.run(
@@ -31,7 +31,7 @@ class Generator(Program):
             return result.returncode == 0
 
     def generate_random(
-        self, output_file: str, is_hard: bool, timeout: int = util.DEFAULT_TIMEOUT
+        self, output_file: str, subtask: int, timeout: int = util.DEFAULT_TIMEOUT
     ) -> bool:
         seed = random.randint(0, 16 ** 4 - 1)
-        return self.generate(output_file, seed, is_hard, timeout=timeout)
+        return self.generate(output_file, seed, subtask, timeout=timeout)

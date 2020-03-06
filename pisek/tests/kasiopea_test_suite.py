@@ -32,14 +32,10 @@ class SampleExists(test_case.TestCase):
         assertFileExists(self, "sample.out")
 
 
-def get_input_name(seed: int, is_hard: bool) -> str:
-    return util.get_input_name(seed, int(is_hard) + 1)
-
-
 def generate_checked(
     case: test_case.GeneratorTestCase,
     seed: int,
-    is_hard: bool,
+    subtask: int,
     filename: Optional[str] = None,
 ) -> str:
     """
@@ -47,13 +43,14 @@ def generate_checked(
     Then generates into `filename` and returns the file's path.
     """
     data_dir = util.get_data_dir(case.task_dir)
-    if not filename:
-        filename = f"{seed:x}_{int(is_hard)+1}.in"
+    if filename is None:
+        filename = util.get_input_name(seed, subtask)
     path = os.path.join(data_dir, filename)
 
     case.assertTrue(
-        case.generator.generate(path, seed=seed, is_hard=is_hard),
-        f"Chyba při generování vstupu {'těžké' if is_hard else 'lehké'} verze se seedem {seed:x}",
+        case.generator.generate(path, seed=seed, subtask=subtask),
+        f"Chyba při generování vstupu {'těžké' if (subtask == 2) else 'lehké'} verze"
+        f" se seedem {seed:x}",
     )
     return path
 
@@ -71,9 +68,9 @@ def generate_outputs(
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
 
-    for is_hard in [False, True]:  # subtasks
+    for subtask in [1, 2]:
         for seed in seeds:
-            path = os.path.join(data_dir, get_input_name(seed, is_hard))
+            path = os.path.join(data_dir, util.get_input_name(seed, subtask))
             result, output_file = solution.run_on_file(path, timeout)
             if quit_on_timeout and result == RunResult.TIMEOUT:
                 break
@@ -104,15 +101,15 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        for is_hard in [False, True]:
-            filename = generate_checked(self, seed=1, is_hard=is_hard)
+        for subtask in [1, 2]:
+            filename = generate_checked(self, seed=1, subtask=subtask)
 
             easy_file_size = os.path.getsize(filename)
             self.assertNotEqual(
                 easy_file_size,
                 0,
-                "Generátor vygeneroval prázdný vstup pro"
-                f"{'těžkou' if is_hard else 'lehkou'} verzi se seedem 1",
+                "Generátor vygeneroval prázdný vstup pro "
+                f"{'těžkou' if (subtask == 2) else 'lehkou'} verzi se seedem 1",
             )
 
     def test_respects_hex_seed(self):
@@ -124,10 +121,10 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        zero_filename = generate_checked(self, seed=0, is_hard=False)
+        zero_filename = generate_checked(self, seed=0, subtask=1)
 
         hexa = int("0xFF", 16)
-        hexa_filename = generate_checked(self, seed=hexa, is_hard=False)
+        hexa_filename = generate_checked(self, seed=hexa, subtask=1)
 
         self.assertFalse(
             util.files_are_equal(zero_filename, hexa_filename),
@@ -139,13 +136,13 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        for is_hard in [False, True]:
+        for subtask in [1, 2]:
             filenames = [
                 generate_checked(
                     self,
                     seed,
-                    is_hard,
-                    filename=f"{seed:x}_{int(is_hard)+1}_iteration_{it}.in",
+                    subtask,
+                    filename=f"{seed:x}_{int(subtask)}_iteration_{it}.in",
                 )
                 for it in range(N)
             ]
@@ -157,7 +154,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             self.assertListEqual(
                 unequal_files,
                 [],
-                f"Generování {'těžké' if is_hard else 'lehké'} verze není deterministické",
+                f"Generování {'těžké' if (subtask == 2) else 'lehké'} verze není deterministické",
             )
 
 
@@ -171,9 +168,9 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
 
-        for is_hard in [False, True]:
+        for subtask in [1, 2]:
             for seed in self.seeds:
-                generate_checked(self, seed, is_hard)
+                generate_checked(self, seed, subtask)
 
 
 class SolutionWorks(test_case.SolutionTestCase):
@@ -217,20 +214,22 @@ class SolutionWorks(test_case.SolutionTestCase):
         else:
             return 10
 
-    def get_score(self) -> Tuple[int, Dict[int, Tuple[bool, str]]]:
+    def get_score(self) -> Tuple[int, Dict[int, Tuple[int, str]]]:
         data_dir = util.get_data_dir(self.task_dir)
 
         total_score = 0
-        diffs: Dict[int, Tuple[bool, str]] = {}  # seed -> (is_hard, diff)
 
-        for subtask_score, is_hard in [(4, False), (6, True)]:
+        # TODO: the subtask should be part of the key, not the value
+        diffs: Dict[int, Tuple[int, str]] = {}  # seed -> (subtask, diff)
+
+        for subtask_score, subtask in [(4, 1), (6, 2)]:
             ok = True
             for seed in self.seeds:
                 output_filename = util.get_output_name(
-                    get_input_name(seed, is_hard), solution_name=self.solution.name
+                    util.get_input_name(seed, subtask), solution_name=self.solution.name
                 )
                 model_output_filename = util.get_output_name(
-                    get_input_name(seed, is_hard),
+                    util.get_input_name(seed, subtask),
                     solution_name=self.model_solution_name,
                 )
                 output_file = os.path.join(data_dir, output_filename)
@@ -240,7 +239,7 @@ class SolutionWorks(test_case.SolutionTestCase):
                     ok = False
 
                     diffs[seed] = (
-                        is_hard,
+                        subtask,
                         "".join(
                             util.diff_files(
                                 model_output_file,
@@ -276,8 +275,9 @@ class SolutionWorks(test_case.SolutionTestCase):
         # TODO: make this a bit nicer
         formatted_diffs = (
             "\n".join(
-                f"Diff seedu {seed:x} na obtížnosti {'těžká' if is_hard else 'lehká'}:\n{diff}"
-                for (seed, (is_hard, diff)) in diffs.items()
+                f"Diff seedu {seed:x} na obtížnosti "
+                f"{'těžká' if (subtask == 2) else 'lehká'}:\n{diff}"
+                for (seed, (subtask, diff)) in diffs.items()
             )
             if diffs is not None
             else ""
