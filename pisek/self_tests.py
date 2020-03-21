@@ -15,7 +15,7 @@ import pisek.tests
 class TestTask1(unittest.TestCase):
     def setUp(self):
         self.task_dir_orig = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../fixtures/task_1/")
+            os.path.join(os.path.dirname(__file__), "../fixtures/soucet_kasiopea/")
         )
         self.task_dir = tempfile.mkdtemp()
 
