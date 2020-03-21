@@ -11,6 +11,8 @@ class RunResult(Enum):
     OK = 0
     NONZERO_EXIT_CODE = 1
     TIMEOUT = 2
+    WRONG_ANSWER = 3
+    # ^ cannot be returned by run(), is returned by the judge
 
 
 def run(

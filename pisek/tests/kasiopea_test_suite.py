@@ -11,6 +11,7 @@ from .. import util
 from ..solution import Solution
 from ..generator import OnlineGenerator
 from ..program import RunResult
+from ..judge import WhiteDiffJudge
 
 
 def assertFileExists(self, path):
@@ -178,21 +179,25 @@ class SolutionWorks(test_case.SolutionTestCase):
         super().__init__(task_dir, solution_name)
         self.model_solution_name = model_solution_name
         self.seeds = seeds
-        self.timeout = timeout
+        self.run_config = {"timeout": timeout}
         self.expected_score = None
+        self.judge = WhiteDiffJudge()
 
     def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
         sample_out = os.path.join(self.task_dir, "sample.out")
-        result, output_file = self.solution.run_on_file(sample_in, self.timeout)
-        self.assertEqual(
-            result,
-            RunResult.OK,
-            f"Chyba při spouštění {self.solution.name} na sample.in",
+        pts, verdict = self.judge.evaluate(
+            self.solution, sample_in, sample_out, self.run_config
         )
-        self.assertTrue(
-            util.files_are_equal(output_file, sample_out),
-            f"Špatná odpověď řešení {self.solution.name} na sample.in",
+        self.assertEqual(
+            verdict.result,
+            RunResult.OK,
+            f"Chyba při spouštění {self.solution.name} na sample.in: {verdict}",
+        )
+        self.assertEqual(
+            pts,
+            1.0,
+            f"Špatná odpověď řešení {self.solution.name} na sample.in: {verdict}",
         )
 
     def get_expected_score(self) -> int:
@@ -263,7 +268,7 @@ class SolutionWorks(test_case.SolutionTestCase):
             # For example, the sample might contain tests which would not appear in the easy version
             self.test_passes_sample()
 
-        generate_outputs(self.solution, self.seeds, self.timeout)
+        generate_outputs(self.solution, self.seeds, self.run_config["timeout"])
 
         if self.solution.name != self.model_solution_name:
             score, diffs = self.get_score()
