@@ -10,9 +10,7 @@ from .. import util
 
 
 def cms_test_suite(
-    task_dir: str,
-    solutions: Optional[List[str]] = None,
-    timeout=util.DEFAULT_TIMEOUT,
+    task_dir: str, solutions: Optional[List[str]] = None, timeout=util.DEFAULT_TIMEOUT,
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -28,6 +26,6 @@ def cms_test_suite(
     suite = unittest.TestSuite()
     suite.addTest(test_case.ConfigIsValid(task_dir))
 
-    # TODO: implement actual tests
+    # generator = OfflineGenerator(task_dir, config.generator)
 
     return suite
