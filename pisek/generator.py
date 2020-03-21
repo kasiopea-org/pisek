@@ -5,7 +5,14 @@ from .program import Program
 from . import util
 
 
-class Generator(Program):
+class OnlineGenerator(Program):
+    """
+    A generator which is run "online" - new tests are generated
+    on request based on a seed and subtask.
+
+    We assume the generator outputs
+    """
+
     def generate(
         self,
         output_file: str,
@@ -35,3 +42,21 @@ class Generator(Program):
     ) -> bool:
         seed = random.randint(0, 16 ** 4 - 1)
         return self.generate(output_file, seed, subtask, timeout=timeout)
+
+
+class OfflineGenerator(Program):
+    """
+    A generator which is run "offline" - before the contest, to generate tests
+    which are common to all participants.
+
+    In this type of contests (non-opendata), the solution is run separately
+    for individual tests so we generate a separate file for each. We give
+    the generator a directory into which to generate outputs.
+    """
+
+    def generate(self, test_dir):
+        self.compile_if_needed()
+
+        result = subprocess.run([self.executable, test_dir])
+
+        return result.returncode == 0

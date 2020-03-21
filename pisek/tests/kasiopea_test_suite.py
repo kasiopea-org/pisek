@@ -9,7 +9,7 @@ from . import test_case
 from ..task_config import TaskConfig
 from .. import util
 from ..solution import Solution
-from ..generator import Generator
+from ..generator import OnlineGenerator
 from ..program import RunResult
 
 
@@ -320,7 +320,7 @@ def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
     suite.addTest(SampleExists(task_dir))
 
     seeds = [1, 2, 3, 10, 123]
-    generator = Generator(task_dir, config.generator)
+    generator = OnlineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator))
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
@@ -350,7 +350,7 @@ def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT
 
     suite = unittest.TestSuite()
     seeds = random.sample(range(0, 16 ** 4), n)
-    generator = Generator(task_dir, config.generator)
+    generator = OnlineGenerator(task_dir, config.generator)
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
     # Generate the gold data from the first (model/gold) solution
@@ -380,7 +380,7 @@ def generator_test_suite(task_dir):
 
     suite = unittest.TestSuite()
     seeds = [1, 2, 3, 10, 123]
-    generator = Generator(task_dir, config.generator)
+    generator = OnlineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator))
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
