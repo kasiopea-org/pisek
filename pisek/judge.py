@@ -67,8 +67,13 @@ class WhiteDiffJudge(Judge):
             )
 
         def white_diff(output_file: str):
-            correct_output = cast(str, correct_output)
-            if util.files_are_equal(output_file, correct_output):
+            correct_output_but_named_differently_because_of_damn_mypy_not_being_able_to_recognize_it_as_definitely_not_being_null = cast(
+                str, correct_output
+            )
+            if util.files_are_equal(
+                output_file,
+                correct_output_but_named_differently_because_of_damn_mypy_not_being_able_to_recognize_it_as_definitely_not_being_null,
+            ):
                 return 1.0, Verdict(RunResult.OK)
             else:
                 return 0.0, Verdict(RunResult.WRONG_ANSWER)
