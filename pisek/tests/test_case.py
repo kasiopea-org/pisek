@@ -3,7 +3,6 @@ import unittest
 
 from ..task_config import TaskConfig
 from ..solution import Solution
-from ..generator import Generator
 
 
 class TestCase(unittest.TestCase):
