@@ -10,13 +10,15 @@ solutions=solve solve_3b solve_slow_5b solve_0b
 
 [tests]
 in_mode=build
-in_gen=gen # generator source file
+# generator source file
+in_gen=gen
 
 out_format=text
 online_validity=360
 out_check=diff
 # out_check=judge
-# out_judge=judge_src # judge source file
+# # judge source file
+# out_judge=judge_src
 
 [test01]
 name=Subtask A

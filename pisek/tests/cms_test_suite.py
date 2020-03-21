@@ -10,6 +10,15 @@ from .. import util
 from ..generator import OfflineGenerator
 
 
+class GeneratorWorks(test_case.GeneratorTestCase):
+    def runTest(self):
+        data_dir = util.get_data_dir(self.task_dir)
+        self.assertTrue(
+            self.generator.generate(test_dir=data_dir),
+            f"Chyba při generování vstupu.",
+        )
+
+
 def cms_test_suite(
     task_dir: str, solutions: Optional[List[str]] = None, timeout=util.DEFAULT_TIMEOUT,
 ):
@@ -28,5 +37,6 @@ def cms_test_suite(
     suite.addTest(test_case.ConfigIsValid(task_dir))
 
     generator = OfflineGenerator(task_dir, config.generator)
+    suite.addTest(GeneratorWorks(task_dir, generator))
 
     return suite

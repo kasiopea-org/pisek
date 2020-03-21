@@ -5,7 +5,11 @@ from .program import Program
 from . import util
 
 
-class OnlineGenerator(Program):
+class Generator(Program):
+    pass
+
+
+class OnlineGenerator(Generator):
     """
     A generator which is run "online" - new tests are generated
     on request based on a seed and subtask.
@@ -44,7 +48,7 @@ class OnlineGenerator(Program):
         return self.generate(output_file, seed, subtask, timeout=timeout)
 
 
-class OfflineGenerator(Program):
+class OfflineGenerator(Generator):
     """
     A generator which is run "offline" - before the contest, to generate tests
     which are common to all participants.

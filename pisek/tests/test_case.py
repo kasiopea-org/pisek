@@ -3,7 +3,7 @@ import unittest
 
 from ..task_config import TaskConfig
 from ..solution import Solution
-
+from ..generator import Generator
 
 class TestCase(unittest.TestCase):
     def __init__(self, task_dir):
@@ -19,7 +19,7 @@ class SolutionTestCase(TestCase):
 
 
 class GeneratorTestCase(TestCase):
-    def __init__(self, task_dir, generator):
+    def __init__(self, task_dir, generator: Generator):
         super().__init__(task_dir)
         self.task_dir = task_dir
         self.generator = generator
