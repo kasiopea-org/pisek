@@ -55,7 +55,7 @@ def run_direct(executable: str, args: List[str] = []) -> RunResult:
 class Program:
     def __init__(self, task_dir: str, name: str) -> None:
         self.task_dir: str = task_dir
-        self.name: str = name
+        self.name: str = os.path.splitext(name)[0]
         self.executable: Optional[str] = None
 
     def compile(self) -> None:

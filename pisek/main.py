@@ -45,8 +45,8 @@ def test_solution(args):
     eprint(f"Testuji řešení: {args.solution}")
     cwd = os.getcwd()
 
-    suite = pisek.tests.solution_test_suite(
-        cwd, args.solution, args.number_of_tests, args.timeout
+    suite = pisek.tests.kasiopea_test_suite(
+        cwd, [args.solution], n_seeds=args.number_of_tests, timeout=args.timeout
     )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
@@ -56,7 +56,7 @@ def test_generator(args):
     eprint(f"Testuji generátor")
     cwd = os.getcwd()
 
-    suite = pisek.tests.generator_test_suite(cwd)
+    suite = pisek.tests.kasiopea_test_suite(cwd, solutions=[])
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
 

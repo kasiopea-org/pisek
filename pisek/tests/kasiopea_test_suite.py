@@ -296,24 +296,16 @@ class SolutionWorks(test_case.SolutionTestCase):
         )
 
 
-# used for adding a dependency to model solution
-# subsumed by SolutionWorks which is more general
-class SolutionOutputs(test_case.SolutionTestCase):
-    def __init__(self, task_dir, solution_name, seeds, timeout):
-        super().__init__(task_dir, solution_name)
-        self.seeds = seeds
-        self.timeout = timeout
-
-    def runTest(self):
-        self.solution.compile_if_needed()
-        generate_outputs(self.solution, self.seeds, self.timeout)
-
-
-def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
+def kasiopea_test_suite(
+    task_dir: str,
+    solutions: Optional[List[str]] = None,
+    n_seeds=5,
+    timeout=util.DEFAULT_TIMEOUT,
+):
     """
-    Tests the complete task:
-    all solutions, the generator,
-    config, sample inputs/outputs, etc.
+    Tests a task. Generates test cases using the generator, then runs each solution
+    in `solutions_to_test` (or all of them if `solutions == None`) and verifies
+    that they get the expected number of points.
     """
     config = TaskConfig(task_dir)
     # Make sure we don't have stale files. We run this after loading `config`
@@ -324,12 +316,26 @@ def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
     suite.addTest(ConfigIsValid(task_dir))
     suite.addTest(SampleExists(task_dir))
 
-    seeds = [1, 2, 3, 10, 123]
+    random.seed(4)  # Reproducibility!
+    seeds = random.sample(range(0, 16 ** 4), n_seeds)
+
     generator = OnlineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator))
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
-    for solution_name in config.solutions:
+    if solutions is None:
+        solutions = config.solutions
+
+    if not solutions:
+        # This might be desirable if we only want to test the generator
+        return suite
+
+    if solutions[0] != config.solutions[0]:
+        # Make sure that the model solution comes first even if we are not testing
+        # all of the solutions
+        solutions = [config.solutions[0]] + solutions
+
+    for solution_name in solutions:
         suite.addTest(
             SolutionWorks(
                 task_dir,
@@ -339,54 +345,3 @@ def kasiopea_test_suite(task_dir, timeout=util.DEFAULT_TIMEOUT):
                 timeout=timeout,
             )
         )
-
-    return suite
-
-
-def solution_test_suite(task_dir, solution_name, n, timeout=util.DEFAULT_TIMEOUT):
-    """
-    Tests _only_ the solution! (minimal test)
-    Cannot test the correctness of the first solver in config.
-    """
-    config = TaskConfig(task_dir)
-    # Make sure we don't have stale files. We run this after loading `config`
-    # to make sure `task_dir` is a valid task directory
-    clear_data_dir(task_dir)
-
-    suite = unittest.TestSuite()
-    seeds = random.sample(range(0, 16 ** 4), n)
-    generator = OnlineGenerator(task_dir, config.generator)
-    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
-
-    # Generate the gold data from the first (model/gold) solution
-    suite.addTest(SolutionOutputs(task_dir, config.solutions[0], seeds, timeout))
-
-    suite.addTest(
-        SolutionWorks(
-            task_dir,
-            solution_name,
-            model_solution_name=(config.solutions[0]),
-            seeds=seeds,
-            timeout=timeout,
-        )
-    )
-
-    return suite
-
-
-def generator_test_suite(task_dir):
-    """
-    Tests _only_ the generator!
-    """
-    config = TaskConfig(task_dir)
-    # Make sure we don't have stale files. We run this after loading `config`
-    # to make sure `task_dir` is a valid task directory
-    clear_data_dir(task_dir)
-
-    suite = unittest.TestSuite()
-    seeds = [1, 2, 3, 10, 123]
-    generator = OnlineGenerator(task_dir, config.generator)
-    suite.addTest(GeneratorWorks(task_dir, generator))
-    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
-
-    return suite
