@@ -51,6 +51,8 @@ def evaluate_offline(
 
 
 class WhiteDiffJudge(Judge):
+    """A standard judge that compares contestant's output to the correct output."""
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -82,6 +84,13 @@ class WhiteDiffJudge(Judge):
 
 
 class ExternalJudge(Judge):
+    """Runs an external judge on contestant's output (passing input and correct
+    output as arguments), returns the verdict provided by the judge.
+
+    The API is (a subset of) the one used in CMS:
+    https://cms.readthedocs.io/en/latest/Task%20types.html#tasktypes-standard-manager-output
+    """
+
     def __init__(self, judge: Program) -> None:
         super().__init__()
         self.judge: Program = judge
@@ -100,9 +109,24 @@ class ExternalJudge(Judge):
                 if correct_output is not None
                 else [input_file, output_file]
             )
-            self.judge.run_raw(
+            result = self.judge.run_raw(
                 args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            return 1.0, Verdict(RunResult.OK)
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"Judge selhal s chybovým kódem {result.returncode}. stdout: {result.stdout}, stderr: {result.stderr}"
+                )
+            pts_raw = result.stdout.decode().split("\n", 1)[0]
+            try:
+                pts = float(pts_raw)
+            except:
+                raise RuntimeError(f"Judge místo počtu bodů vypsal {result.stdout}")
+            if not (0 <= pts <= 1):
+                raise RuntimeError(
+                    f"Judge řešení udělil {pts} bodů, což je mimo povolený rozsah [0.0, 1.0]."
+                )
+            msg = result.stderr.decode().split("\n")[0]
+
+            return pts, Verdict(RunResult.OK, msg)
 
         return evaluate_offline(external_judge, solution, input_file, run_config)
