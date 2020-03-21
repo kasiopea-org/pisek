@@ -7,6 +7,7 @@ from typing import Optional, Tuple, Dict, List
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
+from ..generator import OfflineGenerator
 
 
 def cms_test_suite(
