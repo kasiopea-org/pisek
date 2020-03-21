@@ -41,9 +41,13 @@ class WhiteDiffJudge(Judge):
         self,
         solution: Solution,
         input_file: str,
-        correct_output: str,
+        correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
+        if correct_output is None:
+            raise RuntimeError(
+                "Cannot diff solution with correct output, because the output is not given"
+            )
         if run_config is None:
             run_config = {}
         res, output = solution.run_on_file(input_file, **run_config)
