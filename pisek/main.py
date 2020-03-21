@@ -3,7 +3,7 @@ import os
 import unittest
 import sys
 
-import pisek.tests
+from pisek.tests.test_case import get_test_suite
 from .util import DEFAULT_TIMEOUT
 from pisek.program import Program, RunResult
 from .task_config import TaskConfig
@@ -11,25 +11,6 @@ from .task_config import TaskConfig
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
-
-
-def get_test_suite(dir, **kwargs):
-    config = TaskConfig(dir)
-
-    suites_dict = {
-        "kasiopea": pisek.tests.kasiopea_test_suite,
-        "cms": pisek.tests.cms_test_suite,
-    }
-
-    try:
-        suite = suites_dict[config.contest_type](dir, **kwargs)
-    except KeyError:
-        raise KeyError(
-            f"Neznámý typ soutěže '{config.contest_type}'. "
-            f"Znám typy {list(suites_dict)}",
-        )
-
-    return suite
 
 
 def run_tests(args, full=False):
@@ -87,7 +68,7 @@ def test_generator(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", "-v", action="count", default=1)
+    parser.add_argument("--verbose", "-v", action="count", default=2)
     parser.add_argument(
         "--timeout",
         type=int,

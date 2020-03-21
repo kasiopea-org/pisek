@@ -9,7 +9,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]  
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
@@ -24,7 +24,7 @@ jobs:
         pip install -e .
     - name: Test Pisek itself
       run: |
-        python3 -m pisek.self_tests
+        ./self_tests.sh
     - name: Check formatting
       run: |
         pip install black

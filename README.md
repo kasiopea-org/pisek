@@ -66,5 +66,5 @@ pisek test generator
 Písek má i testy pro vývojáře, kterými se testuje samotný Písek.
 Ty se po instalaci dají spustit takto:
 ```
-python3 -m pisek.self_tests
+./self_tests.sh
 ```

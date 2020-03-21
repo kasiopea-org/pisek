@@ -5,64 +5,17 @@ pisek catches the problem.
 """
 import unittest
 import shutil
-import tempfile
 import os
-import io
 
-import pisek.tests
-
-
-class TestTask1(unittest.TestCase):
-    def setUp(self):
-        self.task_dir_orig = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../fixtures/soucet_kasiopea/")
-        )
-        self.task_dir = tempfile.mkdtemp()
-
-        # shutil.copytree() requires that the destination directory does not exist,
-        os.rmdir(self.task_dir)
-        shutil.copytree(self.task_dir_orig, self.task_dir)
-
-    def expecting_success(self):
-        return True
-
-    def modify_task(self):
-        # Code which modifies the task before running the tests should go here.
-        # For example, if we want to check that the presence of `sample.in` is
-        # correctly checked for, we would remove the file here.
-        pass
-
-    def runTest(self):
-        self.modify_task()
-        # We lower the timeout to make the self-tests run faster. The solutions
-        # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
-        # and we want to consider it a timeout
-        suite = pisek.tests.kasiopea_test_suite(self.task_dir, timeout=1)
-
-        # with open(os.devnull, "w") as devnull:
-        output = io.StringIO()
-        runner = unittest.TextTestRunner(stream=output, failfast=True)
-
-        result = runner.run(suite)
-
-        out = output.getvalue()
-        out = "\n".join([f"> {x}" for x in out.split("\n")])
-
-        self.assertEqual(
-            result.wasSuccessful(),
-            self.expecting_success(),
-            "Neočekávaný výsledek testu: test {}měl projít, ale {}prošel.".format(
-                "" if self.expecting_success() else "ne",
-                "" if result.wasSuccessful() else "ne",
-            )
-            + " Výstup testu:\n{}".format(out),
-        )
-
-    def tearDown(self):
-        shutil.rmtree(self.task_dir)
+from pisek.self_tests.util import TestFixtureVariant
 
 
-class TestMissingSampleIn(TestTask1):
+class TestSoucetKasiopea(TestFixtureVariant):
+    def fixture_path(self):
+        return "../../fixtures/soucet_kasiopea/"
+
+
+class TestMissingSampleIn(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -70,7 +23,7 @@ class TestMissingSampleIn(TestTask1):
         os.remove(os.path.join(self.task_dir, "sample.in"))
 
 
-class TestMissingSampleOut(TestTask1):
+class TestMissingSampleOut(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -78,7 +31,7 @@ class TestMissingSampleOut(TestTask1):
         os.remove(os.path.join(self.task_dir, "sample.out"))
 
 
-class TestWrongSampleOut(TestTask1):
+class TestWrongSampleOut(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -87,7 +40,7 @@ class TestWrongSampleOut(TestTask1):
             f.write("0\n")
 
 
-class TestMissingGenerator(TestTask1):
+class TestMissingGenerator(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -95,7 +48,7 @@ class TestMissingGenerator(TestTask1):
         os.remove(os.path.join(self.task_dir, "gen.cpp"))
 
 
-class TestBadGenerator(TestTask1):
+class TestBadGenerator(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -107,7 +60,7 @@ class TestBadGenerator(TestTask1):
             f.write("int main() { return 0; }\n")
 
 
-class TestPythonGenerator(TestTask1):
+class TestPythonGenerator(TestSoucetKasiopea):
     def expecting_success(self):
         return True
 
@@ -119,7 +72,7 @@ class TestPythonGenerator(TestTask1):
         )
 
 
-class TestNonHexaPythonGenerator(TestTask1):
+class TestNonHexaPythonGenerator(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -136,7 +89,7 @@ class TestNonHexaPythonGenerator(TestTask1):
             f.write("\n".join(new_program))
 
 
-class TestNonHexaGenerator(TestTask1):
+class TestNonHexaGenerator(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
@@ -156,7 +109,7 @@ class TestNonHexaGenerator(TestTask1):
             f.write("\n".join(new_program))
 
 
-class TestScoreCounting(TestTask1):
+class TestScoreCounting(TestSoucetKasiopea):
     def expecting_success(self):
         return False
 
