@@ -26,6 +26,6 @@ def cms_test_suite(
     suite = unittest.TestSuite()
     suite.addTest(test_case.ConfigIsValid(task_dir))
 
-    # generator = OfflineGenerator(task_dir, config.generator)
+    generator = OfflineGenerator(task_dir, config.generator)
 
     return suite

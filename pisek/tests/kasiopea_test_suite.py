@@ -297,6 +297,7 @@ def kasiopea_test_suite(
     random.seed(4)  # Reproducibility!
     seeds = random.sample(range(0, 16 ** 4), n_seeds)
 
+    generator = OnlineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator))
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
 
