@@ -77,3 +77,11 @@ class Program:
         self.compile_if_needed()
         assert self.executable is not None
         return run_direct(self.executable, args)
+
+    def run_raw(
+        self, program_args: List[str], *args, **kwargs
+    ) -> subprocess.CompletedProcess:
+        self.compile_if_needed()
+        assert self.executable is not None
+        program_args.insert(0, self.executable)
+        return subprocess.run(program_args, *args, **kwargs)
