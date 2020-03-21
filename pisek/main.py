@@ -6,17 +6,37 @@ import sys
 import pisek.tests
 from .util import DEFAULT_TIMEOUT
 from pisek.program import Program, RunResult
+from .task_config import TaskConfig
 
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def get_test_suite(dir, **kwargs):
+    config = TaskConfig(dir)
+
+    suites_dict = {
+        "kasiopea": pisek.tests.kasiopea_test_suite,
+        "cms": pisek.tests.cms_test_suite,
+    }
+
+    try:
+        suite = suites_dict[config.contest_type](dir, **kwargs)
+    except KeyError:
+        raise KeyError(
+            f"Neznámý typ soutěže '{config.contest_type}'. "
+            f"Znám typy {list(suites_dict)}",
+        )
+
+    return suite
+
+
 def run_tests(args, full=False):
     cwd = os.getcwd()
     eprint(f"Testuji úlohu {cwd}")
 
-    suite = pisek.tests.kasiopea_test_suite(cwd, timeout=args.timeout)
+    suite = get_test_suite(cwd, timeout=args.timeout)
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=not full)
     runner.run(suite)
@@ -45,8 +65,11 @@ def test_solution(args):
     eprint(f"Testuji řešení: {args.solution}")
     cwd = os.getcwd()
 
-    suite = pisek.tests.kasiopea_test_suite(
-        cwd, [args.solution], n_seeds=args.number_of_tests, timeout=args.timeout
+    suite = get_test_suite(
+        cwd,
+        solutions=[args.solution],
+        n_seeds=args.number_of_tests,
+        timeout=args.timeout,
     )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
@@ -56,7 +79,8 @@ def test_generator(args):
     eprint(f"Testuji generátor")
     cwd = os.getcwd()
 
-    suite = pisek.tests.kasiopea_test_suite(cwd, solutions=[])
+    suite = get_test_suite(cwd, solutions=[])
+
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
 

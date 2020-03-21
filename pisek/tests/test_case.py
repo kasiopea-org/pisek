@@ -1,4 +1,7 @@
+import os
 import unittest
+
+from ..task_config import TaskConfig
 from ..solution import Solution
 
 
@@ -20,3 +23,19 @@ class GeneratorTestCase(TestCase):
         super().__init__(task_dir)
         self.task_dir = task_dir
         self.generator = generator
+
+
+# Non-abstract test-cases common to multiple contest types.
+
+
+def assertFileExists(self, path):
+    self.assertTrue(
+        os.path.isfile(os.path.join(self.task_dir, path)),
+        f"Ve složce úlohy musí existovat soubor '{path}'",
+    )
+
+
+class ConfigIsValid(TestCase):
+    def runTest(self):
+        assertFileExists(self, "config")
+        TaskConfig(self.task_dir)

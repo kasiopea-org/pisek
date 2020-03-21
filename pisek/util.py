@@ -1,5 +1,6 @@
 import os
 import difflib
+import shutil
 from typing import Optional, Iterator
 
 from .compile import supported_extensions
@@ -112,3 +113,12 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     return "{}.{}.out".format(
         os.path.splitext(os.path.basename(input_file))[0], solution_name
     )
+
+
+def clear_data_dir(task_dir: str):
+    data_dir = get_data_dir(task_dir)
+    try:
+        shutil.rmtree(data_dir)
+    except FileNotFoundError:
+        pass
+    os.mkdir(data_dir)

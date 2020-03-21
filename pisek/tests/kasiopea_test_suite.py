@@ -1,11 +1,11 @@
 import unittest
 import os
 import re
-import shutil
 import random
 from typing import Optional, Tuple, Dict, List
 
 from . import test_case
+from .test_case import assertFileExists
 from ..task_config import TaskConfig
 from .. import util
 from ..solution import Solution
@@ -13,18 +13,6 @@ from ..generator import OnlineGenerator
 from ..program import RunResult
 from ..judge import WhiteDiffJudge
 
-
-def assertFileExists(self, path):
-    self.assertTrue(
-        os.path.isfile(os.path.join(self.task_dir, path)),
-        f"Ve složce úlohy musí existovat soubor '{path}'",
-    )
-
-
-class ConfigIsValid(test_case.TestCase):
-    def runTest(self):
-        assertFileExists(self, "config")
-        TaskConfig(self.task_dir)
 
 
 class SampleExists(test_case.TestCase):
@@ -80,15 +68,6 @@ def generate_outputs(
                 output_files.append(output_file)
 
     return output_files
-
-
-def clear_data_dir(task_dir: str):
-    data_dir = util.get_data_dir(task_dir)
-    try:
-        shutil.rmtree(data_dir)
-    except FileNotFoundError:
-        pass
-    os.mkdir(data_dir)
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
@@ -310,10 +289,10 @@ def kasiopea_test_suite(
     config = TaskConfig(task_dir)
     # Make sure we don't have stale files. We run this after loading `config`
     # to make sure `task_dir` is a valid task directory
-    clear_data_dir(task_dir)
+    util.clear_data_dir(task_dir)
 
     suite = unittest.TestSuite()
-    suite.addTest(ConfigIsValid(task_dir))
+    suite.addTest(test_case.ConfigIsValid(task_dir))
     suite.addTest(SampleExists(task_dir))
 
     random.seed(4)  # Reproducibility!
@@ -345,3 +324,5 @@ def kasiopea_test_suite(
                 timeout=timeout,
             )
         )
+
+    return suite

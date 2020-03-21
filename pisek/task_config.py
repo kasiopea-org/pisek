@@ -12,12 +12,8 @@ class TaskConfig:
             config.read(os.path.join(task_dir, CONFIG_FILENAME))
 
             self.solutions: List[str] = config["task"]["solutions"].split()
-
-            if "contest_type" in config["task"]:
-                self.contest_type = config["task"]["contest_type"]
-            else:
-                self.contest_type = "kasiopea"
-
+            self.contest_type = config["task"].get("contest_type", "kasiopea")
             self.generator: str = config["tests"]["in_gen"]
+
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
