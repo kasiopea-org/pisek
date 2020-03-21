@@ -3,10 +3,9 @@ import os
 import unittest
 import sys
 
-from pisek.tests.test_case import get_test_suite
+from pisek.tests.util import get_test_suite
 from .util import DEFAULT_TIMEOUT
 from pisek.program import Program, RunResult
-from .task_config import TaskConfig
 
 
 def eprint(*args, **kwargs):

@@ -20,7 +20,7 @@ class SolutionTestCase(TestCase):
 
 
 class GeneratorTestCase(TestCase):
-    def __init__(self, task_dir, generator: Generator):
+    def __init__(self, task_dir, generator):
         super().__init__(task_dir)
         self.task_dir = task_dir
         self.generator = generator
