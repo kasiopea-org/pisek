@@ -14,8 +14,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         data_dir = util.get_data_dir(self.task_dir)
         self.assertTrue(
-            self.generator.generate(test_dir=data_dir),
-            f"Chyba při generování vstupu.",
+            self.generator.generate(test_dir=data_dir), f"Chyba při generování vstupu.",
         )
 
 

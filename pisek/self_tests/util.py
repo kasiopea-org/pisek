@@ -7,7 +7,6 @@ from ..tests.util import get_test_suite
 
 
 class TestFixtureVariant(unittest.TestCase):
-
     def fixture_path(self):
         return None
 

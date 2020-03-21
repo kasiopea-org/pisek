@@ -2,6 +2,7 @@ from ..task_config import TaskConfig
 from .kasiopea_test_suite import kasiopea_test_suite
 from .cms_test_suite import cms_test_suite
 
+
 def get_test_suite(dir, **kwargs):
     config = TaskConfig(dir)
 
