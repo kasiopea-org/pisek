@@ -79,14 +79,21 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
     """
     # TODO: warning/error if there are multiple candidates
     extensions = supported_extensions()
+    candidates = []
     for ext in extensions:
         if os.path.isfile(os.path.join(path, name + ext)):
-            return name + ext
+            candidates.append(name + ext)
         if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
-            # Extension already present
-            return name
+            # Extension already present in `name`
+            candidates.append(name)
 
-    return None
+    if len(candidates) > 1:
+        raise RuntimeError(
+            f"Ve složce {path} existuje více řešení se stejným názvem: "
+            f"{', '.join(candidates)}"
+        )
+
+    return candidates[0] if candidates else None
 
 
 def get_data_dir(task_dir: str) -> str:
