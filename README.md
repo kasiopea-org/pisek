@@ -82,3 +82,7 @@ Po instalaci hooku budou odmítnuty commity, které neprojdou kontrolami.
 Pokud je z nějakého důvodu potřeba kontroly odignorovat, můžete použít
 `git commit --no-verify`.
 
+Pozor, nezapomeňte, že `check_all.sh` se dívá na soubory ve stavu, v jakém je
+máte vy, a ne na to, co budete skutečně commitovat. Pokud tedy něco opravíte a
+zapomenete změnu přidat do commitu, může skript seběhnout, ale pořád commitnete
+něco, co nefunguje.

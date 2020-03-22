@@ -20,14 +20,6 @@ class TestMissingGenerator(TestSoucetCMS):
         os.remove(os.path.join(self.task_dir, "gen.py"))
 
 
-class TestMissingGenerator(TestSoucetCMS):
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        os.remove(os.path.join(self.task_dir, "gen.py"))
-
-
 class TestGeneratorDoesNotCreateTests(TestSoucetCMS):
     def expecting_success(self):
         return False
