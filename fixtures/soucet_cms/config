@@ -23,14 +23,17 @@ out_check=diff
 [test01]
 name=Subtask A
 points=3
+in_globs=01*.in
 
 [test02]
 name=Subtask B
 points=2
+in_globs=02*.in
 
 [test03]
 name=Subtask C
 points=5
+in_globs=02*.in 03*.in
 
 [limits]
 # Time limit (seconds) for the model solution (first listed)

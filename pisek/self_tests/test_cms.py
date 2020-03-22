@@ -32,5 +32,17 @@ class TestGeneratorDoesNotCreateTests(TestSoucetCMS):
         )
 
 
+class TestMissingInputFilesForSubtask(TestSoucetCMS):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "gen.py"))
+        shutil.copy(
+            os.path.join(self.task_dir, "gen_incomplete.py"),
+            os.path.join(self.task_dir, "gen.py"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
