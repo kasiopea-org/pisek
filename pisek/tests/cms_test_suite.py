@@ -1,3 +1,4 @@
+import glob
 import unittest
 import os
 import re
@@ -16,6 +17,9 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         self.assertTrue(
             self.generator.generate(test_dir=data_dir), f"Chyba při generování vstupu.",
         )
+        test_files = glob.glob(os.path.join(data_dir, "*.in"))
+
+        self.assertTrue(test_files, "Generátor nevygeneroval žádné vstupní soubory")
 
     def __str__(self):
         return f"Generátor {self.generator.name} funguje"
