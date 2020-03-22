@@ -2,6 +2,7 @@ import subprocess
 from typing import Optional, Dict, Any, Tuple, Callable, cast
 from .program import RunResult, Program
 from .solution import Solution
+from .task_config import TaskConfig
 from . import util
 
 
@@ -32,6 +33,23 @@ class Judge:
         - `pts` is the number of points received, in the interval [0.0, 1.0].
         - `verdict` contains additional information about the verdict. """
         raise NotImplementedError()
+
+
+JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
+    "diff": lambda task_dir, task_config: WhiteDiffJudge(),
+    "judge": lambda task_dir, task_config: ExternalJudge(
+        Program(task_dir, cast(str, task_config.judge_name))
+    ),
+}
+
+
+def make_judge(task_dir: str, task_config: TaskConfig) -> Judge:
+    if task_config.judge_type not in JUDGES:
+        raise RuntimeError(
+            f"Úloha má neplatný typ judge: {task_config.judge_type}."
+            f"Podporované typy jsou: {' '.join(JUDGES.keys())}"
+        )
+    return JUDGES[task_config.judge_type](task_dir, task_config)
 
 
 def evaluate_offline(

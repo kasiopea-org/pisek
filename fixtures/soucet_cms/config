@@ -15,10 +15,9 @@ in_gen=gen
 
 out_format=text
 online_validity=360
-out_check=diff
-# out_check=judge
-# # judge source file
-# out_judge=judge_src
+out_check=judge
+# judge source file
+out_judge=judge
 
 [test01]
 name=Subtask A
