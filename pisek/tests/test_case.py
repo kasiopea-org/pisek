@@ -3,6 +3,7 @@ import unittest
 
 from ..task_config import TaskConfig
 from ..solution import Solution
+from .. import util
 
 
 class TestCase(unittest.TestCase):
@@ -42,3 +43,18 @@ class ConfigIsValid(TestCase):
 
     def __str__(self):
         return f"Konfigurace (config) je platná"
+
+
+class SampleExists(TestCase):
+    def runTest(self):
+        samples = util.get_samples(self.task_dir)
+        self.assertGreater(len(samples), 0, f"Ve složce s úlohou nejsou žádné samply")
+        for sample_in, sample_out in samples:
+            self.assertTrue(
+                os.path.isfile(sample_in),
+                f"Vzorový vstup neexistuje nebo není soubor: {sample_in}",
+            )
+            self.assertTrue(
+                os.path.isfile(sample_out),
+                f"Vzorový výstup neexistuje nebo není soubor: {sample_out}",
+            )

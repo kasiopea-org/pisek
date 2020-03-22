@@ -75,7 +75,7 @@ a typy rovnou, nainstalujte si pre-commit hook, který vše zkontroluje
 před tím, než něco commitnete:
 
 ```
-cp check_all.sh .git/hooks/pre-commit
+ln -s ../../check_all.sh .git/hooks/pre-commit
 ```
 
 Po instalaci hooku budou odmítnuty commity, které neprojdou kontrolami.

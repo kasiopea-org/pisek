@@ -1,7 +1,7 @@
 #!/bin/bash
 # Self-tests + formatting (black) + typechecks (mypy)
 # Install as a pre-commit hook to check automatically before committing:
-# cp check_all.sh .git/hooks/pre-commit
+# ln -s ../../check_all.sh .git/hooks/pre-commit
 
 set -e
 

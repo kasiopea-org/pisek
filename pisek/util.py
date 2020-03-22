@@ -1,7 +1,8 @@
 import os
 import difflib
+from glob import glob
 import shutil
-from typing import Optional, Iterator
+from typing import Optional, Iterator, List, Tuple
 
 from .compile import supported_extensions
 
@@ -99,6 +100,18 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
 def get_data_dir(task_dir: str) -> str:
     return os.path.join(task_dir, "data/")
+
+
+def get_samples(task_dir: str) -> List[Tuple[str, str]]:
+    """Returns the list [(sample1.in, sample1.out), …] in the given directory."""
+    ins = glob(os.path.join(task_dir, "sample*.in"))
+    outs = []
+    for i in ins:
+        out = os.path.splitext(i)[0] + ".out"
+        if not os.path.isfile(out):
+            raise RuntimeError(f"Ke vzorovému vstupu {i} neexistuje výstup {out}")
+        outs.append(out)
+    return list(zip(ins, outs))
 
 
 def get_input_name(seed: int, subtask: int) -> str:
