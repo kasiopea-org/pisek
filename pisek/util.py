@@ -1,10 +1,12 @@
 import os
+import re
 import difflib
 from glob import glob
 import shutil
 from typing import Optional, Iterator, List, Tuple
 
 from .compile import supported_extensions
+from .task_config import TaskConfig
 
 DEFAULT_TIMEOUT = 360
 
@@ -135,3 +137,19 @@ def clear_data_dir(task_dir: str):
     except FileNotFoundError:
         pass
     os.mkdir(data_dir)
+
+
+def get_expected_score(solution_name: str, config: TaskConfig) -> int:
+    """
+    solve -> 10 (assuming 10 is the maximum score)
+    solve_0b -> 0
+    solve_jirka_4b -> 4
+    """
+    matches = re.findall(r"_([0-9]{1,3})b$", solution_name)
+
+    if matches:
+        assert len(matches) == 1
+        score = int(matches[0])
+        return score
+    else:
+        return config.get_maximum_score()

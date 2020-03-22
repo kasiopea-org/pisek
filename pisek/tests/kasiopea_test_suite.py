@@ -162,13 +162,14 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(self, task_dir, solution_name, model_solution_name, seeds, timeout):
+    def __init__(self, task_dir, solution_name, seeds, timeout, config: TaskConfig):
         super().__init__(task_dir, solution_name)
-        self.model_solution_name = model_solution_name
+        self.model_solution_name = config.solutions[0]
         self.seeds = seeds
         self.run_config = {"timeout": timeout}
         self.expected_score = None
         self.judge = WhiteDiffJudge()
+        self.config = config
 
     def test_passes_sample(self):
         sample_in = os.path.join(self.task_dir, "sample.in")
@@ -186,25 +187,6 @@ class SolutionWorks(test_case.SolutionTestCase):
             1.0,
             f"Špatná odpověď řešení {self.solution.name} na sample.in: {verdict}",
         )
-
-    def get_expected_score(self) -> int:
-        """
-        solve -> 10
-        solve_0b -> 0
-        solve_jirka_4b -> 4
-        """
-        matches = re.findall(r"_([0-9]{1,2})b$", self.solution.name)
-        if matches:
-            assert len(matches) == 1
-            score = int(matches[0])
-            self.assertIn(
-                score,
-                [0, 4, 6, 10],
-                f"Řešení {self.solution.name} by mělo získat {score} bodů, což nelze",
-            )
-            return score
-        else:
-            return 10
 
     def get_score(self) -> Tuple[int, Dict[int, Tuple[int, str]]]:
         data_dir = util.get_data_dir(self.task_dir)
@@ -249,7 +231,7 @@ class SolutionWorks(test_case.SolutionTestCase):
 
     def runTest(self):
         self.solution.compile()
-        self.expected_score = self.get_expected_score()
+        self.expected_score = util.get_expected_score(self.solution.name, self.config)
         if self.expected_score == 10:
             # Solutions which don't pass one of the subtasks might not even pass the samples.
             # For example, the sample might contain tests which would not appear in the easy version
@@ -284,7 +266,7 @@ class SolutionWorks(test_case.SolutionTestCase):
 
     def __str__(self):
         return "Řešení {} získá {}b".format(
-            self.solution.name, self.get_expected_score()
+            self.solution.name, util.get_expected_score(self.solution.name, self.config)
         )
 
 
@@ -330,11 +312,7 @@ def kasiopea_test_suite(
     for solution_name in solutions:
         suite.addTest(
             SolutionWorks(
-                task_dir,
-                solution_name,
-                model_solution_name=(config.solutions[0]),
-                seeds=seeds,
-                timeout=timeout,
+                task_dir, solution_name, seeds=seeds, timeout=timeout, config=config,
             )
         )
 
