@@ -78,7 +78,7 @@ class WhiteDiffJudge(Judge):
             ):
                 return 1.0, Verdict(RunResult.OK)
             else:
-                return 0.0, Verdict(RunResult.WRONG_ANSWER)
+                return 0.0, Verdict(RunResult.OK)
 
         return evaluate_offline(white_diff, solution, input_file, run_config)
 

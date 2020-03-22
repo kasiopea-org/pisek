@@ -8,11 +8,13 @@ from . import compile
 
 
 class RunResult(Enum):
+    """Represents the way the program execution ended. Specially, a program
+    that finished successfully, but got Wrong Answer, still gets the OK
+    RunResult."""
+
     OK = 0
     NONZERO_EXIT_CODE = 1
     TIMEOUT = 2
-    WRONG_ANSWER = 3
-    # ^ cannot be returned by run(), is returned by the judge
 
 
 def run(
