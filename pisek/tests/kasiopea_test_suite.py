@@ -19,6 +19,9 @@ class SampleExists(test_case.TestCase):
         assertFileExists(self, "sample.in")
         assertFileExists(self, "sample.out")
 
+    def __str__(self):
+        return f"Existuje ukázkový vstup a výstup"
+
 
 def generate_checked(
     case: test_case.GeneratorTestCase,
@@ -136,6 +139,9 @@ class GeneratorWorks(test_case.GeneratorTestCase):
                 f"Generování {'těžké' if (subtask == 2) else 'lehké'} verze není deterministické",
             )
 
+    def __str__(self):
+        return f"Generátor {self.generator.name} funguje (je deterministický etc.)"
+
 
 class GeneratesInputs(test_case.GeneratorTestCase):
     def __init__(self, task_dir, generator, seeds):
@@ -150,6 +156,9 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         for subtask in [1, 2]:
             for seed in self.seeds:
                 generate_checked(self, seed, subtask)
+
+    def __str__(self):
+        return f"Generátor {self.generator.name} vygeneruje vstupy"
 
 
 class SolutionWorks(test_case.SolutionTestCase):
@@ -271,6 +280,11 @@ class SolutionWorks(test_case.SolutionTestCase):
             self.expected_score,
             f"Řešení {self.solution.name} mělo získat {self.expected_score}b,"
             f" ale získalo {score}b\n{formatted_diffs}",
+        )
+
+    def __str__(self):
+        return "Řešení {} získá {}b".format(
+            self.solution.name, self.get_expected_score()
         )
 
 

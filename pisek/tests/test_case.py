@@ -39,3 +39,6 @@ class ConfigIsValid(TestCase):
     def runTest(self):
         assertFileExists(self, "config")
         TaskConfig(self.task_dir)
+
+    def __str__(self):
+        return f"Konfigurace (config) je platná"

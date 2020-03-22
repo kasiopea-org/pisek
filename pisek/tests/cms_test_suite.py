@@ -17,6 +17,9 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             self.generator.generate(test_dir=data_dir), f"Chyba při generování vstupu.",
         )
 
+    def __str__(self):
+        return f"Generátor {self.generator.name} funguje"
+
 
 def cms_test_suite(
     task_dir: str, solutions: Optional[List[str]] = None, timeout=util.DEFAULT_TIMEOUT,
