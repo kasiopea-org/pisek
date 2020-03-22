@@ -1,7 +1,7 @@
 import configparser
 import os
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 CONFIG_FILENAME = "config"
 
@@ -21,6 +21,10 @@ class TaskConfig:
             self.solutions: List[str] = config["task"]["solutions"].split()
             self.contest_type = config["task"].get("contest_type", "kasiopea")
             self.generator: str = config["tests"]["in_gen"]
+            self.judge_type: str = config["tests"].get("out_check", "diff")
+            self.judge_name: Optional[str] = None
+            if self.judge_type == "judge":
+                self.judge_name = config["tests"]["out_judge"]
 
             self.subtasks: Dict[int, SubtaskConfig] = {}
             for section_name in config.sections():

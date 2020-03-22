@@ -9,7 +9,7 @@ from . import test_case
 from ..task_config import TaskConfig
 from .. import util
 from ..generator import OfflineGenerator
-from ..judge import ExternalJudge
+from ..judge import ExternalJudge, make_judge
 from ..program import Program, RunResult
 
 
@@ -52,7 +52,8 @@ class SolutionWorks(test_case.SolutionTestCase):
     def __init__(self, task_dir, solution_name, timeout):
         super().__init__(task_dir, solution_name)
         self.run_config = {"timeout": timeout}
-        self.judge = ExternalJudge(Program(self.task_dir, "judge"))
+        self.task_config = TaskConfig(self.task_dir)
+        self.judge = make_judge(self.task_dir, self.task_config)
 
     def runTest(self):
         # TODO: get correct judge based on the config
