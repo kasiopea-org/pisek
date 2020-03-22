@@ -61,10 +61,24 @@ Podobně jdou také otestovat malé změny generátoru pomocí
 pisek test generator
 ```
 
-## Testování
+## Vývoj
 
 Písek má i testy pro vývojáře, kterými se testuje samotný Písek.
 Ty se po instalaci dají spustit takto:
 ```
 ./self_tests.sh
 ```
+
+Naše CI kontroluje i [formátování kódu](https://github.com/psf/black))
+a [typy](http://mypy-lang.org/). Abyste odchytili problémy s formátováním
+a typy rovnou, nainstalujte si pre-commit hook, který vše zkontroluje
+před tím, než něco commitnete:
+
+```
+cp check_all.sh .git/hooks/pre-commit
+```
+
+Po instalaci hooku budou odmítnuty commity, které neprojdou kontrolami.
+Pokud je z nějakého důvodu potřeba kontroly odignorovat, můžete použít
+`git commit --no-verify`.
+
