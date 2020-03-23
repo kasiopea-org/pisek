@@ -11,8 +11,7 @@ class Solution(program.Program):
     ) -> Tuple[program.RunResult, Optional[str]]:
         """ Runs the solution and stores the output in a reasonably named file in data/ """
         data_dir = util.get_data_dir(self.task_dir)
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
+        os.makedirs(data_dir, exist_ok=True)
 
         output_filename = util.get_output_name(input_file, solution_name=self.name)
         output_file = os.path.join(data_dir, output_filename)

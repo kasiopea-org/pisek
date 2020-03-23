@@ -105,8 +105,8 @@ def compile(filepath: str, dry_run: bool = False) -> Optional[str]:
     dirname, _ = os.path.split(filepath)
 
     path_to_build = util.get_build_dir(dirname)
-    if not dry_run and not os.path.exists(path_to_build):
-        os.mkdir(path_to_build)
+    if not dry_run:
+        os.makedirs(path_to_build, exist_ok=True)
 
     _, file_extension = os.path.splitext(filepath)
 

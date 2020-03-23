@@ -138,8 +138,8 @@ def get_output_name(input_file: str, solution_name: str) -> str:
 
 def _clean_subdirs(task_dir: str, subdirs: List[str]):
     config = TaskConfig(task_dir)
-    if config is None:
-        raise RuntimeError(f"Nepodařilo se načíst konfiguraci pro složku {task_dir}")
+    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
+    # directory
     for subdir in subdirs:
         full = os.path.join(task_dir, subdir)
         try:
