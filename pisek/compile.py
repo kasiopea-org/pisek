@@ -2,6 +2,7 @@ import subprocess
 import os
 import shutil
 from typing import Dict, List, Optional, Tuple
+from . import util
 
 
 class CompileRules:
@@ -30,7 +31,8 @@ class PythonCompileRules(CompileRules):
 
     def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        result_filepath = os.path.join(dirname, "build", filename)
+        build_dir = util.get_build_dir(dirname)
+        result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
 
@@ -61,7 +63,8 @@ class CPPCompileRules(CompileRules):
 
     def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        result_filepath = os.path.join(dirname, "build", filename)
+        build_dir = util.get_build_dir(dirname)
+        result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
 
@@ -101,7 +104,7 @@ def compile(filepath: str, dry_run: bool = False) -> Optional[str]:
     filepath = os.path.abspath(filepath)
     dirname, _ = os.path.split(filepath)
 
-    path_to_build = os.path.join(dirname, "build")
+    path_to_build = util.get_build_dir(dirname)
     if not dry_run and not os.path.exists(path_to_build):
         os.mkdir(path_to_build)
 

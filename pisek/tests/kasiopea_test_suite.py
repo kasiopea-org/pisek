@@ -56,9 +56,6 @@ def generate_outputs(
     """
     output_files = []
     data_dir = util.get_data_dir(solution.task_dir)
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-
     for subtask in [1, 2]:
         for seed in seeds:
             path = os.path.join(data_dir, util.get_input_name(seed, subtask))
@@ -80,9 +77,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
     def generate_any(self):
         data_dir = util.get_data_dir(self.task_dir)
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
         for subtask in [1, 2]:
             filename = generate_checked(self, seed=1, subtask=subtask)
 
@@ -100,9 +94,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         #   (hexadecimal or otherwise), maybe we should test that more thoroughly
 
         data_dir = util.get_data_dir(self.task_dir)
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
         zero_filename = generate_checked(self, seed=0, subtask=1)
 
         hexa = int("0xFF", 16)
@@ -115,9 +106,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
     def test_is_deterministic(self, N=20, seed=1):
         data_dir = util.get_data_dir(self.task_dir)
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
         for subtask in [1, 2]:
             filenames = [
                 generate_checked(
@@ -150,9 +138,6 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
     def runTest(self):
         data_dir = util.get_data_dir(self.task_dir)
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
         for subtask in [1, 2]:
             for seed in self.seeds:
                 generate_checked(self, seed, subtask)
@@ -282,9 +267,7 @@ def kasiopea_test_suite(
     that they get the expected number of points.
     """
     config = TaskConfig(task_dir)
-    # Make sure we don't have stale files. We run this after loading `config`
-    # to make sure `task_dir` is a valid task directory
-    util.clear_data_dir(task_dir)
+    util.clean_data_dir(task_dir)
 
     suite = unittest.TestSuite()
     suite.addTest(test_case.ConfigIsValid(task_dir))

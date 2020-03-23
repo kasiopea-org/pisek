@@ -89,9 +89,7 @@ def cms_test_suite(
     """
 
     config = TaskConfig(task_dir)
-    # Make sure we don't have stale files. We run this after loading `config`
-    # to make sure `task_dir` is a valid task directory
-    util.clear_data_dir(task_dir)
+    util.clean_data_dir(task_dir)
 
     suite = unittest.TestSuite()
     suite.addTest(test_case.ConfigIsValid(task_dir))

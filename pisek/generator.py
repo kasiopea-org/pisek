@@ -1,5 +1,6 @@
 import subprocess
 import random
+import os
 
 from .program import Program
 from . import util
@@ -24,6 +25,9 @@ class OnlineGenerator(Program):
         self.compile_if_needed()
         assert self.executable is not None
 
+        output_dir = os.path.dirname(output_file)
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
         with open(output_file, "w") as outp:
             difficulty = str(subtask)
             hexa_seed = f"{seed:x}"
@@ -56,6 +60,8 @@ class OfflineGenerator(Program):
 
     def generate(self, test_dir):
         self.compile_if_needed()
+        if not os.path.exists(test_dir):
+            os.mkdir(test_dir)
 
         result = subprocess.run([self.executable, test_dir])
 

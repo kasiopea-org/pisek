@@ -9,6 +9,8 @@ from .compile import supported_extensions
 from .task_config import TaskConfig
 
 DEFAULT_TIMEOUT = 360
+BUILD_DIR = "build/"
+DATA_DIR = "data/"
 
 
 def files_are_equal(file_a: str, file_b: str) -> bool:
@@ -101,7 +103,11 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
 
 def get_data_dir(task_dir: str) -> str:
-    return os.path.join(task_dir, "data/")
+    return os.path.join(task_dir, DATA_DIR)
+
+
+def get_build_dir(task_dir: str) -> str:
+    return os.path.join(task_dir, BUILD_DIR)
 
 
 def get_samples(task_dir: str) -> List[Tuple[str, str]]:
@@ -130,13 +136,24 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     )
 
 
-def clear_data_dir(task_dir: str):
-    data_dir = get_data_dir(task_dir)
-    try:
-        shutil.rmtree(data_dir)
-    except FileNotFoundError:
-        pass
-    os.mkdir(data_dir)
+def _clean_subdirs(task_dir: str, subdirs: List[str]):
+    config = TaskConfig(task_dir)
+    if config is None:
+        raise RuntimeError(f"Nepodařilo se načíst konfiguraci pro složku {task_dir}")
+    for subdir in subdirs:
+        full = os.path.join(task_dir, subdir)
+        try:
+            shutil.rmtree(full)
+        except FileNotFoundError:
+            pass
+
+
+def clean_data_dir(task_dir: str):
+    return _clean_subdirs(task_dir, [DATA_DIR])
+
+
+def clean_task_dir(task_dir: str):
+    return _clean_subdirs(task_dir, [DATA_DIR, BUILD_DIR])
 
 
 def get_expected_score(solution_name: str, config: TaskConfig) -> int:

@@ -6,6 +6,7 @@ import sys
 from pisek.tests.util import get_test_suite
 from .util import DEFAULT_TIMEOUT
 from pisek.program import Program, RunResult
+from pisek import util
 
 
 def eprint(*args, **kwargs):
@@ -65,6 +66,12 @@ def test_generator(args):
     runner.run(suite)
 
 
+def clean_directory(args):
+    task_dir = os.getcwd()
+    eprint(f"Čistím složku: {task_dir}")
+    util.clean_task_dir(task_dir)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v", action="count", default=2)
@@ -93,6 +100,8 @@ def main():
         "--number-of-tests", "-n", type=int, default=10, help="počet testů"
     )
 
+    parser_clean = subparsers.add_parser("clean", help="vyčisti")
+
     args, unknown_args = parser.parse_known_args()
     if args.subcommand == "run":
         run_solution(args, unknown_args)
@@ -106,6 +115,8 @@ def main():
             test_generator(args)
         else:
             assert False
+    elif args.subcommand == "clean":
+        clean_directory(args)
     elif args.subcommand is None:
 
         run_tests(args, full=False)
