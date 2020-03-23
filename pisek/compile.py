@@ -10,14 +10,16 @@ class CompileRules:
     def __init__(self, supported_extensions: List[str]) -> None:
         self.supported = supported_extensions
 
-    def compile(self, filepath: str) -> Optional[str]:
+    def compile(self, filepath: str, dry_run: bool = False) -> Optional[str]:
         """ Takes a `filepath` and either:
-        - returns the path to the executable (str) or
+        - compiles it and returns the path to the executable (str) or
         - returns None if an error occurred
+        If dry_run is True, returns the path to the would-be executable and does nothing.
         """
         raise NotImplementedError
 
-    def _chmod_exec(self, filepath: str) -> None:
+    @staticmethod
+    def _chmod_exec(filepath: str) -> None:
         st = os.stat(filepath)
         os.chmod(filepath, st.st_mode | 0o111)
 
@@ -26,9 +28,11 @@ class PythonCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str) -> Optional[str]:
+    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         result_filepath = os.path.join(dirname, "build", filename)
+        if dry_run:
+            return result_filepath
 
         if not self.valid_shebang(filepath):
             raise RuntimeError(f"{filename} má neplatný shebang")
@@ -37,7 +41,8 @@ class PythonCompileRules(CompileRules):
         self._chmod_exec(result_filepath)
         return result_filepath
 
-    def valid_shebang(self, filepath: str) -> bool:
+    @staticmethod
+    def valid_shebang(filepath: str) -> bool:
         """ Check if file has shebang and if the shebang is valid """
 
         with open(filepath, "r") as f:
@@ -54,9 +59,11 @@ class CPPCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str) -> Optional[str]:
+    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         result_filepath = os.path.join(dirname, "build", filename)
+        if dry_run:
+            return result_filepath
 
         cpp_flags = ["-std=c++14", "-O2", "-Wall", "-Wshadow"]
         gpp = subprocess.run(["g++", filepath, "-o", result_filepath] + cpp_flags)
@@ -87,7 +94,7 @@ def _split_path(filepath: str) -> Tuple[str, str, str]:
     return dirname, filename, file_extension
 
 
-def compile(filepath: str) -> Optional[str]:
+def compile(filepath: str, dry_run: bool = False) -> Optional[str]:
     # asserts that filepath is a valid path
 
     # make the path absolute
@@ -95,13 +102,13 @@ def compile(filepath: str) -> Optional[str]:
     dirname, _ = os.path.split(filepath)
 
     path_to_build = os.path.join(dirname, "build")
-    if not os.path.exists(path_to_build):
+    if not dry_run and not os.path.exists(path_to_build):
         os.mkdir(path_to_build)
 
     _, file_extension = os.path.splitext(filepath)
 
     for compile_rule in COMPILE_RULES:
         if file_extension in compile_rule.supported:
-            return compile_rule.compile(filepath)
+            return compile_rule.compile(filepath, dry_run)
 
     return None

@@ -59,21 +59,44 @@ class Program:
         self.task_dir: str = task_dir
         self.name: str = os.path.splitext(name)[0]
         self.executable: Optional[str] = None
+        basename: Optional[str] = util.resolve_extension(self.task_dir, self.name)
+        self.filename: Optional[str] = os.path.join(
+            self.task_dir, basename
+        ) if basename is not None else None
 
     def compile(self) -> None:
-        filename = util.resolve_extension(self.task_dir, self.name)
-        if filename is None:
+        if self.filename is None:
             raise RuntimeError(
-                f"Program {self.name} ve složce {self.task_dir} neexistuje"
+                f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
             )
-        self.executable = compile.compile(os.path.join(self.task_dir, filename))
+        self.executable = compile.compile(self.filename)
         if self.executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
 
     def compile_if_needed(self) -> None:
-        # TODO: we could avoid recompiling if the binary exists and is fresh
-        if not self.executable:
-            self.compile()
+        # XXX: Only checks for mtime, so may refuse to recompile even if needed (e. g., the CFLAGS changed).
+        if self.executable:
+            return
+
+        if self.filename is None:
+            raise RuntimeError(
+                f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
+            )
+        executable = compile.compile(self.filename, True)
+        if executable is None:
+            raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
+
+        mtime = os.path.getmtime
+        exists = os.path.exists
+        if (
+            exists(executable)
+            and exists(self.filename)
+            and mtime(executable) > mtime(self.filename)
+        ):
+            self.executable = executable
+            return
+
+        self.compile()
 
     def run(self, args: List[str] = []) -> RunResult:
         self.compile_if_needed()
