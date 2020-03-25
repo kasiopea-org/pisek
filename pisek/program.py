@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import Optional, List
+from typing import Optional, List, Any
 from enum import Enum
 
 from . import util
@@ -104,7 +104,7 @@ class Program:
         return run_direct(self.executable, args)
 
     def run_raw(
-        self, program_args: List[str], *args, **kwargs
+        self, program_args: List[str], *args: Any, **kwargs: Any
     ) -> subprocess.CompletedProcess:
         self.compile_if_needed()
         assert self.executable is not None

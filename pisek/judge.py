@@ -7,11 +7,11 @@ from . import util
 
 
 class Verdict:
-    def __init__(self, run_result, msg=None) -> None:
+    def __init__(self, run_result: RunResult, msg: Optional[str] = None) -> None:
         self.result: RunResult = run_result
-        self.msg: str = msg
+        self.msg: Optional[str] = msg
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Verdict(result={self.result}, msg={self.msg})"
 
 
@@ -86,14 +86,10 @@ class WhiteDiffJudge(Judge):
                 "Cannot diff solution with correct output, because the output is not given"
             )
 
-        def white_diff(output_file: str):
-            correct_output_but_named_differently_because_of_damn_mypy_not_being_able_to_recognize_it_as_definitely_not_being_null = cast(
-                str, correct_output
-            )
-            if util.files_are_equal(
-                output_file,
-                correct_output_but_named_differently_because_of_damn_mypy_not_being_able_to_recognize_it_as_definitely_not_being_null,
-            ):
+        def white_diff(output_file: str) -> Tuple[float, Verdict]:
+            assert correct_output is not None
+
+            if util.files_are_equal(output_file, correct_output):
                 return 1.0, Verdict(RunResult.OK)
             else:
                 return 0.0, Verdict(RunResult.OK)
@@ -120,7 +116,7 @@ class ExternalJudge(Judge):
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
-        def external_judge(output_file: str):
+        def external_judge(output_file: str) -> Tuple[float, Verdict]:
             # TODO: impose limits
             args = (
                 [input_file, correct_output, output_file]
@@ -128,7 +124,7 @@ class ExternalJudge(Judge):
                 else [input_file, output_file]
             )
             result = self.judge.run_raw(
-                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             if result.returncode != 0:
                 raise RuntimeError(

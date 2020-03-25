@@ -57,10 +57,11 @@ class OfflineGenerator(Program):
     the generator a directory into which to generate outputs.
     """
 
-    def generate(self, test_dir):
+    def generate(self, test_dir: str) -> bool:
         self.compile_if_needed()
         os.makedirs(test_dir, exist_ok=True)
 
+        assert self.executable is not None
         result = subprocess.run([self.executable, test_dir])
 
         return result.returncode == 0

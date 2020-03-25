@@ -136,7 +136,7 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     )
 
 
-def _clean_subdirs(task_dir: str, subdirs: List[str]):
+def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
     config = TaskConfig(task_dir)
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory
@@ -148,11 +148,11 @@ def _clean_subdirs(task_dir: str, subdirs: List[str]):
             pass
 
 
-def clean_data_dir(task_dir: str):
+def clean_data_dir(task_dir: str) -> None:
     return _clean_subdirs(task_dir, [DATA_DIR])
 
 
-def clean_task_dir(task_dir: str):
+def clean_task_dir(task_dir: str) -> None:
     return _clean_subdirs(task_dir, [DATA_DIR, BUILD_DIR])
 
 
