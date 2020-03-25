@@ -45,14 +45,16 @@ class TaskConfig:
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
 
-    def get_maximum_score(self):
+    def get_maximum_score(self) -> int:
         return sum([subtask.score for subtask in self.subtasks.values()])
 
 
 class SubtaskConfig:
-    def __init__(self, contest_type, config_section):
-        self.name = config_section.get("name", None)
-        self.score = int(config_section["points"])
+    def __init__(
+        self, contest_type: str, config_section: configparser.SectionProxy
+    ) -> None:
+        self.name: Optional[str] = config_section.get("name", None)
+        self.score: int = int(config_section["points"])
 
         if contest_type == "cms":
-            self.in_globs = config_section["in_globs"].split()
+            self.in_globs: List[str] = config_section["in_globs"].split()
