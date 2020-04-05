@@ -54,7 +54,7 @@ class SolutionWorks(test_case.SolutionTestCase):
         super().__init__(task_dir, solution_name)
         self.run_config = {"timeout": timeout}
         self.task_config = TaskConfig(self.task_dir)
-        self.judge = make_judge(self.task_dir, self.task_config)
+        self.judge: Judge = make_judge(self.task_dir, self.task_config)
 
     def test_passes_samples(self):
         for sample_in, sample_out in util.get_samples(self.task_dir):
@@ -91,6 +91,17 @@ class SolutionWorks(test_case.SolutionTestCase):
                 run_config=self.run_config,
             )
 
+            result_chars = {
+                RunResult.TIMEOUT: "T",
+                RunResult.NONZERO_EXIT_CODE: "!",
+            }
+            if verdict.result == RunResult.OK:
+                c = "." if pts == 1 else "W" if pts == 0 else "P"
+            else:
+                c = result_chars[verdict.result]
+
+            self.log(c, end="")
+
             judge_score = min(judge_score, pts)
 
             if judge_score == 0:
@@ -110,11 +121,14 @@ class SolutionWorks(test_case.SolutionTestCase):
             self.test_passes_samples()
 
         score = 0
-        for subtask in self.task_config.subtasks:
+        for i, subtask in enumerate(self.task_config.subtasks):
+            self.log("|", end="")
             max_subtask_score = self.task_config.subtasks[subtask].score
             judge_score = self.get_subtask_score(subtask)
             score += judge_score * max_subtask_score
+        self.log("| ", end="")
 
+        # TODO: document this somewhere
         score = round(score)
 
         # TODO: add diffs

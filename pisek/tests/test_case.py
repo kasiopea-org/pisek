@@ -1,4 +1,5 @@
 import os
+import sys
 import unittest
 
 from ..task_config import TaskConfig
@@ -10,6 +11,10 @@ class TestCase(unittest.TestCase):
     def __init__(self, task_dir):
         super().__init__()
         self.task_dir = task_dir
+
+    def log(self, msg, *args, **kwargs):
+        print(msg, file=sys.stderr, *args, **kwargs)
+        sys.stderr.flush()
 
 
 class SolutionTestCase(TestCase):
