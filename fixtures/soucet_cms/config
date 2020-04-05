@@ -6,7 +6,7 @@ tests=3
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
-solutions=solve solve_3b solve_slow_5b solve_0b
+solutions=solve solve_3b solve_slow_4b solve_0b
 
 [tests]
 in_mode=build
@@ -21,7 +21,7 @@ out_judge=judge
 
 [test01]
 name=Subtask A
-points=3
+points=2
 in_globs=01*.in
 
 [test02]
@@ -31,7 +31,7 @@ in_globs=02*.in
 
 [test03]
 name=Subtask C
-points=5
+points=6
 in_globs=02*.in 03*.in
 
 [limits]

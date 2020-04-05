@@ -33,8 +33,5 @@ int main(int argc, char** argv) {
 	if (contestant == abs(a) + abs(b))
 		verdict(0.5, "|OK|");
 
-	if (contestant == (int)a + (int)b)
-		verdict(0.1, "int");
-
 	verdict(0.0, "WA");
 }

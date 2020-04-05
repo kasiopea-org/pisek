@@ -228,6 +228,7 @@ class SolutionWorks(test_case.SolutionTestCase):
             score, diffs = self.get_score()
         else:
             # Maximum score and no diffs by definition
+            # TODO: this might not hold with a judge (if the judge is bad)
             score = 10
             diffs = None
 
@@ -263,7 +264,7 @@ def kasiopea_test_suite(
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
-    in `solutions_to_test` (or all of them if `solutions == None`) and verifies
+    in `solutions` (or all of them if `solutions == None`) and verifies
     that they get the expected number of points.
     """
     config = TaskConfig(task_dir)

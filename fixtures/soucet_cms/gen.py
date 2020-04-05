@@ -10,6 +10,8 @@ os.makedirs(test_dir, exist_ok=True)
 POSITIVE_ONLY = [True, False, False]
 MAX_ABS = [int(1e9), int(1e9), int(1e18)]
 
+random.seed(123)
+
 for subtask_i, (positive_only, max_abs) in enumerate(zip(POSITIVE_ONLY, MAX_ABS)):
     for ti in range(5):
         a = random.randint(-max_abs, max_abs)
