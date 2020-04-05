@@ -7,7 +7,7 @@ import unittest
 import shutil
 import os
 
-from pisek.self_tests.util import TestFixtureVariant
+from pisek.self_tests.util import TestFixtureVariant, overwrite_file
 
 
 class TestSoucetKasiopea(TestFixtureVariant):
@@ -65,11 +65,7 @@ class TestPythonGenerator(TestSoucetKasiopea):
         return True
 
     def modify_task(self):
-        os.remove(os.path.join(self.task_dir, "gen.cpp"))
-        shutil.copy(
-            os.path.join(self.task_dir, "gen_2.py"),
-            os.path.join(self.task_dir, "gen.py"),
-        )
+        overwrite_file(self.task_dir, "gen.cpp", "gen_2.py", new_file_name="gen.py")
 
 
 class TestNonHexaPythonGenerator(TestSoucetKasiopea):
@@ -114,10 +110,8 @@ class TestScoreCounting(TestSoucetKasiopea):
         return False
 
     def modify_task(self):
-        os.remove(os.path.join(self.task_dir, "solve_0b.py"))
-        shutil.copy(
-            os.path.join(self.task_dir, "solve_4b.cpp"),
-            os.path.join(self.task_dir, "solve_0b.cpp"),
+        overwrite_file(
+            self.task_dir, "solve_0b.py", "solve_4b.cpp", new_file_name="solve_0b.cpp"
         )
 
 
