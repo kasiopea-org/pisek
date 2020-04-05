@@ -83,7 +83,6 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
     If a name with a valid extension is given, it is returned unchanged
     """
-    # TODO: warning/error if there are multiple candidates
     extensions = supported_extensions()
     candidates = []
     for ext in extensions:

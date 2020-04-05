@@ -40,6 +40,7 @@ JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
     "judge": lambda task_dir, task_config: ExternalJudge(
         Program(task_dir, cast(str, task_config.judge_name))
     ),
+    "ok": lambda task_dir, task_config: OKJudge(),
 }
 
 
@@ -144,3 +145,31 @@ class ExternalJudge(Judge):
             return pts, Verdict(RunResult.OK, msg)
 
         return evaluate_offline(external_judge, solution, input_file, run_config)
+
+
+class OKJudge(Judge):
+    """A judge that checks if the output is "OK". Useful for checkers."""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def evaluate(
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[float, Verdict]:
+        """if correct_output is not None:
+            raise RuntimeError(
+                "AssertOK judge expects correct_output to be set to None"
+            )"""
+
+        def check_ok(output_file: str) -> Tuple[float, Verdict]:
+            with open(output_file, "r") as f:
+                out = f.read()
+            if out.strip() != "OK":
+                return 0.0, Verdict(RunResult.OK, msg=out)
+            return 1.0, Verdict(RunResult.OK)
+
+        return evaluate_offline(check_ok, solution, input_file, run_config)

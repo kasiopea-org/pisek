@@ -49,12 +49,13 @@ class PythonCompileRules(CompileRules):
 
         with open(filepath, "r") as f:
             first_line = f.readline()
-            if not first_line.startswith("#!"):
-                return False
 
-            # TODO: check if the shebang is proper,
-            #       i.e. /usr/bin/env python
-            return True
+        if not first_line.startswith("#!"):
+            return False
+
+        # TODO: check if the shebang is proper,
+        #       i.e. /usr/bin/env python
+        return True
 
 
 class CPPCompileRules(CompileRules):
