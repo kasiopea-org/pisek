@@ -40,7 +40,7 @@ class TestFixtureVariant(unittest.TestCase):
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
         # and we want to consider it a timeout
-        suite = get_test_suite(self.task_dir, timeout=1)
+        suite = get_test_suite(self.task_dir, timeout=1, in_self_test=True)
 
         # with open(os.devnull, "w") as devnull:
         output = io.StringIO()

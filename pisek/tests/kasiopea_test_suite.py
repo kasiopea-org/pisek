@@ -261,6 +261,7 @@ def kasiopea_test_suite(
     solutions: Optional[List[str]] = None,
     n_seeds=5,
     timeout=util.DEFAULT_TIMEOUT,
+    in_self_test=False,
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
