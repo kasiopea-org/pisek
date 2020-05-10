@@ -38,6 +38,7 @@ class OnlineGenerator(Program):
                 timeout=timeout,
             )
 
+            # TODO: return a CompletedProcess to be consistent with OfflineGenerator
             return result.returncode == 0
 
     def generate_random(
@@ -57,11 +58,11 @@ class OfflineGenerator(Program):
     the generator a directory into which to generate outputs.
     """
 
-    def generate(self, test_dir: str) -> bool:
+    def generate(self, test_dir: str) -> subprocess.CompletedProcess:
         self.compile_if_needed()
         os.makedirs(test_dir, exist_ok=True)
 
         assert self.executable is not None
-        result = subprocess.run([self.executable, test_dir])
+        result = subprocess.run([self.executable, test_dir], capture_output=True)
 
-        return result.returncode == 0
+        return result

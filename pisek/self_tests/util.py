@@ -66,3 +66,11 @@ class TestFixtureVariant(unittest.TestCase):
             return
 
         shutil.rmtree(self.task_dir)
+
+
+def overwrite_file(task_dir, old_file, new_file, new_file_name=None):
+    os.remove(os.path.join(task_dir, old_file))
+    shutil.copy(
+        os.path.join(task_dir, new_file),
+        os.path.join(task_dir, new_file_name or old_file),
+    )
