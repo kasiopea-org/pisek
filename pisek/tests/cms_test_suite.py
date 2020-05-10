@@ -26,23 +26,28 @@ def inputs_for_subtask(subtask: int, task_dir: str, config: TaskConfig):
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
-    def __init__(self, task_dir, generator, config: TaskConfig):
+    def __init__(self, task_dir, generator: OfflineGenerator, config: TaskConfig):
         super().__init__(task_dir, generator)
         self.config = config
 
     def runTest(self):
         data_dir = util.get_data_dir(self.task_dir)
+        result = self.generator.generate(test_dir=data_dir)
+        generator_output = f"stdout: {result.stdout}.\nstderr: {result.stderr}"
         self.assertTrue(
-            self.generator.generate(test_dir=data_dir), f"Chyba při generování vstupu.",
+            result.returncode == 0, f"Chyba při generování vstupu.\n{generator_output}",
         )
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
-        self.assertTrue(test_files, "Generátor nevygeneroval žádné vstupní soubory")
+        self.assertTrue(
+            test_files,
+            f"Generátor nevygeneroval žádné vstupní soubory\n{generator_output}",
+        )
 
         for subtask in self.config.subtasks:
             self.assertTrue(
                 inputs_for_subtask(subtask, self.task_dir, self.config),
-                f"Chybí vstupní soubory pro subtask {subtask}",
+                f"Chybí vstupní soubory pro subtask {subtask}.\n{generator_output}",
             )
 
     def __str__(self):
@@ -133,10 +138,7 @@ class SolutionWorks(test_case.SolutionTestCase):
 
 
 def cms_test_suite(
-    task_dir: str,
-    solutions: Optional[List[str]] = None,
-    timeout=util.DEFAULT_TIMEOUT,
-    **kwargs,
+    task_dir: str, solutions: Optional[List[str]] = None, timeout=None,
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -146,6 +148,11 @@ def cms_test_suite(
 
     config = TaskConfig(task_dir)
     util.clean_data_dir(task_dir)
+
+    if timeout is None:
+        timeout = config.timeout_other_solutions
+
+    timeout_model_solution = config.timeout_model_solution or timeout
 
     suite = unittest.TestSuite()
     suite.addTest(test_case.ConfigIsValid(task_dir))
@@ -166,7 +173,8 @@ def cms_test_suite(
         # all of the solutions
         solutions = [config.solutions[0]] + solutions
 
-    for solution_name in solutions:
-        suite.addTest(SolutionWorks(task_dir, solution_name, timeout=timeout))
+    for i, solution_name in enumerate(solutions):
+        cur_timeout = timeout_model_solution if i == 0 else timeout
+        suite.addTest(SolutionWorks(task_dir, solution_name, timeout=cur_timeout))
 
     return suite

@@ -1,7 +1,7 @@
 import configparser
 import os
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TypeVar, Callable
 
 CONFIG_FILENAME = "config"
 
@@ -25,6 +25,13 @@ class TaskConfig:
             self.judge_name: Optional[str] = None
             if self.judge_type == "judge":
                 self.judge_name = config["tests"]["out_judge"]
+
+            self.timeout_model_solution: Optional[float] = apply_to_optional(
+                config.get("limits", "solve_time_limit", fallback=None), float
+            )
+            self.timeout_other_solutions: Optional[float] = apply_to_optional(
+                config.get("limits", "sec_solve_time_limit", fallback=None), float
+            )
 
             self.subtasks: Dict[int, SubtaskConfig] = {}
             for section_name in config.sections():
@@ -58,3 +65,11 @@ class SubtaskConfig:
 
         if contest_type == "cms":
             self.in_globs: List[str] = config_section["in_globs"].split()
+
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def apply_to_optional(value: Optional[T], f: Callable[[T], U]) -> Optional[U]:
+    return None if value is None else f(value)

@@ -48,7 +48,12 @@ class ConfigIsValid(TestCase):
 class SampleExists(TestCase):
     def runTest(self):
         samples = util.get_samples(self.task_dir)
-        self.assertGreater(len(samples), 0, f"Ve složce s úlohou nejsou žádné samply")
+        self.assertGreater(
+            len(samples),
+            0,
+            "Ve složce s úlohou nejsou žádné samply "
+            "(soubory tvaru sample*.in s odpovídajícím sample*.out)",
+        )
         for sample_in, sample_out in samples:
             self.assertTrue(
                 os.path.isfile(sample_in),

@@ -4,7 +4,6 @@ import unittest
 import sys
 
 from pisek.tests.util import get_test_suite
-from .util import DEFAULT_TIMEOUT
 from pisek.program import Program, RunResult
 from pisek import util
 
@@ -76,10 +75,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v", action="count", default=2)
     parser.add_argument(
-        "--timeout",
-        type=int,
-        default=DEFAULT_TIMEOUT,
-        help="po kolika sekundách ukončit běžící řešení",
+        "--timeout", type=int, help="po kolika sekundách ukončit běžící řešení",
     )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
@@ -118,7 +114,6 @@ def main():
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand is None:
-
         run_tests(args, full=False)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")

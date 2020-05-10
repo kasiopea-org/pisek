@@ -124,8 +124,10 @@ class ExternalJudge(Judge):
                 if correct_output is not None
                 else [input_file, output_file]
             )
+
+            timeout = None if run_config is None else run_config.get("timeout")
             result = self.judge.run_raw(
-                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
             )
             if result.returncode != 0:
                 raise RuntimeError(
