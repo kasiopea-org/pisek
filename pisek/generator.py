@@ -63,6 +63,8 @@ class OfflineGenerator(Program):
         os.makedirs(test_dir, exist_ok=True)
 
         assert self.executable is not None
-        result = subprocess.run([self.executable, test_dir], capture_output=True)
+        result = subprocess.run(
+            [self.executable, test_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
         return result
