@@ -117,3 +117,7 @@ def main():
         run_tests(args, full=False)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
+
+
+if __name__ == "__main__":
+    main()
