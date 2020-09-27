@@ -38,7 +38,10 @@ class Judge:
 JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
     "diff": lambda task_dir, task_config: WhiteDiffJudge(),
     "judge_cms": lambda task_dir, task_config: CMSExternalJudge(
-        Program(task_dir, cast(str, task_config.judge_name))
+        Program(task_dir, str(task_config.judge_name))
+    ),
+    "judge_kasiopea": lambda task_dir, task_config: KasiopeaExternalJudge(
+        Program(task_dir, str(task_config.judge_name))
     ),
     "ok": lambda task_dir, task_config: OKJudge(),
 }
@@ -182,5 +185,49 @@ class OKJudge(Judge):
         return evaluate_offline(check_ok, solution, input_file, run_config)
 
 
-class KasiopeaJudge(Judge):
-    """An external judge for Kasiopea"""
+class KasiopeaExternalJudge(Judge):
+    """Runs an external judge on contestant's output (passing input and correct
+    output as arguments), returns the verdict provided by the judge.
+
+    Uses Kasiopea's API (file names passed in environment variables)
+    """
+
+    def __init__(self, judge: Program) -> None:
+        super().__init__()
+        self.judge: Program = judge
+
+    def evaluate(
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[float, Verdict]:
+        def external_judge(output_file: str) -> Tuple[float, Verdict]:
+
+            # TODO: impose limits
+            args = (
+                [input_file, correct_output, output_file]
+                if correct_output is not None
+                else [input_file, output_file]
+            )
+
+            timeout = None if run_config is None else run_config.get("timeout")
+            with open(output_file, "r") as contestant_f:
+                result = self.judge.run_raw(
+                    args,
+                    stdin=contestant_f,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout,
+                    env={"TEST_INPUT": input_file, "TEST_OUTPUT": correct_output},
+                )
+
+            if result.returncode not in [0, 1]:
+                raise RuntimeError(
+                    f"Judge selhal s chybovým kódem {result.returncode}. stdout: {result.stdout}, stderr: {result.stderr}"
+                )
+
+            return float(1 - result.returncode), Verdict(RunResult.OK)
+
+        return evaluate_offline(external_judge, solution, input_file, run_config)

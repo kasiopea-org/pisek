@@ -1,8 +1,11 @@
+import configparser
 import io
 import os
 import shutil
 import tempfile
 import unittest
+
+from .. import task_config
 from ..tests.util import get_test_suite
 
 
@@ -27,9 +30,11 @@ class TestFixtureVariant(unittest.TestCase):
         return True
 
     def modify_task(self):
-        # Code which modifies the task before running the tests should go here.
-        # For example, if we want to check that the presence of `sample.in` is
-        # correctly checked for, we would remove the file here.
+        """
+        Code which modifies the task before running the tests should go here.
+        For example, if we want to check that the presence of `sample.in` is
+        correctly checked for, we would remove the file here.
+        """
         pass
 
     def runTest(self):
@@ -74,3 +79,26 @@ def overwrite_file(task_dir, old_file, new_file, new_file_name=None):
         os.path.join(task_dir, new_file),
         os.path.join(task_dir, new_file_name or old_file),
     )
+
+
+def modify_config(task_dir: str, modification_fn):
+    """
+    `modification_fn` accepts the config (in "raw" ConfigParser format) and may
+    modify it. The modified version is then saved.
+
+    For example, if we want to change the evaluation method ("out_check")
+    from `diff` to `judge`, we would do that in `modification_fn` via:
+        config["tests"]["out_check"] = "judge"
+        config["tests"]["out_judge"] = "judge"  # To specify the judge program file
+    """
+
+    config = configparser.ConfigParser()
+    config_path = os.path.join(task_dir, task_config.CONFIG_FILENAME)
+    read_files = config.read(config_path)
+    if not read_files:
+        raise FileNotFoundError(f"Chybí konfigurační soubor {config_path}.")
+
+    modification_fn(config)
+
+    with open(config_path, "w") as f:
+        config.write(f)
