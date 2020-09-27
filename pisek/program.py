@@ -60,9 +60,9 @@ class Program:
         self.name: str = os.path.splitext(name)[0]
         self.executable: Optional[str] = None
         basename: Optional[str] = util.resolve_extension(self.task_dir, self.name)
-        self.filename: Optional[str] = os.path.join(
-            self.task_dir, basename
-        ) if basename is not None else None
+        self.filename: Optional[str] = (
+            os.path.join(self.task_dir, basename) if basename is not None else None
+        )
 
     def compile(self) -> None:
         if self.filename is None:

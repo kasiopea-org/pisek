@@ -75,7 +75,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v", action="count", default=2)
     parser.add_argument(
-        "--timeout", type=int, help="po kolika sekundách ukončit běžící řešení",
+        "--timeout",
+        type=int,
+        help="po kolika sekundách ukončit běžící řešení",
     )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")

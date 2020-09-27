@@ -12,7 +12,7 @@ class CompileRules:
         self.supported = supported_extensions
 
     def compile(self, filepath: str, dry_run: bool = False) -> Optional[str]:
-        """ Takes a `filepath` and either:
+        """Takes a `filepath` and either:
         - compiles it and returns the path to the executable (str) or
         - returns None if an error occurred
         If dry_run is True, returns the path to the would-be executable and does nothing.

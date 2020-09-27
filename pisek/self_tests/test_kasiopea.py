@@ -7,7 +7,7 @@ import unittest
 import shutil
 import os
 
-from pisek.self_tests.util import TestFixtureVariant, overwrite_file
+from pisek.self_tests.util import TestFixtureVariant, overwrite_file, modify_config
 
 
 class TestSoucetKasiopea(TestFixtureVariant):
@@ -113,6 +113,30 @@ class TestScoreCounting(TestSoucetKasiopea):
         overwrite_file(
             self.task_dir, "solve_0b.py", "solve_4b.cpp", new_file_name="solve_0b.cpp"
         )
+
+
+class TestJudge(TestSoucetKasiopea):
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["out_check"] = "judge"
+            raw_config["tests"]["out_judge"] = "judge"
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestBadJudge(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["out_check"] = "judge"
+            raw_config["tests"]["out_judge"] = "judge_bad"
+
+        modify_config(self.task_dir, modification_fn)
 
 
 if __name__ == "__main__":
