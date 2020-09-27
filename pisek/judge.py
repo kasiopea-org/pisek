@@ -22,11 +22,11 @@ class Judge:
         pass
 
     def evaluate(
-            self,
-            solution: Solution,
-            input_file: str,
-            correct_output: Optional[str],
-            run_config: Optional[Dict[str, Any]] = None,
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         """Runs the solution on the given input. Returns the pair (pts,
         verdict), where:
@@ -59,10 +59,10 @@ def make_judge(task_dir: str, task_config: TaskConfig) -> Judge:
 
 
 def evaluate_offline(
-        judge_fn: Callable[[str], Tuple[float, Verdict]],
-        solution: Solution,
-        input_file: str,
-        run_config: Optional[Dict[str, Any]] = None,
+    judge_fn: Callable[[str], Tuple[float, Verdict]],
+    solution: Solution,
+    input_file: str,
+    run_config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[float, Verdict]:
     if run_config is None:
         run_config = {}
@@ -81,11 +81,11 @@ class WhiteDiffJudge(Judge):
         super().__init__()
 
     def evaluate(
-            self,
-            solution: Solution,
-            input_file: str,
-            correct_output: Optional[str],
-            run_config: Optional[Dict[str, Any]] = None,
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         if correct_output is None:
             raise RuntimeError(
@@ -116,11 +116,11 @@ class CMSExternalJudge(Judge):
         self.judge: Program = judge
 
     def evaluate(
-            self,
-            solution: Solution,
-            input_file: str,
-            correct_output: Optional[str],
-            run_config: Optional[Dict[str, Any]] = None,
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         def external_judge(output_file: str) -> Tuple[float, Verdict]:
             # TODO: impose limits
@@ -161,11 +161,11 @@ class OKJudge(Judge):
         super().__init__()
 
     def evaluate(
-            self,
-            solution: Solution,
-            input_file: str,
-            correct_output: Optional[str],
-            run_config: Optional[Dict[str, Any]] = None,
+        self,
+        solution: Solution,
+        input_file: str,
+        correct_output: Optional[str],
+        run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         """if correct_output is not None:
             raise RuntimeError(
