@@ -11,7 +11,7 @@ from . import test_case
 from ..task_config import TaskConfig
 from .. import util
 from ..generator import OfflineGenerator
-from ..judge import ExternalJudge, make_judge, Judge
+from ..judge import CMSExternalJudge, make_judge, Judge
 from ..program import Program, RunResult
 
 

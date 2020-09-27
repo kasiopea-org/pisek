@@ -22,11 +22,11 @@ class Judge:
         pass
 
     def evaluate(
-        self,
-        solution: Solution,
-        input_file: str,
-        correct_output: Optional[str],
-        run_config: Optional[Dict[str, Any]] = None,
+            self,
+            solution: Solution,
+            input_file: str,
+            correct_output: Optional[str],
+            run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         """Runs the solution on the given input. Returns the pair (pts,
         verdict), where:
@@ -37,7 +37,7 @@ class Judge:
 
 JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
     "diff": lambda task_dir, task_config: WhiteDiffJudge(),
-    "judge": lambda task_dir, task_config: ExternalJudge(
+    "judge_cms": lambda task_dir, task_config: CMSExternalJudge(
         Program(task_dir, cast(str, task_config.judge_name))
     ),
     "ok": lambda task_dir, task_config: OKJudge(),
@@ -45,19 +45,24 @@ JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
 
 
 def make_judge(task_dir: str, task_config: TaskConfig) -> Judge:
-    if task_config.judge_type not in JUDGES:
+    judge_type = task_config.judge_type
+
+    if judge_type == "judge":
+        judge_type += "_" + task_config.contest_type
+
+    if judge_type not in JUDGES:
         raise RuntimeError(
             f"Úloha má neplatný typ judge: {task_config.judge_type}."
             f"Podporované typy jsou: {' '.join(JUDGES.keys())}"
         )
-    return JUDGES[task_config.judge_type](task_dir, task_config)
+    return JUDGES[judge_type](task_dir, task_config)
 
 
 def evaluate_offline(
-    judge_fn: Callable[[str], Tuple[float, Verdict]],
-    solution: Solution,
-    input_file: str,
-    run_config: Optional[Dict[str, Any]] = None,
+        judge_fn: Callable[[str], Tuple[float, Verdict]],
+        solution: Solution,
+        input_file: str,
+        run_config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[float, Verdict]:
     if run_config is None:
         run_config = {}
@@ -76,11 +81,11 @@ class WhiteDiffJudge(Judge):
         super().__init__()
 
     def evaluate(
-        self,
-        solution: Solution,
-        input_file: str,
-        correct_output: Optional[str],
-        run_config: Optional[Dict[str, Any]] = None,
+            self,
+            solution: Solution,
+            input_file: str,
+            correct_output: Optional[str],
+            run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         if correct_output is None:
             raise RuntimeError(
@@ -98,7 +103,7 @@ class WhiteDiffJudge(Judge):
         return evaluate_offline(white_diff, solution, input_file, run_config)
 
 
-class ExternalJudge(Judge):
+class CMSExternalJudge(Judge):
     """Runs an external judge on contestant's output (passing input and correct
     output as arguments), returns the verdict provided by the judge.
 
@@ -111,11 +116,11 @@ class ExternalJudge(Judge):
         self.judge: Program = judge
 
     def evaluate(
-        self,
-        solution: Solution,
-        input_file: str,
-        correct_output: Optional[str],
-        run_config: Optional[Dict[str, Any]] = None,
+            self,
+            solution: Solution,
+            input_file: str,
+            correct_output: Optional[str],
+            run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         def external_judge(output_file: str) -> Tuple[float, Verdict]:
             # TODO: impose limits
@@ -156,11 +161,11 @@ class OKJudge(Judge):
         super().__init__()
 
     def evaluate(
-        self,
-        solution: Solution,
-        input_file: str,
-        correct_output: Optional[str],
-        run_config: Optional[Dict[str, Any]] = None,
+            self,
+            solution: Solution,
+            input_file: str,
+            correct_output: Optional[str],
+            run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         """if correct_output is not None:
             raise RuntimeError(
@@ -175,3 +180,7 @@ class OKJudge(Judge):
             return 1.0, Verdict(RunResult.OK)
 
         return evaluate_offline(check_ok, solution, input_file, run_config)
+
+
+class KasiopeaJudge(Judge):
+    """An external judge for Kasiopea"""
