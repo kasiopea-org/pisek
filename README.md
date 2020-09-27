@@ -7,7 +7,12 @@ Nástroj na přípravu úloh do programátorských soutěží, primárně pro so
 
 Nainstaluj Python 3.6+ a použij nástroj `pip`:
 ```
-pip3 install --user  git+https://github.com/kasiopea-org/pisek
+pip3 install --user git+https://github.com/kasiopea-org/pisek
+```
+
+Pokud už Písek máš a chceš ho aktualizovat, přidej `--upgrade`:
+```
+pip3 install --user git+https://github.com/kasiopea-org/pisek --upgrade
 ```
 
 ## Použití
