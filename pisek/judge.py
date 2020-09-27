@@ -31,7 +31,7 @@ class Judge:
         """Runs the solution on the given input. Returns the pair (pts,
         verdict), where:
         - `pts` is the number of points received, in the interval [0.0, 1.0].
-        - `verdict` contains additional information about the verdict. """
+        - `verdict` contains additional information about the verdict."""
         raise NotImplementedError()
 
 
@@ -135,7 +135,10 @@ class CMSExternalJudge(Judge):
 
             timeout = None if run_config is None else run_config.get("timeout")
             result = self.judge.run_raw(
-                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
             )
             if result.returncode != 0:
                 raise RuntimeError(
@@ -171,9 +174,9 @@ class OKJudge(Judge):
         run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         """if correct_output is not None:
-            raise RuntimeError(
-                "AssertOK judge expects correct_output to be set to None"
-            )"""
+        raise RuntimeError(
+            "AssertOK judge expects correct_output to be set to None"
+        )"""
 
         def check_ok(output_file: str) -> Tuple[float, Verdict]:
             with open(output_file, "r") as f:

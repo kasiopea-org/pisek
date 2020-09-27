@@ -36,7 +36,8 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         result = self.generator.generate(test_dir=data_dir)
         generator_output = f"stdout: {result.stdout}.\nstderr: {result.stderr}"
         self.assertTrue(
-            result.returncode == 0, f"Chyba při generování vstupu.\n{generator_output}",
+            result.returncode == 0,
+            f"Chyba při generování vstupu.\n{generator_output}",
         )
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
@@ -88,7 +89,8 @@ class SolutionWorks(test_case.SolutionTestCase):
         judge_score = 1.0
         for input_file in inputs:
             model_output_filename = util.get_output_name(
-                input_file, solution_name=model_solution_name,
+                input_file,
+                solution_name=model_solution_name,
             )
 
             pts, verdict = self.judge.evaluate(
