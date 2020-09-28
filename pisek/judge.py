@@ -231,6 +231,11 @@ class KasiopeaExternalJudge(Judge):
                     f"Judge selhal s chybovým kódem {result.returncode}. stdout: {result.stdout}, stderr: {result.stderr}"
                 )
 
-            return float(1 - result.returncode), Verdict(RunResult.OK)
+            return float(1 - result.returncode), Verdict(
+                RunResult.OK,
+                msg=f"stdout: {result.stdout}, stderr: {result.stderr}"
+                if result.returncode == 1
+                else None,
+            )
 
         return evaluate_offline(external_judge, solution, input_file, run_config)

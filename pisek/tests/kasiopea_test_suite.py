@@ -1,8 +1,8 @@
 import unittest
 import os
-import re
 import random
 from typing import Optional, Tuple, Dict, List
+import itertools
 
 from . import test_case
 from .test_case import assertFileExists
@@ -12,7 +12,6 @@ from ..solution import Solution
 from ..generator import OnlineGenerator
 from ..program import RunResult
 from .. import judge
-from ..judge import WhiteDiffJudge
 
 
 class SampleExists(test_case.TestCase):
@@ -187,27 +186,39 @@ class SolutionWorks(test_case.SolutionTestCase):
         for subtask_score, subtask in [(4, 1), (6, 2)]:
             ok = True
             for seed in self.seeds:
+                input_filename = util.get_input_name(seed, subtask)
                 output_filename = util.get_output_name(
-                    util.get_input_name(seed, subtask), solution_name=self.solution.name
+                    input_filename, solution_name=self.solution.name
                 )
                 model_output_filename = util.get_output_name(
-                    util.get_input_name(seed, subtask),
+                    input_filename,
                     solution_name=self.model_solution_name,
                 )
+
+                input_file = os.path.join(data_dir, input_filename)
                 output_file = os.path.join(data_dir, output_filename)
                 model_output_file = os.path.join(data_dir, model_output_filename)
 
-                if not util.files_are_equal(output_file, model_output_file):
+                pts, verdict = self.judge.evaluate(
+                    self.solution, input_file, model_output_file, self.run_config
+                )
+
+                if pts == 0:
                     ok = False
 
                     diffs[seed] = (
                         subtask,
+                        f"Výstup judge: {verdict.msg or ''}\n" +
                         "".join(
-                            util.diff_files(
-                                model_output_file,
-                                output_file,
-                                "správné řešení",
-                                f"řešení solveru '{self.solution.name}'",
+                            itertools.islice(
+                                util.diff_files(
+                                    model_output_file,
+                                    output_file,
+                                    "správné řešení",
+                                    f"řešení solveru '{self.solution.name}'",
+                                ),
+                                0,
+                                25,
                             )
                         ),
                     )
