@@ -50,6 +50,7 @@ def test_solution(args):
         solutions=[args.solution],
         n_seeds=args.number_of_tests,
         timeout=args.timeout,
+        only_necessary=True,
     )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     runner.run(suite)
@@ -78,6 +79,7 @@ def main():
         "--timeout",
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
+        default=util.DEFAULT_TIMEOUT,
     )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
@@ -96,6 +98,12 @@ def main():
     )
     parser_test.add_argument(
         "--number-of-tests", "-n", type=int, default=10, help="počet testů"
+    )
+    parser_test.add_argument(
+        "--timeout",
+        type=int,
+        help="po kolika sekundách ukončit běžící řešení",
+        default=util.DEFAULT_TIMEOUT,
     )
 
     parser_clean = subparsers.add_parser("clean", help="vyčisti")
