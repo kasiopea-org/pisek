@@ -10,6 +10,7 @@ pisek = "pisek.__main__:main"
 [tool.poetry.dependencies]
 python = "^3.6"
 tqdm = "^4.50.0"
+setuptools = "^50.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
