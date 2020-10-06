@@ -41,6 +41,14 @@ def assertFileExists(self, path):
     )
 
 
+# Assumes that the file already exists!
+def assertFileNotEmpty(self, path):
+    self.assertTrue(
+        os.path.getsize(os.path.join(self.task_dir, path)) > 0,
+        f"Ve složce úlohy musí být neprázdný soubor '{path}'",
+    )
+
+
 class ConfigIsValid(TestCase):
     def runTest(self):
         assertFileExists(self, "config")

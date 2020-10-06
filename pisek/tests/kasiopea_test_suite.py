@@ -7,7 +7,7 @@ import itertools
 import tqdm
 
 from . import test_case
-from .test_case import assertFileExists
+from .test_case import assertFileExists, assertFileNotEmpty
 from ..judge import Verdict
 from ..task_config import TaskConfig
 from .. import util
@@ -24,6 +24,15 @@ class SampleExists(test_case.TestCase):
 
     def __str__(self):
         return f"Existuje ukázkový vstup a výstup"
+
+
+class SampleNotEmpty(test_case.TestCase):
+    def runTest(self):
+        assertFileNotEmpty(self, "sample.in")
+        assertFileNotEmpty(self, "sample.out")
+
+    def __str__(self):
+        return f"Ukázkový vstup a výstup je neprázdný"
 
 
 def generate_checked(
@@ -322,6 +331,7 @@ def kasiopea_test_suite(
     if not only_necessary:
         suite.addTest(test_case.ConfigIsValid(task_dir))
         suite.addTest(SampleExists(task_dir))
+        suite.addTest(SampleNotEmpty(task_dir))
 
     random.seed(4)  # Reproducibility!
     seeds = random.sample(range(0, 16 ** 4), n_seeds)
