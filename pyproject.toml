@@ -13,6 +13,7 @@ tqdm = "^4.50.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+setuptools = "^50.3.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
