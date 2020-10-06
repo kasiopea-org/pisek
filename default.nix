@@ -23,9 +23,6 @@ let
       pisek-env
       mypy
       python3Packages.black
-
-      dhall
-      dhall-json
     ];
   };
 in
