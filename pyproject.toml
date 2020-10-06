@@ -2,6 +2,7 @@
 name = "pisek"
 version = "0.1.0"
 description = "Nástroj na přípravu úloh do programátorských soutěží"
+homepage = "https://github.com/kasiopea-org/pisek"
 authors = []
 
 [tool.poetry.scripts]

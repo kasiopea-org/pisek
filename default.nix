@@ -23,6 +23,10 @@ let
       pisek-env
       mypy
       python3Packages.black
+
+      # Nainstaluje i GCC/G++ pokud jej uživatel nemá v Nixu.
+      # Tohle by možná chtělo za-featureflag-ovat jen pro NixOSaře.
+      gcc
     ];
   };
 in
