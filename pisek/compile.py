@@ -3,7 +3,6 @@ import os
 import shutil
 from typing import Dict, List, Optional, Tuple
 from . import util
-import io
 
 
 class CompileRules:
@@ -50,7 +49,7 @@ class PythonCompileRules(CompileRules):
     def valid_shebang(filepath: str) -> bool:
         """ Check if file has shebang and if the shebang is valid """
 
-        with io.open(filepath, "r", newline="\n") as f:
+        with open(filepath, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
