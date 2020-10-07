@@ -139,5 +139,24 @@ class TestBadJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
+class TestPythonCRLF(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        os.remove(os.path.join(self.task_dir, "solve.py"))
+
+        new_program = [
+            "#!/usr/bin/env python3",
+            "t = int(input())",
+            "for i in range(t):",
+            "    a, b = [int(x) for x in input().split()]",
+            "    c = a + b",
+            "    print(c)",
+        ]
+        with open(os.path.join(self.task_dir, "solve.py"), "w") as f:
+            f.write("\r\n".join(new_program))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -37,7 +37,9 @@ class PythonCompileRules(CompileRules):
             return result_filepath
 
         if not self.valid_shebang(filepath):
-            raise RuntimeError(f"{filename} má neplatný shebang")
+            raise RuntimeError(
+                f"{filename} má neplatný shebang (zkontroluj, že soubor používá linuxové konce řádků)"
+            )
 
         shutil.copyfile(filepath, result_filepath)
         self._chmod_exec(result_filepath)
@@ -47,10 +49,13 @@ class PythonCompileRules(CompileRules):
     def valid_shebang(filepath: str) -> bool:
         """ Check if file has shebang and if the shebang is valid """
 
-        with open(filepath, "r") as f:
+        with open(filepath, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
+            return False
+
+        if first_line.endswith("\r\n"):
             return False
 
         # TODO: check if the shebang is proper,
