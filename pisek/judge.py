@@ -198,44 +198,49 @@ class KasiopeaExternalJudge(Judge):
     def __init__(self, judge: Program) -> None:
         super().__init__()
         self.judge: Program = judge
+        self.name = self.judge.name
 
     def evaluate(
         self,
         solution: Solution,
         input_file: str,
-        correct_output: Optional[str],
+        correct_output_file: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         def external_judge(output_file: str) -> Tuple[float, Verdict]:
-
-            # TODO: impose limits
-            args = (
-                [input_file, correct_output, output_file]
-                if correct_output is not None
-                else [input_file, output_file]
-            )
-
-            timeout = None if run_config is None else run_config.get("timeout")
-            with open(output_file, "r") as contestant_f:
-                result = self.judge.run_raw(
-                    args,
-                    stdin=contestant_f,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    timeout=timeout,
-                    env={"TEST_INPUT": input_file, "TEST_OUTPUT": correct_output},
-                )
-
-            if result.returncode not in [0, 1]:
-                raise RuntimeError(
-                    f"Judge selhal s chybovým kódem {result.returncode}. stdout: {result.stdout}, stderr: {result.stderr}"
-                )
-
-            return float(1 - result.returncode), Verdict(
-                RunResult.OK,
-                msg=f"stdout: {result.stdout}, stderr: {result.stderr}"
-                if result.returncode == 1
-                else None,
+            return self.evaluate_on_file(
+                input_file, correct_output_file, output_file, run_config
             )
 
         return evaluate_offline(external_judge, solution, input_file, run_config)
+
+    def evaluate_on_file(
+        self,
+        input_file: str,
+        correct_output_file: Optional[str],
+        output_file: str,
+        run_config: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[float, Verdict]:
+        timeout = None if run_config is None else run_config.get("timeout")
+        with open(output_file, "r") as contestant_f:
+            result = self.judge.run_raw(
+                program_args=[],
+                stdin=contestant_f,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+                env={"TEST_INPUT": input_file, "TEST_OUTPUT": correct_output_file},
+            )
+
+        if result.returncode not in [0, 1]:
+            raise RuntimeError(
+                f"Judge selhal s chybovým kódem {result.returncode}. "
+                f"stdout: {result.stdout}, stderr: {result.stderr}"
+            )
+
+        return float(1 - result.returncode), Verdict(
+            RunResult.OK,
+            msg=f"stdout: {result.stdout}, stderr: {result.stderr}"
+            if result.returncode == 1
+            else None,
+        )
