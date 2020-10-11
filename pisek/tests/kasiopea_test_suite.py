@@ -1,3 +1,4 @@
+import shutil
 import unittest
 import os
 import random
@@ -310,6 +311,56 @@ class SolutionWorks(test_case.SolutionTestCase):
         )
 
 
+class JudgeHandlesWhitespace(test_case.TestCase):
+    def __init__(self, task_dir: str, task_config: TaskConfig):
+        super().__init__(task_dir)
+        self.judge = judge.make_judge(self.task_dir, task_config)
+        self.model_solution = Solution(task_dir, task_config.solutions[0])
+
+    def add_whitespace(self, file, n_spaces):
+        with open(file, "r") as f:
+            lines = f.readlines()
+
+        lines_changed = [
+            (line.strip("\n") + " ").replace(" ", " " * n_spaces) for line in lines
+        ]
+
+        with open(file, "w") as f:
+            f.write("\r\n".join(lines_changed + ["  ", "    "]))
+
+    def runTest(self):
+        if not isinstance(self.judge, judge.KasiopeaExternalJudge):
+            # This is only relevant for external judges.
+            return
+
+        data_dir = util.get_data_dir(self.task_dir)
+        sample_in = os.path.join(self.task_dir, "sample.in")
+        sample_out = os.path.join(self.task_dir, "sample.out")
+        sample_out_whitespaced = os.path.join(data_dir, "sample_whitespaced.out")
+        shutil.copy2(sample_out, sample_out_whitespaced)
+
+        result, output_file = self.model_solution.run_on_file(sample_in)
+        self.assertEqual(result, RunResult.OK, "Vzorové řešení selhalo na sample.in")
+
+        # To be sure, add different amounts of whitespace to each.
+        self.add_whitespace(output_file, n_spaces=2)
+        self.add_whitespace(sample_out_whitespaced, n_spaces=3)
+
+        score, verdict = self.judge.evaluate_on_file(
+            sample_in, sample_out_whitespaced, output_file
+        )
+
+        self.assertEqual(
+            score,
+            1,
+            f"Judge {self.judge.name} neignoruje přebytečný whitespace"
+            " nebo windowsovské konce řádků",
+        )
+
+    def __str__(self):
+        return f"Judge správně řeší whitespace a konce řádku"
+
+
 def kasiopea_test_suite(
     task_dir: str,
     solutions: Optional[List[str]] = None,
@@ -342,6 +393,8 @@ def kasiopea_test_suite(
         suite.addTest(GeneratorWorks(task_dir, generator))
 
     suite.addTest(GeneratesInputs(task_dir, generator, seeds))
+
+    suite.addTest(JudgeHandlesWhitespace(task_dir, task_config=config))
 
     if solutions is None:
         solutions = config.solutions
