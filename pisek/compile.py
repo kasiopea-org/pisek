@@ -79,9 +79,26 @@ class CPPCompileRules(CompileRules):
         return result_filepath if gpp.returncode == 0 else None
 
 
+class CCompileRules(CompileRules):
+    def __init__(self, supported_extensions: List[str]) -> None:
+        super().__init__(supported_extensions)
+
+    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
+        dirname, filename, _ = _split_path(filepath)
+        build_dir = util.get_build_dir(dirname)
+        result_filepath = os.path.join(build_dir, filename)
+        if dry_run:
+            return result_filepath
+
+        c_flags = ["-std=c11", "-O2", "-Wall", "-Wshadow"]
+        gcc = subprocess.run(["gcc", filepath, "-o", result_filepath] + c_flags)
+        return result_filepath if gcc.returncode == 0 else None
+
+
 COMPILE_RULES: List[CompileRules] = [
     PythonCompileRules([".py"]),
     CPPCompileRules([".cpp", ".cc"]),
+    CCompileRules([".c"]),
 ]
 
 
