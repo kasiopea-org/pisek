@@ -322,7 +322,7 @@ class JudgeHandlesWhitespace(test_case.TestCase):
             lines = f.readlines()
 
         lines_changed = [
-            (line.strip("\n") + " ").replace(" ", " " * n_spaces) for line in lines
+            (line.strip("\r\n") + " ").replace(" ", " " * n_spaces) for line in lines
         ]
 
         with open(file, "w") as f:
