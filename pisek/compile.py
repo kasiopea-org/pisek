@@ -110,6 +110,7 @@ class PascalCompileRules(CompileRules):
         fpc = subprocess.run(["fpc"] + pas_flags + [filepath])
         return result_filepath if fpc.returncode == 0 else None
 
+
 COMPILE_RULES: List[CompileRules] = [
     PythonCompileRules([".py"]),
     CPPCompileRules([".cpp", ".cc"]),
