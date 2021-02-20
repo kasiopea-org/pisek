@@ -74,7 +74,7 @@ class CPPCompileRules(CompileRules):
         if dry_run:
             return result_filepath
 
-        cpp_flags = ["-std=c++14", "-O2", "-Wall", "-Wshadow"]
+        cpp_flags = ["-std=c++14", "-O2", "-Wall", "-lm", "-Wshadow"]
         gpp = subprocess.run(["g++", filepath, "-o", result_filepath] + cpp_flags)
         return result_filepath if gpp.returncode == 0 else None
 
@@ -90,7 +90,7 @@ class CCompileRules(CompileRules):
         if dry_run:
             return result_filepath
 
-        c_flags = ["-std=c11", "-O2", "-Wall", "-Wshadow"]
+        c_flags = ["-std=c11", "-O2", "-Wall", "-lm", "-Wshadow"]
         gcc = subprocess.run(["gcc", filepath, "-o", result_filepath] + c_flags)
         return result_filepath if gcc.returncode == 0 else None
 
