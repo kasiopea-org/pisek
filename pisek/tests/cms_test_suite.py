@@ -164,6 +164,7 @@ def cms_test_suite(
     solutions: Optional[List[str]] = None,
     timeout=None,
     in_self_test=False,
+    **ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
