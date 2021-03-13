@@ -381,8 +381,10 @@ def kasiopea_test_suite(
 
     if not only_necessary:
         suite.addTest(test_case.ConfigIsValid(task_dir))
-        suite.addTest(SampleExists(task_dir))
-        suite.addTest(SampleNotEmpty(task_dir))
+        if solutions != []:
+            # No need to check for samples when only testing generator
+            suite.addTest(SampleExists(task_dir))
+            suite.addTest(SampleNotEmpty(task_dir))
 
     random.seed(4)  # Reproducibility!
     seeds = random.sample(range(0, 16 ** 4), n_seeds)
