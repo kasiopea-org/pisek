@@ -1,12 +1,9 @@
 import glob
-import sys
 import unittest
 import os
-import re
-import random
 from typing import Optional, Tuple, Dict, List
+import shutil
 
-from pisek.solution import Solution
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
@@ -15,8 +12,8 @@ from ..judge import CMSExternalJudge, make_judge, Judge
 from ..program import Program, RunResult
 
 
-def inputs_for_subtask(subtask: int, task_dir: str, config: TaskConfig):
-    data_dir = util.get_data_dir(task_dir)
+def inputs_for_subtask(subtask: int, config: TaskConfig):
+    data_dir = config.get_data_dir()
     globs = config.subtasks[subtask].in_globs
 
     res: List[str] = []
@@ -28,11 +25,11 @@ def inputs_for_subtask(subtask: int, task_dir: str, config: TaskConfig):
 
 class GeneratorWorks(test_case.GeneratorTestCase):
     def __init__(self, task_dir, generator: OfflineGenerator, config: TaskConfig):
-        super().__init__(task_dir, generator)
+        super().__init__(task_dir, config.get_data_dir(), generator)
         self.config = config
 
     def runTest(self):
-        data_dir = util.get_data_dir(self.task_dir)
+        data_dir = self.config.get_data_dir()
         result = self.generator.generate(test_dir=data_dir)
         generator_output = f"stdout: {result.stdout}.\nstderr: {result.stderr}"
         self.assertTrue(
@@ -48,7 +45,7 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
         for subtask in self.config.subtasks:
             self.assertTrue(
-                inputs_for_subtask(subtask, self.task_dir, self.config),
+                inputs_for_subtask(subtask, self.config),
                 f"Chybí vstupní soubory pro subtask {subtask}.\n{generator_output}",
             )
 
@@ -65,7 +62,21 @@ class SolutionWorks(test_case.SolutionTestCase):
         self.in_self_test = in_self_test
 
     def test_passes_samples(self):
-        for sample_in, sample_out in util.get_samples(self.task_dir):
+        samples_dir = self.task_config.get_samples_dir()
+        data_dir = self.task_config.get_data_dir()
+
+        for sample_in, sample_out in util.get_samples(samples_dir):
+            # Copy the samples into the data (tests) directory for consistency
+            # with the other tests
+            shutil.copy(
+                sample_in,
+                os.path.join(data_dir, os.path.basename(sample_in)),
+            )
+            shutil.copy(
+                sample_out,
+                os.path.join(data_dir, os.path.basename(sample_out)),
+            )
+
             pts, verdict = self.judge.evaluate(
                 self.solution, sample_in, sample_out, self.run_config
             )
@@ -81,8 +92,8 @@ class SolutionWorks(test_case.SolutionTestCase):
             )
 
     def get_subtask_score(self, subtask):
-        data_dir = util.get_data_dir(self.task_dir)
-        inputs = inputs_for_subtask(subtask, self.task_dir, self.task_config)
+        data_dir = self.task_config.get_data_dir()
+        inputs = inputs_for_subtask(subtask, self.task_config)
         model_solution_name = self.task_config.solutions[0]
 
         # TODO: possible optimization for the model solution?
@@ -119,7 +130,6 @@ class SolutionWorks(test_case.SolutionTestCase):
         return judge_score
 
     def runTest(self):
-        data_dir = util.get_data_dir(self.task_dir)
         expected_score = util.get_expected_score(self.solution.name, self.task_config)
         max_score = self.task_config.get_maximum_score()
 
@@ -185,7 +195,7 @@ def cms_test_suite(
 
     if solutions != []:
         # No need to check for samples when only testing generator
-        suite.addTest(test_case.SampleExists(task_dir))
+        suite.addTest(test_case.SampleExists(config.get_samples_dir()))
 
     generator = OfflineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(task_dir, generator, config))

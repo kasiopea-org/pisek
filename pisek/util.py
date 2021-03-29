@@ -10,7 +10,6 @@ from .task_config import TaskConfig
 
 DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
-DATA_DIR = "data/"
 
 
 def files_are_equal(file_a: str, file_b: str) -> bool:
@@ -94,15 +93,10 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
     if len(candidates) > 1:
         raise RuntimeError(
-            f"Ve složce {path} existuje více řešení se stejným názvem: "
-            f"{', '.join(candidates)}"
+            f"Existuje více řešení se stejným názvem: {', '.join(candidates)}"
         )
 
     return candidates[0] if candidates else None
-
-
-def get_data_dir(task_dir: str) -> str:
-    return os.path.join(task_dir, DATA_DIR)
 
 
 def get_build_dir(task_dir: str) -> str:
@@ -131,7 +125,8 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     'sample.solve_6b.out'
     """
     return "{}.{}.out".format(
-        os.path.splitext(os.path.basename(input_file))[0], solution_name
+        os.path.splitext(os.path.basename(input_file))[0],
+        os.path.basename(solution_name),
     )
 
 
@@ -148,11 +143,13 @@ def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
 
 
 def clean_data_dir(task_dir: str) -> None:
-    return _clean_subdirs(task_dir, [DATA_DIR])
+    config = TaskConfig(task_dir)
+    return _clean_subdirs(task_dir, [config.data_subdir])
 
 
 def clean_task_dir(task_dir: str) -> None:
-    return _clean_subdirs(task_dir, [DATA_DIR, BUILD_DIR])
+    config = TaskConfig(task_dir)
+    return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
 
 
 def get_expected_score(solution_name: str, config: TaskConfig) -> int:

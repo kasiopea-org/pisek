@@ -11,7 +11,9 @@ class CompileRules:
     def __init__(self, supported_extensions: List[str]) -> None:
         self.supported = supported_extensions
 
-    def compile(self, filepath: str, dry_run: bool = False) -> Optional[str]:
+    def compile(
+        self, filepath: str, build_dir: str = None, dry_run: bool = False
+    ) -> Optional[str]:
         """Takes a `filepath` and either:
         - compiles it and returns the path to the executable (str) or
         - returns None if an error occurred
@@ -29,9 +31,11 @@ class PythonCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
+    def compile(
+        self, filepath: str, build_dir: str = None, dry_run: bool = True
+    ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        build_dir = util.get_build_dir(dirname)
+        build_dir = build_dir or util.get_build_dir(dirname)
         result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
@@ -67,9 +71,11 @@ class CPPCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
+    def compile(
+        self, filepath: str, build_dir: str = None, dry_run: bool = True
+    ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        build_dir = util.get_build_dir(dirname)
+        build_dir = build_dir or util.get_build_dir(dirname)
         result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
@@ -83,9 +89,11 @@ class CCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
+    def compile(
+        self, filepath: str, build_dir: str = None, dry_run: bool = True
+    ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        build_dir = util.get_build_dir(dirname)
+        build_dir = build_dir or util.get_build_dir(dirname)
         result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
@@ -99,9 +107,11 @@ class PascalCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
-    def compile(self, filepath: str, dry_run: bool = True) -> Optional[str]:
+    def compile(
+        self, filepath: str, build_dir: str = None, dry_run: bool = True
+    ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
-        build_dir = util.get_build_dir(dirname)
+        build_dir = build_dir or util.get_build_dir(dirname)
         result_filepath = os.path.join(build_dir, filename)
         if dry_run:
             return result_filepath
@@ -137,14 +147,19 @@ def _split_path(filepath: str) -> Tuple[str, str, str]:
     return dirname, filename, file_extension
 
 
-def compile(filepath: str, dry_run: bool = False) -> Optional[str]:
+def compile(
+    filepath: str,
+    build_dir: str = None,
+    dry_run: bool = False,
+) -> Optional[str]:
     # asserts that filepath is a valid path
 
     # make the path absolute
     filepath = os.path.abspath(filepath)
     dirname, _ = os.path.split(filepath)
 
-    path_to_build = util.get_build_dir(dirname)
+    path_to_build = build_dir or util.get_build_dir(dirname)
+
     if not dry_run:
         os.makedirs(path_to_build, exist_ok=True)
 
@@ -152,6 +167,6 @@ def compile(filepath: str, dry_run: bool = False) -> Optional[str]:
 
     for compile_rule in COMPILE_RULES:
         if file_extension in compile_rule.supported:
-            return compile_rule.compile(filepath, dry_run)
+            return compile_rule.compile(filepath, build_dir, dry_run)
 
     return None

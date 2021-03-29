@@ -9,9 +9,10 @@ class Solution(program.Program):
     def run_on_file(
         self, input_file: str, timeout: int = util.DEFAULT_TIMEOUT
     ) -> Tuple[program.RunResult, Optional[str]]:
-        """ Runs the solution and stores the output in a reasonably named file in data/ """
-        data_dir = util.get_data_dir(self.task_dir)
-        os.makedirs(data_dir, exist_ok=True)
+        """
+        Runs the solution and stores the output in a reasonably named file in the same dir
+        """
+        data_dir = os.path.dirname(input_file)
 
         output_filename = util.get_output_name(input_file, solution_name=self.name)
         output_file = os.path.join(data_dir, output_filename)

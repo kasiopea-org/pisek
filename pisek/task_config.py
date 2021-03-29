@@ -4,6 +4,7 @@ import re
 from typing import List, Dict, Optional, TypeVar, Callable
 
 CONFIG_FILENAME = "config"
+DATA_SUBDIR = "data/"
 
 
 class TaskConfig:
@@ -11,6 +12,7 @@ class TaskConfig:
         config = configparser.ConfigParser()
         config_path = os.path.join(task_dir, CONFIG_FILENAME)
         read_files = config.read(config_path)
+        self.task_dir = task_dir
 
         if not read_files:
             raise FileNotFoundError(
@@ -33,6 +35,15 @@ class TaskConfig:
                 config.get("limits", "sec_solve_time_limit", fallback=None), float
             )
 
+            # Support for different directory structures
+            self.samples_subdir: str = config["task"].get("samples_subdir", ".")
+            self.data_subdir: str = config["task"].get("data_subdir", DATA_SUBDIR)
+
+            if "solutions_subdir" in config["task"]:
+                # Prefix each solution name with solutions_subdir/
+                subdir = config["task"].get("solutions_subdir", ".")
+                self.solutions = [os.path.join(subdir, sol) for sol in self.solutions]
+
             self.subtasks: Dict[int, SubtaskConfig] = {}
             for section_name in config.sections():
                 m = re.match(r"test([0-9]{2})", section_name)
@@ -54,6 +65,15 @@ class TaskConfig:
 
     def get_maximum_score(self) -> int:
         return sum([subtask.score for subtask in self.subtasks.values()])
+
+    def get_data_dir(self):
+        return os.path.join(self.task_dir, self.data_subdir)
+
+    def get_samples_dir(self):
+        return os.path.join(self.task_dir, self.samples_subdir)
+
+    def get_solutions_dir(self):
+        return os.path.join(self.task_dir, self.solutions_subdir)
 
 
 class SubtaskConfig:

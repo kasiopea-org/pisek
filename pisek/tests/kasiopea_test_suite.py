@@ -46,7 +46,7 @@ def generate_checked(
     If `filename` is not given, a reasonable name is chosen automatically.
     Then generates into `filename` and returns the file's path.
     """
-    data_dir = util.get_data_dir(case.task_dir)
+    data_dir = case.data_dir
     if filename is None:
         filename = util.get_input_name(seed, subtask)
     path = os.path.join(data_dir, filename)
@@ -61,6 +61,7 @@ def generate_checked(
 
 def generate_outputs(
     solution: Solution,
+    data_dir: str,
     seeds: List[int],
     timeout: int,
     quit_on_timeout: bool = True,
@@ -71,7 +72,6 @@ def generate_outputs(
     it will time out for others as well, so we don't run the solution on the other seeds
     """
     output_files = []
-    data_dir = util.get_data_dir(solution.task_dir)
 
     with tqdm.tqdm(total=len(seeds) * 2, desc=f"Běží řešení {solution.name}") as pbar:
         for subtask in [1, 2]:
@@ -96,7 +96,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         self.test_is_deterministic()
 
     def generate_any(self):
-        data_dir = util.get_data_dir(self.task_dir)
         for subtask in [1, 2]:
             filename = generate_checked(self, seed=1, subtask=subtask)
 
@@ -113,7 +112,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         # TODO: this 'accidentally' also tests that different seeds generate different inputs
         #   (hexadecimal or otherwise), maybe we should test that more thoroughly
 
-        data_dir = util.get_data_dir(self.task_dir)
         zero_filename = generate_checked(self, seed=0, subtask=1)
 
         hexa = int("0xFF", 16)
@@ -125,7 +123,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
         )
 
     def test_is_deterministic(self, n=3, seed=1):
-        data_dir = util.get_data_dir(self.task_dir)
         for subtask in [1, 2]:
             filenames = [
                 generate_checked(
@@ -152,12 +149,11 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class GeneratesInputs(test_case.GeneratorTestCase):
-    def __init__(self, task_dir, generator, seeds):
-        super().__init__(task_dir, generator)
+    def __init__(self, task_dir, data_dir, generator, seeds):
+        super().__init__(task_dir, data_dir, generator)
         self.seeds = seeds
 
     def runTest(self):
-        data_dir = util.get_data_dir(self.task_dir)
         for seed in tqdm.tqdm(self.seeds, desc="Běží generátor"):
             for subtask in [1, 2]:
                 generate_checked(self, seed, subtask)
@@ -179,10 +175,16 @@ class SolutionWorks(test_case.SolutionTestCase):
         self.judge = judge.make_judge(self.task_dir, self.task_config)
 
     def test_passes_sample(self):
-        sample_in = os.path.join(self.task_dir, "sample.in")
-        sample_out = os.path.join(self.task_dir, "sample.out")
+        sample_in_from = os.path.join(self.task_dir, "sample.in")
+        sample_in_to = os.path.join(self.task_config.get_data_dir(), "sample.in")
+        sample_out_from = os.path.join(self.task_dir, "sample.out")
+        sample_out_to = os.path.join(self.task_config.get_data_dir(), "sample.out")
+
+        shutil.copy(sample_in_from, sample_in_to)
+        shutil.copy(sample_out_from, sample_out_to)
+
         pts, verdict = self.judge.evaluate(
-            self.solution, sample_in, sample_out, self.run_config
+            self.solution, sample_in_to, sample_out_to, self.run_config
         )
         self.assertEqual(
             verdict.result,
@@ -196,7 +198,7 @@ class SolutionWorks(test_case.SolutionTestCase):
         )
 
     def get_verdict(self, subtask, seed) -> Tuple[float, Verdict]:
-        data_dir = util.get_data_dir(self.task_dir)
+        data_dir = self.task_config.get_data_dir()
 
         input_filename = util.get_input_name(seed, subtask)
         output_filename = util.get_output_name(
@@ -271,8 +273,12 @@ class SolutionWorks(test_case.SolutionTestCase):
             score, diffs = self.get_score()
         else:
             # TODO: unify get_score() and generate_outputs()?
+
             output_files = generate_outputs(
-                self.solution, self.seeds, self.run_config["timeout"]
+                self.solution,
+                self.task_config.get_data_dir(),
+                self.seeds,
+                self.run_config["timeout"],
             )
 
             # Maximum score and no diffs by definition
@@ -316,6 +322,7 @@ class JudgeHandlesWhitespace(test_case.TestCase):
         super().__init__(task_dir)
         self.judge = judge.make_judge(self.task_dir, task_config)
         self.model_solution = Solution(task_dir, task_config.solutions[0])
+        self.data_dir = task_config.get_data_dir()
 
     def add_whitespace(self, file, n_spaces):
         with open(file, "r") as f:
@@ -333,10 +340,9 @@ class JudgeHandlesWhitespace(test_case.TestCase):
             # This is only relevant for external judges.
             return
 
-        data_dir = util.get_data_dir(self.task_dir)
         sample_in = os.path.join(self.task_dir, "sample.in")
         sample_out = os.path.join(self.task_dir, "sample.out")
-        sample_out_whitespaced = os.path.join(data_dir, "sample_whitespaced.out")
+        sample_out_whitespaced = os.path.join(self.data_dir, "sample_whitespaced.out")
         shutil.copy2(sample_out, sample_out_whitespaced)
 
         result, output_file = self.model_solution.run_on_file(sample_in)
@@ -375,6 +381,7 @@ def kasiopea_test_suite(
     that they get the expected number of points.
     """
     config = TaskConfig(task_dir)
+    data_dir = config.get_data_dir()
     util.clean_data_dir(task_dir)
 
     suite = unittest.TestSuite()
@@ -392,9 +399,9 @@ def kasiopea_test_suite(
     generator = OnlineGenerator(task_dir, config.generator)
 
     if not only_necessary:
-        suite.addTest(GeneratorWorks(task_dir, generator))
+        suite.addTest(GeneratorWorks(task_dir, data_dir, generator))
 
-    suite.addTest(GeneratesInputs(task_dir, generator, seeds))
+    suite.addTest(GeneratesInputs(task_dir, data_dir, generator, seeds))
 
     suite.addTest(JudgeHandlesWhitespace(task_dir, task_config=config))
 

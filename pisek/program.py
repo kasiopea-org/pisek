@@ -69,12 +69,15 @@ class Program:
             raise RuntimeError(
                 f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
             )
-        self.executable = compile.compile(self.filename)
+        self.executable = compile.compile(
+            self.filename, build_dir=util.get_build_dir(self.task_dir)
+        )
         if self.executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
 
     def compile_if_needed(self) -> None:
-        # XXX: Only checks for mtime, so may refuse to recompile even if needed (e. g., the CFLAGS changed).
+        # XXX: Only checks for mtime, so may refuse to recompile even if needed
+        # (e. g., the CFLAGS changed).
         if self.executable:
             return
 
@@ -82,7 +85,9 @@ class Program:
             raise RuntimeError(
                 f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
             )
-        executable = compile.compile(self.filename, True)
+        executable = compile.compile(
+            self.filename, build_dir=util.get_build_dir(self.task_dir), dry_run=True
+        )
         if executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
 
