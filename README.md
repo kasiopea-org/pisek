@@ -68,6 +68,12 @@ pisek test generator
 
 ## Vývoj
 
+Vývoj má pár závislostí navíc. Po naklonování repa je můžeš nainstalovat tak,
+že v této složce spustíš:
+```
+pip3 install -e .[dev]
+```
+
 Písek má i testy pro vývojáře, kterými se testuje samotný Písek.
 Ty se po instalaci dají spustit takto:
 ```
