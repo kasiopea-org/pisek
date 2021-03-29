@@ -73,7 +73,12 @@ def clean_directory(args):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Nástroj na testování úloh do programovacích soutěží. "
+            "Plná dokumentace je k dispozici na https://github.com/kasiopea-org/pisek"
+        )
+    )
     parser.add_argument("--verbose", "-v", action="count", default=2)
     parser.add_argument(
         "--timeout",
