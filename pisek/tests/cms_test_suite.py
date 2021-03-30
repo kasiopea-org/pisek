@@ -1,16 +1,15 @@
 import glob
 import unittest
 import os
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, List
 import shutil
 
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
-from ..util import quote_output
 from ..generator import OfflineGenerator
-from ..judge import CMSExternalJudge, make_judge, Judge
-from ..program import Program, RunResult
+from ..judge import make_judge, Judge
+from ..program import RunResult
 
 
 def inputs_for_subtask(subtask: int, config: TaskConfig):
@@ -25,12 +24,11 @@ def inputs_for_subtask(subtask: int, config: TaskConfig):
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
-    def __init__(self, task_dir, generator: OfflineGenerator, config: TaskConfig):
-        super().__init__(task_dir, config.get_data_dir(), generator)
-        self.config = config
+    def __init__(self, task_config, generator: OfflineGenerator):
+        super().__init__(task_config, generator)
 
     def runTest(self):
-        data_dir = self.config.get_data_dir()
+        data_dir = self.task_config.get_data_dir()
         result = self.generator.generate(test_dir=data_dir)
 
         generator_output = util.quote_process_output(result)
@@ -45,9 +43,9 @@ class GeneratorWorks(test_case.GeneratorTestCase):
             f"Generátor nevygeneroval žádné vstupní soubory\n{generator_output}",
         )
 
-        for subtask in self.config.subtasks:
+        for subtask in self.task_config.subtasks:
             self.assertTrue(
-                inputs_for_subtask(subtask, self.config),
+                inputs_for_subtask(subtask, self.task_config),
                 f"Chybí vstupní soubory pro subtask {subtask}.\n{generator_output}",
             )
 
@@ -56,11 +54,10 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(self, task_dir, solution_name, timeout, in_self_test=False):
-        super().__init__(task_dir, solution_name)
+    def __init__(self, task_config, solution_name, timeout, in_self_test=False):
+        super().__init__(task_config, solution_name)
         self.run_config = {"timeout": timeout}
-        self.task_config = TaskConfig(self.task_dir)
-        self.judge: Judge = make_judge(self.task_dir, self.task_config)
+        self.judge: Judge = make_judge(self.task_config)
         self.in_self_test = in_self_test
 
     def test_passes_samples(self):
@@ -72,14 +69,8 @@ class SolutionWorks(test_case.SolutionTestCase):
             data_sample_out = os.path.join(data_dir, os.path.basename(sample_out))
             # Copy the samples into the data (tests) directory for consistency
             # with the other tests
-            shutil.copy(
-                sample_in,
-                data_sample_in,
-            )
-            shutil.copy(
-                sample_out,
-                data_sample_out,
-            )
+            shutil.copy(sample_in, data_sample_in)
+            shutil.copy(sample_out, data_sample_out)
 
             pts, verdict = self.judge.evaluate(
                 self.solution, data_sample_in, data_sample_out, self.run_config
@@ -178,7 +169,7 @@ def cms_test_suite(
     solutions: Optional[List[str]] = None,
     timeout=None,
     in_self_test=False,
-    **ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
+    **_ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -195,14 +186,13 @@ def cms_test_suite(
     timeout_model_solution = config.timeout_model_solution or timeout
 
     suite = unittest.TestSuite()
-    suite.addTest(test_case.ConfigIsValid(task_dir))
 
-    if solutions != []:
+    if solutions:
         # No need to check for samples when only testing generator
         suite.addTest(test_case.SampleExists(config.get_samples_dir()))
 
     generator = OfflineGenerator(task_dir, config.generator)
-    suite.addTest(GeneratorWorks(task_dir, generator, config))
+    suite.addTest(GeneratorWorks(config, generator))
 
     if solutions is None:
         solutions = config.solutions
@@ -220,7 +210,7 @@ def cms_test_suite(
         cur_timeout = timeout_model_solution if i == 0 else timeout
         suite.addTest(
             SolutionWorks(
-                task_dir, solution_name, timeout=cur_timeout, in_self_test=in_self_test
+                config, solution_name, timeout=cur_timeout, in_self_test=in_self_test
             )
         )
 

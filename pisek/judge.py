@@ -35,19 +35,19 @@ class Judge:
         raise NotImplementedError()
 
 
-JUDGES: Dict[str, Callable[[str, TaskConfig], Judge]] = {
-    "diff": lambda task_dir, task_config: WhiteDiffJudge(),
-    "judge_cms": lambda task_dir, task_config: CMSExternalJudge(
-        Program(task_dir, str(task_config.judge_name))
+JUDGES: Dict[str, Callable[[TaskConfig], Judge]] = {
+    "diff": lambda task_config: WhiteDiffJudge(),
+    "judge_cms": lambda task_config: CMSExternalJudge(
+        Program(task_config.task_dir, str(task_config.judge_name))
     ),
-    "judge_kasiopea": lambda task_dir, task_config: KasiopeaExternalJudge(
-        Program(task_dir, str(task_config.judge_name))
+    "judge_kasiopea": lambda task_config: KasiopeaExternalJudge(
+        Program(task_config.task_dir, str(task_config.judge_name))
     ),
-    "ok": lambda task_dir, task_config: OKJudge(),
+    "ok": lambda task_config: OKJudge(),
 }
 
 
-def make_judge(task_dir: str, task_config: TaskConfig) -> Judge:
+def make_judge(task_config: TaskConfig) -> Judge:
     judge_type = task_config.judge_type
 
     if judge_type == "judge":
@@ -58,7 +58,7 @@ def make_judge(task_dir: str, task_config: TaskConfig) -> Judge:
             f"Úloha má neplatný typ judge: {task_config.judge_type}."
             f"Podporované typy jsou: {' '.join(JUDGES.keys())}"
         )
-    return JUDGES[judge_type](task_dir, task_config)
+    return JUDGES[judge_type](task_config)
 
 
 def evaluate_offline(

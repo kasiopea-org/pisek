@@ -8,60 +8,46 @@ from .. import util
 
 
 class TestCase(unittest.TestCase):
-    def __init__(self, task_dir):
+    def __init__(self, task_config: TaskConfig):
         super().__init__()
-        self.task_dir = task_dir
+        self.task_config = task_config
 
     def log(self, msg, *args, **kwargs):
         print(msg, file=sys.stderr, *args, **kwargs)
         sys.stderr.flush()
 
+    def assertFileExists(self, path):
+        self.assertTrue(
+            os.path.isfile(os.path.join(self.task_config.task_dir, path)),
+            f"Ve složce úlohy musí existovat soubor '{path}'",
+        )
+
+    def assertFileNotEmpty(self, path):
+        # Assumes that the file already exists!
+        self.assertTrue(
+            os.path.getsize(os.path.join(self.task_config.task_dir, path)) > 0,
+            f"Ve složce úlohy musí být neprázdný soubor '{path}'",
+        )
+
 
 class SolutionTestCase(TestCase):
-    def __init__(self, task_dir, solution_name):
-        super().__init__(task_dir)
-        self.task_dir = task_dir
-        self.solution = Solution(task_dir, solution_name)
+    def __init__(self, task_config: TaskConfig, solution_name):
+        super().__init__(task_config)
+        self.solution = Solution(task_config.task_dir, solution_name)
 
 
 class GeneratorTestCase(TestCase):
-    def __init__(self, task_dir, data_dir, generator):
-        super().__init__(task_dir)
-        self.task_dir = task_dir
-        self.data_dir = data_dir
+    def __init__(self, task_config: TaskConfig, generator):
+        super().__init__(task_config)
         self.generator = generator
 
 
 # Non-abstract test-cases common to multiple contest types.
 
 
-def assertFileExists(self, path):
-    self.assertTrue(
-        os.path.isfile(os.path.join(self.task_dir, path)),
-        f"Ve složce úlohy musí existovat soubor '{path}'",
-    )
-
-
-# Assumes that the file already exists!
-def assertFileNotEmpty(self, path):
-    self.assertTrue(
-        os.path.getsize(os.path.join(self.task_dir, path)) > 0,
-        f"Ve složce úlohy musí být neprázdný soubor '{path}'",
-    )
-
-
-class ConfigIsValid(TestCase):
-    def runTest(self):
-        assertFileExists(self, "config")
-        TaskConfig(self.task_dir)
-
-    def __str__(self):
-        return f"Konfigurace (config) je platná"
-
-
 class SampleExists(TestCase):
     def runTest(self):
-        samples = util.get_samples(self.task_dir)
+        samples = util.get_samples(self.task_config.get_samples_dir())
         self.assertGreater(
             len(samples),
             0,

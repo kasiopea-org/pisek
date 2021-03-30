@@ -126,7 +126,6 @@ COMPILE_RULES: List[CompileRules] = [
     CPPCompileRules([".cpp", ".cc"]),
     CCompileRules([".c"]),
     PascalCompileRules([".pas"]),
-    PythonCompileRules([".sh"]),
 ]
 
 

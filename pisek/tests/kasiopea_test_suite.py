@@ -8,7 +8,6 @@ import itertools
 import tqdm
 
 from . import test_case
-from .test_case import assertFileExists, assertFileNotEmpty
 from ..judge import Verdict
 from ..task_config import TaskConfig
 from .. import util
@@ -20,8 +19,8 @@ from .. import judge
 
 class SampleExists(test_case.TestCase):
     def runTest(self):
-        assertFileExists(self, "sample.in")
-        assertFileExists(self, "sample.out")
+        self.assertFileExists("sample.in")
+        self.assertFileExists("sample.out")
 
     def __str__(self):
         return f"Existuje ukázkový vstup a výstup"
@@ -29,8 +28,8 @@ class SampleExists(test_case.TestCase):
 
 class SampleNotEmpty(test_case.TestCase):
     def runTest(self):
-        assertFileNotEmpty(self, "sample.in")
-        assertFileNotEmpty(self, "sample.out")
+        self.assertFileNotEmpty("sample.in")
+        self.assertFileNotEmpty("sample.out")
 
     def __str__(self):
         return f"Ukázkový vstup a výstup je neprázdný"
@@ -46,7 +45,7 @@ def generate_checked(
     If `filename` is not given, a reasonable name is chosen automatically.
     Then generates into `filename` and returns the file's path.
     """
-    data_dir = case.data_dir
+    data_dir = case.task_config.get_data_dir()
     if filename is None:
         filename = util.get_input_name(seed, subtask)
     path = os.path.join(data_dir, filename)
@@ -149,8 +148,8 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class GeneratesInputs(test_case.GeneratorTestCase):
-    def __init__(self, task_dir, data_dir, generator, seeds):
-        super().__init__(task_dir, data_dir, generator)
+    def __init__(self, task_config, generator, seeds):
+        super().__init__(task_config, generator)
         self.seeds = seeds
 
     def runTest(self):
@@ -163,21 +162,18 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(
-        self, task_dir, solution_name, seeds, timeout, task_config: TaskConfig
-    ):
-        super().__init__(task_dir, solution_name)
+    def __init__(self, task_config, solution_name, seeds, timeout):
+        super().__init__(task_config, solution_name)
         self.model_solution_name = task_config.solutions[0]
         self.seeds = seeds
         self.run_config = {"timeout": timeout}
         self.expected_score = None
-        self.task_config = task_config
-        self.judge = judge.make_judge(self.task_dir, self.task_config)
+        self.judge = judge.make_judge(self.task_config)
 
     def test_passes_sample(self):
-        sample_in_from = os.path.join(self.task_dir, "sample.in")
+        sample_in_from = os.path.join(self.task_config.get_samples_dir(), "sample.in")
         sample_in_to = os.path.join(self.task_config.get_data_dir(), "sample.in")
-        sample_out_from = os.path.join(self.task_dir, "sample.out")
+        sample_out_from = os.path.join(self.task_config.get_samples_dir(), "sample.out")
         sample_out_to = os.path.join(self.task_config.get_data_dir(), "sample.out")
 
         shutil.copy(sample_in_from, sample_in_to)
@@ -318,11 +314,10 @@ class SolutionWorks(test_case.SolutionTestCase):
 
 
 class JudgeHandlesWhitespace(test_case.TestCase):
-    def __init__(self, task_dir: str, task_config: TaskConfig):
-        super().__init__(task_dir)
-        self.judge = judge.make_judge(self.task_dir, task_config)
-        self.model_solution = Solution(task_dir, task_config.solutions[0])
-        self.data_dir = task_config.get_data_dir()
+    def __init__(self, task_config: TaskConfig):
+        super().__init__(task_config)
+        self.judge = judge.make_judge(task_config)
+        self.model_solution = Solution(task_config.task_dir, task_config.solutions[0])
 
     def add_whitespace(self, file, n_spaces):
         with open(file, "r") as f:
@@ -340,9 +335,11 @@ class JudgeHandlesWhitespace(test_case.TestCase):
             # This is only relevant for external judges.
             return
 
-        sample_in = os.path.join(self.task_dir, "sample.in")
-        sample_out = os.path.join(self.task_dir, "sample.out")
-        sample_out_whitespaced = os.path.join(self.data_dir, "sample_whitespaced.out")
+        sample_in = os.path.join(self.task_config.task_dir, "sample.in")
+        sample_out = os.path.join(self.task_config.task_dir, "sample.out")
+        sample_out_whitespaced = os.path.join(
+            self.task_config.get_data_dir(), "sample_whitespaced.out"
+        )
         shutil.copy2(sample_out, sample_out_whitespaced)
 
         result, output_file = self.model_solution.run_on_file(sample_in)
@@ -387,11 +384,10 @@ def kasiopea_test_suite(
     suite = unittest.TestSuite()
 
     if not only_necessary:
-        suite.addTest(test_case.ConfigIsValid(task_dir))
         if solutions != []:
             # No need to check for samples when only testing generator
-            suite.addTest(SampleExists(task_dir))
-            suite.addTest(SampleNotEmpty(task_dir))
+            suite.addTest(SampleExists(config))
+            suite.addTest(SampleNotEmpty(config))
 
     random.seed(4)  # Reproducibility!
     seeds = random.sample(range(0, 16 ** 4), n_seeds)
@@ -399,11 +395,10 @@ def kasiopea_test_suite(
     generator = OnlineGenerator(task_dir, config.generator)
 
     if not only_necessary:
-        suite.addTest(GeneratorWorks(task_dir, data_dir, generator))
+        suite.addTest(GeneratorWorks(config, generator))
 
-    suite.addTest(GeneratesInputs(task_dir, data_dir, generator, seeds))
-
-    suite.addTest(JudgeHandlesWhitespace(task_dir, task_config=config))
+    suite.addTest(GeneratesInputs(config, generator, seeds))
+    suite.addTest(JudgeHandlesWhitespace(config))
 
     if solutions is None:
         solutions = config.solutions
@@ -420,11 +415,10 @@ def kasiopea_test_suite(
     for solution_name in solutions:
         suite.addTest(
             SolutionWorks(
-                task_dir,
+                config,
                 solution_name,
                 seeds=seeds,
                 timeout=timeout,
-                task_config=config,
             )
         )
 
