@@ -1,9 +1,12 @@
 import os
 import re
 import difflib
+import subprocess
 from glob import glob
 import shutil
 from typing import Optional, Iterator, List, Tuple
+
+import termcolor
 
 from .compile import supported_extensions
 from .task_config import TaskConfig
@@ -166,3 +169,46 @@ def get_expected_score(solution_name: str, config: TaskConfig) -> int:
         return score
     else:
         return config.get_maximum_score()
+
+
+def quote_output(s, color="yellow", max_length=500):
+    """
+    Indicates that a string is a quote of another program's output by adding
+    indentation and color.
+    """
+    if isinstance(s, bytes):
+        s = s.decode("utf-8")
+
+    if len(s) > max_length:
+        s = termcolor.colored(s[:max_length], color)
+        s += " [...]"
+    else:
+        s = termcolor.colored(s, color)
+
+    s = s.replace("\n", "\n  ")
+    s = "  " + s.strip()
+
+    return s
+
+
+def quote_process_output(
+    proc: subprocess.CompletedProcess, include_stdout=True, include_stderr=True
+):
+    res = []
+    if include_stdout:
+        cur = "stdout:"
+        if proc.stdout:
+            cur += "\n" + quote_output(proc.stdout)
+        else:
+            cur += " (žádný)"
+        res.append(cur)
+
+    if include_stderr:
+        cur = "stderr:"
+        if proc.stderr:
+            cur += "\n" + quote_output(proc.stderr)
+        else:
+            cur += " (žádný)"
+        res.append(cur)
+
+    return "\n".join(res)

@@ -7,6 +7,7 @@ import shutil
 from . import test_case
 from ..task_config import TaskConfig
 from .. import util
+from ..util import quote_output
 from ..generator import OfflineGenerator
 from ..judge import CMSExternalJudge, make_judge, Judge
 from ..program import Program, RunResult
@@ -31,7 +32,8 @@ class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         data_dir = self.config.get_data_dir()
         result = self.generator.generate(test_dir=data_dir)
-        generator_output = f"stdout: {result.stdout}.\nstderr: {result.stderr}"
+
+        generator_output = util.quote_process_output(result)
         self.assertTrue(
             result.returncode == 0,
             f"Chyba při generování vstupu.\n{generator_output}",
