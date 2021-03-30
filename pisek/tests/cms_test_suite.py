@@ -66,19 +66,21 @@ class SolutionWorks(test_case.SolutionTestCase):
         data_dir = self.task_config.get_data_dir()
 
         for sample_in, sample_out in util.get_samples(samples_dir):
+            data_sample_in = os.path.join(data_dir, os.path.basename(sample_in))
+            data_sample_out = os.path.join(data_dir, os.path.basename(sample_out))
             # Copy the samples into the data (tests) directory for consistency
             # with the other tests
             shutil.copy(
                 sample_in,
-                os.path.join(data_dir, os.path.basename(sample_in)),
+                data_sample_in,
             )
             shutil.copy(
                 sample_out,
-                os.path.join(data_dir, os.path.basename(sample_out)),
+                data_sample_out,
             )
 
             pts, verdict = self.judge.evaluate(
-                self.solution, sample_in, sample_out, self.run_config
+                self.solution, data_sample_in, data_sample_out, self.run_config
             )
             self.assertEqual(
                 verdict.result,
