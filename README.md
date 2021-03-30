@@ -17,11 +17,18 @@ pip3 install --user git+https://github.com/kasiopea-org/pisek --upgrade
 
 ## Použití
 
-Zde uvedeme základní použití. Všechny možnosti Písku vám vypíše příkaz `pisek --help`. 
+Všechny možnosti Písku vám vypíše také příkaz `pisek --help`.
+Pokud si s něčím nevíš rady nebo něco nefunguje tak, jak má, dej nám vědět.
+Můžeš například [vytvořit issue](https://github.com/kasiopea-org/pisek/issues/new).
+
+Každá úloha má vlastní konfigurační soubor `config`, který určuje parametry úlohy,
+jako třeba za jaké podúlohy je kolik bodů, jaká jsou řešení a jak se kontroluje správnost.
+Zde je [příklad pro Kasiopeu](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_kasiopea/config)
+a [příklad pro CMS (MO-P)](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_cms/config).
 
 ### Testování úloh
 
-Ve složce úlohy spusť jednoduše
+Napřed vyplň konfigurační soubor `config`. Pak jednoduše spusť ve složce úlohy příkaz
 ```
 pisek
 ```
@@ -29,13 +36,13 @@ pisek
 Tento příkaz zkontroluje mimo jiné, že
 - řešení uvedená v `config` a generátor jdou zkompilovat
 - `sample.out` se shoduje s výstupem vzorového řešení spuštěného na `sample.in`
-- generátor je deterministický (pro jeden seed generuje totéž), správně načítá hexadecimální seed
 - řešení dostanou tolik bodů, kolik je uvedeno v názvu souboru; řešení `solve_4b.cpp` by mělo
     dostat 4 body, `solve.py` 10 bodů (když v názvu není uveden počet bodů)
-
+- pro Kasiopeu: že je generátor deterministický (pro jeden seed generuje totéž), správně načítá hexadecimální seed
+- 
 ### Spouštění jednotlivých programů
 
-Může se hodit třeba když chceš při vývoji spustit své řešení jen na konkrétním vstupu,
+Může se hodit, třeba když chceš při vývoji spustit své řešení jen na konkrétním vstupu,
 nebo generátorem vygenerovat jeden vstup.
 Pokud chceš spustit `solve.cpp` na vstupu `foo.in`, použij
 ```
@@ -65,6 +72,11 @@ Podobně jdou také otestovat malé změny generátoru pomocí
 ```
 pisek test generator
 ```
+
+### Čištění
+
+Písek při testování vytváří potenciálně hodně dat. Ve složce úlohy můžeš
+spustit `pisek clean`, což smaže vygenerovaná data a zkompilovaná řešení.
 
 ## Vývoj
 
