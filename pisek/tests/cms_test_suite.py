@@ -188,7 +188,7 @@ def cms_test_suite(
     util.clean_data_dir(task_dir)
 
     if timeout is None:
-        timeout = config.timeout_other_solutions
+        timeout = config.timeout_other_solutions or util.DEFAULT_TIMEOUT
 
     timeout_model_solution = config.timeout_model_solution or timeout
 

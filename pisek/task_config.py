@@ -28,6 +28,7 @@ class TaskConfig:
             if self.judge_type == "judge":
                 self.judge_name = config["tests"]["out_judge"]
 
+            # Warning: currently ignored in Kasiopea!
             self.timeout_model_solution: Optional[float] = apply_to_optional(
                 config.get("limits", "solve_time_limit", fallback=None), float
             )

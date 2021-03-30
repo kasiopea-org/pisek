@@ -84,7 +84,6 @@ def main():
         "--timeout",
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
-        default=util.DEFAULT_TIMEOUT,
     )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
@@ -108,7 +107,6 @@ def main():
         "--timeout",
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
-        default=util.DEFAULT_TIMEOUT,
     )
 
     parser_clean = subparsers.add_parser("clean", help="vyčisti")
@@ -140,6 +138,7 @@ def main_wrapped():
     except KeyboardInterrupt as e:
         print("Přerušeno uživatelem.")
         exit(1)
+
 
 if __name__ == "__main__":
     main_wrapped()
