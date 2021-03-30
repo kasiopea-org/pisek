@@ -7,5 +7,5 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=["tqdm>=4.50"],
     extras_require={"dev": ["black", "mypy"]},
-    entry_points={"console_scripts": ["pisek=pisek.__main__:main"]},
+    entry_points={"console_scripts": ["pisek=pisek.__main__:main_wrapped"]},
 )

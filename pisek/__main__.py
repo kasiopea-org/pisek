@@ -134,5 +134,12 @@ def main():
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
 
 
+def main_wrapped():
+    try:
+        main()
+    except KeyboardInterrupt as e:
+        print("Přerušeno uživatelem.")
+        exit(1)
+
 if __name__ == "__main__":
-    main()
+    main_wrapped()
