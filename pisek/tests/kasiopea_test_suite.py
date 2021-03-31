@@ -64,6 +64,7 @@ def generate_outputs(
     seeds: List[int],
     timeout: int,
     quit_on_timeout: bool = True,
+    in_self_test=False,
 ) -> List[str]:
     """
     Generates all the possible outputs for the given seeds and subtasks.
@@ -72,7 +73,11 @@ def generate_outputs(
     """
     output_files = []
 
-    with tqdm.tqdm(total=len(seeds) * 2, desc=f"Běží řešení {solution.name}") as pbar:
+    with tqdm.tqdm(
+        total=len(seeds) * 2,
+        desc=f"Běží řešení {solution.name}",
+        disable=in_self_test,
+    ) as pbar:
         for subtask in [1, 2]:
             for seed in seeds:
                 path = os.path.join(data_dir, util.get_input_name(seed, subtask))
@@ -148,12 +153,15 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class GeneratesInputs(test_case.GeneratorTestCase):
-    def __init__(self, task_config, generator, seeds):
+    def __init__(self, task_config, generator, seeds, in_self_test=False):
         super().__init__(task_config, generator)
         self.seeds = seeds
+        self.in_self_test = in_self_test
 
     def runTest(self):
-        for seed in tqdm.tqdm(self.seeds, desc="Běží generátor"):
+        for seed in tqdm.tqdm(
+            self.seeds, desc="Běží generátor", disable=self.in_self_test
+        ):
             for subtask in [1, 2]:
                 generate_checked(self, seed, subtask)
 
@@ -162,13 +170,14 @@ class GeneratesInputs(test_case.GeneratorTestCase):
 
 
 class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(self, task_config, solution_name, seeds, timeout):
+    def __init__(self, task_config, solution_name, seeds, timeout, in_self_test=False):
         super().__init__(task_config, solution_name)
         self.model_solution_name = task_config.solutions[0]
         self.seeds = seeds
         self.run_config = {"timeout": timeout}
         self.expected_score = None
         self.judge = judge.make_judge(self.task_config)
+        self.in_self_test = in_self_test
 
     def test_passes_sample(self):
         sample_in_from = os.path.join(self.task_config.get_samples_dir(), "sample.in")
@@ -235,7 +244,9 @@ class SolutionWorks(test_case.SolutionTestCase):
         diffs: Dict[int, Tuple[int, str]] = {}  # seed -> (subtask, diff)
 
         with tqdm.tqdm(
-            total=len(self.seeds) * 2, desc=f"Běží řešení {self.solution.name}"
+            total=len(self.seeds) * 2,
+            desc=f"Běží řešení {self.solution.name}",
+            disable=self.in_self_test,
         ) as pbar:
             for subtask_score, subtask in [(4, 1), (6, 2)]:
                 ok = True
@@ -275,6 +286,7 @@ class SolutionWorks(test_case.SolutionTestCase):
                 self.task_config.get_data_dir(),
                 self.seeds,
                 self.run_config["timeout"],
+                in_self_test=self.in_self_test,
             )
 
             # Maximum score and no diffs by definition
@@ -397,7 +409,7 @@ def kasiopea_test_suite(
     if not only_necessary:
         suite.addTest(GeneratorWorks(config, generator))
 
-    suite.addTest(GeneratesInputs(config, generator, seeds))
+    suite.addTest(GeneratesInputs(config, generator, seeds, in_self_test))
     suite.addTest(JudgeHandlesWhitespace(config))
 
     if solutions is None:
@@ -419,6 +431,7 @@ def kasiopea_test_suite(
                 solution_name,
                 seeds=seeds,
                 timeout=timeout,
+                in_self_test=in_self_test,
             )
         )
 

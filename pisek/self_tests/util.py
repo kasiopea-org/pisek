@@ -7,6 +7,7 @@ import unittest
 
 from .. import task_config
 from ..tests.util import get_test_suite
+from ..util import quote_output
 
 
 class TestFixtureVariant(unittest.TestCase):
@@ -45,7 +46,7 @@ class TestFixtureVariant(unittest.TestCase):
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
         # and we want to consider it a timeout
-        suite = get_test_suite(self.task_dir, timeout=1, in_self_test=True)
+        suite = get_test_suite(self.task_dir, timeout=1, n_seeds=1, in_self_test=True)
 
         # with open(os.devnull, "w") as devnull:
         output = io.StringIO()
@@ -54,7 +55,8 @@ class TestFixtureVariant(unittest.TestCase):
         result = runner.run(suite)
 
         out = output.getvalue()
-        out = "\n".join([f"> {x}" for x in out.split("\n")])
+        out = quote_output(out)
+        # out = "\n".join([f"> {x}" for x in out.split("\n")])
 
         self.assertEqual(
             result.wasSuccessful(),
@@ -63,7 +65,7 @@ class TestFixtureVariant(unittest.TestCase):
                 "" if self.expecting_success() else "ne",
                 "" if result.wasSuccessful() else "ne",
             )
-            + " Výstup testu:\n{}".format(out),
+            + "\nVýstup testu:\n{}".format(out),
         )
 
     def tearDown(self):

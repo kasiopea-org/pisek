@@ -171,7 +171,7 @@ def get_expected_score(solution_name: str, config: TaskConfig) -> int:
         return config.get_maximum_score()
 
 
-def quote_output(s, color="yellow", max_length=500):
+def quote_output(s, color="yellow", max_length=1500, max_lines=20):
     """
     Indicates that a string is a quote of another program's output by adding
     indentation and color.
@@ -179,14 +179,21 @@ def quote_output(s, color="yellow", max_length=500):
     if isinstance(s, bytes):
         s = s.decode("utf-8")
 
-    if len(s) > max_length:
-        s = termcolor.colored(s[:max_length], color)
-        s += " [...]"
-    else:
-        s = termcolor.colored(s, color)
+    add_ellipsis = False
 
-    s = s.replace("\n", "\n  ")
-    s = "  " + s.strip()
+    if len(s) > max_length:
+        s = s[:max_length]
+        add_ellipsis = True
+
+    lines = s.split("\n")
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        add_ellipsis = True
+
+    s = "\n".join(("  " + termcolor.colored(l, color)) for l in lines)
+
+    if add_ellipsis:
+        s += "\n  [...]"
 
     return s
 
