@@ -204,12 +204,12 @@ class KasiopeaExternalJudge(Judge):
         self,
         solution: Solution,
         input_file: str,
-        correct_output_file: Optional[str],
+        correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, Verdict]:
         def external_judge(output_file: str) -> Tuple[float, Verdict]:
             return self.evaluate_on_file(
-                input_file, correct_output_file, output_file, run_config
+                input_file, correct_output, output_file, run_config
             )
 
         return evaluate_offline(external_judge, solution, input_file, run_config)

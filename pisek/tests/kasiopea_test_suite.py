@@ -153,6 +153,10 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
 
 class GeneratesInputs(test_case.GeneratorTestCase):
+    """
+    Generates the inputs for the seeds we actually care about.
+    """
+
     def __init__(self, task_config, generator, seeds, in_self_test=False):
         super().__init__(task_config, generator)
         self.seeds = seeds
@@ -169,160 +173,30 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         return f"Generátor {self.generator.name} vygeneruje vstupy"
 
 
-class SolutionWorks(test_case.SolutionTestCase):
-    def __init__(self, task_config, solution_name, seeds, timeout, in_self_test=False):
-        super().__init__(task_config, solution_name)
-        self.model_solution_name = task_config.solutions[0]
+class SolutionWorks(test_case.SolutionWorks):
+    def __init__(
+        self, task_config: TaskConfig, solution_name, timeout, seeds, in_self_test=False
+    ):
+        super().__init__(task_config, solution_name, timeout, in_self_test)
         self.seeds = seeds
-        self.run_config = {"timeout": timeout}
-        self.expected_score = None
-        self.judge = judge.make_judge(self.task_config)
-        self.in_self_test = in_self_test
 
-    def test_passes_sample(self):
-        sample_in_from = os.path.join(self.task_config.get_samples_dir(), "sample.in")
-        sample_in_to = os.path.join(self.task_config.get_data_dir(), "sample.in")
-        sample_out_from = os.path.join(self.task_config.get_samples_dir(), "sample.out")
-        sample_out_to = os.path.join(self.task_config.get_data_dir(), "sample.out")
+    def get_subtasks(self):
+        """
+        For Kasiopea, each "subtask" consists of outputs generated for one
+        of the variants (easy or hard), with the seeds we want to run on.
+        Passing such a "subtask" means working correctly for all seeds considered.
+        """
+        subtasks = []
 
-        shutil.copy(sample_in_from, sample_in_to)
-        shutil.copy(sample_out_from, sample_out_to)
+        for i, score in [(1, 4), (2, 6)]:
+            inputs = []
 
-        pts, verdict = self.judge.evaluate(
-            self.solution, sample_in_to, sample_out_to, self.run_config
-        )
-        self.assertEqual(
-            verdict.result,
-            RunResult.OK,
-            f"Chyba při spouštění {self.solution.name} na sample.in: {verdict}",
-        )
-        self.assertEqual(
-            pts,
-            1.0,
-            f"Špatná odpověď řešení {self.solution.name} na sample.in: {verdict}",
-        )
+            for seed in self.seeds:
+                inputs.append(util.get_input_name(seed, i))
 
-    def get_verdict(self, subtask, seed) -> Tuple[float, Verdict]:
-        data_dir = self.task_config.get_data_dir()
+            subtasks.append((score, inputs))
 
-        input_filename = util.get_input_name(seed, subtask)
-        output_filename = util.get_output_name(
-            input_filename, solution_name=self.solution.name
-        )
-        model_output_filename = util.get_output_name(
-            input_filename,
-            solution_name=self.model_solution_name,
-        )
-
-        input_file = os.path.join(data_dir, input_filename)
-        output_file = os.path.join(data_dir, output_filename)
-        model_output_file = os.path.join(data_dir, model_output_filename)
-
-        pts, verdict = self.judge.evaluate(
-            self.solution, input_file, model_output_file, self.run_config
-        )
-
-        if pts == 0:
-            diff = util.diff_files(
-                model_output_file,
-                output_file,
-                "správné řešení",
-                f"řešení solveru '{self.solution.name}'",
-            )
-
-            # Truncate diff -- we don't want this to be too long
-            if not verdict.msg:
-                verdict.msg = ""
-            verdict.msg += "\nDiff: " + "".join(itertools.islice(diff, 0, 25))
-
-        return pts, verdict
-
-    def get_score(self) -> Tuple[int, Dict[int, Tuple[int, str]]]:
-        total_score = 0
-
-        # TODO: the subtask should be part of the key, not the value
-        diffs: Dict[int, Tuple[int, str]] = {}  # seed -> (subtask, diff)
-
-        with tqdm.tqdm(
-            total=len(self.seeds) * 2,
-            desc=f"Běží řešení {self.solution.name}",
-            disable=self.in_self_test,
-        ) as pbar:
-            for subtask_score, subtask in [(4, 1), (6, 2)]:
-                ok = True
-                for seed in self.seeds:
-                    pts, verdict = self.get_verdict(subtask, seed)
-
-                    if pts == 0:
-                        ok = False
-
-                        diffs[seed] = (subtask, f"Výstup judge: {verdict.msg or ''}\n")
-                        break
-
-                    pbar.update(1)
-
-                if ok:
-                    total_score += subtask_score
-
-        return total_score, diffs
-
-    def runTest(self):
-        self.solution.compile()
-        self.expected_score = util.get_expected_score(
-            self.solution.name, self.task_config
-        )
-        if self.expected_score == 10:
-            # Solutions which don't pass one of the subtasks might not even pass the samples.
-            # For example, the sample might contain tests which would not appear in the easy version
-            self.test_passes_sample()
-
-        if self.solution.name != self.model_solution_name:
-            score, diffs = self.get_score()
-        else:
-            # TODO: unify get_score() and generate_outputs()?
-
-            output_files = generate_outputs(
-                self.solution,
-                self.task_config.get_data_dir(),
-                self.seeds,
-                self.run_config["timeout"],
-                in_self_test=self.in_self_test,
-            )
-
-            # Maximum score and no diffs by definition
-            # TODO: this might not hold with a judge (if the judge is bad)
-            self.assertEqual(
-                len(output_files),
-                2 * len(self.seeds),
-                f"Vzorové řešení {self.solution.name} nedoběhlo včas na všech seedech.",
-            )
-
-            score = 10
-            diffs = None
-
-        # TODO: make this a bit nicer
-        formatted_diffs = (
-            "\n".join(
-                f"Diff seedu {seed:x} na obtížnosti "
-                f"{'těžká' if (subtask == 2) else 'lehká'}:\n{diff}"
-                for (seed, (subtask, diff)) in diffs.items()
-            )
-            if diffs is not None
-            else ""
-        )
-
-        self.assertEqual(
-            score,
-            self.expected_score,
-            f"Řešení {self.solution.name} mělo získat {self.expected_score}b,"
-            f" ale získalo {score}b\n{formatted_diffs}",
-        )
-
-    def __str__(self):
-        return "Řešení {} získá {}b".format(
-            self.solution.name,
-            util.get_expected_score(self.solution.name, self.task_config),
-        )
+        return subtasks
 
 
 class JudgeHandlesWhitespace(test_case.TestCase):
