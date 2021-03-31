@@ -27,7 +27,12 @@ class CompileRules:
         os.chmod(filepath, st.st_mode | 0o111)
 
 
-class PythonCompileRules(CompileRules):
+class ScriptCompileRules(CompileRules):
+    """
+    For e.g. Python or Bash, languages whose source code can be directly executed
+    when an appropriate shebang is present
+    """
+
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
@@ -122,7 +127,7 @@ class PascalCompileRules(CompileRules):
 
 
 COMPILE_RULES: List[CompileRules] = [
-    PythonCompileRules([".py"]),
+    ScriptCompileRules([".py", ".sh"]),
     CPPCompileRules([".cpp", ".cc"]),
     CCompileRules([".c"]),
     PascalCompileRules([".pas"]),
