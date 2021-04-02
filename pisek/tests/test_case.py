@@ -246,3 +246,21 @@ class SolutionWorks(SolutionTestCase):
     def log(self, msg, *args, **kwargs):
         if not self.in_self_test:
             super().log(msg, *args, **kwargs)
+
+
+class InputsPassChecker(TestCase):
+    """ If a checker program is specified in the task config, runs the checker """
+
+    def __init__(self, task_config, get_subtasks: Callable[[], List[Subtask]], in_self_test=False):
+        super().__init__(task_config)
+        self.in_self_test = in_self_test
+
+    def runTest(self):
+        if not self.task_config.checker:
+            if not self.in_self_test:
+                self.log(
+                    "\nUpozornění: v configu není specifikovaný checker. "
+                    "Vygenerované vstupy tudíž nejsou zkontrolované. "
+                    "Doporučujeme proto nastavit v sekci [tasks] pole `checker`."
+                )
+            return
