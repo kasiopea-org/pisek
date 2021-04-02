@@ -244,7 +244,13 @@ class SolutionWorks(SolutionTestCase):
         # TODO: document this somewhere
         score = round(score)
 
-        message = "\n".join(messages)
+        if score > expected_score:
+            # If the solution works too well (e.g. 4 points instead of 0),
+            # printing diffs of wrong answers does not make sense.
+            message = ""
+        else:
+            message = "\n".join(messages)
+
         self.assertEqual(
             score,
             expected_score,
