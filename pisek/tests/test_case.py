@@ -3,12 +3,12 @@ import os
 import sys
 import unittest
 import shutil
-from typing import List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional, Callable, Dict
 
 from ..program import RunResult
 from ..task_config import TaskConfig
 from ..solution import Solution
-from ..judge import make_judge, Judge
+from ..judge import make_judge, Judge, Verdict
 from .. import util
 
 
@@ -100,6 +100,8 @@ class SolutionWorks(SolutionTestCase):
         # pass a function to get them later
         self.get_subtasks = get_subtasks
 
+        self.results_cache: Dict[str, Tuple[float, Verdict]] = {}
+
     def test_passes_samples(self):
         samples_dir = self.task_config.get_samples_dir()
         data_dir = self.task_config.get_data_dir()
@@ -177,17 +179,23 @@ class SolutionWorks(SolutionTestCase):
             assert len(model_outputs) == len(inputs)
 
         for input_filename, model_output_filename in zip(inputs, model_outputs):
-            pts, verdict = self.judge.evaluate(
-                self.solution,
-                input_file=os.path.join(data_dir, input_filename),
-                correct_output=os.path.join(data_dir, model_output_filename),
-                run_config=self.run_config,
-            )
+            if input_filename in self.results_cache:
+                from_cache = True
+                pts, verdict = self.results_cache[input_filename]
+            else:
+                from_cache = False
+                pts, verdict = self.judge.evaluate(
+                    self.solution,
+                    input_file=os.path.join(data_dir, input_filename),
+                    correct_output=os.path.join(data_dir, model_output_filename),
+                    run_config=self.run_config,
+                )
+                self.results_cache[input_filename] = pts, verdict
 
             if verdict.result == RunResult.OK:
                 c = "·" if pts == 1 else "W" if pts == 0 else "P"
 
-                if pts != 1:
+                if pts != 1 and not from_cache:
                     msg = self.create_wrong_answer_message(
                         input_filename, model_output_filename
                     )
