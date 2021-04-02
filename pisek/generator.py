@@ -5,6 +5,7 @@ import sys
 
 from .program import Program
 from . import util
+from .task_config import TaskConfig
 
 
 class OnlineGenerator(Program):
@@ -14,6 +15,10 @@ class OnlineGenerator(Program):
 
     We assume the generator outputs
     """
+
+    def __init__(self, task_dir: str, name: str):
+        super().__init__(task_dir, name)
+        self.cache_used = False  # Used to notify the user that cached data was used.
 
     def generate(
         self,
@@ -28,18 +33,25 @@ class OnlineGenerator(Program):
 
         output_dir = os.path.dirname(output_file)
         os.makedirs(output_dir, exist_ok=True)
-        with open(output_file, "w") as outp:
-            difficulty = str(subtask)
-            hexa_seed = f"{seed:x}"
 
-            result = subprocess.run(
-                [self.executable, difficulty, hexa_seed],
-                stdout=outp,
-                timeout=timeout,
-            )
+        if util.file_is_newer(output_file, self.executable):
+            # No need to re-generate
+            self.cache_used = True
+            return True
+        else:
+            with open(output_file, "w") as outp:
 
-            # TODO: return a CompletedProcess to be consistent with OfflineGenerator
-            return result.returncode == 0
+                difficulty = str(subtask)
+                hexa_seed = f"{seed:x}"
+
+                result = subprocess.run(
+                    [self.executable, difficulty, hexa_seed],
+                    stdout=outp,
+                    timeout=timeout,
+                )
+
+                # TODO: return a CompletedProcess to be consistent with OfflineGenerator
+                return result.returncode == 0
 
     def generate_random(
         self, output_file: str, subtask: int, timeout: int = util.DEFAULT_TIMEOUT
@@ -54,15 +66,26 @@ class OfflineGenerator(Program):
     which are common to all participants.
 
     In this type of contests (non-opendata), the solution is run separately
-    for individual tests so we generate a separate file for each. We give
+    for individual tests, so we generate a separate file for each. We give
     the generator a directory into which to generate outputs.
     """
+
+    def __init__(self, task_config: TaskConfig, name: str):
+        super().__init__(task_config.task_dir, name)
+        self.cache_used = False  # Used to notify the user that cached data was used.
+        self.task_config = task_config
 
     def generate(self, test_dir: str) -> int:
         self.compile_if_needed()
         os.makedirs(test_dir, exist_ok=True)
 
         assert self.executable is not None
+
+        inp = get_any_nonsample_input(self.task_config)
+        if inp and util.file_is_newer(inp, self.executable):
+            # The inputs appear to be newer - do not rerun.
+            self.cache_used = True
+            return 0
 
         popen = subprocess.Popen(
             [self.executable, test_dir],
@@ -84,3 +107,15 @@ class OfflineGenerator(Program):
         return_code = popen.wait()
 
         return return_code
+
+
+def get_any_nonsample_input(task_config):
+    """ Returns an arbitrary `.in` file in the data dir that is not a sample. """
+    samples = util.get_samples(task_config.task_dir)
+    data_dir = task_config.get_data_dir()
+
+    for file in os.listdir(data_dir):
+        if file.endswith(".in") and file not in samples:
+            return os.path.join(data_dir, file)
+
+    return None

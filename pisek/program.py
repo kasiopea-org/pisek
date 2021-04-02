@@ -91,17 +91,10 @@ class Program:
         if executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
 
-        mtime = os.path.getmtime
-        exists = os.path.exists
-        if (
-            exists(executable)
-            and exists(self.filename)
-            and mtime(executable) > mtime(self.filename)
-        ):
+        if util.file_is_newer(executable, self.filename):
             self.executable = executable
-            return
-
-        self.compile()
+        else:
+            self.compile()
 
     def run(self, args=None) -> RunResult:
         if args is None:

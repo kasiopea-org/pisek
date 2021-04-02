@@ -145,9 +145,18 @@ def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
             pass
 
 
-def clean_data_dir(task_dir: str) -> None:
-    config = TaskConfig(task_dir)
-    return _clean_subdirs(task_dir, [config.data_subdir])
+def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
+    """
+    `leave_inputs` retains non-sample `.in` files.
+    """
+    data_dir = task_config.get_data_dir()
+
+    try:
+        for file in os.listdir(data_dir):
+            if not leave_inputs or ("sample" in file) or (not file.endswith(".in")):
+                os.remove(os.path.join(data_dir, file))
+    except FileNotFoundError:
+        pass
 
 
 def clean_task_dir(task_dir: str) -> None:
@@ -222,3 +231,14 @@ def quote_process_output(
         res.append(cur)
 
     return "\n".join(res)
+
+
+def file_is_newer(file_a: str, file_b: str) -> Optional[bool]:
+    """
+    Returns True if file in `path_a` is newer (more recently modified) than `path_b`.
+    Returns None if either of the files does not exist.
+    """
+    try:
+        return os.path.getmtime(file_a) > os.path.getmtime(file_b)
+    except FileNotFoundError:
+        return None

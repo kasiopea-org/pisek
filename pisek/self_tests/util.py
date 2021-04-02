@@ -7,7 +7,7 @@ import unittest
 
 from .. import task_config
 from ..tests.util import get_test_suite
-from ..util import quote_output
+from ..util import quote_output, clean_task_dir
 
 
 class TestFixtureVariant(unittest.TestCase):
@@ -42,6 +42,7 @@ class TestFixtureVariant(unittest.TestCase):
         if not self.fixture_path():
             return
 
+        clean_task_dir(self.task_dir)
         self.modify_task()
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds

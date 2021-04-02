@@ -3,9 +3,9 @@ import unittest
 import os
 import random
 from typing import Optional, Tuple, Dict, List
-import itertools
 
 import tqdm
+import termcolor
 
 from . import test_case
 from .test_case import Subtask, SolutionWorks
@@ -177,7 +177,9 @@ class GeneratesInputs(test_case.GeneratorTestCase):
     Generates the inputs for the seeds we actually care about.
     """
 
-    def __init__(self, task_config, generator, seeds, in_self_test=False):
+    def __init__(
+        self, task_config, generator: OnlineGenerator, seeds, in_self_test=False
+    ):
         super().__init__(task_config, generator)
         self.seeds = seeds
         self.in_self_test = in_self_test
@@ -188,6 +190,10 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         ):
             for subtask in [1, 2]:
                 generate_checked(self, seed, subtask)
+
+        if self.generator.cache_used:
+            message = "\n  Generátor se nezměnil, používám vstupy vygenerované v předchozím běhu."
+            print(termcolor.colored(message, color="cyan"))
 
     def __str__(self):
         return f"Generátor {self.generator.name} vygeneruje vstupy"
@@ -258,8 +264,7 @@ def kasiopea_test_suite(
     that they get the expected number of points.
     """
     config = TaskConfig(task_dir)
-    data_dir = config.get_data_dir()
-    util.clean_data_dir(task_dir)
+    util.clean_data_dir(config, leave_inputs=True)
 
     suite = unittest.TestSuite()
 

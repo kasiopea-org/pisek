@@ -3,6 +3,8 @@ import unittest
 import os
 from typing import Optional, List
 
+import termcolor
+
 from . import test_case
 from .test_case import SolutionWorks, Subtask
 from ..task_config import TaskConfig
@@ -51,6 +53,10 @@ class GeneratorWorks(test_case.GeneratorTestCase):
                 f"Chybí vstupní soubory pro subtask {subtask}.",
             )
 
+        if self.generator.cache_used:
+            message = "\n  Generátor se nezměnil, používám vstupy vygenerované v předchozím běhu."
+            print(termcolor.colored(message, color="cyan"))
+
     def __str__(self):
         return f"Generátor {self.generator.name} funguje"
 
@@ -69,7 +75,7 @@ def cms_test_suite(
     """
 
     config = TaskConfig(task_dir)
-    util.clean_data_dir(task_dir)
+    util.clean_data_dir(config, leave_inputs=True)
 
     if timeout is None:
         timeout = config.timeout_other_solutions or util.DEFAULT_TIMEOUT
@@ -82,7 +88,7 @@ def cms_test_suite(
         # No need to check for samples when only testing generator
         suite.addTest(test_case.SampleExists(config.get_samples_dir()))
 
-    generator = OfflineGenerator(task_dir, config.generator)
+    generator = OfflineGenerator(config, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
 
     if solutions is None:
