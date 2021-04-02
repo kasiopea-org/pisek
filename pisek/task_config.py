@@ -28,8 +28,9 @@ class TaskConfig:
             self.judge_name: Optional[str] = None
             if self.judge_type == "judge":
                 self.judge_name = config["tests"]["out_judge"]
+            self.checker: Optional[str] = config["tests"].get("checker")
 
-            # Warning: currently ignored in Kasiopea!
+            # Warning: these timeouts are currently ignored in Kasiopea!
             self.timeout_model_solution: Optional[float] = apply_to_optional(
                 config.get("limits", "solve_time_limit", fallback=None), float
             )

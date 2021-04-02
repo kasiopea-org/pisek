@@ -103,7 +103,10 @@ class Program:
 
         self.compile()
 
-    def run(self, args: List[str] = []) -> RunResult:
+    def run(self, args=None) -> RunResult:
+        if args is None:
+            args = []
+
         self.compile_if_needed()
         assert self.executable is not None
         return run_direct(self.executable, args)
