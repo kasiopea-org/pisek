@@ -38,24 +38,17 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
     def runTest(self):
         data_dir = self.task_config.get_data_dir()
-        result = self.generator.generate(test_dir=data_dir)
+        return_code = self.generator.generate(test_dir=data_dir)
 
-        generator_output = util.quote_process_output(result)
-        self.assertTrue(
-            result.returncode == 0,
-            f"Chyba při generování vstupu.\n{generator_output}",
-        )
+        self.assertTrue(return_code == 0, f"Chyba při generování vstupu.")
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
-        self.assertTrue(
-            test_files,
-            f"Generátor nevygeneroval žádné vstupní soubory\n{generator_output}",
-        )
+        self.assertTrue(test_files, f"Generátor nevygeneroval žádné vstupní soubory.")
 
         for subtask in self.task_config.subtasks:
             self.assertTrue(
                 inputs_for_subtask(subtask, self.task_config),
-                f"Chybí vstupní soubory pro subtask {subtask}.\n{generator_output}",
+                f"Chybí vstupní soubory pro subtask {subtask}.",
             )
 
     def __str__(self):

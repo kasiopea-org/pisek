@@ -179,6 +179,9 @@ def quote_output(s, color="yellow", max_length=1500, max_lines=20):
     if isinstance(s, bytes):
         s = s.decode("utf-8")
 
+    while s and s[-1] == "\n":
+        s = s[:-1]
+
     add_ellipsis = False
 
     if len(s) > max_length:

@@ -142,13 +142,17 @@ class CMSExternalJudge(Judge):
             )
             if result.returncode != 0:
                 raise RuntimeError(
-                    f"Judge selhal s chybovým kódem {result.returncode}. stdout: {result.stdout}, stderr: {result.stderr}"
+                    f"Judge selhal s chybovým kódem {result.returncode}."
+                    f"\n{util.quote_process_output(result)}"
                 )
             pts_raw = result.stdout.decode().split("\n", 1)[0]
             try:
                 pts = float(pts_raw)
-            except:
-                raise RuntimeError(f"Judge místo počtu bodů vypsal {result.stdout}")
+            except ValueError:
+                raise RuntimeError(
+                    f"Judge na stdout místo počtu bodů vypsal"
+                    f"\n{util.quote_process_output(result)}"
+                )
             if not (0 <= pts <= 1):
                 raise RuntimeError(
                     f"Judge řešení udělil {pts} bodů, což je mimo povolený rozsah [0.0, 1.0]."
@@ -234,13 +238,11 @@ class KasiopeaExternalJudge(Judge):
 
         if result.returncode not in [0, 1]:
             raise RuntimeError(
-                f"Judge selhal s chybovým kódem {result.returncode}. "
-                f"stdout: {result.stdout}, stderr: {result.stderr}"
+                f"Judge selhal s chybovým kódem {result.returncode}.\n"
+                f"{util.quote_process_output(result)}"
             )
 
         return float(1 - result.returncode), Verdict(
             RunResult.OK,
-            msg=f"stdout: {result.stdout}, stderr: {result.stderr}"
-            if result.returncode == 1
-            else None,
+            msg=util.quote_process_output(result) if result.returncode == 1 else None,
         )

@@ -1,6 +1,7 @@
 import subprocess
 import random
 import os
+import sys
 
 from .program import Program
 from . import util
@@ -34,7 +35,6 @@ class OnlineGenerator(Program):
             result = subprocess.run(
                 [self.executable, difficulty, hexa_seed],
                 stdout=outp,
-                stderr=subprocess.PIPE,
                 timeout=timeout,
             )
 
@@ -58,13 +58,29 @@ class OfflineGenerator(Program):
     the generator a directory into which to generate outputs.
     """
 
-    def generate(self, test_dir: str) -> subprocess.CompletedProcess:
+    def generate(self, test_dir: str) -> int:
         self.compile_if_needed()
         os.makedirs(test_dir, exist_ok=True)
 
         assert self.executable is not None
-        result = subprocess.run(
-            [self.executable, test_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+
+        popen = subprocess.Popen(
+            [self.executable, test_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
 
-        return result
+        assert popen.stdout is not None  # To make MyPy happy
+
+        for i, stdout_line in enumerate(popen.stdout):
+            if i == 0:
+                print(file=sys.stderr)
+            print(
+                util.quote_output(stdout_line, max_length=1e9, max_lines=1e9),
+                file=sys.stderr,
+            )
+
+        popen.stdout.close()
+        return_code = popen.wait()
+
+        return return_code
