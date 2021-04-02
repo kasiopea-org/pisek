@@ -2,14 +2,12 @@ import glob
 import unittest
 import os
 from typing import Optional, List
-import shutil
 
 from . import test_case
+from .test_case import SolutionWorks, Subtask
 from ..task_config import TaskConfig
 from .. import util
 from ..generator import OfflineGenerator
-from ..judge import make_judge, Judge
-from ..program import RunResult
 
 
 def inputs_for_subtask(subtask: int, config: TaskConfig):
@@ -21,6 +19,17 @@ def inputs_for_subtask(subtask: int, config: TaskConfig):
         res += [os.path.basename(f) for f in glob.glob(os.path.join(data_dir, g))]
 
     return sorted(res)
+
+
+def get_subtasks(task_config) -> List[Subtask]:
+    subtasks = []
+
+    for subtask in task_config.subtasks:
+        score = task_config.subtasks[subtask].score
+        inputs = inputs_for_subtask(subtask, task_config)
+        subtasks.append(Subtask(score, inputs, task_config.subtasks[subtask].name))
+
+    return subtasks
 
 
 class GeneratorWorks(test_case.GeneratorTestCase):
@@ -51,19 +60,6 @@ class GeneratorWorks(test_case.GeneratorTestCase):
 
     def __str__(self):
         return f"Generátor {self.generator.name} funguje"
-
-
-class SolutionWorks(test_case.SolutionWorks):
-    def get_subtasks(self):
-        subtasks = []
-
-        for subtask in self.task_config.subtasks:
-            score = self.task_config.subtasks[subtask].score
-            inputs = inputs_for_subtask(subtask, self.task_config)
-
-            subtasks.append((score, inputs))
-
-        return subtasks
 
 
 def cms_test_suite(
@@ -112,7 +108,11 @@ def cms_test_suite(
         cur_timeout = timeout_model_solution if i == 0 else timeout
         suite.addTest(
             SolutionWorks(
-                config, solution_name, timeout=cur_timeout, in_self_test=in_self_test
+                config,
+                solution_name,
+                timeout=cur_timeout,
+                get_subtasks=lambda: get_subtasks(config),
+                in_self_test=in_self_test,
             )
         )
 

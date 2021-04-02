@@ -3,7 +3,7 @@ import os
 import sys
 import unittest
 import shutil
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 
 from ..program import RunResult
 from ..task_config import TaskConfig
@@ -70,18 +70,35 @@ class SampleExists(TestCase):
             )
 
 
+class Subtask:
+    def __init__(self, score: int, inputs: List[str], name: Optional[str] = None):
+        self.score = score
+        # `inputs` is a list of filenames in the data dir.
+        self.inputs = inputs
+        self.name = name
+
+
 class SolutionWorks(SolutionTestCase):
     """
     Tests if a specific solution gets the correct score.
     """
 
     def __init__(
-        self, task_config: TaskConfig, solution_name, timeout, in_self_test=False
+        self,
+        task_config: TaskConfig,
+        solution_name,
+        timeout,
+        get_subtasks: Callable[[], List[Subtask]],
+        in_self_test=False,
     ):
         super().__init__(task_config, solution_name)
         self.run_config = {"timeout": timeout}
         self.judge: Judge = make_judge(self.task_config)
         self.in_self_test = in_self_test
+
+        # Subtasks might not be available when this test case is created, so we need to
+        # pass a function to get them later
+        self.get_subtasks = get_subtasks
 
     def test_passes_samples(self):
         samples_dir = self.task_config.get_samples_dir()
@@ -192,14 +209,6 @@ class SolutionWorks(SolutionTestCase):
 
         return judge_score, ("\n".join(messages) if messages else None)
 
-    def get_subtasks(self) -> List[Tuple[int, List[str]]]:
-        """
-        Return a list of subtasks.
-        Each subtask is a tuple `(score, inputs)`,
-        where `inputs` is a list of filenames in the data dir.
-        """
-        raise NotImplementedError("Differs between CMS and Kasiopea")
-
     def runTest(self):
         expected_score = util.get_expected_score(self.solution.name, self.task_config)
         max_score = self.task_config.get_maximum_score()
@@ -210,16 +219,14 @@ class SolutionWorks(SolutionTestCase):
             # not appear in the easy version
             self.test_passes_samples()
 
-        subtasks = self.get_subtasks()
-
         score = 0
         messages = []
-        for subtask_score, subtask_inputs in subtasks:
+        for subtask in self.get_subtasks():
             self.log("|", end="")
-            judge_score, message = self.get_score_for_inputs(subtask_inputs)
+            judge_score, message = self.get_score_for_inputs(subtask.inputs)
 
             # Note that this may be non-integral
-            score += judge_score * subtask_score
+            score += judge_score * subtask.score
 
             if message:
                 messages.append(message)

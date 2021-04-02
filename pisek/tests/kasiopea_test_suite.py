@@ -8,6 +8,7 @@ import itertools
 import tqdm
 
 from . import test_case
+from .test_case import Subtask, SolutionWorks
 from ..judge import Verdict
 from ..task_config import TaskConfig
 from .. import util
@@ -93,6 +94,25 @@ def generate_outputs(
     return output_files
 
 
+def get_subtasks(seeds) -> List[Subtask]:
+    """
+    For Kasiopea, each "subtask" consists of outputs generated for one
+    of the variants (easy or hard), with the seeds we want to run on.
+    Passing such a "subtask" means working correctly for all seeds considered.
+    """
+    subtasks = []
+
+    for i, score in [(1, 4), (2, 6)]:
+        inputs = []
+
+        for seed in seeds:
+            inputs.append(util.get_input_name(seed, i))
+
+        subtasks.append(Subtask(score, inputs))
+
+    return subtasks
+
+
 class GeneratorWorks(test_case.GeneratorTestCase):
     def runTest(self):
         self.generate_any()
@@ -173,32 +193,6 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         return f"Generátor {self.generator.name} vygeneruje vstupy"
 
 
-class SolutionWorks(test_case.SolutionWorks):
-    def __init__(
-        self, task_config: TaskConfig, solution_name, timeout, seeds, in_self_test=False
-    ):
-        super().__init__(task_config, solution_name, timeout, in_self_test)
-        self.seeds = seeds
-
-    def get_subtasks(self):
-        """
-        For Kasiopea, each "subtask" consists of outputs generated for one
-        of the variants (easy or hard), with the seeds we want to run on.
-        Passing such a "subtask" means working correctly for all seeds considered.
-        """
-        subtasks = []
-
-        for i, score in [(1, 4), (2, 6)]:
-            inputs = []
-
-            for seed in self.seeds:
-                inputs.append(util.get_input_name(seed, i))
-
-            subtasks.append((score, inputs))
-
-        return subtasks
-
-
 class JudgeHandlesWhitespace(test_case.TestCase):
     def __init__(self, task_config: TaskConfig):
         super().__init__(task_config)
@@ -256,7 +250,7 @@ def kasiopea_test_suite(
     n_seeds=5,
     timeout=util.DEFAULT_TIMEOUT,
     in_self_test=False,
-    only_necessary=False,
+    only_necessary=False,  # True when testing a single solution
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -269,11 +263,10 @@ def kasiopea_test_suite(
 
     suite = unittest.TestSuite()
 
-    if not only_necessary:
-        if solutions != []:
-            # No need to check for samples when only testing generator
-            suite.addTest(SampleExists(config))
-            suite.addTest(SampleNotEmpty(config))
+    if not only_necessary and solutions != []:
+        # No need to check for samples when only testing generator
+        suite.addTest(SampleExists(config))
+        suite.addTest(SampleNotEmpty(config))
 
     random.seed(4)  # Reproducibility!
     seeds = random.sample(range(0, 16 ** 4), n_seeds)
@@ -286,27 +279,24 @@ def kasiopea_test_suite(
     suite.addTest(GeneratesInputs(config, generator, seeds, in_self_test))
     suite.addTest(JudgeHandlesWhitespace(config))
 
-    if solutions is None:
-        solutions = config.solutions
+    solutions = solutions or config.solutions
 
-    if not solutions:
-        # This might be desirable if we only want to test the generator
-        return suite
+    # Having an empty `solutions` might be desirable if we only want to test the generator
+    if solutions:
+        if solutions[0] != config.solutions[0]:
+            # Make sure the model solution comes first even if we are not testing
+            # all of the solutions
+            solutions = [config.solutions[0]] + solutions
 
-    if solutions[0] != config.solutions[0]:
-        # Make sure that the model solution comes first even if we are not testing
-        # all of the solutions
-        solutions = [config.solutions[0]] + solutions
-
-    for solution_name in solutions:
-        suite.addTest(
-            SolutionWorks(
-                config,
-                solution_name,
-                seeds=seeds,
-                timeout=timeout,
-                in_self_test=in_self_test,
+        for solution_name in solutions:
+            suite.addTest(
+                SolutionWorks(
+                    config,
+                    solution_name,
+                    timeout,
+                    get_subtasks=lambda: get_subtasks(seeds),
+                    in_self_test=in_self_test,
+                )
             )
-        )
 
     return suite
