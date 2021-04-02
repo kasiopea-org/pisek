@@ -14,6 +14,7 @@ solutions=solve solve_4b solve_slow_4b solve_0b
 [tests]
 in_mode=online
 in_gen=gen
+checker=check
 out_mode=solve
 out_format=text
 online_validity=360

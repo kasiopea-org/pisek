@@ -62,5 +62,25 @@ class TestInvalidJudgeScore(TestSoucetCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
+class TestLooseChecker(TestSoucetCMS):
+    """ A checker that cannot distinguish between subtasks. """
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        overwrite_file(self.task_dir, "check.py", "check_loose.py")
+
+
+class TestStrictChecker(TestSoucetCMS):
+    """ A checker whose bounds are stricter than what the generator creates. """
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        overwrite_file(self.task_dir, "check.py", "check_strict.py")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

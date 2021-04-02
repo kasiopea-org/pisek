@@ -5,6 +5,7 @@ import unittest
 import shutil
 from typing import List, Tuple, Optional, Callable
 
+from ..checker import Checker
 from ..program import RunResult
 from ..task_config import TaskConfig
 from ..solution import Solution
@@ -255,19 +256,98 @@ class SolutionWorks(SolutionTestCase):
             super().log(msg, *args, **kwargs)
 
 
-class InputsPassChecker(TestCase):
-    """ If a checker program is specified in the task config, runs the checker """
+class CheckerDistinguishesSubtasks(TestCase):
+    """
+    Makes sure the checker gives different results for different subtasks.
+    Specifically, for subtask i, runs the checker on the inputs for subtask i but tells
+    it that the subtask is (i-1).
+    The check should therefore not pass for at least one of the inputs.
+    """
 
-    def __init__(self, task_config, get_subtasks: Callable[[], List[Subtask]], in_self_test=False):
+    def __init__(
+        self, task_config, checker: Checker, get_subtasks: Callable[[], List[Subtask]]
+    ):
         super().__init__(task_config)
-        self.in_self_test = in_self_test
+        self.checker = checker
+        self.get_subtasks = get_subtasks
 
     def runTest(self):
-        if not self.task_config.checker:
-            if not self.in_self_test:
-                self.log(
-                    "\nUpozornění: v configu není specifikovaný checker. "
-                    "Vygenerované vstupy tudíž nejsou zkontrolované. "
-                    "Doporučujeme proto nastavit v sekci [tasks] pole `checker`."
+        subtasks = self.get_subtasks()
+        last_inputs = set()
+
+        for subtask_i, subtask in enumerate(subtasks):
+            new_inputs = set(subtask.inputs) - last_inputs
+
+            if subtask_i == 0:
+                # Nothing to compare with at this point.
+                continue
+
+            failed = False
+
+            for input_file in new_inputs:
+                res = self.checker.run_on_file(input_file, subtask_i - 1)
+
+                if res.returncode != 0:
+                    failed = True
+
+            self.assertTrue(
+                failed,
+                (
+                    f"Checker '{self.checker.name}' nedokáže odlišit vstupy "
+                    f"subtasků {subtask_i} a {subtask_i + 1} "
+                    f"(nestěžuje si, když přidáme vstupy ze subtasku {subtask_i + 1}"
+                    f" do subtasku {subtask_i})"
+                ),
+            )
+
+            last_inputs = set(subtask.inputs)
+
+
+class InputsPassChecker(TestCase):
+    """ If a checker program is specified in the task config, runs the checker. """
+
+    def __init__(
+        self,
+        task_config,
+        checker: Checker,
+        get_subtasks: Callable[[], List[Subtask]],
+    ):
+        super().__init__(task_config)
+        self.checker = checker
+        self.get_subtasks = get_subtasks
+
+    def runTest(self):
+        subtasks = self.get_subtasks()
+
+        for subtask_i, subtask in enumerate(subtasks):
+            for input_file in subtask.inputs:
+                res = self.checker.run_on_file(input_file, subtask_i)
+
+                self.assertEqual(
+                    res.returncode,
+                    0,
+                    (
+                        f"Checker '{self.checker.name}' neprošel pro vstup {input_file} "
+                        f"subtasku {subtask_i + 1}.\n{util.quote_process_output(res)}"
+                    ),
                 )
-            return
+
+
+def add_checker_cases(
+    task_config: TaskConfig,
+    suite: unittest.TestSuite,
+    in_self_test,
+    get_subtasks,
+):
+    if not task_config.checker:
+        if not in_self_test:
+            print(
+                "\nUpozornění: v configu není specifikovaný checker. "
+                "Vygenerované vstupy tudíž nejsou zkontrolované. "
+                "Doporučujeme proto nastavit v sekci [tasks] pole `checker`.",
+                file=sys.stderr,
+            )
+    else:
+        checker = Checker(task_config)
+        suite.addTest(CheckerDistinguishesSubtasks(task_config, checker, get_subtasks))
+        suite.addTest(InputsPassChecker(task_config, checker, get_subtasks))

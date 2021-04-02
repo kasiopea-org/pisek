@@ -91,7 +91,10 @@ def cms_test_suite(
 
     generator = OfflineGenerator(task_dir, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
-    suite.addTest(test_case.InputsPassChecker(config, in_self_test))
+
+    test_case.add_checker_cases(
+        config, suite, in_self_test, get_subtasks=lambda: get_subtasks(config)
+    )
 
     if solutions is None:
         solutions = config.solutions

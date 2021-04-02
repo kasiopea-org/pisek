@@ -13,6 +13,8 @@ in_mode=build
 # generator source file
 in_gen=gen
 
+checker=check
+
 out_format=text
 online_validity=360
 out_check=judge
