@@ -23,7 +23,7 @@ class TaskConfig:
             self.solutions: List[str] = config["task"]["solutions"].split()
             self.contest_type = config["task"].get("contest_type", "kasiopea")
             self.generator: str = config["tests"]["in_gen"]
-            self.checker: str = config["tests"].get("checker")
+            self.checker: Optional[str] = config["tests"].get("checker")
             self.judge_type: str = config["tests"].get("out_check", "diff")
             self.judge_name: Optional[str] = None
             if self.judge_type == "judge":

@@ -17,6 +17,11 @@ class Checker(program.Program):
         The subtask number `subtask` is expected to be zero-indexed.
         """
         with open(os.path.join(self.task_config.get_data_dir(), input_file)) as f:
-            res = self.run_raw([str(subtask + 1)], stdin=f, capture_output=True)
+            res = self.run_raw(
+                [str(subtask + 1)],
+                stdin=f,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
         return res
