@@ -182,5 +182,25 @@ class TestPythonCRLF(TestSoucetKasiopea):
             f.write("\r\n".join(new_program))
 
 
+class TestLooseChecker(TestSoucetKasiopea):
+    """ A checker that cannot distinguish between subtasks. """
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        overwrite_file(self.task_dir, "check.py", "check_loose.py")
+
+
+class TestStrictChecker(TestSoucetKasiopea):
+    """ A checker whose bounds are stricter than what the generator creates. """
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        overwrite_file(self.task_dir, "check.py", "check_strict.py")
+
+
 if __name__ == "__main__":
     unittest.main()

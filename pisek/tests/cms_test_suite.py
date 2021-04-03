@@ -91,6 +91,10 @@ def cms_test_suite(
     generator = OfflineGenerator(config, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
 
+    test_case.add_checker_cases(
+        config, suite, in_self_test, get_subtasks=lambda: get_subtasks(config)
+    )
+
     if solutions is None:
         solutions = config.solutions
 
