@@ -5,6 +5,8 @@ import unittest
 import shutil
 from typing import List, Tuple, Optional, Callable
 
+import termcolor
+
 from ..checker import Checker
 from ..program import RunResult
 from ..task_config import TaskConfig
@@ -293,14 +295,18 @@ class CheckerDistinguishesSubtasks(TestCase):
             self.assertTrue(
                 failed,
                 (
-                    f"Checker '{self.checker.name}' nedokáže odlišit vstupy "
-                    f"subtasků {subtask_i} a {subtask_i + 1} "
-                    f"(nestěžuje si, když přidáme vstupy ze subtasku {subtask_i + 1}"
-                    f" do subtasku {subtask_i})"
+                    f"Checker '{self.checker.name}' není dost přísný: "
+                    f"nestěžuje si, když přidáme vstupy ze subtasku {subtask_i + 1}"
+                    f" do subtasku {subtask_i}. Subtask {subtask_i} má přitom přísnější "
+                    f"omezení, takže vstupy ze subtasku {subtask_i + 1} by neměly být "
+                    f"platné pro subtask {subtask_i}."
                 ),
             )
 
             last_inputs = set(subtask.inputs)
+
+    def __str__(self):
+        return f"Checker {self.checker.name} rozliší subtasky"
 
 
 class InputsPassChecker(TestCase):
@@ -332,6 +338,9 @@ class InputsPassChecker(TestCase):
                     ),
                 )
 
+    def __str__(self):
+        return f"Vygenerované vstupy projdou checkerem {self.checker.name}"
+
 
 def add_checker_cases(
     task_config: TaskConfig,
@@ -342,9 +351,12 @@ def add_checker_cases(
     if not task_config.checker:
         if not in_self_test:
             print(
-                "\nUpozornění: v configu není specifikovaný checker. "
-                "Vygenerované vstupy tudíž nejsou zkontrolované. "
-                "Doporučujeme proto nastavit v sekci [tasks] pole `checker`.",
+                termcolor.colored(
+                    "Upozornění: v configu není specifikovaný checker. "
+                    "Vygenerované vstupy tudíž nejsou zkontrolované. "
+                    "Doporučujeme proto nastavit v sekci [tests] pole `checker`.",
+                    color="cyan",
+                ),
                 file=sys.stderr,
             )
     else:
