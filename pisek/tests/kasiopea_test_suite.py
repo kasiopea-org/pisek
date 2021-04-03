@@ -194,6 +194,10 @@ class GeneratesInputs(test_case.GeneratorTestCase):
         if self.generator.cache_used:
             message = "\n  Generátor se nezměnil, používám vstupy vygenerované v předchozím běhu."
             print(termcolor.colored(message, color="cyan"))
+        else:
+            # Remove old solution outputs. The invalidated cache would not be used either
+            # way, but this way we get rid of possible junk
+            util.clean_data_dir(self.task_config, leave_inputs=True)
 
     def __str__(self):
         return f"Generátor {self.generator.name} vygeneruje vstupy"
@@ -264,7 +268,6 @@ def kasiopea_test_suite(
     that they get the expected number of points.
     """
     config = TaskConfig(task_dir)
-    util.clean_data_dir(config, leave_inputs=True)
 
     suite = unittest.TestSuite()
 
