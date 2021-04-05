@@ -24,6 +24,8 @@ class Solution(program.Program):
             output_file
             and util.file_is_newer(output_file, self.executable)
             and util.file_is_newer(output_file, input_file)
+            # An empty file might mean the solution was interrupted while running.
+            and os.stat(output_file).st_size > 0
         ):
             # The output file is newer than both the executable and the input,
             # so it should be up-to-date.
@@ -37,4 +39,7 @@ class Solution(program.Program):
         if res == program.RunResult.OK:
             return res, output_file
         else:
+            # Set the modification time of this file to 1970 so that it is not used
+            # for caching
+            os.utime(output_file, (0, 0))
             return res, None

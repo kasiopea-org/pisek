@@ -6,6 +6,7 @@ import shutil
 from typing import List, Tuple, Optional, Callable, Dict
 
 import termcolor
+import tqdm
 
 from ..checker import Checker
 from ..program import RunResult
@@ -323,26 +324,35 @@ class InputsPassChecker(TestCase):
         task_config,
         checker: Checker,
         get_subtasks: Callable[[], List[Subtask]],
+        in_self_test: bool,
     ):
         super().__init__(task_config)
         self.checker = checker
         self.get_subtasks = get_subtasks
+        self.in_self_test = in_self_test
 
     def runTest(self):
         subtasks = self.get_subtasks()
 
+        all_inputs = []
         for subtask_i, subtask in enumerate(subtasks):
-            for input_file in subtask.inputs:
-                res = self.checker.run_on_file(input_file, subtask_i)
+            all_inputs += [(inp, subtask_i) for inp in subtask.inputs]
 
-                self.assertEqual(
-                    res.returncode,
-                    0,
-                    (
-                        f"Checker '{self.checker.name}' neprošel pro vstup {input_file} "
-                        f"subtasku {subtask_i + 1}.\n{util.quote_process_output(res)}"
-                    ),
-                )
+        for input_file, subtask_i in tqdm.tqdm(
+            all_inputs,
+            desc=f"Běží checker '{self.checker.name}'",
+            disable=self.in_self_test,
+        ):
+            res = self.checker.run_on_file(input_file, subtask_i)
+
+            self.assertEqual(
+                res.returncode,
+                0,
+                (
+                    f"Checker '{self.checker.name}' neprošel pro vstup {input_file} "
+                    f"subtasku {subtask_i + 1}.\n{util.quote_process_output(res)}"
+                ),
+            )
 
     def __str__(self):
         return f"Vygenerované vstupy projdou checkerem {self.checker.name}"
@@ -368,4 +378,6 @@ def add_checker_cases(
     else:
         checker = Checker(task_config)
         suite.addTest(CheckerDistinguishesSubtasks(task_config, checker, get_subtasks))
-        suite.addTest(InputsPassChecker(task_config, checker, get_subtasks))
+        suite.addTest(
+            InputsPassChecker(task_config, checker, get_subtasks, in_self_test)
+        )
