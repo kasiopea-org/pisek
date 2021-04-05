@@ -20,6 +20,18 @@ class Solution(program.Program):
         self.compile_if_needed()
         assert self.executable is not None
 
+        if (
+            output_file
+            and util.file_is_newer(output_file, self.executable)
+            and util.file_is_newer(output_file, input_file)
+        ):
+            # The output file is newer than both the executable and the input,
+            # so it should be up-to-date.
+            return program.RunResult.OK, output_file
+            # TODO: with the above, a solution that ends with a runtime error and is
+            #   re-run will wrongly get a 'Wrong Answer' verdict next time, instead of
+            #   'Runtime Error'. Can we fix this somehow?
+
         res = program.run(self.executable, input_file, output_file, timeout)
 
         if res == program.RunResult.OK:

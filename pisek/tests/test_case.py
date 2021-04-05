@@ -103,8 +103,6 @@ class SolutionWorks(SolutionTestCase):
         # pass a function to get them later
         self.get_subtasks = get_subtasks
 
-        self.results_cache: Dict[str, Tuple[float, Verdict]] = {}
-
     def test_passes_samples(self):
         samples_dir = self.task_config.get_samples_dir()
         data_dir = self.task_config.get_data_dir()
@@ -182,23 +180,17 @@ class SolutionWorks(SolutionTestCase):
             assert len(model_outputs) == len(inputs)
 
         for input_filename, model_output_filename in zip(inputs, model_outputs):
-            if input_filename in self.results_cache:
-                from_cache = True
-                pts, verdict = self.results_cache[input_filename]
-            else:
-                from_cache = False
-                pts, verdict = self.judge.evaluate(
-                    self.solution,
-                    input_file=os.path.join(data_dir, input_filename),
-                    correct_output=os.path.join(data_dir, model_output_filename),
-                    run_config=self.run_config,
-                )
-                self.results_cache[input_filename] = pts, verdict
+            pts, verdict = self.judge.evaluate(
+                self.solution,
+                input_file=os.path.join(data_dir, input_filename),
+                correct_output=os.path.join(data_dir, model_output_filename),
+                run_config=self.run_config,
+            )
 
             if verdict.result == RunResult.OK:
                 c = "·" if pts == 1 else "W" if pts == 0 else "P"
 
-                if pts != 1 and not from_cache:
+                if pts != 1:
                     msg = self.create_wrong_answer_message(
                         input_filename, model_output_filename
                     )

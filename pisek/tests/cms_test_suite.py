@@ -75,7 +75,6 @@ def cms_test_suite(
     """
 
     config = TaskConfig(task_dir)
-    util.clean_data_dir(config, leave_inputs=True)
 
     if timeout is None:
         timeout = config.timeout_other_solutions or util.DEFAULT_TIMEOUT

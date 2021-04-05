@@ -4,7 +4,7 @@ import shutil
 import unittest
 
 from pisek.self_tests.util import TestFixtureVariant, overwrite_file
-from pisek import util
+from pisek.task_config import TaskConfig
 
 
 class TestSoucetCMS(TestFixtureVariant):
@@ -34,6 +34,30 @@ class TestMissingInputFilesForSubtask(TestSoucetCMS):
 
     def modify_task(self):
         overwrite_file(self.task_dir, "gen.py", "gen_incomplete.py")
+
+
+class TestOldInputsDeleted(TestSoucetCMS):
+    """ Do we get rid of out-of-date inputs? """
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        task_config = TaskConfig(self.task_dir)
+        self.data_dir = task_config.get_data_dir()
+
+        # We only care about the generation part, so remove solve.py to stop the tests
+        # right after the generator finishes.
+        os.remove(os.path.join(self.task_dir, "solve.py"))
+
+        os.makedirs(self.data_dir, exist_ok=True)
+
+        with open(os.path.join(self.data_dir, "01_outdated.in"), "w") as f:
+            # This old input does not conform to the subtask! Get rid of it.
+            f.write("-3 -2\n")
+
+    def check_end_state(self):
+        self.assertNotIn("01_outdated.in", os.listdir(self.data_dir))
 
 
 class TestScoreCounting(TestSoucetCMS):

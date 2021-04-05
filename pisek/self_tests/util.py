@@ -69,6 +69,13 @@ class TestFixtureVariant(unittest.TestCase):
             + "\nVýstup testu:\n{}".format(out),
         )
 
+        self.check_end_state()
+
+    def check_end_state(self):
+        # Here we can verify whether some conditions hold when Pisek finishes,
+        # making sure that the end state is reasonable
+        pass
+
     def tearDown(self):
         if not self.fixture_path():
             return
