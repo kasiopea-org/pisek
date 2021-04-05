@@ -87,6 +87,9 @@ class OfflineGenerator(Program):
             self.cache_used = True
             return 0
 
+        # Get rid of old inputs/outputs that would be invalidated now
+        util.clean_data_dir(self.task_config)
+
         popen = subprocess.Popen(
             [self.executable, test_dir],
             stdout=subprocess.PIPE,
