@@ -19,7 +19,9 @@ def run_tests(args, full=False):
     suite = get_test_suite(cwd, timeout=args.timeout)
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=not full)
-    runner.run(suite)
+    result = runner.run(suite)
+
+    return result
 
 
 def run_solution(args, unknown_args):
@@ -32,8 +34,8 @@ def run_solution(args, unknown_args):
     if result != RunResult.OK:
         eprint("Chyba při běhu.")
         exit(1)
-    else:
-        exit(0)
+
+    return None
 
 
 def test_solution(args):
@@ -53,7 +55,9 @@ def test_solution(args):
         only_necessary=True,
     )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
-    runner.run(suite)
+    result = runner.run(suite)
+
+    return result
 
 
 def test_generator(args):
@@ -63,7 +67,9 @@ def test_generator(args):
     suite = get_test_suite(cwd, solutions=[])
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
-    runner.run(suite)
+    result = runner.run(suite)
+
+    return result
 
 
 def clean_directory(args):
@@ -72,14 +78,16 @@ def clean_directory(args):
     util.clean_task_dir(task_dir)
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser(
         description=(
             "Nástroj na testování úloh do programovacích soutěží. "
             "Plná dokumentace je k dispozici na https://github.com/kasiopea-org/pisek"
         )
     )
-    parser.add_argument("--verbose", "-v", action="count", default=2)
+    parser.add_argument(
+        "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
+    )
     parser.add_argument(
         "--timeout",
         type=int,
@@ -109,32 +117,41 @@ def main():
         help="po kolika sekundách ukončit běžící řešení",
     )
 
-    parser_clean = subparsers.add_parser("clean", help="vyčisti")
+    _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
-    args, unknown_args = parser.parse_known_args()
+    args, unknown_args = parser.parse_known_args(argv)
+
+    result = None
+
     if args.subcommand == "run":
-        run_solution(args, unknown_args)
+        result = run_solution(args, unknown_args)
     elif args.subcommand == "test":
         if args.target == "all":
             # Runs full tests
-            run_tests(args, full=True)
+            result = run_tests(args, full=True)
         elif args.target == "solution":
-            test_solution(args)
+            result = test_solution(args)
         elif args.target == "generator":
-            test_generator(args)
+            result = test_generator(args)
         else:
             assert False
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand is None:
-        run_tests(args, full=False)
+        result = run_tests(args, full=False)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
+
+    return result
 
 
 def main_wrapped():
     try:
-        main()
+        result = main(sys.argv[1:])
+
+        if result is not None:
+            if result.errors or result.failures:
+                exit(1)
     except KeyboardInterrupt as e:
         print("Přerušeno uživatelem.")
         exit(1)
