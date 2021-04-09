@@ -30,9 +30,9 @@ class TestCLI(TestFixture):
             return
 
         os.chdir(self.task_dir)
-        with mock.patch("sys.stdout", new=StringIO()) as std_out:
-            with mock.patch("sys.stderr", new=StringIO()) as std_err:
-                result = main(self.args())
+        # with mock.patch("sys.stdout", new=StringIO()) as std_out:
+        #     with mock.patch("sys.stderr", new=StringIO()) as std_err:
+        result = main(self.args())
 
         if result is not None:
             self.assertFalse(
