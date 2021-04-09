@@ -29,6 +29,14 @@ class TaskConfig:
             if self.judge_type == "judge":
                 self.judge_name = config["tests"]["out_judge"]
 
+            # Relevant for CMS interactive tasks. The file to be linked with
+            # the contestant's solution (primarily for C++)
+            self.solution_manager: str = config["tests"].get("solution_manager")
+            if self.solution_manager:
+                self.solution_manager = os.path.join(
+                    self.task_dir, self.solution_manager
+                )
+
             # Warning: these timeouts are currently ignored in Kasiopea!
             self.timeout_model_solution: Optional[float] = apply_to_optional(
                 config.get("limits", "solve_time_limit", fallback=None), float

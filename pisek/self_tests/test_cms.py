@@ -106,5 +106,10 @@ class TestStrictChecker(TestSoucetCMS):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
+class TestGuess(TestFixtureVariant):
+    def fixture_path(self):
+        return "../../fixtures/guess/"
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

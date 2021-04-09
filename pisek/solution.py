@@ -3,9 +3,17 @@ from typing import Optional, Tuple
 
 from . import util
 from . import program
+from .task_config import TaskConfig
 
 
 class Solution(program.Program):
+    def __init__(self, task_config: TaskConfig, name):
+        super().__init__(
+            task_config.task_dir,
+            name,
+            compiler_args={"manager": task_config.solution_manager},
+        )
+
     def run_on_file(
         self, input_file: str, timeout: int = util.DEFAULT_TIMEOUT
     ) -> Tuple[program.RunResult, Optional[str]]:

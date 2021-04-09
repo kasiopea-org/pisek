@@ -42,7 +42,7 @@ class TestCase(unittest.TestCase):
 class SolutionTestCase(TestCase):
     def __init__(self, task_config: TaskConfig, solution_name):
         super().__init__(task_config)
-        self.solution = Solution(task_config.task_dir, solution_name)
+        self.solution = Solution(task_config, solution_name)
 
 
 class GeneratorTestCase(TestCase):
