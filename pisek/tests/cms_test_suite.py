@@ -83,9 +83,11 @@ def cms_test_suite(
 
     suite = unittest.TestSuite()
 
-    if solutions:
+    # Note that we can't just use `solutions` as the if-condition because we have to
+    # distinguish between `[]` and `None`. Can we avoid this somehow?
+    if solutions != []:
         # No need to check for samples when only testing generator
-        suite.addTest(test_case.SampleExists(config.get_samples_dir()))
+        suite.addTest(test_case.SampleExists(config))
 
     generator = OfflineGenerator(config, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
