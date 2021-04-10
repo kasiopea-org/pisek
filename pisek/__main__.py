@@ -108,17 +108,17 @@ def main():
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
     )
+    parser_test.add_argument(
+        "--full", action="store_true", help="nezastavit se při první chybě"
+    )
 
-    parser_clean = subparsers.add_parser("clean", help="vyčisti")
+    _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
     args, unknown_args = parser.parse_known_args()
     if args.subcommand == "run":
         run_solution(args, unknown_args)
     elif args.subcommand == "test":
-        if args.target == "all":
-            # Runs full tests
-            run_tests(args, full=True)
-        elif args.target == "solution":
+        if args.target == "solution":
             test_solution(args)
         elif args.target == "generator":
             test_generator(args)
