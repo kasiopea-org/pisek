@@ -85,6 +85,9 @@ def main():
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
     )
+    parser.add_argument(
+        "--full", action="store_true", help="nezastavit se při první chybě"
+    )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení")
@@ -108,9 +111,6 @@ def main():
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
     )
-    parser_test.add_argument(
-        "--full", action="store_true", help="nezastavit se při první chybě"
-    )
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
@@ -127,7 +127,7 @@ def main():
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand is None:
-        run_tests(args, full=False)
+        run_tests(args, full=args.full)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
 
