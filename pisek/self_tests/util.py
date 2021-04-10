@@ -26,6 +26,8 @@ class TestFixtureVariant(unittest.TestCase):
         # shutil.copytree() requires that the destination directory does not exist,
         os.rmdir(self.task_dir)
         shutil.copytree(self.task_dir_orig, self.task_dir)
+        # print(os.listdir(self.task_dir))
+        # print(os.listdir(self.task_dir + "/src"))
 
     def expecting_success(self):
         return True

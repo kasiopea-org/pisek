@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from enum import Enum
 
 from . import util
@@ -55,9 +55,12 @@ def run_direct(executable: str, args: List[str] = []) -> RunResult:
 
 
 class Program:
-    def __init__(self, task_dir: str, name: str) -> None:
+    def __init__(
+        self, task_dir: str, name: str, compiler_args: Optional[Dict] = None
+    ) -> None:
         self.task_dir: str = task_dir
         self.name: str = os.path.splitext(name)[0]
+        self.compiler_args = compiler_args
         self.executable: Optional[str] = None
         basename: Optional[str] = util.resolve_extension(self.task_dir, self.name)
         self.filename: Optional[str] = (
@@ -70,7 +73,9 @@ class Program:
                 f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
             )
         self.executable = compile.compile(
-            self.filename, build_dir=util.get_build_dir(self.task_dir)
+            self.filename,
+            build_dir=util.get_build_dir(self.task_dir),
+            compiler_args=self.compiler_args,
         )
         if self.executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
