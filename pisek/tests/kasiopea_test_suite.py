@@ -261,6 +261,7 @@ def kasiopea_test_suite(
     timeout=util.DEFAULT_TIMEOUT,
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
+    strict=False,
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -287,9 +288,14 @@ def kasiopea_test_suite(
     suite.addTest(GeneratesInputs(config, generator, seeds, in_self_test))
     suite.addTest(JudgeHandlesWhitespace(config))
 
-    test_case.add_checker_cases(
-        config, suite, in_self_test, get_subtasks=lambda: get_subtasks(seeds)
-    )
+    if not only_necessary:
+        test_case.add_checker_cases(
+            config,
+            suite,
+            in_self_test,
+            get_subtasks=lambda: get_subtasks(seeds),
+            strict=strict,
+        )
 
     solutions = solutions or config.solutions
 

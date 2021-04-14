@@ -66,6 +66,8 @@ def cms_test_suite(
     solutions: Optional[List[str]] = None,
     timeout=None,
     in_self_test=False,
+    only_necessary=False,  # True when testing a single solution
+    strict=False,
     **_ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
 ):
     """
@@ -92,9 +94,14 @@ def cms_test_suite(
     generator = OfflineGenerator(config, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
 
-    test_case.add_checker_cases(
-        config, suite, in_self_test, get_subtasks=lambda: get_subtasks(config)
-    )
+    if not only_necessary:
+        test_case.add_checker_cases(
+            config,
+            suite,
+            in_self_test,
+            get_subtasks=lambda: get_subtasks(config),
+            strict=strict,
+        )
 
     if solutions is None:
         solutions = config.solutions

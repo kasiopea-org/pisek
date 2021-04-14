@@ -361,10 +361,17 @@ class InputsPassChecker(TestCase):
 def add_checker_cases(
     task_config: TaskConfig,
     suite: unittest.TestSuite,
-    in_self_test,
+    in_self_test: bool,
     get_subtasks,
+    strict: bool,
 ):
     if not task_config.checker:
+        if strict:
+            print(
+                f"V configu úlohy {task_config.task_dir} není specifikovaný checker.",
+                file=sys.stderr,
+            )
+            exit(1)
         if not in_self_test:
             print(
                 termcolor.colored(

@@ -16,7 +16,7 @@ def run_tests(args, full=False):
     cwd = os.getcwd()
     eprint(f"Testuji úlohu {cwd}")
 
-    suite = get_test_suite(cwd, timeout=args.timeout)
+    suite = get_test_suite(cwd, timeout=args.timeout, strict=args.strict)
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=not full)
     result = runner.run(suite)
@@ -95,6 +95,11 @@ def main(argv):
     )
     parser.add_argument(
         "--full", action="store_true", help="nezastavit se při první chybě"
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="pro závěrečnou kontrolu: vynutit, že checker existuje",
     )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
