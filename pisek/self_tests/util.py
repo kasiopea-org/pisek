@@ -10,7 +10,7 @@ from ..tests.util import get_test_suite
 from ..util import quote_output, clean_task_dir
 
 
-class TestFixtureVariant(unittest.TestCase):
+class TestFixture(unittest.TestCase):
     def fixture_path(self):
         return None
 
@@ -29,6 +29,26 @@ class TestFixtureVariant(unittest.TestCase):
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
+        clean_task_dir(self.task_dir)
+
+        self.cwd_orig = os.getcwd()
+        os.chdir(self.task_dir)
+
+    def runTest(self):
+        # Implement this!
+        pass
+
+    def tearDown(self):
+        if not self.fixture_path():
+            return
+
+        os.chdir(self.cwd_orig)
+
+        assert self.task_dir.startswith("/tmp") or self.task_dir.startswith("/var")
+        shutil.rmtree(self.task_dir)
+
+
+class TestFixtureVariant(TestFixture):
     def expecting_success(self):
         return True
 
@@ -44,7 +64,6 @@ class TestFixtureVariant(unittest.TestCase):
         if not self.fixture_path():
             return
 
-        clean_task_dir(self.task_dir)
         self.modify_task()
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
@@ -77,12 +96,6 @@ class TestFixtureVariant(unittest.TestCase):
         # Here we can verify whether some conditions hold when Pisek finishes,
         # making sure that the end state is reasonable
         pass
-
-    def tearDown(self):
-        if not self.fixture_path():
-            return
-
-        shutil.rmtree(self.task_dir)
 
 
 def overwrite_file(task_dir, old_file, new_file, new_file_name=None):
