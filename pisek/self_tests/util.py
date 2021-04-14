@@ -29,6 +29,9 @@ class TestFixture(unittest.TestCase):
 
         clean_task_dir(self.task_dir)
 
+        self.cwd_orig = os.getcwd()
+        os.chdir(self.task_dir)
+
     def runTest(self):
         # Implement this!
         pass
@@ -36,6 +39,8 @@ class TestFixture(unittest.TestCase):
     def tearDown(self):
         if not self.fixture_path():
             return
+
+        os.chdir(self.cwd_orig)
 
         assert self.task_dir.startswith("/tmp") or self.task_dir.startswith("/var")
         shutil.rmtree(self.task_dir)

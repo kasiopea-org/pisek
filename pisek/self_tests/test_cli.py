@@ -29,20 +29,19 @@ class TestCLI(TestFixture):
         if not self.fixture_path():
             return
 
-        os.chdir(self.task_dir)
-        # with mock.patch("sys.stdout", new=StringIO()) as std_out:
-        #     with mock.patch("sys.stderr", new=StringIO()) as std_err:
-        result = main(self.args())
+        with mock.patch("sys.stdout", new=StringIO()) as std_out:
+            with mock.patch("sys.stderr", new=StringIO()) as std_err:
+                result = main(self.args())
 
-        if result is not None:
-            self.assertFalse(
-                result.errors,
-                f"Vyskytly se chyby: {quote_test_suite_output(result.errors)}",
-            )
-            self.assertFalse(
-                result.failures,
-                f"Některé testy neseběhly:\n{quote_test_suite_output(result.failures)}",
-            )
+                if result is not None:
+                    self.assertFalse(
+                        result.errors,
+                        f"Vyskytly se chyby: {quote_test_suite_output(result.errors)}",
+                    )
+                    self.assertFalse(
+                        result.failures,
+                        f"Některé testy neseběhly:\n{quote_test_suite_output(result.failures)}",
+                    )
 
 
 class TestCLITestSolution(TestCLI):
