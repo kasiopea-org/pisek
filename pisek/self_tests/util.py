@@ -26,6 +26,8 @@ class TestFixture(unittest.TestCase):
         # shutil.copytree() requires that the destination directory does not exist,
         os.rmdir(self.task_dir)
         shutil.copytree(self.task_dir_orig, self.task_dir)
+        # print(os.listdir(self.task_dir))
+        # print(os.listdir(self.task_dir + "/src"))
 
         clean_task_dir(self.task_dir)
 

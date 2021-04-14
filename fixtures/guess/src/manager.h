@@ -1,0 +1,1 @@
+int ask(int x);

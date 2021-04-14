@@ -207,7 +207,7 @@ class JudgeHandlesWhitespace(test_case.TestCase):
     def __init__(self, task_config: TaskConfig):
         super().__init__(task_config)
         self.judge = judge.make_judge(task_config)
-        self.model_solution = Solution(task_config.task_dir, task_config.solutions[0])
+        self.model_solution = Solution(task_config, task_config.solutions[0])
 
     def add_whitespace(self, file, n_spaces):
         with open(file, "r") as f:

@@ -1,0 +1,38 @@
+# Pisek fixture
+
+[task]
+name=guess
+tests=1
+# CMS tasks have a different judge and generator format than Kasiopea
+# (generator doesn't require seed)
+contest_type=cms
+
+solutions_subdir=solutions/
+solutions=solve solve_0b
+
+[tests]
+in_mode=build
+# generator source file
+in_gen=src/gen
+
+# checker=check
+
+# The important line:
+solution_manager=src/manager
+
+out_format=text
+online_validity=360
+out_check=diff
+# judge source file
+# out_judge=judge
+
+[test01]
+name=Subtask A
+points=10
+in_globs=*.in
+
+[limits]
+# Time limit (seconds) for the model solution (first listed)
+solve_time_limit=2
+# Time limit (seconds) for other solutions
+sec_solve_time_limit=2

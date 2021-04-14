@@ -93,6 +93,9 @@ def main(argv):
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
     )
+    parser.add_argument(
+        "--full", action="store_true", help="nezastavit se při první chybě"
+    )
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
     parser_run = subparsers.add_parser("run", help="spusť řešení")
@@ -126,10 +129,7 @@ def main(argv):
     if args.subcommand == "run":
         result = run_solution(args, unknown_args)
     elif args.subcommand == "test":
-        if args.target == "all":
-            # Runs full tests
-            result = run_tests(args, full=True)
-        elif args.target == "solution":
+        if args.target == "solution":
             result = test_solution(args)
         elif args.target == "generator":
             result = test_generator(args)
@@ -138,7 +138,7 @@ def main(argv):
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand is None:
-        result = run_tests(args, full=False)
+        result = run_tests(args, full=args.full)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
 

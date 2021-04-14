@@ -12,7 +12,7 @@ class CompileRules:
         self.supported = supported_extensions
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = False
+        self, filepath: str, build_dir: str = None, dry_run: bool = False, **kwargs
     ) -> Optional[str]:
         """Takes a `filepath` and either:
         - compiles it and returns the path to the executable (str) or
@@ -37,7 +37,7 @@ class ScriptCompileRules(CompileRules):
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True
+        self, filepath: str, build_dir: str = None, dry_run: bool = True, **kwargs
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -72,12 +72,28 @@ class ScriptCompileRules(CompileRules):
         return True
 
 
+def manager_flags(dir, manager, extension):
+    # For interactive tasks - compile with the manager and add its directory
+    # to the search path to allow `#include "manager.h"`
+    res = []
+    if os.path.dirname(manager):
+        res.append(f"-I{os.path.dirname(manager)}")
+    res.append(manager + extension)
+
+    return res
+
+
 class CPPCompileRules(CompileRules):
     def __init__(self, supported_extensions: List[str]) -> None:
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True
+        self,
+        filepath: str,
+        build_dir: str = None,
+        dry_run: bool = True,
+        manager=None,
+        **kwargs,
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -86,6 +102,10 @@ class CPPCompileRules(CompileRules):
             return result_filepath
 
         cpp_flags = ["-std=c++14", "-O2", "-Wall", "-lm", "-Wshadow"]
+
+        if manager is not None:  # Interactive task
+            cpp_flags += manager_flags(dirname, manager, ".cpp")
+
         gpp = subprocess.run(["g++", filepath, "-o", result_filepath] + cpp_flags)
         return result_filepath if gpp.returncode == 0 else None
 
@@ -95,7 +115,12 @@ class CCompileRules(CompileRules):
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True
+        self,
+        filepath: str,
+        build_dir: str = None,
+        dry_run: bool = True,
+        manager=None,
+        **kwargs,
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -104,6 +129,10 @@ class CCompileRules(CompileRules):
             return result_filepath
 
         c_flags = ["-std=c11", "-O2", "-Wall", "-lm", "-Wshadow"]
+
+        if manager is not None:  # Interactive task
+            c_flags += manager_flags(dirname, manager, ".c")
+
         gcc = subprocess.run(["gcc", filepath, "-o", result_filepath] + c_flags)
         return result_filepath if gcc.returncode == 0 else None
 
@@ -113,7 +142,7 @@ class PascalCompileRules(CompileRules):
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True
+        self, filepath: str, build_dir: str = None, dry_run: bool = True, **kwargs
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -156,8 +185,10 @@ def compile(
     filepath: str,
     build_dir: str = None,
     dry_run: bool = False,
+    compiler_args: Optional[Dict] = None,
 ) -> Optional[str]:
-    # asserts that filepath is a valid path
+    if compiler_args is None:
+        compiler_args = {}
 
     # make the path absolute
     filepath = os.path.abspath(filepath)
@@ -172,6 +203,6 @@ def compile(
 
     for compile_rule in COMPILE_RULES:
         if file_extension in compile_rule.supported:
-            return compile_rule.compile(filepath, build_dir, dry_run)
+            return compile_rule.compile(filepath, build_dir, dry_run, **compiler_args)
 
     return None
