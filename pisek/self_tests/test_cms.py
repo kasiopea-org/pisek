@@ -37,7 +37,7 @@ class TestMissingInputFilesForSubtask(TestSoucetCMS):
 
 
 class TestOldInputsDeleted(TestSoucetCMS):
-    """ Do we get rid of out-of-date inputs? """
+    """Do we get rid of out-of-date inputs?"""
 
     def expecting_success(self):
         return False
@@ -87,7 +87,7 @@ class TestInvalidJudgeScore(TestSoucetCMS):
 
 
 class TestLooseChecker(TestSoucetCMS):
-    """ A checker that cannot distinguish between subtasks. """
+    """A checker that cannot distinguish between subtasks."""
 
     def expecting_success(self):
         return False
@@ -97,7 +97,7 @@ class TestLooseChecker(TestSoucetCMS):
 
 
 class TestStrictChecker(TestSoucetCMS):
-    """ A checker whose bounds are stricter than what the generator creates. """
+    """A checker whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
         return False

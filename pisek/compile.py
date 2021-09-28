@@ -6,7 +6,7 @@ from . import util
 
 
 class CompileRules:
-    """ Abstract class for compile rules """
+    """Abstract class for compile rules"""
 
     def __init__(self, supported_extensions: List[str]) -> None:
         self.supported = supported_extensions
@@ -47,7 +47,9 @@ class ScriptCompileRules(CompileRules):
 
         if not self.valid_shebang(filepath):
             raise RuntimeError(
-                f"{filename} má neplatný shebang (zkontroluj, že soubor používá linuxové konce řádků)"
+                f"{filename} má neplatný shebang. "
+                "Pro Python by měl první řádek být '#!/usr/bin/env python3'. "
+                " Zkontroluj taky, že soubor používá linuxové konce řádků."
             )
 
         shutil.copyfile(filepath, result_filepath)
@@ -56,7 +58,7 @@ class ScriptCompileRules(CompileRules):
 
     @staticmethod
     def valid_shebang(filepath: str) -> bool:
-        """ Check if file has shebang and if the shebang is valid """
+        """Check if file has shebang and if the shebang is valid"""
 
         with open(filepath, "r", newline="\n") as f:
             first_line = f.readline()
@@ -67,9 +69,11 @@ class ScriptCompileRules(CompileRules):
         if first_line.endswith("\r\n"):
             return False
 
-        # TODO: check if the shebang is proper,
-        #       i.e. /usr/bin/env python
-        return True
+        if os.path.splitext(filepath)[1] == ".py":
+            return first_line == "#!/usr/bin/env python3\n"
+        else:
+            # No check performed for non-Python at the moment
+            return True
 
 
 def manager_flags(dir, manager, extension):

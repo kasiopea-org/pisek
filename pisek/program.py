@@ -45,7 +45,7 @@ def run(
 
 
 def run_direct(executable: str, args: List[str] = []) -> RunResult:
-    """ like run(), but with no redirections or timeout """
+    """like run(), but with no redirections or timeout"""
     result = subprocess.run([executable] + args)
 
     if result.returncode == 0:

@@ -113,7 +113,7 @@ class OfflineGenerator(Program):
 
 
 def get_any_nonsample_input(task_config):
-    """ Returns an arbitrary `.in` file in the data dir that is not a sample. """
+    """Returns an arbitrary `.in` file in the data dir that is not a sample."""
     samples = util.get_samples(task_config.task_dir)
     data_dir = task_config.get_data_dir()
 

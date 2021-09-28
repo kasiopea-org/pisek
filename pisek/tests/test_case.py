@@ -317,7 +317,7 @@ class CheckerDistinguishesSubtasks(TestCase):
 
 
 class InputsPassChecker(TestCase):
-    """ If a checker program is specified in the task config, runs the checker. """
+    """If a checker program is specified in the task config, runs the checker."""
 
     def __init__(
         self,

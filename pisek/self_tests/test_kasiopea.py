@@ -183,7 +183,7 @@ class TestPythonCRLF(TestSoucetKasiopea):
 
 
 class TestLooseChecker(TestSoucetKasiopea):
-    """ A checker that cannot distinguish between subtasks. """
+    """A checker that cannot distinguish between subtasks."""
 
     def expecting_success(self):
         return False
@@ -193,7 +193,7 @@ class TestLooseChecker(TestSoucetKasiopea):
 
 
 class TestStrictChecker(TestSoucetKasiopea):
-    """ A checker whose bounds are stricter than what the generator creates. """
+    """A checker whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
         return False
