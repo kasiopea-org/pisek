@@ -82,6 +82,15 @@ class TaskConfig:
     def get_samples_dir(self):
         return os.path.join(self.task_dir, self.samples_subdir)
 
+    def __repr__(self):
+        return "<TaskConfig %s>" % ", ".join(
+            f"{k} = {getattr(self, k)}"
+            for k in filter(
+                lambda k: not k.startswith("_") and not callable(getattr(self, k)),
+                dir(self),
+            )
+        )
+
 
 class SubtaskConfig:
     def __init__(
@@ -92,6 +101,15 @@ class SubtaskConfig:
 
         if contest_type == "cms":
             self.in_globs: List[str] = config_section["in_globs"].split()
+
+    def __repr__(self):
+        return "<SubTaskConfig %s>" % ", ".join(
+            f"{k} = {getattr(self, k)}"
+            for k in filter(
+                lambda k: not k.startswith("_") and not callable(getattr(self, k)),
+                dir(self),
+            )
+        )
 
 
 T = TypeVar("T")
