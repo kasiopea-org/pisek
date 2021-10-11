@@ -13,7 +13,7 @@ class RunResultKind(Enum):
     RunResult."""
 
     OK = 0
-    NONZERO_EXIT_CODE = 1
+    RUNTIME_ERROR = 1
     TIMEOUT = 2
 
 
@@ -39,7 +39,7 @@ def completed_process_to_run_result(result: subprocess.CompletedProcess, executa
             error_message += f" s exitcodem {result.returncode}"
 
         return RunResult(
-            RunResultKind.NONZERO_EXIT_CODE,
+            RunResultKind.RUNTIME_ERROR,
             error_message + "\n" + util.quote_process_output(result),
         )
 

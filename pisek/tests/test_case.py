@@ -199,7 +199,7 @@ class SolutionWorks(SolutionTestCase):
             else:
                 result_chars = {
                     RunResultKind.TIMEOUT: "T",
-                    RunResultKind.NONZERO_EXIT_CODE: "!",
+                    RunResultKind.RUNTIME_ERROR: "!",
                 }
 
                 c = result_chars[run_result.kind]
