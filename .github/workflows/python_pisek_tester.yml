@@ -32,5 +32,4 @@ jobs:
     - name: Check typing
       run: |
         pip install mypy
-        mypy --install-types
         mypy pisek/
