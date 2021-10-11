@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 from . import util
 from . import program
+from .program import RunResultKind
 from .task_config import TaskConfig
 
 
@@ -37,14 +38,14 @@ class Solution(program.Program):
         ):
             # The output file is newer than both the executable and the input,
             # so it should be up-to-date.
-            return program.RunResult.OK, output_file
+            return program.RunResult(RunResultKind.OK), output_file
             # TODO: with the above, a solution that ends with a runtime error and is
             #   re-run will wrongly get a 'Wrong Answer' verdict next time, instead of
             #   'Runtime Error'. Can we fix this somehow?
 
         res = program.run(self.executable, input_file, output_file, timeout)
 
-        if res == program.RunResult.OK:
+        if res.kind == program.RunResultKind.OK:
             return res, output_file
         else:
             # Set the modification time of this file to 1970 so that it is not used

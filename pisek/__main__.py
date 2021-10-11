@@ -4,7 +4,7 @@ import unittest
 import sys
 
 from pisek.tests.util import get_test_suite
-from pisek.program import Program, RunResult
+from pisek.program import Program, RunResultKind
 from pisek import util
 
 
@@ -29,10 +29,10 @@ def run_solution(args, unknown_args):
 
     cwd = os.getcwd()
     sol = Program(cwd, args.solution)
-    result = sol.run(unknown_args)
+    run_result = sol.run(unknown_args)
 
-    if result != RunResult.OK:
-        eprint("Chyba při běhu.")
+    if run_result.kind != RunResultKind.OK:
+        eprint(f"Chyba při běhu: {run_result.msg}")
         exit(1)
 
     return None
