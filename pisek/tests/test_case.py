@@ -9,10 +9,10 @@ import termcolor
 import tqdm
 
 from ..checker import Checker
-from ..program import RunResult
+from ..program import RunResultKind
 from ..task_config import TaskConfig
 from ..solution import Solution
-from ..judge import make_judge, Judge, Verdict
+from ..judge import make_judge, Judge
 from .. import util
 
 
@@ -181,14 +181,14 @@ class SolutionWorks(SolutionTestCase):
             assert len(model_outputs) == len(inputs)
 
         for input_filename, model_output_filename in zip(inputs, model_outputs):
-            pts, verdict = self.judge.evaluate(
+            pts, run_result = self.judge.evaluate(
                 self.solution,
                 input_file=os.path.join(data_dir, input_filename),
                 correct_output=os.path.join(data_dir, model_output_filename),
                 run_config=self.run_config,
             )
 
-            if verdict.result == RunResult.OK:
+            if run_result.kind == RunResultKind.OK:
                 c = "·" if pts == 1 else "W" if pts == 0 else "P"
 
                 if pts != 1:
@@ -198,11 +198,14 @@ class SolutionWorks(SolutionTestCase):
                     messages.append(msg)
             else:
                 result_chars = {
-                    RunResult.TIMEOUT: "T",
-                    RunResult.NONZERO_EXIT_CODE: "!",
+                    RunResultKind.TIMEOUT: "T",
+                    RunResultKind.NONZERO_EXIT_CODE: "!",
                 }
 
-                c = result_chars[verdict.result]
+                c = result_chars[run_result.kind]
+
+                if run_result.msg is not None:
+                    messages.append(run_result.msg)
 
             self.log(c, end="")
 

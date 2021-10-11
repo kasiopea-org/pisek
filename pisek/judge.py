@@ -1,18 +1,9 @@
 import subprocess
-from typing import Optional, Dict, Any, Tuple, Callable, cast
-from .program import RunResult, Program
+from typing import Optional, Dict, Any, Tuple, Callable
+from .program import RunResultKind, Program, RunResult
 from .solution import Solution
 from .task_config import TaskConfig
 from . import util
-
-
-class Verdict:
-    def __init__(self, run_result: RunResult, msg: Optional[str] = None) -> None:
-        self.result: RunResult = run_result
-        self.msg: Optional[str] = msg
-
-    def __repr__(self) -> str:
-        return f"Verdict(result={self.result}, msg={self.msg})"
 
 
 class Judge:
@@ -27,7 +18,7 @@ class Judge:
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
         """Runs the solution on the given input. Returns the pair (pts,
         verdict), where:
         - `pts` is the number of points received, in the interval [0.0, 1.0].
@@ -62,16 +53,16 @@ def make_judge(task_config: TaskConfig) -> Judge:
 
 
 def evaluate_offline(
-    judge_fn: Callable[[str], Tuple[float, Verdict]],
+    judge_fn: Callable[[str], Tuple[float, RunResult]],
     solution: Solution,
     input_file: str,
     run_config: Optional[Dict[str, Any]] = None,
-) -> Tuple[float, Verdict]:
+) -> Tuple[float, RunResult]:
     if run_config is None:
         run_config = {}
     res, output_file = solution.run_on_file(input_file, **run_config)
-    if res != RunResult.OK:
-        return 0.0, Verdict(res)
+    if res.kind != RunResultKind.OK:
+        return 0.0, res
 
     assert output_file is not None, 'run_on_file returned "OK" result, but no output'
     return judge_fn(output_file)
@@ -89,19 +80,19 @@ class WhiteDiffJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
         if correct_output is None:
             raise RuntimeError(
                 "Cannot diff solution with correct output, because the output is not given"
             )
 
-        def white_diff(output_file: str) -> Tuple[float, Verdict]:
+        def white_diff(output_file: str) -> Tuple[float, RunResult]:
             assert correct_output is not None
 
             if util.files_are_equal(output_file, correct_output):
-                return 1.0, Verdict(RunResult.OK)
+                return 1.0, RunResult(RunResultKind.OK)
             else:
-                return 0.0, Verdict(RunResult.OK)
+                return 0.0, RunResult(RunResultKind.OK)
 
         return evaluate_offline(white_diff, solution, input_file, run_config)
 
@@ -124,8 +115,8 @@ class CMSExternalJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
-        def external_judge(output_file: str) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
+        def external_judge(output_file: str) -> Tuple[float, RunResult]:
             # TODO: impose limits
             args = (
                 [input_file, correct_output, output_file]
@@ -159,7 +150,7 @@ class CMSExternalJudge(Judge):
                 )
             msg = result.stderr.decode().split("\n")[0]
 
-            return pts, Verdict(RunResult.OK, msg)
+            return pts, RunResult(RunResultKind.OK, msg)
 
         return evaluate_offline(external_judge, solution, input_file, run_config)
 
@@ -176,18 +167,18 @@ class OKJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
         """if correct_output is not None:
         raise RuntimeError(
             "AssertOK judge expects correct_output to be set to None"
         )"""
 
-        def check_ok(output_file: str) -> Tuple[float, Verdict]:
+        def check_ok(output_file: str) -> Tuple[float, RunResult]:
             with open(output_file, "r") as f:
                 out = f.read()
             if out.strip() != "OK":
-                return 0.0, Verdict(RunResult.OK, msg=out)
-            return 1.0, Verdict(RunResult.OK)
+                return 0.0, RunResult(RunResultKind.OK, msg=out)
+            return 1.0, RunResult(RunResultKind.OK)
 
         return evaluate_offline(check_ok, solution, input_file, run_config)
 
@@ -210,8 +201,8 @@ class KasiopeaExternalJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
-        def external_judge(output_file: str) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
+        def external_judge(output_file: str) -> Tuple[float, RunResult]:
             return self.evaluate_on_file(
                 input_file, correct_output, output_file, run_config
             )
@@ -224,7 +215,7 @@ class KasiopeaExternalJudge(Judge):
         correct_output_file: Optional[str],
         output_file: str,
         run_config: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[float, Verdict]:
+    ) -> Tuple[float, RunResult]:
         timeout = None if run_config is None else run_config.get("timeout")
         with open(output_file, "r") as contestant_f:
             result = self.judge.run_raw(
@@ -242,7 +233,7 @@ class KasiopeaExternalJudge(Judge):
                 f"{util.quote_process_output(result)}"
             )
 
-        return float(1 - result.returncode), Verdict(
-            RunResult.OK,
+        return float(1 - result.returncode), RunResult(
+            RunResultKind.OK,
             msg=util.quote_process_output(result) if result.returncode == 1 else None,
         )

@@ -2,19 +2,18 @@ import shutil
 import unittest
 import os
 import random
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, List
 
 import tqdm
 import termcolor
 
 from . import test_case
 from .test_case import Subtask, SolutionWorks
-from ..judge import Verdict
 from ..task_config import TaskConfig
 from .. import util
 from ..solution import Solution
 from ..generator import OnlineGenerator
-from ..program import RunResult
+from ..program import RunResultKind
 from .. import judge
 
 
@@ -83,7 +82,7 @@ def generate_outputs(
             for seed in seeds:
                 path = os.path.join(data_dir, util.get_input_name(seed, subtask))
                 result, output_file = solution.run_on_file(path, timeout)
-                if quit_on_timeout and result == RunResult.TIMEOUT:
+                if quit_on_timeout and result == RunResultKind.TIMEOUT:
                     break
 
                 if output_file is not None:
@@ -232,14 +231,16 @@ class JudgeHandlesWhitespace(test_case.TestCase):
         )
         shutil.copy2(sample_out, sample_out_whitespaced)
 
-        result, output_file = self.model_solution.run_on_file(sample_in)
-        self.assertEqual(result, RunResult.OK, "Vzorové řešení selhalo na sample.in")
+        run_result, output_file = self.model_solution.run_on_file(sample_in)
+        self.assertEqual(
+            run_result.kind, RunResultKind.OK, "Vzorové řešení selhalo na sample.in"
+        )
 
         # To be sure, add different amounts of whitespace to each.
         self.add_whitespace(output_file, n_spaces=2)
         self.add_whitespace(sample_out_whitespaced, n_spaces=3)
 
-        score, verdict = self.judge.evaluate_on_file(
+        score, run_result = self.judge.evaluate_on_file(
             sample_in, sample_out_whitespaced, output_file
         )
 

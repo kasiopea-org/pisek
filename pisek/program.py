@@ -7,7 +7,7 @@ from . import util
 from . import compile
 
 
-class RunResult(Enum):
+class RunResultKind(Enum):
     """Represents the way the program execution ended. Specially, a program
     that finished successfully, but got Wrong Answer, still gets the OK
     RunResult."""
@@ -15,6 +15,33 @@ class RunResult(Enum):
     OK = 0
     NONZERO_EXIT_CODE = 1
     TIMEOUT = 2
+
+
+class RunResult:
+    def __init__(self, kind: RunResultKind, msg: Optional[str] = None) -> None:
+        self.kind: RunResultKind = kind
+        self.msg: Optional[str] = msg
+
+    def __repr__(self) -> str:
+        return f"RunResult(kind={self.kind}, msg={self.msg})"
+
+
+def completed_process_to_run_result(result: subprocess.CompletedProcess, executable):
+    if result.returncode == 0:
+        return RunResult(RunResultKind.OK)
+    else:
+        error_message = f"Program {os.path.basename(executable)} skončil"
+        if result.returncode < 0:
+            error_message += f" kvůli signálu {-result.returncode}"
+            if result.returncode == -11:
+                error_message += " (segmentation fault, přístup mimo povolenou paměť)"
+        else:
+            error_message += f" s exitcodem {result.returncode}"
+
+        return RunResult(
+            RunResultKind.NONZERO_EXIT_CODE,
+            error_message + "\n" + util.quote_process_output(result),
+        )
 
 
 def run(
@@ -36,22 +63,16 @@ def run(
                     timeout=timeout,
                 )
             except subprocess.TimeoutExpired:
-                return RunResult.TIMEOUT
+                return RunResult(RunResultKind.TIMEOUT, f"Timeout po {timeout}s")
 
-            if result.returncode == 0:
-                return RunResult.OK
-            else:
-                return RunResult.NONZERO_EXIT_CODE
+            return completed_process_to_run_result(result, executable)
 
 
-def run_direct(executable: str, args: List[str] = []) -> RunResult:
+def run_direct(executable: str, args: List[str]) -> RunResult:
     """like run(), but with no redirections or timeout"""
     result = subprocess.run([executable] + args)
 
-    if result.returncode == 0:
-        return RunResult.OK
-    else:
-        return RunResult.NONZERO_EXIT_CODE
+    return completed_process_to_run_result(result, executable)
 
 
 class Program:
