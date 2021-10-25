@@ -247,7 +247,10 @@ class JudgeHandlesWhitespace(test_case.TestCase):
         self.add_whitespace(sample_out_whitespaced, n_spaces=3)
 
         score, run_result = self.judge.evaluate_on_file(
-            sample_in, sample_out_whitespaced, output_file
+            sample_in,
+            sample_out_whitespaced,
+            output_file,
+            judge_args=["2", "0"],  # The args are: $subtask_num $seed
         )
 
         self.assertEqual(
