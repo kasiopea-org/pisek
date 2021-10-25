@@ -8,7 +8,7 @@ import tqdm
 import termcolor
 
 from . import test_case
-from .test_case import Subtask, SolutionWorks
+from .test_case import Subtask, SolutionWorks, TaskInput
 from ..task_config import TaskConfig
 from .. import util
 from ..solution import Solution
@@ -101,13 +101,19 @@ def get_subtasks(seeds) -> List[Subtask]:
     """
     subtasks = []
 
-    for i, score in [(1, 4), (2, 6)]:
+    for subtask_num, score in [(1, 4), (2, 6)]:
         inputs = []
 
         for seed in seeds:
-            inputs.append(util.get_input_name(seed, i))
+            inputs.append(
+                TaskInput(
+                    util.get_input_name(seed, subtask_num),
+                    subtask_num=subtask_num,
+                    seed=seed,
+                )
+            )
 
-        subtasks.append(Subtask(score, inputs))
+        subtasks.append(Subtask(score, inputs, subtask_num=subtask_num))
 
     return subtasks
 

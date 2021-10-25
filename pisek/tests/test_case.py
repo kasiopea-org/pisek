@@ -74,11 +74,54 @@ class SampleExists(TestCase):
             )
 
 
+class TaskInput:
+    def __init__(
+        self,
+        input_filename: str,
+        subtask_num: int,
+        output_filename: Optional[str] = None,
+        seed: Optional[int] = None,
+    ):
+        """
+        An input for a task, meant to test solutions.
+
+        :param input_filename: The name of the input file in the data directory.
+        :param subtask_num: The input's subtask number.
+            Kasiopea uses 1 for easy, 2 for hard.
+        :param output_filename: The name of the correct output file in the data directory.
+        :param seed: The seed that was used to generate this input.
+            Only relevant for Kasiopea.
+        """
+        self.input_filename = input_filename
+        self.subtask_num = subtask_num
+        self.output_filename = output_filename
+        self.seed = seed
+
+
 class Subtask:
-    def __init__(self, score: int, inputs: List[str], name: Optional[str] = None):
+    def __init__(
+        self,
+        score: int,
+        inputs: List[TaskInput],
+        subtask_num: int,
+        name: Optional[str] = None,
+    ):
+        """
+        A collection of TaskInputs along with metadata.
+
+        :param score: The score given for completing the subtask (solving all TaskInputs).
+        :param inputs: A list of the inputs making up the Subtask.
+        :param subtask_num: The subtask's number. Kasiopea uses 1 for easy, 2 for hard.
+        :param name: An optional human-readable identifier of the task.
+        """
         self.score = score
-        # `inputs` is a list of filenames in the data dir.
         self.inputs = inputs
+
+        # Make sure the data is consistent
+        for inp in self.inputs:
+            assert inp.subtask_num == subtask_num
+
+        self.subtask_num = subtask_num
         self.name = name
 
 
@@ -109,7 +152,6 @@ class SolutionWorks(SolutionTestCase):
         data_dir = self.task_config.get_data_dir()
 
         inputs = []
-        outputs = []
 
         for sample_in, sample_out in util.get_samples(samples_dir):
             data_sample_in = os.path.join(data_dir, os.path.basename(sample_in))
@@ -119,10 +161,20 @@ class SolutionWorks(SolutionTestCase):
             shutil.copy(sample_in, data_sample_in)
             shutil.copy(sample_out, data_sample_out)
 
-            inputs.append(os.path.basename(sample_in))
-            outputs.append(os.path.basename(sample_out))
+            inputs.append(
+                TaskInput(
+                    input_filename=os.path.basename(sample_in),
+                    output_filename=os.path.basename(sample_out),
+                    # We set subtask_num=2 (hard version) because there is no way to know
+                    # which subtask the sample belongs to and we normally assume that
+                    # the hard subtask is strictly more difficult.
+                    subtask_num=2,
+                    # The sample corresponds to no seed, so we just use a dummy value
+                    seed=0,
+                )
+            )
 
-        score, message = self.get_score_for_inputs(inputs, outputs)
+        score, message = self.get_score_for_inputs(inputs)
 
         self.assertEqual(
             score,
@@ -151,13 +203,10 @@ class SolutionWorks(SolutionTestCase):
         )
 
     def get_score_for_inputs(
-        self, inputs: List[str], model_outputs: Optional[List[str]] = None
+        self, inputs: List[TaskInput]
     ) -> Tuple[float, Optional[str]]:
         """
-        Runs the solution on the file names (relative to the daa dir)
-        listed in `inputs`.
-        If `model_outputs` is given, assumes the answers are given in the file names
-        listed. Otherwise, uses the model solution's answers.
+        Runs the solution on a list of TaskInputs.
 
         Returns a tuple of (score, message), where:
 
@@ -172,20 +221,26 @@ class SolutionWorks(SolutionTestCase):
         judge_score = 1.0
         messages = []
 
-        if not model_outputs:
-            model_outputs = [
-                util.get_output_name(inp, solution_name=model_solution_name)
-                for inp in inputs
-            ]
-        else:
-            assert len(model_outputs) == len(inputs)
+        for inp in inputs:
+            if not inp.output_filename:
+                inp.output_filename = util.get_output_name(
+                    inp.input_filename, solution_name=model_solution_name
+                )
 
-        for input_filename, model_output_filename in zip(inputs, model_outputs):
+            if inp.seed is not None:
+                # The seed is passed as a hexadecimal string.
+                judge_args = [str(inp.subtask_num), f"{inp.seed:x}"]
+            else:
+                # No seed means we are not in Kasiopea, so judge_args are not used.
+                # Simply pass nothing.
+                judge_args = []
+
             pts, run_result = self.judge.evaluate(
                 self.solution,
-                input_file=os.path.join(data_dir, input_filename),
-                correct_output=os.path.join(data_dir, model_output_filename),
+                input_file=os.path.join(data_dir, inp.input_filename),
+                correct_output=os.path.join(data_dir, inp.output_filename),
                 run_config=self.run_config,
+                judge_args=judge_args,
             )
 
             if run_result.kind == RunResultKind.OK:
@@ -193,7 +248,7 @@ class SolutionWorks(SolutionTestCase):
 
                 if pts != 1:
                     msg = self.create_wrong_answer_message(
-                        input_filename, model_output_filename
+                        inp.input_filename, inp.output_filename
                     )
                     messages.append(msg)
             else:
@@ -286,18 +341,21 @@ class CheckerDistinguishesSubtasks(TestCase):
     def runTest(self):
         subtasks = self.get_subtasks()
         last_inputs = set()
+        last_subtask_num = None
 
-        for subtask_i, subtask in enumerate(subtasks):
-            new_inputs = set(subtask.inputs) - last_inputs
+        for subtask in subtasks:
+            new_inputs = set(inp.input_filename for inp in subtask.inputs) - last_inputs
+            subtask_num = subtask.subtask_num
 
-            if subtask_i == 0:
+            if last_subtask_num is None:
                 # Nothing to compare with at this point.
+                last_subtask_num = subtask_num
                 continue
 
             failed = False
 
             for input_file in new_inputs:
-                res = self.checker.run_on_file(input_file, subtask_i - 1)
+                res = self.checker.run_on_file(input_file, last_subtask_num)
 
                 if res.returncode != 0:
                     failed = True
@@ -306,14 +364,16 @@ class CheckerDistinguishesSubtasks(TestCase):
                 failed,
                 (
                     f"Checker '{self.checker.name}' není dost přísný: "
-                    f"nestěžuje si, když přidáme vstupy ze subtasku {subtask_i + 1}"
-                    f" do subtasku {subtask_i}. Subtask {subtask_i} má přitom přísnější "
-                    f"omezení, takže vstupy ze subtasku {subtask_i + 1} by neměly být "
-                    f"platné pro subtask {subtask_i}."
+                    f"nestěžuje si, když přidáme vstupy ze subtasku {subtask_num}"
+                    f" do subtasku {last_subtask_num}. Subtask {last_subtask_num} "
+                    "má přitom přísnější omezení (tj. je snažší) "
+                    f"takže vstupy ze subtasku {subtask_num} by neměly být "
+                    f"platné pro subtask {last_subtask_num}."
                 ),
             )
 
             last_inputs = set(subtask.inputs)
+            last_subtask_num = subtask_num
 
     def __str__(self):
         return f"Checker {self.checker.name} rozliší subtasky"
@@ -338,22 +398,23 @@ class InputsPassChecker(TestCase):
         subtasks = self.get_subtasks()
 
         all_inputs = []
-        for subtask_i, subtask in enumerate(subtasks):
-            all_inputs += [(inp, subtask_i) for inp in subtask.inputs]
+        for subtask in subtasks:
+            all_inputs += subtask.inputs
 
-        for input_file, subtask_i in tqdm.tqdm(
+        for inp in tqdm.tqdm(
             all_inputs,
             desc=f"Běží checker '{self.checker.name}'",
             disable=self.in_self_test,
         ):
-            res = self.checker.run_on_file(input_file, subtask_i)
+            res = self.checker.run_on_file(inp.input_filename, inp.subtask_num)
 
             self.assertEqual(
                 res.returncode,
                 0,
                 (
-                    f"Checker '{self.checker.name}' neprošel pro vstup {input_file} "
-                    f"subtasku {subtask_i + 1}.\n{util.quote_process_output(res)}"
+                    f"Checker '{self.checker.name}' neprošel "
+                    f"pro vstup {inp.input_filename} "
+                    f"subtasku {inp.subtask_num}.\n{util.quote_process_output(res)}"
                 ),
             )
 

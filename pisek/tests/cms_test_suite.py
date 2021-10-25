@@ -6,30 +6,36 @@ from typing import Optional, List
 import termcolor
 
 from . import test_case
-from .test_case import SolutionWorks, Subtask
+from .test_case import SolutionWorks, Subtask, TaskInput
 from ..task_config import TaskConfig
 from .. import util
 from ..generator import OfflineGenerator
 
 
-def inputs_for_subtask(subtask: int, config: TaskConfig):
+def inputs_for_subtask(subtask_num: int, config: TaskConfig) -> List[TaskInput]:
     data_dir = config.get_data_dir()
-    globs = config.subtasks[subtask].in_globs
+    globs = config.subtasks[subtask_num].in_globs
 
-    res: List[str] = []
+    input_filenames: List[str] = []
     for g in globs:
-        res += [os.path.basename(f) for f in glob.glob(os.path.join(data_dir, g))]
+        input_filenames += [
+            os.path.basename(f) for f in glob.glob(os.path.join(data_dir, g))
+        ]
 
-    return sorted(res)
+    input_filenames.sort()
+
+    return [TaskInput(f, subtask_num) for f in input_filenames]
 
 
 def get_subtasks(task_config) -> List[Subtask]:
     subtasks = []
 
-    for subtask in task_config.subtasks:
-        score = task_config.subtasks[subtask].score
-        inputs = inputs_for_subtask(subtask, task_config)
-        subtasks.append(Subtask(score, inputs, task_config.subtasks[subtask].name))
+    for subtask_num in task_config.subtasks:
+        score = task_config.subtasks[subtask_num].score
+        inputs = inputs_for_subtask(subtask_num, task_config)
+        subtasks.append(
+            Subtask(score, inputs, subtask_num, task_config.subtasks[subtask_num].name)
+        )
 
     return subtasks
 
