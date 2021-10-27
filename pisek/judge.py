@@ -1,5 +1,5 @@
 import subprocess
-from typing import Optional, Dict, Any, Tuple, Callable
+from typing import Optional, Dict, Any, Tuple, Callable, List
 from .program import RunResultKind, Program, RunResult
 from .solution import Solution
 from .task_config import TaskConfig
@@ -18,6 +18,7 @@ class Judge:
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,  # Only used for KasiopeaExternalJudge
     ) -> Tuple[float, RunResult]:
         """Runs the solution on the given input. Returns the pair (pts,
         verdict), where:
@@ -80,6 +81,7 @@ class WhiteDiffJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,
     ) -> Tuple[float, RunResult]:
         if correct_output is None:
             raise RuntimeError(
@@ -115,6 +117,7 @@ class CMSExternalJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,
     ) -> Tuple[float, RunResult]:
         def external_judge(output_file: str) -> Tuple[float, RunResult]:
             # TODO: impose limits
@@ -167,6 +170,7 @@ class OKJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,
     ) -> Tuple[float, RunResult]:
         """if correct_output is not None:
         raise RuntimeError(
@@ -201,10 +205,11 @@ class KasiopeaExternalJudge(Judge):
         input_file: str,
         correct_output: Optional[str],
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,
     ) -> Tuple[float, RunResult]:
         def external_judge(output_file: str) -> Tuple[float, RunResult]:
             return self.evaluate_on_file(
-                input_file, correct_output, output_file, run_config
+                input_file, correct_output, output_file, run_config, judge_args
             )
 
         return evaluate_offline(external_judge, solution, input_file, run_config)
@@ -215,11 +220,18 @@ class KasiopeaExternalJudge(Judge):
         correct_output_file: Optional[str],
         output_file: str,
         run_config: Optional[Dict[str, Any]] = None,
+        judge_args: Optional[List[str]] = None,
     ) -> Tuple[float, RunResult]:
+        if judge_args is not None:
+            assert len(judge_args) == 2, (
+                "Expected exactly two arguments as input: $subtask_num $seed. "
+                f"Instead got {judge_args}."
+            )
+
         timeout = None if run_config is None else run_config.get("timeout")
         with open(output_file, "r") as contestant_f:
             result = self.judge.run_raw(
-                program_args=[],
+                program_args=judge_args or [],
                 stdin=contestant_f,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
