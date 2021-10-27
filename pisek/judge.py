@@ -1,5 +1,8 @@
 import subprocess
+import os
+import itertools
 from typing import Optional, Dict, Any, Tuple, Callable, List
+
 from .program import RunResultKind, Program, RunResult
 from .solution import Solution
 from .task_config import TaskConfig
@@ -94,9 +97,32 @@ class WhiteDiffJudge(Judge):
             if util.files_are_equal(output_file, correct_output):
                 return 1.0, RunResult(RunResultKind.OK)
             else:
-                return 0.0, RunResult(RunResultKind.OK)
+
+                return 0.0, RunResult(
+                    RunResultKind.OK,
+                    self.create_wrong_answer_message(
+                        solution, input_file, output_file, correct_output
+                    ),
+                )
 
         return evaluate_offline(white_diff, solution, input_file, run_config)
+
+    def create_wrong_answer_message(
+        self, solution, input_file, output_file, correct_output
+    ):
+        diff = util.diff_files(
+            output_file,
+            correct_output,
+            "správné řešení",
+            f"řešení solveru '{solution.name}'",
+        )
+        # Truncate diff -- we don't want this to be too long
+        diff = "".join(itertools.islice(diff, 0, 25))
+
+        return (
+            f"Špatná odpověď pro {os.path.basename(input_file)}. "
+            f"Diff:\n{util.quote_output(diff)}"
+        )
 
 
 class CMSExternalJudge(Judge):
@@ -151,7 +177,8 @@ class CMSExternalJudge(Judge):
                 raise RuntimeError(
                     f"Judge řešení udělil {pts} bodů, což je mimo povolený rozsah [0.0, 1.0]."
                 )
-            msg = result.stderr.decode().split("\n")[0]
+
+            msg = create_external_judge_message(result, output_file)
 
             return pts, RunResult(RunResultKind.OK, msg)
 
@@ -247,5 +274,28 @@ class KasiopeaExternalJudge(Judge):
 
         return float(1 - result.returncode), RunResult(
             RunResultKind.OK,
-            msg=util.quote_process_output(result) if result.returncode == 1 else None,
+            msg=create_external_judge_message(result, output_file),
         )
+
+
+def create_external_judge_message(
+    subprocess_result, contestant_output_file
+) -> Optional[str]:
+    """
+    If the answer is refused, pretty-print the judge's output along with
+    what the answer was.
+    """
+
+    if subprocess_result.returncode == 1:
+        msg = "Odpověď byla zamítnuta judgem. Jeho výstup:\n"
+        msg += util.quote_process_output(subprocess_result)
+
+        with open(contestant_output_file, "r") as contestant_f:
+            solution_s = contestant_f.read(3000)
+
+        msg += "\nZamítnutá odpověď:\n"
+        msg += util.quote_output(solution_s)
+
+        return msg
+    else:
+        return None

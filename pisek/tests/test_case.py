@@ -1,4 +1,3 @@
-import itertools
 import os
 import sys
 import unittest
@@ -12,7 +11,7 @@ from ..checker import Checker
 from ..program import RunResultKind
 from ..task_config import TaskConfig
 from ..solution import Solution
-from ..judge import make_judge, Judge
+from ..judge import CMSExternalJudge, KasiopeaExternalJudge, make_judge, Judge
 from .. import util
 
 
@@ -183,25 +182,6 @@ class SolutionWorks(SolutionTestCase):
             f"\n{message or ''}",
         )
 
-    def create_wrong_answer_message(self, input_filename, model_output_filename):
-        output_filename = util.get_output_name(
-            input_filename, solution_name=self.solution.name
-        )
-        data_dir = self.task_config.get_data_dir()
-
-        diff = util.diff_files(
-            os.path.join(data_dir, model_output_filename),
-            os.path.join(data_dir, output_filename),
-            "správné řešení",
-            f"řešení solveru '{self.solution.name}'",
-        )
-        # Truncate diff -- we don't want this to be too long
-        diff = "".join(itertools.islice(diff, 0, 25))
-
-        return (
-            f"Špatná odpověď pro {input_filename}. " f"Diff:\n{util.quote_output(diff)}"
-        )
-
     def get_score_for_inputs(
         self, inputs: List[TaskInput]
     ) -> Tuple[float, Optional[str]]:
@@ -246,11 +226,9 @@ class SolutionWorks(SolutionTestCase):
             if run_result.kind == RunResultKind.OK:
                 c = "·" if pts == 1 else "W" if pts == 0 else "P"
 
-                if pts != 1:
-                    msg = self.create_wrong_answer_message(
-                        inp.input_filename, inp.output_filename
-                    )
-                    messages.append(msg)
+                if pts != 1 and run_result.msg:
+                    messages.append(run_result.msg)
+
             else:
                 result_chars = {
                     RunResultKind.TIMEOUT: "T",
