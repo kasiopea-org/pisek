@@ -39,9 +39,6 @@ class Solution(program.Program):
             # The output file is newer than both the executable and the input,
             # so it should be up-to-date.
             return program.RunResult(RunResultKind.OK), output_file
-            # TODO: with the above, a solution that ends with a runtime error and is
-            #   re-run will wrongly get a 'Wrong Answer' verdict next time, instead of
-            #   'Runtime Error'. Can we fix this somehow?
 
         res = program.run(self.executable, input_file, output_file, timeout)
 

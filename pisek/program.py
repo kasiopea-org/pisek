@@ -65,7 +65,14 @@ def run(
             except subprocess.TimeoutExpired:
                 return RunResult(RunResultKind.TIMEOUT, f"Timeout po {timeout}s")
 
-            return completed_process_to_run_result(result, executable)
+        # Because we used `stdout=outp`, the stdout is not available in `result`.
+        # Manually add back its head so that it's available in the error message.
+        with open(output_file, "r") as outp:
+            result.stdout = (
+                f"[celý stdout je v {os.path.relpath(output_file)}]\n" + outp.read(3000)
+            ).encode("utf-8")
+
+        return completed_process_to_run_result(result, executable)
 
 
 def run_direct(executable: str, args: List[str]) -> RunResult:
