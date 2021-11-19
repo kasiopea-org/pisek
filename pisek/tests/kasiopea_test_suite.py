@@ -250,7 +250,7 @@ class JudgeHandlesWhitespace(test_case.TestCase):
             sample_in,
             sample_out_whitespaced,
             output_file,
-            judge_args=["2", "0"],  # The args are: $subtask_num $seed
+            judge_args=["1", "0"],  # The args are: $subtask_num $seed
         )
 
         self.assertEqual(

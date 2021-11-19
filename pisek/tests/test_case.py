@@ -164,10 +164,12 @@ class SolutionWorks(SolutionTestCase):
                 TaskInput(
                     input_filename=os.path.basename(sample_in),
                     output_filename=os.path.basename(sample_out),
-                    # We set subtask_num=2 (hard version) because there is no way to know
-                    # which subtask the sample belongs to and we normally assume that
-                    # the hard subtask is strictly more difficult.
-                    subtask_num=2,
+                    # We set subtask_num=1 (easy version) because there is no way to know
+                    # which subtask the sample belongs to. Sometimes the sample output
+                    # might only solve the easy version and then treating it as the
+                    # optimal solution might give the wrong answer
+                    # (e.g. Kasiopea - domaci kolo 2021, uloha I).
+                    subtask_num=1,
                     # The sample corresponds to no seed, so we just use a dummy value
                     seed=0,
                 )
