@@ -59,7 +59,7 @@ class SampleExists(TestCase):
         self.assertGreater(
             len(samples),
             0,
-            "Ve složce s úlohou nejsou žádné samply "
+            f"V podsložce {self.task_config.samples_subdir} složky s úlohou nejsou žádné samply "
             "(soubory tvaru sample*.in s odpovídajícím sample*.out)",
         )
         for sample_in, sample_out in samples:

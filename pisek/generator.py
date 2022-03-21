@@ -56,7 +56,7 @@ class OnlineGenerator(Program):
     def generate_random(
         self, output_file: str, subtask: int, timeout: int = util.DEFAULT_TIMEOUT
     ) -> bool:
-        seed = random.randint(0, 16 ** 4 - 1)
+        seed = random.randint(0, 16**4 - 1)
         return self.generate(output_file, seed, subtask, timeout=timeout)
 
 
