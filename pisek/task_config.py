@@ -7,9 +7,43 @@ CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
 
+class CheckedConfigParser(configparser.RawConfigParser):
+    """
+    https://stackoverflow.com/questions/57305229/python-configparser-get-list-of-unused-entries
+    Like ConfigParser, but allows checking whether there are unused keys.
+    """
+
+    used_vars: Dict[str, set] = {}
+
+    def get_unused_keys(self, section):
+        all_options = self.options(section)
+
+        # We need the default in case the section is not present at all.
+        section_used_vars = self.used_vars.get(section, [])
+
+        unused_options = [x for x in all_options if x not in section_used_vars]
+        return unused_options
+
+    def get(
+        self, section, option, *, raw=False, vars=None, fallback=configparser._UNSET
+    ):
+        if section not in self.used_vars:
+            self.used_vars[section] = [option]
+        else:
+            self.used_vars[section].append(option)
+        return super().get(section, option, raw=raw, vars=vars, fallback=fallback)
+
+    def _get(self, section, conv, option, **kwargs):
+        if section not in self.used_vars:
+            self.used_vars[section] = [option]
+        else:
+            self.used_vars[section].append(option)
+        return super()._get(section, conv, option, **kwargs)
+
+
 class TaskConfig:
     def __init__(self, task_dir: str) -> None:
-        config = configparser.ConfigParser()
+        config = CheckedConfigParser()
         config_path = os.path.join(task_dir, CONFIG_FILENAME)
         read_files = config.read(config_path)
         self.task_dir = task_dir
@@ -20,7 +54,7 @@ class TaskConfig:
             )
 
         try:
-            self.solutions: List[str] = config["task"]["solutions"].split()
+            self.solutions: List[str] = config.get("task", "solutions").split()
             self.contest_type = config["task"].get("contest_type", "kasiopea")
             self.generator: str = config["tests"]["in_gen"]
             self.checker: Optional[str] = config["tests"].get("checker")
@@ -37,13 +71,14 @@ class TaskConfig:
                     self.task_dir, self.solution_manager
                 )
 
-            # Warning: these timeouts are currently ignored in Kasiopea!
-            self.timeout_model_solution: Optional[float] = apply_to_optional(
-                config.get("limits", "solve_time_limit", fallback=None), float
-            )
-            self.timeout_other_solutions: Optional[float] = apply_to_optional(
-                config.get("limits", "sec_solve_time_limit", fallback=None), float
-            )
+            if self.contest_type == "cms":
+                # Warning: these timeouts are currently ignored in Kasiopea!
+                self.timeout_model_solution: Optional[float] = apply_to_optional(
+                    config.get("limits", "solve_time_limit", fallback=None), float
+                )
+                self.timeout_other_solutions: Optional[float] = apply_to_optional(
+                    config.get("limits", "sec_solve_time_limit", fallback=None), float
+                )
 
             # Support for different directory structures
             self.samples_subdir: str = config["task"].get("samples_subdir", ".")
@@ -55,12 +90,16 @@ class TaskConfig:
                 self.solutions = [os.path.join(subdir, sol) for sol in self.solutions]
 
             self.subtasks: Dict[int, SubtaskConfig] = {}
+            self.subtask_section_names = set()
+
             for section_name in config.sections():
                 m = re.match(r"test([0-9]{2})", section_name)
 
                 if not m:
                     # One of the other sections ([task], [tests]...)
                     continue
+
+                self.subtask_section_names.add(section_name)
 
                 n = int(m.groups()[0])
                 if n in self.subtasks:
@@ -69,9 +108,10 @@ class TaskConfig:
                 self.subtasks[n] = SubtaskConfig(
                     self.contest_type, config[section_name]
                 )
-
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
+
+        self.check_unused_keys(config)
 
     def get_maximum_score(self) -> int:
         return sum([subtask.score for subtask in self.subtasks.values()])
@@ -90,6 +130,41 @@ class TaskConfig:
                 dir(self),
             )
         )
+
+    def check_unused_keys(self, config: CheckedConfigParser):
+        """Verify that there are no unused keys in the config, raise otherwise."""
+
+        accepted_section_names = self.subtask_section_names | {
+            "task",
+            "tests",
+            "limits",
+        }
+
+        # These keys are accepted for backwards compatibility reasons because the config
+        # format is based on KSP's opendata tool.
+        ignored_keys = {
+            "task": {"name", "tests"},
+            "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
+            "limits": {},
+            # Any subtask section like "test01", "test02"...
+            "subtask": {"file_name"},
+        }
+
+        for section_name in config.sections():
+            assert (
+                section_name in accepted_section_names
+            ), f"Neočekávaná sekce configu: [{section_name}]"
+
+            if section_name in self.subtask_section_names:
+                section_ignored_keys = ignored_keys["subtask"]
+            else:
+                section_ignored_keys = ignored_keys[section_name]
+
+            for key in config.get_unused_keys(section_name):
+                if key not in section_ignored_keys:
+                    raise ValueError(
+                        f"Neočekávaný klíč '{key}' v sekci [{section_name}] configu."
+                    )
 
 
 class SubtaskConfig:
