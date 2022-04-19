@@ -5,10 +5,23 @@ Nástroj na přípravu úloh do programátorských soutěží, primárně pro so
 
 ## Instalace
 
-Nainstaluj Python 3.6+ a použij nástroj `pip`:
+Napřed nainstaluj Python 3.6+ a nástroj `pip`.
+Pak otevři terminál (příkazovou řádku).
+Na Windows můžeš terminál otevřít [takto](https://soubory.info/info/jak-otevrit-prikazovy-radek-windows-10-8-7-atd/).
+Na Linuxu a Macu vyhledej program "Terminal".
+
+Napiš následují příkaz do terminálu a zmáčkni Enter:
 ```
 pip3 install --user git+https://github.com/kasiopea-org/pisek
 ```
+
+Pokud dostaneš na Windows chybovou hlášku typu `'pip3' is not recognized as an internal or external command`,
+mohlo by fungovat místo toho napsat
+```
+py -3 -m pip install --user git+https://github.com/kasiopea-org/pisek`
+```
+Pokud ani to nepomůže, [napiš nám issue](https://github.com/kasiopea-org/pisek/issues/new).
+
 
 Pokud už Písek máš a chceš ho aktualizovat, přidej `--upgrade`:
 ```
@@ -28,7 +41,7 @@ a [příklad pro CMS (MO-P)](https://github.com/kasiopea-org/pisek/blob/master/f
 
 ### Testování úloh
 
-Napřed vyplň konfigurační soubor `config`. Pak jednoduše spusť ve složce úlohy příkaz
+Napřed vyplň konfigurační soubor `config`. Pak v terminálu přejdi do složky úlohy a spusť příkaz
 ```
 pisek
 ```
