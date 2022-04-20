@@ -202,5 +202,48 @@ class TestStrictChecker(TestSoucetKasiopea):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
+class TestExtraConfigKeys(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def catch_exceptions(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["task"]["foo"] = "bar"
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestExtraConfigKeysInSubtask(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def catch_exceptions(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["test01"]["foo"] = "bar"
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestExtraConfigSection(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def catch_exceptions(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config.add_section("baz")
+            raw_config["baz"]["foo"] = "bar"
+
+        modify_config(self.task_dir, modification_fn)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -52,6 +52,9 @@ class TestFixtureVariant(TestFixture):
     def expecting_success(self):
         return True
 
+    def catch_exceptions(self):
+        return False
+
     def modify_task(self):
         """
         Code which modifies the task before running the tests should go here.
@@ -65,16 +68,29 @@ class TestFixtureVariant(TestFixture):
             return
 
         self.modify_task()
-        # We lower the timeout to make the self-tests run faster. The solutions
-        # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
-        # and we want to consider it a timeout
-        suite = get_test_suite(self.task_dir, timeout=1, n_seeds=1, in_self_test=True)
 
-        # with open(os.devnull, "w") as devnull:
-        output = io.StringIO()
-        runner = unittest.TextTestRunner(stream=output, failfast=True)
+        try:
+            # We lower the timeout to make the self-tests run faster. The solutions
+            # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
+            # and we want to consider it a timeout
+            suite = get_test_suite(
+                self.task_dir, timeout=1, n_seeds=1, in_self_test=True
+            )
 
-        result = runner.run(suite)
+            # with open(os.devnull, "w") as devnull:
+            output = io.StringIO()
+            runner = unittest.TextTestRunner(stream=output, failfast=True)
+
+            result = runner.run(suite)
+        except Exception as e:
+            if not self.catch_exceptions():
+                raise e
+            else:
+                self.assertFalse(
+                    self.expecting_success(),
+                    f"Neočekávaný výsledek testu: test vyhodil výjimku i když neměl: {e}",
+                )
+                return
 
         out = output.getvalue()
         out = quote_output(out)
