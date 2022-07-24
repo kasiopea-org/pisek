@@ -105,7 +105,7 @@ class CPPCompileRules(CompileRules):
         if dry_run:
             return result_filepath
 
-        cpp_flags = ["-std=c++14", "-O2", "-Wall", "-lm", "-Wshadow"]
+        cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow"]
 
         if manager is not None:  # Interactive task
             cpp_flags += manager_flags(dirname, manager, ".cpp")
@@ -132,7 +132,7 @@ class CCompileRules(CompileRules):
         if dry_run:
             return result_filepath
 
-        c_flags = ["-std=c11", "-O2", "-Wall", "-lm", "-Wshadow"]
+        c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow"]
 
         if manager is not None:  # Interactive task
             c_flags += manager_flags(dirname, manager, ".c")
