@@ -27,6 +27,11 @@ class CompileRules:
         os.chmod(filepath, st.st_mode | 0o111)
 
 
+# This is the list of supported Python interpreters.
+# Used for checking the shebang.
+VALID_PYTHON_INTERPRETERS = ["python3", "pypy3"]
+
+
 class ScriptCompileRules(CompileRules):
     """
     For e.g. Python or Bash, languages whose source code can be directly executed
@@ -48,7 +53,7 @@ class ScriptCompileRules(CompileRules):
         if not self.valid_shebang(filepath):
             raise RuntimeError(
                 f"{filename} má neplatný shebang. "
-                "Pro Python by měl první řádek být '#!/usr/bin/env python3'. "
+                "Pro Python by měl první řádek být pravděpodobně '#!/usr/bin/env python3' či ekvivalent. "
                 " Zkontroluj taky, že soubor používá linuxové konce řádků."
             )
 
@@ -70,7 +75,10 @@ class ScriptCompileRules(CompileRules):
             return False
 
         if os.path.splitext(filepath)[1] == ".py":
-            return first_line == "#!/usr/bin/env python3\n"
+            return any(
+                first_line == f"#!/usr/bin/env {interpreter}\n"
+                for interpreter in VALID_PYTHON_INTERPRETERS
+            )
         else:
             # No check performed for non-Python at the moment
             return True
