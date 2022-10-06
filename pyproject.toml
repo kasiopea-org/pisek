@@ -9,8 +9,9 @@ authors = []
 pisek = "pisek.__main__:main"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 tqdm = "^4.50.0"
+termcolor = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
