@@ -17,13 +17,13 @@ let
   # vývojový shell
   shell = pkgs.mkShell {
     buildInputs = with pkgs; [
-      niv
-      nixpkgs-fmt
+      # niv
+      # nixpkgs-fmt
 
       poetry
-      pisek-env
-      mypy
-      python3Packages.black
+      # pisek-env
+      # mypy
+      # python3Packages.black
     ];
   };
 in
