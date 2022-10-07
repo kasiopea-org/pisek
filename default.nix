@@ -1,7 +1,7 @@
 { sources ? import ./nix/sources.nix, nixpkgs ? sources.nixpkgs }:
 
 let
-  pkgs = import nixpkgs {};
+  pkgs = import nixpkgs { };
 
   pisek-exe = pkgs.poetry2nix.mkPoetryApplication {
     projectDir = ./.;
@@ -29,5 +29,4 @@ let
 in
 {
   inherit pisek-exe pisek-env shell;
-
 }
