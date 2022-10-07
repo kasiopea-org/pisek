@@ -1,21 +1,21 @@
 [tool.poetry]
 name = "pisek"
 version = "0.1.0"
-description = "Nástroj na přípravu úloh do programátorských soutěží"
-homepage = "https://github.com/kasiopea-org/pisek"
-authors = []
+description = "Násroj na přípravu úloh do programátorských soutěží"
+authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.scripts]
 pisek = "pisek.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-tqdm = "^4.50.0"
+tqdm = "^4.64.1"
 termcolor = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+black = "^22.10.0"
+pytest = "^7.1.3"
 
 [build-system]
-requires = ["poetry-core>=1.0.8"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
