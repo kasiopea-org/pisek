@@ -74,6 +74,7 @@ def cms_test_suite(
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
     strict=False,
+    all_tests: bool = False,
     **_ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
 ):
     """
@@ -130,6 +131,7 @@ def cms_test_suite(
                 timeout=cur_timeout,
                 get_subtasks=lambda: get_subtasks(config),
                 in_self_test=in_self_test,
+                all_tests=all_tests,
             )
         )
 

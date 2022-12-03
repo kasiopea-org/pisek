@@ -272,6 +272,7 @@ def kasiopea_test_suite(
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
     strict=False,
+    all_tests: bool = False,
 ):
     """
     Tests a task. Generates test cases using the generator, then runs each solution
@@ -324,6 +325,7 @@ def kasiopea_test_suite(
                     timeout,
                     get_subtasks=lambda: get_subtasks(seeds),
                     in_self_test=in_self_test,
+                    all_tests=all_tests,
                 )
             )
 

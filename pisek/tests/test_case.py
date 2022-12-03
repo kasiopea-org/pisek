@@ -136,11 +136,13 @@ class SolutionWorks(SolutionTestCase):
         timeout,
         get_subtasks: Callable[[], List[Subtask]],
         in_self_test=False,
+        all_tests=False,
     ):
         super().__init__(task_config, solution_name)
         self.run_config = {"timeout": timeout}
         self.judge: Judge = make_judge(self.task_config)
         self.in_self_test = in_self_test
+        self.all_tests = all_tests
 
         # Subtasks might not be available when this test case is created, so we need to
         # pass a function to get them later
@@ -246,7 +248,7 @@ class SolutionWorks(SolutionTestCase):
 
             judge_score = min(judge_score, pts)
 
-            if judge_score == 0:
+            if judge_score == 0 and not self.all_tests:
                 break  # Fail fast
 
         return judge_score, ("\n".join(messages) if messages else None)

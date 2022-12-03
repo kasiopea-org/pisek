@@ -12,11 +12,13 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def run_tests(args, full=False):
+def run_tests(args, full=False, all_tests=False):
     cwd = os.getcwd()
     eprint(f"Testuji úlohu {cwd}")
 
-    suite = get_test_suite(cwd, timeout=args.timeout, strict=args.strict)
+    suite = get_test_suite(
+        cwd, timeout=args.timeout, strict=args.strict, all_tests=all_tests
+    )
 
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=not full)
     result = runner.run(suite)
@@ -97,6 +99,9 @@ def main(argv):
         "--full", action="store_true", help="nezastavit se při první chybě"
     )
     parser.add_argument(
+        "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="pro závěrečnou kontrolu: vynutit, že checker existuje",
@@ -143,7 +148,7 @@ def main(argv):
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand is None:
-        result = run_tests(args, full=args.full)
+        result = run_tests(args, full=args.full, all_tests=args.all_tests)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
 
