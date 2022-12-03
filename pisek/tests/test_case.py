@@ -292,6 +292,8 @@ class SolutionWorks(SolutionTestCase):
                 f"Řešení {self.solution.name} mělo získat {expected_score}b,"
                 f" ale získalo {score}b.\n{message}",
             )
+        else:
+            self.log(f"{score}b ", end="")
 
     def __str__(self):
         expected_score = util.get_expected_score(self.solution.name, self.task_config)
