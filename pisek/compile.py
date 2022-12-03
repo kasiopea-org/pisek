@@ -12,7 +12,11 @@ class CompileRules:
         self.supported = supported_extensions
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = False, **kwargs
+        self,
+        filepath: str,
+        build_dir: Optional[str] = None,
+        dry_run: bool = False,
+        **kwargs,
     ) -> Optional[str]:
         """Takes a `filepath` and either:
         - compiles it and returns the path to the executable (str) or
@@ -42,7 +46,11 @@ class ScriptCompileRules(CompileRules):
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True, **kwargs
+        self,
+        filepath: str,
+        build_dir: Optional[str] = None,
+        dry_run: bool = True,
+        **kwargs,
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -102,7 +110,7 @@ class CPPCompileRules(CompileRules):
     def compile(
         self,
         filepath: str,
-        build_dir: str = None,
+        build_dir: Optional[str] = None,
         dry_run: bool = True,
         manager=None,
         **kwargs,
@@ -129,7 +137,7 @@ class CCompileRules(CompileRules):
     def compile(
         self,
         filepath: str,
-        build_dir: str = None,
+        build_dir: Optional[str] = None,
         dry_run: bool = True,
         manager=None,
         **kwargs,
@@ -154,7 +162,11 @@ class PascalCompileRules(CompileRules):
         super().__init__(supported_extensions)
 
     def compile(
-        self, filepath: str, build_dir: str = None, dry_run: bool = True, **kwargs
+        self,
+        filepath: str,
+        build_dir: Optional[str] = None,
+        dry_run: bool = True,
+        **kwargs,
     ) -> Optional[str]:
         dirname, filename, _ = _split_path(filepath)
         build_dir = build_dir or util.get_build_dir(dirname)
@@ -195,7 +207,7 @@ def _split_path(filepath: str) -> Tuple[str, str, str]:
 
 def compile(
     filepath: str,
-    build_dir: str = None,
+    build_dir: Optional[str] = None,
     dry_run: bool = False,
     compiler_args: Optional[Dict] = None,
 ) -> Optional[str]:
