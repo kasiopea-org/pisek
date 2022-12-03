@@ -87,12 +87,15 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
     """
     extensions = supported_extensions()
     candidates = []
-    for ext in extensions:
-        if os.path.isfile(os.path.join(path, name + ext)):
-            candidates.append(name + ext)
-        if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
-            # Extension already present in `name`
-            candidates.append(name)
+    for name in [name, get_name_without_expected_score(name)]:
+        for ext in extensions:
+            if os.path.isfile(os.path.join(path, name + ext)):
+                candidates.append(name + ext)
+            if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
+                # Extension already present in `name`
+                candidates.append(name)
+        if len(candidates):
+            break
 
     if len(candidates) > 1:
         raise RuntimeError(
@@ -170,16 +173,23 @@ def get_expected_score(solution_name: str, config: TaskConfig) -> Optional[int]:
     solve_0b -> 0
     solve_jirka_4b -> 4
     """
-    matches = re.findall(r"_([0-9]{1,3}|X)b$", solution_name)
+    match = re.search(r"_([0-9]{1,3}|X)b$", solution_name)
 
-    if matches:
-        assert len(matches) == 1
-        if matches[0] == "X":
+    if match:
+        if match[1] == "X":
             return None
-        score = int(matches[0])
+        score = int(match[1])
         return score
     else:
         return config.get_maximum_score()
+
+
+def get_name_without_expected_score(solution_name: str) -> str:
+    match = re.search(r"_([0-9]{1,3}|X)b$", solution_name)
+
+    if match:
+        return solution_name[: match.span()[0]]
+    return solution_name
 
 
 def quote_output(s, color="yellow", max_length=1500, max_lines=20):
