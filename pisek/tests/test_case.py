@@ -276,7 +276,7 @@ class SolutionWorks(SolutionTestCase):
         self.log("| ", end="")
 
         # TODO: document this somewhere
-        score = round(score)
+        score = round(score * 100) / 100
 
         if expected_score is not None:
             if score > expected_score:
