@@ -226,7 +226,7 @@ class SolutionWorks(SolutionTestCase):
             )
 
             if run_result.kind == RunResultKind.OK:
-                c = "·" if pts == 1 else "W" if pts == 0 else "P"
+                c = "·" if pts == 1 else "W" if pts == 0 else f"[{pts:.2}]"
 
                 if pts != 1 and run_result.msg:
                     messages.append(run_result.msg)
