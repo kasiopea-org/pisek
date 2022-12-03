@@ -278,25 +278,28 @@ class SolutionWorks(SolutionTestCase):
         # TODO: document this somewhere
         score = round(score)
 
-        if score > expected_score:
-            # If the solution works too well (e.g. 4 points instead of 0),
-            # printing diffs of wrong answers does not make sense.
-            message = ""
-        else:
-            message = "\n".join(messages)
+        if expected_score is not None:
+            if score > expected_score:
+                # If the solution works too well (e.g. 4 points instead of 0),
+                # printing diffs of wrong answers does not make sense.
+                message = ""
+            else:
+                message = "\n".join(messages)
 
-        self.assertEqual(
-            score,
-            expected_score,
-            f"Řešení {self.solution.name} mělo získat {expected_score}b,"
-            f" ale získalo {score}b.\n{message}",
-        )
+            self.assertEqual(
+                score,
+                expected_score,
+                f"Řešení {self.solution.name} mělo získat {expected_score}b,"
+                f" ale získalo {score}b.\n{message}",
+            )
 
     def __str__(self):
-        return "Řešení {} získá {}b".format(
-            self.solution.name,
-            util.get_expected_score(self.solution.name, self.task_config),
-        )
+        expected_score = util.get_expected_score(self.solution.name, self.task_config)
+        if expected_score is None:
+            expected_score_str = "nespecifikovaný počet bodů"
+        else:
+            expected_score_str = f"{expected_score}b"
+        return f"Řešení {self.solution.name} získá {expected_score_str}"
 
     def log(self, msg, *args, **kwargs):
         if not self.in_self_test:

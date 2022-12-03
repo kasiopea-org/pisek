@@ -164,16 +164,18 @@ def clean_task_dir(task_dir: str) -> None:
     return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
 
 
-def get_expected_score(solution_name: str, config: TaskConfig) -> int:
+def get_expected_score(solution_name: str, config: TaskConfig) -> Optional[int]:
     """
     solve -> 10 (assuming 10 is the maximum score)
     solve_0b -> 0
     solve_jirka_4b -> 4
     """
-    matches = re.findall(r"_([0-9]{1,3})b$", solution_name)
+    matches = re.findall(r"_([0-9]{1,3}|X)b$", solution_name)
 
     if matches:
         assert len(matches) == 1
+        if matches[0] == "X":
+            return None
         score = int(matches[0])
         return score
     else:
