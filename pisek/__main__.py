@@ -12,6 +12,20 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+class TextTestResultHideTraceback(unittest.TextTestResult):
+    def _exc_info_to_string(self, err, test):
+        """Converts a sys.exc_info()-style tuple of values into a string."""
+        exctype, value, tb = err
+        tb = self._clean_tracebacks(exctype, value, tb, test)
+        return f"{value}"
+
+
+def get_resultclass(args):
+    if args.pisek_traceback:
+        return None
+    return TextTestResultHideTraceback
+
+
 def run_tests(args, full=False, all_tests=False):
     cwd = os.getcwd()
     eprint(f"Testuji úlohu {cwd}")
@@ -20,7 +34,9 @@ def run_tests(args, full=False, all_tests=False):
         cwd, timeout=args.timeout, strict=args.strict, all_tests=all_tests
     )
 
-    runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=not full)
+    runner = unittest.TextTestRunner(
+        verbosity=args.verbose, failfast=not full, resultclass=get_resultclass(args)
+    )
     result = runner.run(suite)
 
     return result
@@ -57,7 +73,9 @@ def test_solution(args):
         only_necessary=True,
         all_tests=args.all_tests,
     )
-    runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
+    runner = unittest.TextTestRunner(
+        verbosity=args.verbose, failfast=True, resultclass=get_resultclass(args)
+    )
     result = runner.run(suite)
 
     return result
@@ -69,7 +87,9 @@ def test_generator(args):
 
     suite = get_test_suite(cwd, solutions=[])
 
-    runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
+    runner = unittest.TextTestRunner(
+        verbosity=args.verbose, failfast=True, resultclass=get_resultclass(args)
+    )
     result = runner.run(suite)
 
     return result
@@ -90,6 +110,11 @@ def main(argv):
     )
     parser.add_argument(
         "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
+    )
+    parser.add_argument(
+        "--pisek-traceback",
+        action="store_true",
+        help="Při chybách vypiš traceback písku",
     )
     parser.add_argument(
         "--timeout",
