@@ -43,7 +43,7 @@ def run_solution(args, unknown_args):
 def test_solution(args):
     if args.solution is None:
         eprint(f"Zadejte název řešení, které chcete testovat!")
-        eprint(f"Příklad:   pisek test solution solve_slow_4b")
+        eprint(f"Příklad:   pisek [--all_tests] test solution solve_slow_4b")
         exit(1)
 
     eprint(f"Testuji řešení: {args.solution}")
@@ -55,6 +55,7 @@ def test_solution(args):
         n_seeds=args.number_of_tests,
         timeout=args.timeout,
         only_necessary=True,
+        all_tests=args.all_tests,
     )
     runner = unittest.TextTestRunner(verbosity=args.verbose, failfast=True)
     result = runner.run(suite)
@@ -128,6 +129,9 @@ def main(argv):
         "--timeout",
         type=int,
         help="po kolika sekundách ukončit běžící řešení",
+    )
+    parser_test.add_argument(
+        "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
     )
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
