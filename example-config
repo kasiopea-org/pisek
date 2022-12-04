@@ -1,0 +1,100 @@
+# Ukázka a vysvětlení konfiguračního souboru úloh písku
+# Parsováno pomocí configparser.RawConfigParser s kontrolou nepoužitých klíčů
+# Viz https://docs.python.org/3.10/library/configparser.html
+
+# Umístěte jako 'config' do složku úlohy
+
+
+[task]
+
+# Jméno úlohy (ignorováno)
+name=blecha
+
+contest_type=cms
+# Prostředí, pro které je úloha vyvíjena
+# kasiopea (výchozí) / cms
+
+solutions_subdir=solutions/
+# Řešení hledat v uvedené složce relativně vůči pozici configu
+# Výchozí: .
+samples_subdir=sample_tests/
+# Ukázkové vstupy hledat v uvedené složce relativně vůči pozici configu
+# Výchozí: .
+data_subdir=tests/
+# Pracovní složka písku, kam se budou generovat vstupy, výstupy, ...
+# Výchozí: data/
+
+solutions=solve solve_5b solve_3b solve_n_0b od_ucastnika_Xb
+# Seznam řešení oddělených whitespacem
+# První z nich se považuje za vzorové a tedy se např. používají jeho výstupy ke kontrole ostatních
+# Přípona _<int>b určuje, kolik má dané řešení získat bodů (neuvedeno znamená maximum)
+# Přípona _Xb vypíná kontrolu počtu bodů
+# Pro každé řešení se hledá soubor s daným názvem a libovolnou příponou
+# programovacího jazyka ve složce definované solutions_subdir.
+# Pokud zádný takový neexistuje, zkusí se to stejné po odstranění přípony
+# počtu bodů.
+
+tests = ??? (ignorováno)
+# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+
+
+[tests]
+
+in_gen=src/gen
+# Zdroják generátoru, bez přípony
+
+checker=check
+# Program (bez přípony) který validuje korektnost vstupů
+# Neuvedení znamená bez kontroly
+
+out_check=diff
+# Popisuje, jakým způsobem se má kontrolovat řešení.
+#   - diff: prostě zkontroluje, že se řešení rovná vzorovému (ignoruje whitespace) (výchozí)
+#   - judge: pokud je řešení nejednoznačné a je potřeba jej kontrolovat
+#        pomocí programu (tzv. "judge")
+
+out_judge=judge
+# Pouze pro out_check=judge
+# Název judge programu bez přípony
+
+solution_manager=src/manager
+# Pouze pro C++ CMS úlohy
+# Linkovat každé řešení s uvedeným programem (opět zapsáno bez přípony)
+# Výběrko často využívá pro interaktivní úlohy
+
+in_mode = ??? (ignorováno)
+out_mode = ??? (ignorováno)
+out_format = ??? (ignorováno)
+online_validity = ??? (ignorováno)
+# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+
+
+[test01]
+# Sekce pro každý subtask (indexováno od jedné)
+
+name=Subtask 1
+# Název subtasku (nepovinný)
+
+points=3
+# Počet bodů (<int>)
+
+in_globs=01*.in
+# Pouze v CMS režimu
+# Popis, které soubory se mají použit jako testy pro daný subtask.
+# Podporuje expanzi * a ? jako v shelu
+
+file_name = ??? (ignorováno)
+# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+
+
+[limits]
+
+solve_time_limit=3
+# Pouze CMS
+# Časový limit pro vzorové (první v pořadí) řešení
+# Při neuvedení 6 minut
+
+sec_solve_time_limit=4
+# Pouze CMS
+# Časový limit pro ostatní řešení
+# Při neuvedení 6 minut

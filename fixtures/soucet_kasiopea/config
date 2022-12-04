@@ -1,7 +1,5 @@
 # Open-data task configuration
-# Source: $(KSP)/opendata/config for more information
-#
-# Fill out all the information. Please, delete the TODO line after fixing it.
+# Source: $(Písek)/example-config for more information
 #
 # Task author: Kasiopea Org
 

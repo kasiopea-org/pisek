@@ -1,4 +1,5 @@
 # Pisek fixture
+# Source: $(Písek)/example-config for more information
 
 [task]
 name=guess
@@ -20,9 +21,8 @@ in_gen=src/gen
 # The important line:
 solution_manager=src/manager
 
-out_format=text
-online_validity=360
 out_check=diff
+
 # judge source file
 # out_judge=judge
 

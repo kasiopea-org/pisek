@@ -38,6 +38,7 @@ Každá úloha má vlastní konfigurační soubor `config`, který určuje param
 jako třeba za jaké podúlohy je kolik bodů, jaká jsou řešení a jak se kontroluje správnost.
 Zde je [příklad pro Kasiopeu](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_kasiopea/config)
 a [příklad pro CMS (MO-P)](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_cms/config).
+Kompletní funkčnost konfiguračního souboru je zdokumenotvaná [zde](https://github.com/kasiopea-org/pisek/blob/master/example-config).
 
 ### Testování úloh
 
