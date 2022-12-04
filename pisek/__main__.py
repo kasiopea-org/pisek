@@ -108,65 +108,104 @@ def main(argv):
             "Plná dokumentace je k dispozici na https://github.com/kasiopea-org/pisek"
         )
     )
-    parser.add_argument(
-        "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
-    )
-    parser.add_argument(
-        "--pisek-traceback",
-        action="store_true",
-        help="Při chybách vypiš traceback písku",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        help="po kolika sekundách ukončit běžící řešení",
-    )
-    parser.add_argument(
-        "--full", action="store_true", help="nezastavit se při první chybě"
-    )
-    parser.add_argument(
-        "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
-    )
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="pro závěrečnou kontrolu: vynutit, že checker existuje",
-    )
+
+    def add_argument_verbose(parser):
+        parser.add_argument(
+            "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
+        )
+
+    def add_argument_pisek_traceback(parser):
+        parser.add_argument(
+            "--pisek-traceback",
+            action="store_true",
+            help="Při chybách vypiš traceback písku",
+        )
+
+    def add_argument_timeout(parser):
+        parser.add_argument(
+            "--timeout",
+            type=float,
+            help="po kolika sekundách ukončit běžící řešení (pouze CMS)",
+        )
+
+    def add_argument_full(parser):
+        parser.add_argument(
+            "--full", action="store_true", help="nezastavit se při první chybě"
+        )
+
+    def add_argument_strict(parser):
+        parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="pro závěrečnou kontrolu: vynutit, že checker existuje",
+        )
+
+    def add_argument_all_tests(parser):
+        parser.add_argument(
+            "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
+        )
+
+    def add_argument_clean(parser):
+        parser.add_argument(
+            "--clean",
+            "-c",
+            action="store_true",
+            help="nejprve vyčisti, pak proveď žádané",
+        )
+
+    add_argument_verbose(parser)
+    add_argument_pisek_traceback(parser)
+    add_argument_timeout(parser)
+    add_argument_full(parser)
+    add_argument_strict(parser)
+    add_argument_all_tests(parser)
+    add_argument_clean(parser)
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
+
     parser_run = subparsers.add_parser("run", help="spusť řešení")
     parser_run.add_argument("solution", type=str, help="název řešení ke spuštění")
+    parser_run.add_argument(
+        "command_args",
+        type=str,
+        nargs="*",
+        help="Argumenty předané spuštěnému programu",
+    )
+    add_argument_clean(parser_run)
 
     parser_test = subparsers.add_parser("test", help="otestuj")
     parser_test.add_argument(
         "target",
-        choices=["solution", "generator", "all"],
-        default="all",
+        choices=["solution", "generator"],
         help="volba řešení/generátor",
     )
     parser_test.add_argument(
         "solution", type=str, help="název řešení ke spuštění", nargs="?"
     )
     parser_test.add_argument(
-        "--number-of-tests", "-n", type=int, default=10, help="počet testů"
-    )
-    parser_test.add_argument(
-        "--timeout",
+        "--number-of-tests",
+        "-n",
         type=int,
-        help="po kolika sekundách ukončit běžící řešení",
+        default=10,
+        help="počet testů (pouze pro kasiopeu)",
     )
-    parser_test.add_argument(
-        "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
-    )
+    add_argument_timeout(parser_test)
+    add_argument_full(parser_test)
+    add_argument_all_tests(parser_test)
+    add_argument_pisek_traceback(parser_test)
+    add_argument_clean(parser_test)
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
-    args, unknown_args = parser.parse_known_args(argv)
+    args = parser.parse_args(argv)
 
     result = None
 
+    if args.clean:
+        clean_directory(args)
+
     if args.subcommand == "run":
-        result = run_solution(args, unknown_args)
+        result = run_solution(args, args.command_args)
     elif args.subcommand == "test":
         if args.target == "solution":
             result = test_solution(args)
