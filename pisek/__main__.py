@@ -21,6 +21,7 @@ import sys
 from pisek.tests.util import get_test_suite
 from pisek.program import Program, RunResultKind
 from pisek import util
+from pisek.license import license, license_gnu
 
 
 def eprint(*args, **kwargs):
@@ -212,6 +213,11 @@ def main(argv):
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
+    parser_license = subparsers.add_parser("license", help="vyčisti")
+    parser_license.add_argument(
+        "--print", action="store_true", help="Vypiš celou licenci"
+    )
+
     args = parser.parse_args(argv)
 
     result = None
@@ -230,6 +236,8 @@ def main(argv):
             assert False
     elif args.subcommand == "clean":
         clean_directory(args)
+    elif args.subcommand == "license":
+        print(license_gnu if args.print else license)
     elif args.subcommand is None:
         result = run_tests(args, full=args.full, all_tests=args.all_tests)
     else:
