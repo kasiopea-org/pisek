@@ -123,3 +123,23 @@ Pozor, nezapomeňte, že `check_all.sh` se dívá na soubory ve stavu, v jakém 
 máte vy, a ne na to, co budete skutečně commitovat. Pokud tedy něco opravíte a
 zapomenete změnu přidat do commitu, může skript seběhnout, ale pořád commitnete
 něco, co nefunguje.
+
+## Licence
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+       (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
+       (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
+       (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
+       (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
