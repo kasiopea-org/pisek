@@ -212,7 +212,7 @@ def main(argv):
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
 
-    parser_license = subparsers.add_parser("license", help="vyčisti")
+    parser_license = subparsers.add_parser("license", help="vypiš licenci písku")
     parser_license.add_argument(
         "--print", action="store_true", help="Vypiš celou licenci"
     )
