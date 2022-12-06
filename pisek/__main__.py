@@ -32,7 +32,6 @@ class TextTestResultHideTraceback(unittest.TextTestResult):
     def _exc_info_to_string(self, err, test):
         """Converts a sys.exc_info()-style tuple of values into a string."""
         exctype, value, tb = err
-        tb = self._clean_tracebacks(exctype, value, tb, test)
         return f"{value}"
 
 
