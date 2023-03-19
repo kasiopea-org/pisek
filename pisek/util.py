@@ -30,6 +30,13 @@ DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
 
 
+def rm_f(fn):
+    try:
+        os.unlink(fn)
+    except FileNotFoundError:
+        pass
+
+
 def files_are_equal(file_a: str, file_b: str) -> bool:
     """
     Checks if the contents of `file_a` and `file_b` are equal,
