@@ -186,6 +186,11 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
 
 def clean_task_dir(task_dir: str) -> None:
     config = TaskConfig(task_dir)
+
+    import cms.pack
+    rm_f(cms.pack.SAMPLES_ZIP)
+    rm_f(cms.pack.TESTS_ZIP)
+
     return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
 
 

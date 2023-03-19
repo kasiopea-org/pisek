@@ -22,6 +22,7 @@ from pisek.tests.util import get_test_suite
 from pisek.program import Program, RunResultKind
 from pisek import util
 from pisek.license import license, license_gnu
+import pisek.cms as cms
 
 
 def eprint(*args, **kwargs):
@@ -218,6 +219,48 @@ def main(argv):
         "--print", action="store_true", help="Vypiš celou licenci"
     )
 
+    parser_cms = subparsers.add_parser("cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka")
+    subparsers_cms = parser_cms.add_subparsers(help="podpříkazy", dest="cms_subcommand")
+    parser_cms_check = subparsers_cms.add_parser("check", help="do a preflight check")
+    parser_cms_pack = subparsers_cms.add_parser("pack", help="check and pack")
+    parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
+    parser_cms_info = subparsers_cms.add_parser("info", help="print task info without testing")
+    parser_cms_samples = subparsers_cms.add_parser("samples", help="pack samples into .zip")
+    CHECK_NONE = "none"
+    CHECK_INSTANT = "instant"
+    CHECK_SANE = "sane"
+    CHECK_THOROUGH = "thorough"
+    CHECK_MODES = [CHECK_NONE, CHECK_INSTANT, CHECK_SANE, CHECK_THOROUGH]
+    parser_cms.add_argument(
+        "--check-mode",
+        choices=CHECK_MODES,
+        default=None,
+        help="Úroveň kontrol, které se mají provést",
+    )
+    parser_cms_submit.add_argument(
+        "--contest-id",
+        "-c",
+        help="Id contestu, kam submittovat",
+        type=int,
+        required=True,
+    )
+    parser_cms_submit.add_argument(
+        "--username",
+        "-u",
+        help="Username uživatele, za kterého submittovat.",
+        type=str,
+        required=True,
+    )
+    parser_cms_submit.add_argument(
+        "--ssh",
+        "-s",
+        dest="ssh_destination",
+        help="Server (destination) ssh připojení (deafult: nepoužívat ssh)",
+        type=str,
+        default=None
+    )
+
+
     args = parser.parse_args(argv)
 
     result = None
@@ -234,6 +277,27 @@ def main(argv):
             result = test_generator(args)
         else:
             assert False
+    elif args.subcommand == "cms":
+        args, unknown_args = parser.parse_known_args()
+        actions = {
+            "check": (CHECK_THOROUGH, lambda a: None),
+            "pack": (CHECK_SANE, cms.pack),
+            "submit": (CHECK_INSTANT, cms.submit_all),
+            "info": (CHECK_INSTANT, cms.task_info),
+            "samples": (CHECK_SANE, cms.samples),
+            None: (CHECK_SANE, cms.pack),
+        }
+        checks = {
+            CHECK_NONE: lambda a: None,
+            CHECK_INSTANT: cms.check.instant,
+            CHECK_SANE: cms.check.sane,
+            CHECK_THOROUGH: cms.check.thorough,
+        }
+        check_mode, action = actions[args.cms_subcommand]
+        if args.check_mode is not None: # allow overriding
+            check_mode = args.check_mode
+        checks[check_mode](args)
+        return action(args)
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand == "license":
