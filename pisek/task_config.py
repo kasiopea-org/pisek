@@ -69,6 +69,7 @@ class TaskConfig:
             )
 
         try:
+            self.task_name: List[str] = config.get("task", "name")
             self.solutions: List[str] = config.get("task", "solutions").split()
             self.contest_type = config["task"].get("contest_type", "kasiopea")
             self.generator: str = config["tests"]["in_gen"]
@@ -158,7 +159,7 @@ class TaskConfig:
         # These keys are accepted for backwards compatibility reasons because the config
         # format is based on KSP's opendata tool.
         ignored_keys = {
-            "task": {"name", "tests"},
+            "task": {"tests"},
             "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
             "limits": {},
             # Any subtask section like "test01", "test02"...

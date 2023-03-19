@@ -7,7 +7,7 @@
 
 [task]
 
-# Jméno úlohy (ignorováno)
+# Jméno úlohy (pro automatický import řešení do CMS)
 name=blecha
 
 contest_type=cms
