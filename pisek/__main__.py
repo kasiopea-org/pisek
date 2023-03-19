@@ -206,6 +206,7 @@ def main(argv):
     )
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
+    add_argument_strict(parser_test)
     add_argument_all_tests(parser_test)
     add_argument_pisek_traceback(parser_test)
     add_argument_clean(parser_test)
