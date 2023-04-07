@@ -34,8 +34,6 @@ points=6
 in_globs=02*.in 03*.in
 
 [limits]
-# Time limit (seconds) for the model solution (first listed)
+# Time limit (seconds) for solutions
 solve_time_limit=2
-# Time limit (seconds) for other solutions
-sec_solve_time_limit=2
 
