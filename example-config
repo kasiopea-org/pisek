@@ -97,4 +97,4 @@ solve_time_limit=3
 sec_solve_time_limit=4
 # Pouze CMS
 # Časový limit pro ostatní řešení
-# Při neuvedení 6 minut
+# Při neuvedení solve_time_limit

@@ -103,7 +103,9 @@ def cms_test_suite(
     config = TaskConfig(task_dir)
 
     if timeout is None:
-        timeout = config.timeout_other_solutions or util.DEFAULT_TIMEOUT
+        timeout = config.timeout_other_solutions or \
+                  config.timeout_model_solution or \
+                  util.DEFAULT_TIMEOUT
 
     timeout_model_solution = config.timeout_model_solution or timeout
 
