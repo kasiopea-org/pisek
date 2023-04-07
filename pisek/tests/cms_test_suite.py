@@ -16,6 +16,7 @@
 import glob
 import unittest
 import os
+import sys
 from typing import Optional, List
 
 import termcolor
@@ -89,6 +90,7 @@ def cms_test_suite(
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
     strict=False,
+    no_checker=False,
     all_tests: bool = False,
     **_ignored,  # Some arguments are relevant in kasiopea_test_suite but not here
 ):
@@ -116,7 +118,7 @@ def cms_test_suite(
     generator = OfflineGenerator(config, config.generator)
     suite.addTest(GeneratorWorks(config, generator))
 
-    if not only_necessary:
+    if not no_checker and not only_necessary:
         test_case.add_checker_cases(
             config,
             suite,

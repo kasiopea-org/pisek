@@ -47,7 +47,11 @@ def run_tests(args, full=False, all_tests=False):
     eprint(f"Testuji úlohu {cwd}")
 
     suite = get_test_suite(
-        cwd, timeout=args.timeout, strict=args.strict, all_tests=all_tests
+        cwd,
+        timeout=args.timeout,
+        strict=args.strict,
+        no_checker=args.no_checker,
+        all_tests=all_tests
     )
 
     runner = unittest.TextTestRunner(
@@ -155,6 +159,13 @@ def main(argv):
             action="store_true",
             help="pro závěrečnou kontrolu: vynutit, že checker existuje",
         )
+    
+    def add_argument_no_checker(parser):
+        parser.add_argument(
+            "--no-checker",
+            action="store_true",
+            help="nepouštět checker",
+        )
 
     def add_argument_all_tests(parser):
         parser.add_argument(
@@ -174,6 +185,7 @@ def main(argv):
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
+    add_argument_no_checker(parser)
     add_argument_all_tests(parser)
     add_argument_clean(parser)
 
@@ -208,6 +220,7 @@ def main(argv):
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
     add_argument_strict(parser_test)
+    add_argument_no_checker(parser_test)
     add_argument_all_tests(parser_test)
     add_argument_pisek_traceback(parser_test)
     add_argument_clean(parser_test)

@@ -16,6 +16,7 @@
 import shutil
 import unittest
 import os
+import sys
 import random
 from typing import Optional, List
 
@@ -287,6 +288,7 @@ def kasiopea_test_suite(
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
     strict=False,
+    no_checker=False,
     all_tests: bool = False,
 ):
     """
@@ -314,7 +316,7 @@ def kasiopea_test_suite(
     suite.addTest(GeneratesInputs(config, generator, seeds, in_self_test))
     suite.addTest(JudgeHandlesWhitespace(config))
 
-    if not only_necessary:
+    if not no_checker and not only_necessary:
         test_case.add_checker_cases(
             config,
             suite,
