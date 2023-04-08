@@ -42,6 +42,6 @@ def dump_data(args):
     with open(args.output, "w") as f:
         json.dump(data, f)
 
-def analize(args):
+def analyze(args):
     data = download_data(args)
 
