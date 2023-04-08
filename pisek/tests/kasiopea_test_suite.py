@@ -25,7 +25,7 @@ import termcolor
 
 from . import test_case
 from .test_case import Subtask, SolutionWorks, TaskInput
-from ..task_config import TaskConfig
+from ..task_config import TaskConfig, DEFAULT_TIMEOUT
 from .. import util
 from ..solution import Solution
 from ..generator import OnlineGenerator
@@ -284,7 +284,7 @@ def kasiopea_test_suite(
     task_dir: str,
     solutions: Optional[List[str]] = None,
     n_seeds=5,
-    timeout=util.DEFAULT_TIMEOUT,
+    timeout=DEFAULT_TIMEOUT,
     in_self_test=False,
     only_necessary=False,  # True when testing a single solution
     strict=False,

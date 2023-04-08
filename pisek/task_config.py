@@ -18,7 +18,7 @@ import os
 import re
 from typing import List, Dict, Optional, TypeVar, Callable
 
-DEFAULT_TIMEOUT = 360
+DEFAULT_TIMEOUT : float = 360
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
@@ -139,7 +139,7 @@ class TaskConfig:
     def get_samples_dir(self):
         return os.path.join(self.task_dir, self.samples_subdir)
 
-    def get_timeout(self, is_secondary_solution : bool):
+    def get_timeout(self, is_secondary_solution : bool) -> float:
         return (self.timeout_other_solutions if is_secondary_solution else None) or \
                self.timeout_model_solution or \
                DEFAULT_TIMEOUT
