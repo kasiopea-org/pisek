@@ -7,7 +7,7 @@ from typing import List, Union, Iterable
 
 from task_config import TaskConfig
 
-TASK_DIR = '.' #XXX
+TASK_DIR = '.'
 
 VERDICTS = {
     'ok': '·',
@@ -70,6 +70,11 @@ def visualize(
     config = TaskConfig(TASK_DIR)
     with open(os.path.join(TASK_DIR, filename)) as f:
         testing_log = json.load(f)
+
+    testing_log2 = {}
+    for sol_name in testing_log:
+        testing_log2[strip_suffix(sol_name)] = testing_log[sol_name]
+    testing_log = testing_log2
 
     if mode not in MODES_ALIASES:
         print(f"Neznámý mód {mode}. Známé mody jsou: {', '.join(set(MODES_ALIASES.values()))}")
@@ -164,6 +169,9 @@ def visualize_solution(
 
 def get_subtask(name):
     return name[:2]
+
+def strip_suffix(name):
+    return name[:name.rfind('.')]
 
 def filter_by_verdict(results : List[TestCaseResult], verdicts : Union[str, Iterable[str]]) -> List[TestCaseResult]:
     if isinstance(verdicts, str):
