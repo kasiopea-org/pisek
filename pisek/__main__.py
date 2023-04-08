@@ -180,6 +180,24 @@ def main(argv):
             help="nejprve vyčisti, pak proveď žádané",
         )
 
+    def add_argument_cms_contest(parser):
+        parser.add_argument(
+            "--contest-id",
+            "-c",
+            help="Id contestu, kam submittovat",
+            type=int,
+            required=True,
+        )
+
+    def add_argument_cms_user(parser):
+        parser.add_argument(
+            "--username",
+            "-u",
+            help="Username uživatele, za kterého submittovat.",
+            type=str,
+            required=True,
+        )
+
     add_argument_verbose(parser)
     add_argument_pisek_traceback(parser)
     add_argument_timeout(parser)
@@ -237,6 +255,20 @@ def main(argv):
     parser_cms_check = subparsers_cms.add_parser("check", help="do a preflight check")
     parser_cms_pack = subparsers_cms.add_parser("pack", help="check and pack")
     parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
+    add_argument_cms_contest(parser_cms_submit)
+    add_argument_cms_user(parser_cms_submit)
+    parser_cms_analize = subparsers_cms.add_parser("analize", help="analize submitted solutions")
+    add_argument_cms_contest(parser_cms_analize)
+    add_argument_cms_user(parser_cms_analize)
+    parser_cms_dump = subparsers_cms.add_parser("dump", help="save json with run logs from submitted solutions")
+    add_argument_cms_contest(parser_cms_dump)
+    add_argument_cms_user(parser_cms_dump)
+    parser_cms_dump.add_argument(
+        "output",
+        help="Output file (json)",
+        type=str,
+    )
+
     parser_cms_info = subparsers_cms.add_parser("info", help="print task info without testing")
     parser_cms_samples = subparsers_cms.add_parser("samples", help="pack samples into .zip")
     CHECK_NONE = "none"
@@ -249,20 +281,6 @@ def main(argv):
         choices=CHECK_MODES,
         default=None,
         help="Úroveň kontrol, které se mají provést",
-    )
-    parser_cms_submit.add_argument(
-        "--contest-id",
-        "-c",
-        help="Id contestu, kam submittovat",
-        type=int,
-        required=True,
-    )
-    parser_cms_submit.add_argument(
-        "--username",
-        "-u",
-        help="Username uživatele, za kterého submittovat.",
-        type=str,
-        required=True,
     )
 
 
@@ -288,6 +306,8 @@ def main(argv):
             "check": (CHECK_THOROUGH, lambda a: None),
             "pack": (CHECK_SANE, cms.pack),
             "submit": (CHECK_INSTANT, cms.submit_all),
+            "analize": (CHECK_NONE, cms.analize),
+            "dump": (CHECK_NONE, cms.dump_data),
             "info": (CHECK_INSTANT, cms.task_info),
             "samples": (CHECK_SANE, cms.samples),
             None: (CHECK_SANE, cms.pack),
