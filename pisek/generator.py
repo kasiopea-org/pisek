@@ -20,7 +20,7 @@ import sys
 
 from .program import Program
 from . import util
-from .task_config import TaskConfig
+from .task_config import TaskConfig, DEFAULT_TIMEOUT
 
 
 class OnlineGenerator(Program):
@@ -40,7 +40,7 @@ class OnlineGenerator(Program):
         output_file: str,
         seed: int,
         subtask: int,
-        timeout: int = util.DEFAULT_TIMEOUT,
+        timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         assert seed >= 0
         self.compile_if_needed()
@@ -69,7 +69,7 @@ class OnlineGenerator(Program):
                 return result.returncode == 0
 
     def generate_random(
-        self, output_file: str, subtask: int, timeout: int = util.DEFAULT_TIMEOUT
+        self, output_file: str, subtask: int, timeout: int = DEFAULT_TIMEOUT
     ) -> bool:
         seed = random.randint(0, 16**4 - 1)
         return self.generate(output_file, seed, subtask, timeout=timeout)

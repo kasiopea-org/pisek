@@ -20,6 +20,7 @@ from enum import Enum
 
 from . import util
 from . import compile
+from .task_config import DEFAULT_TIMEOUT
 
 
 class RunResultKind(Enum):
@@ -63,7 +64,7 @@ def run(
     executable: str,
     input_file: str,
     output_file: str,
-    timeout: int = util.DEFAULT_TIMEOUT,
+    timeout: int = DEFAULT_TIMEOUT,
 ) -> RunResult:
     # TODO: Adapt the code from https://gist.github.com/s3rvac/f97d6cbdfdb15c0a32e7e941f7f4a3fa
     #       to limit the memory of the subprocess

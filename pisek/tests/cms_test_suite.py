@@ -102,13 +102,6 @@ def cms_test_suite(
 
     config = TaskConfig(task_dir)
 
-    if timeout is None:
-        timeout = config.timeout_other_solutions or \
-                  config.timeout_model_solution or \
-                  util.DEFAULT_TIMEOUT
-
-    timeout_model_solution = config.timeout_model_solution or timeout
-
     suite = unittest.TestSuite()
 
     # Note that we can't just use `solutions` as the if-condition because we have to
@@ -142,7 +135,7 @@ def cms_test_suite(
         solutions = [config.solutions[0]] + solutions
 
     for i, solution_name in enumerate(solutions):
-        cur_timeout = timeout_model_solution if i == 0 else timeout
+        cur_timeout = timeout or config.get_timeout(i != 0)
         suite.addTest(
             SolutionWorks(
                 config,

@@ -19,7 +19,7 @@ from typing import Optional, Tuple
 from . import util
 from . import program
 from .program import RunResultKind
-from .task_config import TaskConfig
+from .task_config import TaskConfig, DEFAULT_TIMEOUT
 
 
 class Solution(program.Program):
@@ -31,7 +31,7 @@ class Solution(program.Program):
         )
 
     def run_on_file(
-        self, input_file: str, timeout: int = util.DEFAULT_TIMEOUT
+        self, input_file: str, timeout: int = DEFAULT_TIMEOUT
     ) -> Tuple[program.RunResult, Optional[str]]:
         """
         Runs the solution and stores the output in a reasonably named file in the same dir
