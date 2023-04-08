@@ -184,7 +184,7 @@ def main(argv):
         parser.add_argument(
             "--contest-id",
             "-c",
-            help="Id contestu, kam submittovat",
+            help="Id contestu, kam submitovat",
             type=int,
             required=True,
         )
@@ -193,7 +193,7 @@ def main(argv):
         parser.add_argument(
             "--username",
             "-u",
-            help="Username uživatele, za kterého submittovat.",
+            help="Username uživatele, za kterého submitovat.",
             type=str,
             required=True,
         )
