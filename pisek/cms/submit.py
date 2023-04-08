@@ -29,8 +29,11 @@ def submit_solution(solution, args, not_in_config=False):
     additional = comment_line(f"ORIGINAL FILENAME: {fn}", lang)
     if not_in_config:
         additional += comment_line(f"(not in config, pts may be off)", lang)
-    additional += comment_line(f"EXCEPTED SCORE: {util.get_expected_score(solution, config)}", lang)
+    expected_score = util.get_expected_score(solution, config)
+    additional += comment_line(f"EXCEPTED SCORE: {expected_score}", lang)
     contents = additional + contents
+
+    comment = f"{fn} ({expected_score}b)"
 
     basename = os.path.basename(fn)
     task_name = config.task_name
@@ -39,7 +42,7 @@ def submit_solution(solution, args, not_in_config=False):
     with tempfile.NamedTemporaryFile(suffix="." + lang, mode="w") as tmpf:
         tmpf.write(contents)
         tmpf.flush()
-        cmd = [ "cmsAddSubmission", "-c", str(args.contest_id), "-f", f"{task_name}.%l:{tmpf.name}", args.username, task_name ]
+        cmd = [ "cmsAddSubmission", "-c", str(args.contest_id), "-f", f"{task_name}.%l:{tmpf.name}", "-C", comment, args.username, task_name ]
         print(cmd)
         subprocess.run(cmd).check_returncode()
 
