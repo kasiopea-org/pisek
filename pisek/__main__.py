@@ -257,9 +257,9 @@ def main(argv):
     parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
     add_argument_cms_contest(parser_cms_submit)
     add_argument_cms_user(parser_cms_submit)
-    parser_cms_analize = subparsers_cms.add_parser("analize", help="analize submitted solutions")
-    add_argument_cms_contest(parser_cms_analize)
-    add_argument_cms_user(parser_cms_analize)
+    parser_cms_analyze = subparsers_cms.add_parser("analyze", help="analyze submitted solutions")
+    add_argument_cms_contest(parser_cms_analyze)
+    add_argument_cms_user(parser_cms_analyze)
     parser_cms_dump = subparsers_cms.add_parser("dump", help="save json with run logs from submitted solutions")
     add_argument_cms_contest(parser_cms_dump)
     add_argument_cms_user(parser_cms_dump)
@@ -306,7 +306,7 @@ def main(argv):
             "check": (CHECK_THOROUGH, lambda a: None),
             "pack": (CHECK_SANE, cms.pack),
             "submit": (CHECK_INSTANT, cms.submit_all),
-            "analize": (CHECK_NONE, cms.analize),
+            "analyze": (CHECK_NONE, cms.analyze),
             "dump": (CHECK_NONE, cms.dump_data),
             "info": (CHECK_INSTANT, cms.task_info),
             "samples": (CHECK_SANE, cms.samples),
