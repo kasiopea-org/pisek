@@ -264,14 +264,6 @@ def main(argv):
         type=str,
         required=True,
     )
-    parser_cms_submit.add_argument(
-        "--ssh",
-        "-s",
-        dest="ssh_destination",
-        help="Server (destination) ssh připojení (deafult: nepoužívat ssh)",
-        type=str,
-        default=None
-    )
 
 
     args = parser.parse_args(argv)

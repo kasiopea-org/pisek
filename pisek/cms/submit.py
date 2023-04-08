@@ -1,8 +1,11 @@
+import subprocess
 import glob
 import os
+import tempfile
 import pisek.util as util
 from pisek.task_config import TaskConfig
-from . import ssh, check
+from . import check
+
 
 def comment_line(text, lang):
     comment_starts = {
@@ -33,7 +36,13 @@ def submit_solution(solution, args, not_in_config=False):
     task_name = config.task_name
     print(task_name)
 
-    print(ssh.copy_tmp_file_and(args, f"cmsAddSubmission -c {args.contest_id} -f {task_name}.%l:{basename} {args.username} {task_name}", contents=contents, basename=basename))
+    with tempfile.NamedTemporaryFile(suffix="." + lang, mode="w") as tmpf:
+        tmpf.write(contents)
+        tmpf.flush()
+        cmd = [ "cmsAddSubmission", "-c", str(args.contest_id), "-f", f"{task_name}.%l:{tmpf.name}", args.username, task_name ]
+        print(cmd)
+        subprocess.run(cmd).check_returncode()
+
 
 def submit_all(args):
     config = TaskConfig(".")
