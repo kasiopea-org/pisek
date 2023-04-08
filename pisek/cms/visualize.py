@@ -150,7 +150,6 @@ def visualize_solution(
     if measured_stat != 'time':
         raise NotImplementedError()    
     limit = config.get_timeout(is_secondary_solution=True)
-    limit = 1 #XXX
     segment_length = limit / segments
 
     max_overflower = max(results_filtered, key=lambda x: x.value)
