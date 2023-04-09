@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import termcolor
-from typing import List, Dict, Union, Iterable
+from typing import List, Dict, Optional, Union, Iterable
 
 from pisek import util
 from task_config import TaskConfig, SubtaskConfig
@@ -70,6 +70,7 @@ def visualize(
     solutions : Union[List[str], str] = 'all',
     filename : str = 'testing_log.json',
     measured_stat : str = 'time',
+    limit : Optional[int] = None,
     segments : int = 10,
 ):
     config = TaskConfig(TASK_DIR)
@@ -89,6 +90,14 @@ def visualize(
                 print(f"Řešení '{solution_name}' není v '{filename}'.", file=sys.stderr)
                 exit(1)
 
+    # TODO: Implement here for other values of measured_stat
+    if measured_stat != 'time':
+        raise NotImplementedError()    
+
+    if limit is None:
+        if measured_stat == 'time':
+            limit = config.get_timeout(True)
+
     # Kind of slow, but we will not have hundreds of solutions
     solutions.sort(key=lambda x: config.solutions.index(x))
 
@@ -101,6 +110,7 @@ def visualize(
             mode,
             by_subtask,
             measured_stat,
+            limit,
             segments
         ):
             unexpected_solutions.append(solution_name)
@@ -119,6 +129,7 @@ def visualize_solution(
         mode : str,
         by_subtask : bool,
         measured_stat : str,
+        limit : int,
         segments : int
 ):  
     results = data['results']
@@ -131,7 +142,7 @@ def visualize_solution(
 
         # We are testing at higher limits in cms
         # TODO: Implement here for other values
-        if result['time'] > config.get_timeout(is_secondary_solution=True):
+        if result['time'] > limit:
             final_verdict = VERDICTS['timeout']
             points = 0.0
 
@@ -165,10 +176,6 @@ def visualize_solution(
         ),
     
 
-    # TODO: Implement here for other values of measured_stat
-    if measured_stat != 'time':
-        raise NotImplementedError()    
-    limit = config.get_timeout(is_secondary_solution=True)
     segment_length = limit / segments
 
     max_overflower = max(sum(results_filtered.values(), start=[]), key=lambda x: x.value)
@@ -210,4 +217,4 @@ def overflowed_segments(value, limit, segment_length):
 
 
 if __name__ == "__main__":
-    visualize(segments=3)
+    visualize()
