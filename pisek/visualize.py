@@ -140,11 +140,10 @@ def visualize_solution(
     results_extracted.sort(key=lambda x: VERDICTS_ORDER.index(x.verdict))
     results_extracted.sort(key=lambda x: get_subtask(x.name))
 
-    results_filtered = []
     if by_subtask:
-        results_filtered = sum(map(mode, group_by_subtask(results_extracted, config)), start=[])
+        results_filtered = list(map(mode, group_by_subtask(results_extracted, config)))
     else:
-        results_filtered = mode(results_extracted)
+        results_filtered = [mode(results_extracted)]
 
     # Lastly print
     print(f"{solution_name}:")
@@ -155,19 +154,23 @@ def visualize_solution(
     limit = config.get_timeout(is_secondary_solution=True)
     segment_length = limit / segments
 
-    max_overflower = max(results_filtered, key=lambda x: x.value)
+    max_overflower = max(sum(results_filtered, start=[]), key=lambda x: x.value)
     max_overflowed_segments = overflowed_segments(max_overflower.value, limit, segment_length)
 
-    for result in results_filtered:
-        in_segments = in_time_segments(result.value, limit, segment_length)
-        overflow_segments = overflowed_segments(result.value, limit, segment_length)
-        
-        print(
-            f"{result.name} ({result.verdict}): "
-            f"|{'.'*in_segments}{' '*(segments-in_segments)}"
-            f"|{'.'*overflow_segments}{' '*(max_overflowed_segments-overflow_segments)}"
-            f" ({result.value}/{limit})"
-        )
+    for group_i, group in enumerate(results_filtered):
+        if by_subtask:
+            print(config.subtasks[group_i+1].name)
+        for result in group:
+            in_segments = in_time_segments(result.value, limit, segment_length)
+            overflow_segments = overflowed_segments(result.value, limit, segment_length)
+            
+            print(
+                f"  {result.name} ({result.verdict}): "
+                f"|{'.'*in_segments}{' '*(segments-in_segments)}"
+                f"|{'.'*overflow_segments}{' '*(max_overflowed_segments-overflow_segments)}"
+                f" ({result.value}/{limit})"
+            )
+    print()
 
 def get_subtask(name):
     return name[:2]
