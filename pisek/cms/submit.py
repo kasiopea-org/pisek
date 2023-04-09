@@ -26,14 +26,15 @@ def submit_solution(solution, args, not_in_config=False):
     with open(fn) as f:
         contents = f.read()
 
-    additional = comment_line(f"ORIGINAL FILENAME: {fn}", lang)
+    additional = comment_line(f"NAME: {solution}", lang)
+    additional += comment_line(f"ORIGINAL FILENAME: {fn}", lang)
     if not_in_config:
         additional += comment_line(f"(not in config, pts may be off)", lang)
     expected_score = util.get_expected_score(solution, config)
     additional += comment_line(f"EXCEPTED SCORE: {expected_score}", lang)
     contents = additional + contents
 
-    comment = f"{fn} ({expected_score}b)"
+    comment = f"{solution} ({expected_score}b)"
 
     basename = os.path.basename(fn)
     task_name = config.task_name
