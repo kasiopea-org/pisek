@@ -33,16 +33,6 @@ def group_by_subtask(results : List[TestCaseResult], config : TaskConfig) -> Lis
 def in_subtask(name : str, subtask : SubtaskConfig):
     return re.match(subtask.globs_regex(), name) is not None
 
-def closest(results : List[TestCaseResult]) -> List[TestCaseResult]:
-    closest_results = []
-    correct = filter_by_verdict(results, VERDICTS['ok'])
-    timeouted = filter_by_verdict(results, VERDICTS['timeout'])
-    if len(correct):
-        closest_results.append(max(correct, key=lambda x: x.value))
-    if len(timeouted):
-        closest_results.append(min(timeouted, key=lambda x: x.value))
-    return closest_results
-
 def slowest(results : List[TestCaseResult]) -> List[TestCaseResult]:
     candidates = filter_by_verdict(results, (VERDICTS['ok'], VERDICTS['timeout']))
     slowest = max(candidates, key=lambda x: x.value)    
@@ -52,9 +42,6 @@ def identity(results : List[TestCaseResult]) -> List[TestCaseResult]:
     return results
 
 MODES_ALIASES = {
-    'c': closest,
-    'closest': closest,
-    
     's': slowest,
     'slowest': slowest,
     
@@ -63,7 +50,7 @@ MODES_ALIASES = {
 }
 
 def visualize(
-    mode : str = "closest",
+    mode : str = "slowest",
     by_subtask : bool = True,
     solutions : Union[List[str], str] = 'all',
     filename : str = 'testing_log.json',
