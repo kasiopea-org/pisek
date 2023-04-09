@@ -199,6 +199,17 @@ class SubtaskConfig:
         if contest_type == "cms":
             self.in_globs: List[str] = config_section["in_globs"].split()
 
+    def _glob_to_regex(self, glob):
+        """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
+        pattern = glob.replace(".in", "").replace(".", "\\.").replace("*", ".*")
+        pattern = pattern[:-2] if pattern.endswith(".*") else pattern + "$"
+        if not pattern:
+            pattern = ".*" # probably ok either way, but just to be sure
+        return pattern
+    
+    def globs_regex(self) -> str:
+        return "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
+
     def __repr__(self):
         return "<SubTaskConfig %s>" % ", ".join(
             f"{k} = {getattr(self, k)}"

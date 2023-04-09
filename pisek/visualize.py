@@ -2,10 +2,11 @@ from collections import namedtuple
 import json
 from math import ceil
 import os
+import re
 import sys
 from typing import List, Union, Iterable
 
-from task_config import TaskConfig
+from task_config import TaskConfig, SubtaskConfig
 
 TASK_DIR = '.'
 
@@ -19,16 +20,18 @@ VERDICTS_ORDER = ['·', 'T', 'W', '!']
 
 TestCaseResult = namedtuple('TestCaseResult', ('name', 'verdict', 'value'))
 
-def group_by_subtask(results : List[TestCaseResult]) -> List[List[TestCaseResult]]:
-    subtasks = {}
+def group_by_subtask(results : List[TestCaseResult], config : TaskConfig) -> List[List[TestCaseResult]]:
+    subtasks = {num:[] for num in config.subtasks.keys()}
     for result in results:
-        name = get_subtask(result.name)
-        if name not in subtasks:
-            subtasks[name] = []
-        subtasks[name].append(result)
+        for i, subtask in config.subtasks.items():
+            if in_subtask(result.name, subtask):
+                subtasks[i].append(result)
     subtasks = list(subtasks.items())
     subtasks.sort()
     return list(map(lambda x: x[1], subtasks))
+
+def in_subtask(name : str, subtask : SubtaskConfig):
+    return re.match(subtask.globs_regex(), name) is not None
 
 def closest(results : List[TestCaseResult]) -> List[TestCaseResult]:
     closest_results = []
@@ -139,7 +142,7 @@ def visualize_solution(
 
     results_filtered = []
     if by_subtask:
-        results_filtered = sum(map(mode, group_by_subtask(results_extracted)), start=[])
+        results_filtered = sum(map(mode, group_by_subtask(results_extracted, config)), start=[])
     else:
         results_filtered = mode(results_extracted)
 

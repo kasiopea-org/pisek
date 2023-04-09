@@ -1,16 +1,8 @@
 from pisek.task_config import TaskConfig
 
-def glob_to_regex(glob):
-    """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
-    pattern = glob.replace(".in", "").replace(".", "\\.").replace("*", ".*")
-    pattern = pattern[:-2] if pattern.endswith(".*") else pattern + "$"
-    if not pattern:
-        pattern = ".*" # probably ok either way, but just to be sure
-    return pattern
-
 def subtask_formula(subtask):
     pts = subtask.score
-    regex = "^(" + "|".join(glob_to_regex(glob) for glob in subtask.in_globs) + ")"
+    regex = subtask.globs_regex()
     return f'[{pts}, "{regex}"]'
 
 def scoring_formula(config: TaskConfig):
