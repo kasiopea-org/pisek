@@ -15,10 +15,11 @@ TASK_DIR = '.'
 VERDICTS = {
     'ok': '·',
     'timeout': 'T',
+    'timeout_limited': 't',
     'wrong_answer': 'W',
     'error' : '!'
 }
-VERDICTS_ORDER = ['·', 'T', 'W', '!']
+VERDICTS_ORDER = ['·', 't', 'T', 'W', '!']
 
 # subtask section
 TestCaseResult = namedtuple('TestCaseResult', ('name', 'verdict', 'value', 'points'))
@@ -48,8 +49,7 @@ def evaluate_subtask(subtask_results : List[TestCaseResult], max_points):
 
 # mode section
 def slowest(results : List[TestCaseResult]) -> List[TestCaseResult]:
-    candidates = filter_by_verdict(results, (VERDICTS['ok'], VERDICTS['timeout']))
-    slowest = max(candidates, key=lambda x: x.value)    
+    slowest = max(results, key=lambda x: x.value)
     return [slowest]
 
 def identity(results : List[TestCaseResult]) -> List[TestCaseResult]:
@@ -58,7 +58,7 @@ def identity(results : List[TestCaseResult]) -> List[TestCaseResult]:
 MODES_ALIASES = {
     's': slowest,
     'slowest': slowest,
-    
+
     'a': identity,
     'all': identity,
 }
@@ -153,9 +153,10 @@ def visualize_solution(
 
         # We are testing at higher limits in cms
         # TODO: Implement here for other values
-        if result['time'] > limit:
-            final_verdict = VERDICTS['timeout']
-            points = 0.0
+        if final_verdict == VERDICTS['ok']:
+            if result['time'] > limit:
+                final_verdict = VERDICTS['timeout_limited']
+                points = 0.0
 
         value = result[measured_stat]
         results_extracted.append(TestCaseResult(result['test'], final_verdict, value, points))
@@ -218,7 +219,7 @@ def strip_suffix(name):
 def filter_by_verdict(results : List[TestCaseResult], verdicts : Union[str, Iterable[str]]) -> List[TestCaseResult]:
     if isinstance(verdicts, str):
         verdicts = (verdicts,)
-    return list(filter(lambda x: x.verdict in verdicts, results))
+    return list(filter(lambda x: x.verdict.upper() in verdicts, results))
 
 def in_time_segments(value, limit, segment_length):
     return ceil(min(value, limit) / segment_length)
