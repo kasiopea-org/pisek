@@ -208,12 +208,12 @@ def main(argv):
             help="Mód zobrazování.\n slowest: Nejpomalejší vstup\n all: všechny vstupy",
         )
     
-    def add_argument_by_subtask(parser):
+    def add_argument_no_subtasks(parser):
         parser.add_argument(
-            "--by-subtask",
-            "-b",
-            action="store_false",
-            help="Zobrazit každý subtask zvlášť",
+            "--no-subtasks",
+            "-n",
+            action="store_true",
+            help="Zobrazit všechny vstupy dohromady (ne po subtascích).",
         )
     
     def add_argument_solutions(parser):
@@ -311,7 +311,7 @@ def main(argv):
     
     parser_visualize = subparsers.add_parser("visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu.")
     add_argument_mode(parser_visualize)
-    add_argument_by_subtask(parser_visualize)
+    add_argument_no_subtasks(parser_visualize)
     add_argument_solutions(parser_visualize)
     add_argument_filename(parser_visualize)
     add_argument_measured_stat(parser_visualize)

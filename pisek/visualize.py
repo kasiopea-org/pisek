@@ -71,7 +71,7 @@ MODES_ALIASES = {
 def visualize_command(args):
     visualize(
         args.mode,
-        args.by_subtask,
+        not args.no_subtasks,
         args.solutions,
         args.filename,
         args.measured_stat,
