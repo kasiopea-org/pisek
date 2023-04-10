@@ -38,6 +38,8 @@ def download_data(args):
             points = float(evaluation["outcome"])
             if evaluation["text"] == ["Output is correct"]:
                 result = "ok"
+            elif evaluation["text"] == ["Output is partially correct"]:
+                result = "ok"
             elif evaluation["text"] == ["Execution timed out"]:
                 result = "timeout"
             elif evaluation["text"] == ["Output isn't correct"]:
