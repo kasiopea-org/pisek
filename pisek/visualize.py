@@ -214,8 +214,8 @@ def visualize_solution(
             
             print(
                 f"  {result.name} ({result.verdict}): "
-                f"|{'.'*in_segments}{' '*(segments-in_segments)}"
-                f"|{'.'*overflow_segments}{' '*(max_overflowed_segments-overflow_segments)}"
+                f"|{'·'*in_segments}{' '*(segments-in_segments)}"
+                f"|{'·'*overflow_segments}{' '*(max_overflowed_segments-overflow_segments)}"
                 f" ({result.value}/{limit})"
             )
     print()
