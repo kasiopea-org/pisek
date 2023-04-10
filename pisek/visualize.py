@@ -8,7 +8,7 @@ import termcolor
 from typing import List, Dict, Optional, Union, Iterable
 
 from pisek import util
-from task_config import TaskConfig, SubtaskConfig
+from .task_config import TaskConfig, SubtaskConfig
 
 TASK_DIR = '.'
 
@@ -64,6 +64,17 @@ MODES_ALIASES = {
 }
 
 # visualization section
+def visualize_command(args):
+    visualize(
+        args.mode,
+        args.by_subtask,
+        args.solutions,
+        args.filename,
+        args.measured_stat,
+        args.limit,
+        args.segments
+    )
+
 def visualize(
     mode : str = "slowest",
     by_subtask : bool = True,

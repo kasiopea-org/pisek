@@ -23,6 +23,7 @@ from pisek.program import Program, RunResultKind
 from pisek import util
 from pisek.license import license, license_gnu
 import pisek.cms as cms
+from .visualize import visualize_command
 
 
 def eprint(*args, **kwargs):
@@ -198,6 +199,69 @@ def main(argv):
             required=True,
         )
 
+    def add_argument_mode(parser):
+        parser.add_argument(
+            "--mode",
+            "-m",
+            default="slowest",
+            type=str,
+            help="Mód zobrazování.\n slowest: Nejpomalejší vstup\n all: všechny vstupy",
+        )
+    
+    def add_argument_by_subtask(parser):
+        parser.add_argument(
+            "--by-subtask",
+            "-b",
+            action="store_false",
+            help="Zobrazit každý subtask zvlášť",
+        )
+    
+    def add_argument_solutions(parser):
+        parser.add_argument(
+            "--solutions",
+            "-s",
+            default='all',
+            type=str,
+            nargs="*",
+            help="Řešení, která se mají vizualizovat.",
+        )
+
+    def add_argument_filename(parser):
+        parser.add_argument(
+            "--filename",
+            "-f",
+            default="testing_log.json",
+            type=str,
+            help="Jméno jsonu, ze kterého načítat data.",
+        )
+    
+    def add_argument_measured_stat(parser):
+        parser.add_argument(
+            "--measured-stat",
+            "-M",
+            default="time",
+            type=str,
+            help="Podle čeho visualizovat programy. Zatím implementováno pouze time.",
+        )
+    
+    def add_argument_limit(parser):
+        parser.add_argument(
+            "--limit",
+            "-l",
+            default=None,
+            type=int,
+            help="Limit measured_stat na řešení.",
+        )
+    
+    def add_argument_segments(parser):
+        parser.add_argument(
+            "--segments",
+            "-S",
+            default=5,
+            type=int,
+            help="Počet segmentů do limitu.",
+        )
+
     add_argument_verbose(parser)
     add_argument_pisek_traceback(parser)
     add_argument_timeout(parser)
@@ -244,6 +308,15 @@ def main(argv):
     add_argument_clean(parser_test)
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
+    
+    parser_visualize = subparsers.add_parser("visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu.")
+    add_argument_mode(parser_visualize)
+    add_argument_by_subtask(parser_visualize)
+    add_argument_solutions(parser_visualize)
+    add_argument_filename(parser_visualize)
+    add_argument_measured_stat(parser_visualize)
+    add_argument_limit(parser_visualize)
+    add_argument_segments(parser_visualize)
 
     parser_license = subparsers.add_parser("license", help="vypiš licenci písku")
     parser_license.add_argument(
@@ -325,6 +398,8 @@ def main(argv):
         return action(args)
     elif args.subcommand == "clean":
         clean_directory(args)
+    elif args.subcommand == "visualize":
+        visualize_command(args)
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
     elif args.subcommand is None:
