@@ -48,7 +48,11 @@ def evaluate_subtask(subtask_results : List[TestCaseResult], max_points):
     return max_points * subtask_success
 
 # mode section
-def slowest(results : List[TestCaseResult]) -> List[TestCaseResult]:
+def slowest(results : List[TestCaseResult]) -> Union[str, List[TestCaseResult]]:
+    wa = filter_by_verdict(results, VERDICTS['wrong_answer'])
+    err = filter_by_verdict(results, VERDICTS['error'])
+    if len(wa) != 0 or len(err) != 0:
+        return f"{len(wa)}{VERDICTS['wrong_answer']}, {len(err)}{VERDICTS['error']}"
     slowest = max(results, key=lambda x: x.value)
     return [slowest]
 
@@ -190,13 +194,18 @@ def visualize_solution(
 
     segment_length = limit / segments
 
-    max_overflower = max(sum(results_filtered.values(), start=[]), key=lambda x: x.value)
+    max_overflower = max(sum(filter(lambda x: isinstance(x, list), results_filtered.values()), start=[]), key=lambda x: x.value)
     max_overflowed_segments = overflowed_segments(max_overflower.value, limit, segment_length)
 
     for subtask_num in sorted(results_filtered.keys()):
         if by_subtask:
             subtask_score = evaluate_subtask(results_evalute[subtask_num], config.subtasks[subtask_num].score) 
             print(f"{config.subtasks[subtask_num].name} ({subtask_score}b)")
+        
+        if isinstance(results_filtered[subtask_num], str):
+            print("  " + results_filtered[subtask_num])
+            continue
+
         for result in results_filtered[subtask_num]:
             in_segments = in_time_segments(result.value, limit, segment_length)
             overflow_segments = overflowed_segments(result.value, limit, segment_length)
