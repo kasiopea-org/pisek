@@ -194,8 +194,10 @@ def visualize_solution(
 
     segment_length = limit / segments
 
-    max_overflower = max(sum(filter(lambda x: isinstance(x, list), results_filtered.values()), start=[]), key=lambda x: x.value)
-    max_overflowed_segments = overflowed_segments(max_overflower.value, limit, segment_length)
+    results_groups = list(filter(lambda x: isinstance(x, list), results_filtered.values()))
+    if len(results_groups):
+        max_overflower = max(sum(results_groups, start=[]), key=lambda x: x.value)
+        max_overflowed_segments = overflowed_segments(max_overflower.value, limit, segment_length)
 
     for subtask_num in sorted(results_filtered.keys()):
         if by_subtask:
