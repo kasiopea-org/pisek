@@ -249,7 +249,7 @@ def main(argv):
             "--limit",
             "-l",
             default=None,
-            type=int,
+            type=float,
             help="Limit measured_stat na řešení.",
         )
     
