@@ -46,7 +46,7 @@ def download_data(args):
                 result = "wrong_answer"
             else:
                 result = "error"
-                print(evaluation["outcome"], evaluation["text"])
+                print(solution, evaluation["codename"], evaluation["outcome"], evaluation["text"])
             return {
                 "time": evaluation["execution_time"],
                 "wall_clock_time": evaluation["execution_wall_clock_time"],
