@@ -30,6 +30,13 @@ DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
 
 
+def file_exists(filename):
+    return os.path.isfile(os.path.join(filename))
+
+def file_not_empty(filename):
+    return os.path.getsize(os.path.join(filename)) > 0
+
+
 def rm_f(fn):
     try:
         os.unlink(fn)
