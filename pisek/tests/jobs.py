@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
-from typing import Any
+from typing import List, Callable, Any
+
+from pisek.tests.cache import Cache
 
 State = Enum('State', ['in_queue', 'running', 'succeeded', 'failed', 'canceled'])
 class PipelineItem(ABC):
@@ -16,6 +18,11 @@ class PipelineItem(ABC):
         self.state = State.failed
         self.result = message
 
+    def cancel(self):
+        self.state = State.canceled
+        for item in self.required_by:
+            item.cancel()
+
     def check_prerequisites(self):
         if self.prerequisites > 0:
             raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
@@ -25,41 +32,48 @@ class PipelineItem(ABC):
         item.required_by.append(self)
 
     def finish(self):
-        for item in self.required_by:
-            item.prerequisites -= 1
+        if self.state == State.succeeded:
+            for item in self.required_by:
+                item.prerequisites -= 1
 
+        elif self.state == State.failed:
+            for item in self.required_by:
+                item.cancel()
 
 class Job(PipelineItem):
-    def __init__(self, name : str, required_files : list[str], env) -> None:
-        self._required_files = required_files
+    def __init__(self, name : str, env) -> None:
         self._env = env
         self.result = None
+        self._accessed_envs = {}
+        self._accessed_files = {}
         super().__init__(name)
 
-    _required_envs = []
     def _access_env(self, name : str) -> Any:
-        if name not in self._required_envs:
-            raise ValueError(f"Variable '{name}' is not reserved in required_envs.")
-        return self._env.get(name)
+        self._accessed_envs[name] = self._env.get(name)
+        return self._accessed_envs[name]
+    
+    def _access_file(self, filename : str) -> Any:
+        self._access_files[filename] = True
+        return open(filename)
 
     def signature(self) -> str:
         sign = hashlib.sha256()
-        for variable in self._required_envs:
-            sign.update(f"{variable}={self._access_env(variable)}\n".encode())
-        for file in self._required_files:
+        for variable in self._accessed_envs:
+            sign.update(f"{variable}={self._accessed_envs[variable]}\n".encode())
+        for file in self._accessed_files:
             with open(file) as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            sign.update(f"{file_sign}\n".encode())
+            sign.update(f"{file}={file_sign}\n".encode())
         return sign
 
-    def run_job(self, cache):
+    def run_job(self, cache: Cache) -> str:
         if self.state == State.canceled:
             return None
         self.check_prerequisites()
         self.state = State.running
         sign = self.signature()
-        if sign not in cache:
-            cache[sign] = self._run()
+        if cache.contains():
+            cache[self.name] = self._run()
         self.result = cache[sign]
         self.state = State.succeeded
         return cache[sign]
@@ -70,7 +84,7 @@ class Job(PipelineItem):
 
 
 class JobManager(PipelineItem):
-    def create_jobs(self, env) -> list[Job]:
+    def create_jobs(self, env) -> List[Job]:
         self.check_prerequisites()
         self.jobs = self._get_jobs()
         self.expectations = []
@@ -82,7 +96,7 @@ class JobManager(PipelineItem):
     def expect_any(self, jobs, state : State, result : Any):
         self.expect(any, jobs, state, result)
 
-    def expect(self, what : callable[[list[bool]], bool], jobs : list[Job], state : State, result : Any) -> callable[[], bool]:
+    def expect(self, what : Callable[[List[bool]], bool], jobs : List[Job], state : State, result : Any) -> Callable[[], bool]:
         def f():
             return what(map(
                 lambda j: j.state == state and (result is None or j.result == result),
@@ -91,26 +105,20 @@ class JobManager(PipelineItem):
         self.expectations.append(f)
 
     @abstractmethod
-    def _get_jobs(self) -> list[Job]:
+    def _get_jobs(self) -> List[Job]:
         pass
 
-    def update(self):
+    def update(self) -> str:
         new_state = State.succeeded
         for job in self.jobs:
             if job.state == State.in_queue or job.state == State.running:
                 new_state = State.in_queue
+                break
             elif job.state == State.failed:
                 new_state = State.failed
         self.state = new_state
-        if self.state == State.failed:
-            self.cancel_jobs()
-
+        
         return self._get_status()
-
-    def cancel_jobs(self) -> None:
-        for job in self.jobs:
-            if job.state == State.in_queue:
-                job.state = State.canceled
 
     @abstractmethod
     def _get_status(self) -> str:
