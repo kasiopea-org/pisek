@@ -31,6 +31,12 @@ class Cache:
         with open(self.cache_path, 'a') as f:
             f.write(self.cache[name].yaml_export())
 
+    def contains(self, name: str, signature: str) -> bool:
+        return name in self.cache and self.cache[name].signature == signature
+
+    def get(self, name: str) -> CacheEntry:
+        return self.cache[name]
+
     def _load(self) -> Dict[str, CacheEntry]:
         if not os.path.exists(self.cache_path):
             return {}
