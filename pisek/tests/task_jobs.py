@@ -1,7 +1,57 @@
-from pisek.tests.jobs import State, Job, JobManager
+import os
 
-def get_inputs():
-    return []
+from pisek.tests.jobs import State, Job, JobManager
+import pisek.util as util
+
+class SampleManager(JobManager):
+    def __init__(self):
+        super().__init__("Sample Manager")
+
+    def _get_jobs(self) -> list[Job]:
+        existence = SampleExists(self.env)
+        non_empty = SampleNotEmpty(self.env)
+
+        non_empty.add_prerequisite(existence)
+
+        return [existence, non_empty]
+
+    def _get_status(self) -> str:
+        return ""
+
+class SampleExists(Job):
+    def __init__(self, env) -> None:
+        samples = util.get_samples(self.task_config.get_samples_dir())
+        samples = sum(map(list, samples), start=[])
+        super().__init__("Samples exist", samples, env)
+
+    def _run(self):
+        samples = util.get_samples(self.task_config.get_samples_dir())
+        if len(samples) <= 0:
+            return self.fail(
+                f"V podsložce {self.task_config.samples_subdir} složky s úlohou nejsou žádné samply "
+                "(soubory tvaru sample*.in s odpovídajícím sample*.out)",
+            )
+
+        for sample_in, sample_out in samples:
+            if not util.file_exists(sample_in):
+                return self.fail(f"Vzorový vstup neexistuje nebo není soubor: {sample_in}")
+            if not util.file_exists(sample_out):
+                return self.fail(f"Vzorový výstup neexistuje nebo není soubor: {sample_out}")
+
+class SampleNotEmpty(Job):
+    def __init__(self, env) -> None:
+        samples = util.get_samples(self.task_config.get_samples_dir())
+        samples = sum(map(list, samples), start=[])
+        super().__init__("Samples not empty", samples, env)
+
+    def _run(self):
+        samples = util.get_samples(self.task_config.get_samples_dir())
+        for sample_in, sample_out in samples:
+            if not util.file_not_empty(sample_in):
+                return self.fail(f"Vzorový vstup je prázdný: {sample_in}")
+            if not util.file_not_empty(sample_out):
+                return self.fail(f"Vzorový vstup je prázdný: {sample_out}")
+
 
 class Compile(Job):
     def __init__(self, program_name: str, env) -> None:
