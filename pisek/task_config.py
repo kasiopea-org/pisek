@@ -22,6 +22,7 @@ DEFAULT_TIMEOUT : float = 360
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
+from pisek.env import BaseEnv 
 
 class CheckedConfigParser(configparser.RawConfigParser):
     """
@@ -57,8 +58,9 @@ class CheckedConfigParser(configparser.RawConfigParser):
         return super()._get(section, conv, option, **kwargs)
 
 
-class TaskConfig:
+class TaskConfig(BaseEnv):
     def __init__(self, task_dir: str) -> None:
+        super().__init__()
         config = CheckedConfigParser()
         config_path = os.path.join(task_dir, CONFIG_FILENAME)
         read_files = config.read(config_path)
@@ -70,44 +72,42 @@ class TaskConfig:
             )
 
         try:
-            self.task_name: List[str] = config.get("task", "name")
-            self.solutions: List[str] = config.get("task", "solutions").split()
-            self.contest_type = config["task"].get("contest_type", "kasiopea")
-            self.generator: str = config["tests"]["in_gen"]
-            self.checker: Optional[str] = config["tests"].get("checker")
-            self.judge_type: str = config["tests"].get("out_check", "diff")
-            self.judge_name: Optional[str] = None
-            if self.judge_type == "judge":
-                self.judge_name = config["tests"]["out_judge"]
+            self._set("task_name", config.get("task", "name"))
+            self._set("solutions", config.get("task", "solutions").split())
+            self._set("contest_type", contest_type := config["task"].get("contest_type", "kasiopea"))
+            self._set("generator", config["tests"]["in_gen"])
+            self._set("checker", config["tests"].get("checker"))
+            self._set("judge_type", judge_type := config["tests"].get("out_check", "diff"))
+            self._set("judge_name", None)
+            if judge_type == "judge":
+                self._set("judge_name", config["tests"]["out_judge"])
 
             # Relevant for CMS interactive tasks. The file to be linked with
             # the contestant's solution (primarily for C++)
-            self.solution_manager: str = config["tests"].get("solution_manager")
-            if self.solution_manager:
-                self.solution_manager = os.path.join(
-                    self.task_dir, self.solution_manager
-                )
+            solution_manager = config["tests"].get("solution_manager")
+            if solution_manager:
+                self._set("solution_manager", os.path.join(self.task_dir, solution_manager))
 
-            if self.contest_type == "cms":
+            if contest_type == "cms":
                 # Warning: these timeouts are currently ignored in Kasiopea!
-                self.timeout_model_solution: Optional[float] = apply_to_optional(
+                self._set("timeout_model_solution", apply_to_optional(
                     config.get("limits", "solve_time_limit", fallback=None), float
-                )
-                self.timeout_other_solutions: Optional[float] = apply_to_optional(
+                ))
+                self._set("timeout_other_solutions", apply_to_optional(
                     config.get("limits", "sec_solve_time_limit", fallback=None), float
-                )
+                ))
 
             # Support for different directory structures
-            self.samples_subdir: str = config["task"].get("samples_subdir", ".")
-            self.data_subdir: str = config["task"].get("data_subdir", DATA_SUBDIR)
+            self._set("samples_subdir", config["task"].get("samples_subdir", "."))
+            self._set("data_subdir", config["task"].get("data_subdir", DATA_SUBDIR))
 
             if "solutions_subdir" in config["task"]:
                 # Prefix each solution name with solutions_subdir/
                 subdir = config["task"].get("solutions_subdir", ".")
-                self.solutions = [os.path.join(subdir, sol) for sol in self.solutions]
+                self._set("solutions", [os.path.join(subdir, sol) for sol in self.get_without_log("solutions")])
 
-            self.subtasks: Dict[int, SubtaskConfig] = {}
-            self.subtask_section_names = set()
+            subtasks: Dict[int, SubtaskConfig] = {}
+            subtask_section_names = set()
 
             for section_name in config.sections():
                 m = re.match(r"test([0-9]{2})", section_name)
@@ -116,15 +116,17 @@ class TaskConfig:
                     # One of the other sections ([task], [tests]...)
                     continue
 
-                self.subtask_section_names.add(section_name)
+                subtask_section_names.add(section_name)
 
                 n = int(m.groups()[0])
-                if n in self.subtasks:
+                if n in subtasks:
                     raise ValueError("Duplicate subtask number {}".format(n))
 
-                self.subtasks[n] = SubtaskConfig(
-                    self.contest_type, config[section_name]
+                subtasks[n] = SubtaskConfig(
+                    contest_type, config[section_name]
                 )
+            self._set("subtasks", subtasks)
+            self._set("subtask_section_names", subtask_section_names)
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
 
@@ -134,16 +136,17 @@ class TaskConfig:
         return sum([subtask.score for subtask in self.subtasks.values()])
 
     def get_data_dir(self):
-        return os.path.join(self.task_dir, self.data_subdir)
+        return os.path.normpath(os.path.join(self.task_dir, self.data_subdir))
 
     def get_samples_dir(self):
-        return os.path.join(self.task_dir, self.samples_subdir)
+        return os.path.normpath(os.path.join(self.task_dir, self.samples_subdir))
 
     def get_timeout(self, is_secondary_solution : bool) -> float:
         return (self.timeout_other_solutions if is_secondary_solution else None) or \
                self.timeout_model_solution or \
                DEFAULT_TIMEOUT
 
+    @BaseEnv.log_off
     def __repr__(self):
         return "<TaskConfig %s>" % ", ".join(
             f"{k} = {getattr(self, k)}"
@@ -153,6 +156,7 @@ class TaskConfig:
             )
         )
 
+    @BaseEnv.log_off
     def check_unused_keys(self, config: CheckedConfigParser):
         """Verify that there are no unused keys in the config, raise otherwise."""
 
@@ -189,15 +193,16 @@ class TaskConfig:
                     )
 
 
-class SubtaskConfig:
+class SubtaskConfig(BaseEnv):
     def __init__(
         self, contest_type: str, config_section: configparser.SectionProxy
     ) -> None:
-        self.name: Optional[str] = config_section.get("name", None)
-        self.score: int = int(config_section["points"])
+        super().__init__()
+        self._set("name", config_section.get("name", None))
+        self._set("score", int(config_section["points"]))
 
         if contest_type == "cms":
-            self.in_globs: List[str] = config_section["in_globs"].split()
+            self.set("in_globs", config_section["in_globs"].split())
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
@@ -210,6 +215,7 @@ class SubtaskConfig:
     def globs_regex(self) -> str:
         return "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
 
+    @BaseEnv.log_off
     def __repr__(self):
         return "<SubTaskConfig %s>" % ", ".join(
             f"{k} = {getattr(self, k)}"
