@@ -140,7 +140,7 @@ def get_build_dir(task_dir: str) -> str:
 
 def get_samples(task_dir: str) -> List[Tuple[str, str]]:
     """Returns the list [(sample1.in, sample1.out), …] in the given directory."""
-    ins = glob(os.path.join(task_dir, "sample*.in"))
+    ins = glob(os.path.normpath(os.path.join(task_dir, "sample*.in")))
     outs = []
     for i in ins:
         out = os.path.splitext(i)[0] + ".out"
