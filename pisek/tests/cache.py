@@ -7,7 +7,7 @@ SAVED_LAST_SIGNATURES = 5
 
 class CacheEntry(yaml.YAMLObject):
     yaml_tag = u'!Entry'
-    def __init__(self, name: str, signature: str, result: str, envs: Dict[str, str], files: List[str]) -> None:
+    def __init__(self, name: str, signature: str, result: str, envs: List[str], files: List[str]) -> None:
         self.name = name
         self.signature = signature
         self.result = result
@@ -43,6 +43,10 @@ class Cache:
 
         cache = {}
         with open(self.cache_path) as f:
-            for entry in yaml.full_load(f):
+            entries = yaml.full_load(f)
+            if entries is None:
+                return {}
+            for entry in entries:
                 cache[entry.name] = entry
+
         return cache
