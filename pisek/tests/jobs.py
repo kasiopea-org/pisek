@@ -58,12 +58,10 @@ class Job(PipelineItem):
     def _signature(self, envs: AbstractSet[str], files: List[str]):
         sign = hashlib.sha256()
         for variable in sorted(envs):
-            print(f"{variable}={self._env.get_without_log(variable)}\n".encode())
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
         for file in sorted(files):
             with open(file, 'rb') as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            print(f"{file}={file_sign.hexdigest()}\n".encode())
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
         return sign.hexdigest()
 
