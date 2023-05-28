@@ -1,6 +1,7 @@
 import os
 
 from pisek.tests.jobs import State, Job, JobManager
+from pisek.env import Env
 import pisek.util as util
 
 class SampleManager(JobManager):
@@ -8,51 +9,51 @@ class SampleManager(JobManager):
         super().__init__("Sample Manager")
 
     def _get_jobs(self, env) -> list[Job]:
-        existence = SampleExists(env.fork())
-        non_empty = SampleNotEmpty(env.fork())
+        samples = util.get_samples(env.config.get_samples_dir())
+        if len(samples) <= 0:
+            return self.fail(
+                f"In subfolder {self._env.task_config.samples_subdir} of task folder are no samples "
+                "(files sample*.in with according sample*.out)",
+            )
 
-        non_empty.add_prerequisite(existence)
+        jobs = []
+        for fname in sum(map(list, samples), start=[]):
+            existence = SampleExists(fname, env.fork())
+            non_empty = SampleNotEmpty(fname, env.fork())
+            non_empty.add_prerequisite(existence)
+            jobs += [existence, non_empty]
 
-        return [existence, non_empty]
+        return jobs
 
     def _get_status(self) -> str:
         if self.state == State.succeeded:
             return "Samples checked"
         else:
-            return "Checking samples"
+            current = sum(map(lambda x: x.state == State.succeeded, self.jobs))
+            return f"Checking samples ({current}/{len(self.jobs)})"
 
-class SampleJob(Job):
-    def __init__(self, env) -> None:
-        self.samples = util.get_samples(env.config.get_samples_dir())
-        super().__init__("Samples exist", env)
 
-class SampleExists(SampleJob):
+class SampleExists(Job):
+    def __init__(self, filename: str, env: Env) -> None:
+        self.filename = filename
+        super().__init__(f"Sample {self.filename} exists", env)
+    
     def _run(self):
-        if len(self.samples) <= 0:
-            return self.fail(
-                f"V podsložce {self._env.task_config.samples_subdir} složky s úlohou nejsou žádné samply "
-                "(soubory tvaru sample*.in s odpovídajícím sample*.out)",
-            )
+        if not util.file_exists(self.filename):
+            return self.fail(f"Sample does not exists or is not file: {self.filename}")
+        self._access_file(self.filename)
+        return "OK"
 
-        for sample_in, sample_out in self.samples:
-            if not util.file_exists(sample_in):
-                return self.fail(f"Vzorový vstup neexistuje nebo není soubor: {sample_in}")
-            self._access_file(sample_in)
-
-            if not util.file_exists(sample_out):
-                return self.fail(f"Vzorový výstup neexistuje nebo není soubor: {sample_out}")
-            self._access_file(sample_out)
-
-class SampleNotEmpty(SampleJob):
+class SampleNotEmpty(Job):
+    def __init__(self, filename: str, env: Env) -> None:
+        self.filename = filename
+        super().__init__(f"Sample {self.filename} is not empty", env)
+    
     def _run(self):
-        for sample_in, sample_out in self.samples:
-            if not util.file_not_empty(sample_in):
-                return self.fail(f"Vzorový vstup je prázdný: {sample_in}")
-            self._access_file(sample_in)
-            
-            if not util.file_not_empty(sample_out):
-                return self.fail(f"Vzorový vstup je prázdný: {sample_out}")
-            self._access_file(sample_out)
+        if not util.file_not_empty(self.filename):
+            return self.fail(f"Sample is empty: {self.filename}")
+        self._access_file(self.filename)
+        return "OK"
 
 
 class Compile(Job):
