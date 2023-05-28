@@ -16,4 +16,4 @@ class Env:
         return self.vars[name]
 
     def fork(self, **args):
-        return Env(**{**self.vars, **args})
+        return Env(**{**self.vars, **args}, accessed=self.accessed)
