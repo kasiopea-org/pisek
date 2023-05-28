@@ -24,17 +24,17 @@ class CacheEntry(yaml.YAMLObject):
 class Cache:
     def __init__(self, env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
-        self.cache = self._load(self.cache_path)
+        self.cache = self._load()
 
-    def add(self, name: str, result: str):
-        self.cache[name] = CacheEntry(name, result)
+    def add(self, cache_entry: CacheEntry):
+        self.cache[cache_entry.name] = cache_entry
         with open(self.cache_path, 'a') as f:
-            f.write(self.cache[name].yaml_export())
+            f.write(cache_entry.yaml_export())
 
-    def contains(self, name: str, signature: str) -> bool:
-        return name in self.cache and self.cache[name].signature == signature
+    def __contains__(self, name: str) -> bool:
+        return name in self.cache
 
-    def get(self, name: str) -> CacheEntry:
+    def __getitem__(self, name: str) -> CacheEntry:
         return self.cache[name]
 
     def _load(self) -> Dict[str, CacheEntry]:

@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
-from typing import List, Callable, Any
+from typing import List, Dict, AbstractSet, Callable, Any
 
-from pisek.tests.cache import Cache
+import os.path
+from pisek.tests.cache import Cache, CacheEntry
+from pisek.env import Env
 
 State = Enum('State', ['in_queue', 'running', 'succeeded', 'failed', 'canceled'])
 class PipelineItem(ABC):
@@ -41,42 +43,52 @@ class PipelineItem(ABC):
                 item.cancel()
 
 class Job(PipelineItem):
-    def __init__(self, name : str, env) -> None:
+    def __init__(self, name : str, env: Env) -> None:
         self._env = env
         self.result = None
-        self._accessed_envs = {}
-        self._accessed_files = {}
+        self._accessed_files = []
         super().__init__(name)
 
-    def _access_env(self, name : str) -> Any:
-        self._accessed_envs[name] = self._env.get(name)
-        return self._accessed_envs[name]
-    
     def _access_file(self, filename : str) -> Any:
-        self._access_files[filename] = True
+        filename = os.path.normpath(filename)
+        if not filename in self._accessed_files:
+            self._accessed_files.append(filename)
         return open(filename)
 
-    def signature(self) -> str:
+    def _signature(self, envs: AbstractSet[str], files: List[str]):
         sign = hashlib.sha256()
-        for variable in self._accessed_envs:
-            sign.update(f"{variable}={self._accessed_envs[variable]}\n".encode())
-        for file in self._accessed_files:
-            with open(file) as f:
+        for variable in sorted(envs):
+            print(f"{variable}={self._env.get_without_log(variable)}\n".encode())
+            sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
+        for file in sorted(files):
+            with open(file, 'rb') as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            sign.update(f"{file}={file_sign}\n".encode())
-        return sign
+            print(f"{file}={file_sign.hexdigest()}\n".encode())
+            sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+        return sign.hexdigest()
+
+    def same_signature(self, cache_entry: CacheEntry) -> bool:
+        sign = self._signature(cache_entry.envs, cache_entry.files)
+        return cache_entry.signature == sign
+
+    def export(self, result: str) -> CacheEntry:
+        sign = self._signature(self._env.accessed, self._accessed_files)
+        return CacheEntry(self.name, sign, result, self._env.accessed, self._accessed_files)
 
     def run_job(self, cache: Cache) -> str:
         if self.state == State.canceled:
             return None
         self.check_prerequisites()
         self.state = State.running
-        sign = self.signature()
-        if cache.contains():
-            cache[self.name] = self._run()
-        self.result = cache[sign]
+
+        if self.name in cache and self.same_signature(cache[self.name]):
+            self.result = cache[self.name]
+        else:
+            self.result = self._run() 
+            cache.add(self.export(self.result))
+        
         self.state = State.succeeded
-        return cache[sign]
+        return self.result
 
     @abstractmethod
     def _run(self):
@@ -84,9 +96,9 @@ class Job(PipelineItem):
 
 
 class JobManager(PipelineItem):
-    def create_jobs(self, env) -> List[Job]:
+    def create_jobs(self, env: Env) -> List[Job]:
         self.check_prerequisites()
-        self.jobs = self._get_jobs()
+        self.jobs = self._get_jobs(env)
         self.expectations = []
         return self.jobs
 
@@ -105,7 +117,7 @@ class JobManager(PipelineItem):
         self.expectations.append(f)
 
     @abstractmethod
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self, env: Env) -> List[Job]:
         pass
 
     def update(self) -> str:

@@ -7,50 +7,52 @@ class SampleManager(JobManager):
     def __init__(self):
         super().__init__("Sample Manager")
 
-    def _get_jobs(self) -> list[Job]:
-        existence = SampleExists(self.env)
-        non_empty = SampleNotEmpty(self.env)
+    def _get_jobs(self, env) -> list[Job]:
+        existence = SampleExists(env.fork())
+        non_empty = SampleNotEmpty(env.fork())
 
         non_empty.add_prerequisite(existence)
 
         return [existence, non_empty]
 
     def _get_status(self) -> str:
-        return ""
+        if self.state == State.succeeded:
+            return "Samples checked"
+        else:
+            return "Checking samples"
 
-class SampleExists(Job):
+class SampleJob(Job):
     def __init__(self, env) -> None:
-        samples = util.get_samples(self.task_config.get_samples_dir())
-        samples = sum(map(list, samples), start=[])
-        super().__init__("Samples exist", samples, env)
+        self.samples = util.get_samples(env.config.get_samples_dir())
+        super().__init__("Samples exist", env)
 
+class SampleExists(SampleJob):
     def _run(self):
-        samples = util.get_samples(self.task_config.get_samples_dir())
-        if len(samples) <= 0:
+        if len(self.samples) <= 0:
             return self.fail(
-                f"V podsložce {self.task_config.samples_subdir} složky s úlohou nejsou žádné samply "
+                f"V podsložce {self._env.task_config.samples_subdir} složky s úlohou nejsou žádné samply "
                 "(soubory tvaru sample*.in s odpovídajícím sample*.out)",
             )
 
-        for sample_in, sample_out in samples:
+        for sample_in, sample_out in self.samples:
             if not util.file_exists(sample_in):
                 return self.fail(f"Vzorový vstup neexistuje nebo není soubor: {sample_in}")
+            self._access_file(sample_in)
+
             if not util.file_exists(sample_out):
                 return self.fail(f"Vzorový výstup neexistuje nebo není soubor: {sample_out}")
+            self._access_file(sample_out)
 
-class SampleNotEmpty(Job):
-    def __init__(self, env) -> None:
-        samples = util.get_samples(self.task_config.get_samples_dir())
-        samples = sum(map(list, samples), start=[])
-        super().__init__("Samples not empty", samples, env)
-
+class SampleNotEmpty(SampleJob):
     def _run(self):
-        samples = util.get_samples(self.task_config.get_samples_dir())
-        for sample_in, sample_out in samples:
+        for sample_in, sample_out in self.samples:
             if not util.file_not_empty(sample_in):
                 return self.fail(f"Vzorový vstup je prázdný: {sample_in}")
+            self._access_file(sample_in)
+            
             if not util.file_not_empty(sample_out):
                 return self.fail(f"Vzorový vstup je prázdný: {sample_out}")
+            self._access_file(sample_out)
 
 
 class Compile(Job):
