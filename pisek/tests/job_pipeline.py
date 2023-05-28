@@ -23,17 +23,19 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
+            self.status_update()
 
-            while len(self.job_managers):
-                job_man = self.job_managers.popleft()
-                msg = job_man.update()
-                if job_man.state in (State.succeeded, State.failed):
-                    print(job_man.finish())
-                elif job_man.state == State.failed:
-                    pass
-                elif job_man.state == State.canceled:
-                    pass
-                else:
-                    print(msg, end='\r')
-                    self.job_managers.appendleft(job_man)
-                    break
+    def status_update(self) -> None:
+        while len(self.job_managers):
+            job_man = self.job_managers.popleft()
+            msg = job_man.update()
+            if job_man.state in (State.succeeded, State.failed):
+                print(job_man.finish())
+            elif job_man.state == State.failed:
+                pass
+            elif job_man.state == State.canceled:
+                pass
+            else:
+                print(msg, end='\r')
+                self.job_managers.appendleft(job_man)
+                break
