@@ -70,8 +70,8 @@ class Job(PipelineItem):
         return cache_entry.signature == sign
 
     def export(self, result: str) -> CacheEntry:
-        sign = self._signature(self._env.accessed, self._accessed_files)
-        return CacheEntry(self.name, sign, result, self._env.accessed, self._accessed_files)
+        sign = self._signature(self._env.get_accessed(), self._accessed_files)
+        return CacheEntry(self.name, sign, result, self._env.get_accessed(), self._accessed_files)
 
     def run_job(self, cache: Cache) -> str:
         if self.state == State.canceled:
