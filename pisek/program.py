@@ -105,8 +105,8 @@ class Program:
         self.task_dir: str = task_dir
         self.name: str = os.path.splitext(name)[0]
         self.compiler_args = compiler_args
-        self.executable: Optional[str] = None
         basename: Optional[str] = util.resolve_extension(self.task_dir, self.name)
+        self.executable: Optional[str] = os.path.join(util.get_build_dir(task_dir), os.path.splitext(basename)[0])
         self.filename: Optional[str] = (
             os.path.join(self.task_dir, basename) if basename is not None else None
         )
@@ -124,39 +124,15 @@ class Program:
         if self.executable is None:
             raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
 
-    def compile_if_needed(self) -> None:
-        # XXX: Only checks for mtime, so may refuse to recompile even if needed
-        # (e. g., the CFLAGS changed).
-        if self.executable:
-            return
-
-        if self.filename is None:
-            raise RuntimeError(
-                f"Zdrojový kód pro program {self.name} ve složce {self.task_dir} neexistuje"
-            )
-        executable = compile.compile(
-            self.filename, build_dir=util.get_build_dir(self.task_dir), dry_run=True
-        )
-        if executable is None:
-            raise RuntimeError(f"Program {self.name} se nepodařilo zkompilovat")
-
-        if util.file_is_newer(executable, self.filename):
-            self.executable = executable
-        else:
-            self.compile()
-
     def run(self, args=None) -> RunResult:
         if args is None:
             args = []
 
-        self.compile_if_needed()
-        assert self.executable is not None
         return run_direct(self.executable, args)
 
     def run_raw(
         self, program_args: List[str], *args: Any, **kwargs: Any
     ) -> subprocess.CompletedProcess:
-        self.compile_if_needed()
         assert self.executable is not None
         program_args.insert(0, self.executable)
         return subprocess.run(program_args, *args, **kwargs)

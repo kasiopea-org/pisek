@@ -41,7 +41,6 @@ class Solution(program.Program):
         output_filename = util.get_output_name(input_file, solution_name=self.name)
         output_file = os.path.join(data_dir, output_filename)
 
-        self.compile_if_needed()
         assert self.executable is not None
 
         if (

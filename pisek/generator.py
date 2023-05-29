@@ -43,7 +43,6 @@ class OnlineGenerator(Program):
         timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         assert seed >= 0
-        self.compile_if_needed()
         assert self.executable is not None
 
         output_dir = os.path.dirname(output_file)
@@ -91,7 +90,6 @@ class OfflineGenerator(Program):
         self.task_config = task_config
 
     def generate(self, test_dir: str) -> int:
-        self.compile_if_needed()
         os.makedirs(test_dir, exist_ok=True)
 
         assert self.executable is not None
