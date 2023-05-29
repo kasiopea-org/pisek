@@ -135,7 +135,7 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
 
 def get_build_dir(task_dir: str) -> str:
-    return os.path.join(task_dir, BUILD_DIR)
+    return os.path.normpath(os.path.join(task_dir, BUILD_DIR))
 
 
 def get_samples(task_dir: str) -> List[Tuple[str, str]]:
