@@ -22,8 +22,7 @@ class BaseEnv:
         self.vars[name] = value
 
     def __getattr__(self, name: str) -> Any:
-        if self.log_on and \
-           name in self.vars and not isinstance(self.vars[name], BaseEnv):
+        if self.log_on and name in self.vars:
                 self._accessed.add(name)
         return self._get(name)
 
@@ -48,7 +47,7 @@ class BaseEnv:
 
     @log_off
     def fork(self, **args):
-        return BaseEnv(**{**deepcopy(self.vars), **args})
+        return BaseEnv(**{**deepcopy(self.vars), **args}, accessed=self._accessed,)
 
     @log_off
     def get_accessed(self) -> List[str]:
