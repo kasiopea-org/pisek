@@ -17,7 +17,7 @@ class JobPipeline(ABC):
             p_item = self.pipeline.popleft()
             if isinstance(p_item, JobManager):
                 self.job_managers.append(p_item)
-                self.pipeline.extendleft(reversed(p_item.create_jobs(env)))
+                self.pipeline.extendleft(reversed(p_item.create_jobs(env.fork())))
             elif isinstance(p_item, Job):
                 p_item.run_job(cache)
                 p_item.finish()
