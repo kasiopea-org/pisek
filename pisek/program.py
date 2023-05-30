@@ -22,6 +22,7 @@ from . import util
 from . import compile
 from .task_config import DEFAULT_TIMEOUT
 
+from pisek.env import Env
 
 class RunResultKind(Enum):
     """Represents the way the program execution ended. Specially, a program
@@ -100,13 +101,13 @@ def run_direct(executable: str, args: List[str]) -> RunResult:
 
 class Program:
     def __init__(
-        self, task_dir: str, name: str, compiler_args: Optional[Dict] = None
+        self, name: str, env: Env, compiler_args: Optional[Dict] = None
     ) -> None:
-        self.task_dir: str = task_dir
+        self.task_dir: str = env.task_dir
         self.name: str = os.path.splitext(name)[0]
         self.compiler_args = compiler_args
-        basename: Optional[str] = util.resolve_extension(self.task_dir, self.name)
-        self.executable: Optional[str] = os.path.join(util.get_build_dir(task_dir), os.path.splitext(basename)[0])
+        basename: Optional[str] = util.resolve_extension(env.task_dir, self.name)
+        self.executable: Optional[str] = os.path.join(util.get_build_dir(env.task_dir), os.path.splitext(basename)[0])
         self.filename: Optional[str] = (
             os.path.join(self.task_dir, basename) if basename is not None else None
         )

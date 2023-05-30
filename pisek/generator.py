@@ -21,7 +21,7 @@ import sys
 from .program import Program
 from . import util
 from .task_config import TaskConfig, DEFAULT_TIMEOUT
-
+from pisek.env import Env
 
 class OnlineGenerator(Program):
     """
@@ -31,8 +31,8 @@ class OnlineGenerator(Program):
     We assume the generator outputs
     """
 
-    def __init__(self, task_dir: str, name: str):
-        super().__init__(task_dir, name)
+    def __init__(self, env: Env):
+        super().__init__(env.config.generator, env)
         self.cache_used = False  # Used to notify the user that cached data was used.
 
     def generate(

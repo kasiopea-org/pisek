@@ -16,15 +16,16 @@
 import os
 import subprocess
 
+from pisek.env import Env
+
 from . import program
 from .task_config import TaskConfig
 
-
 class Checker(program.Program):
-    def __init__(self, task_config: TaskConfig):
-        assert task_config.checker
-        super().__init__(task_config.task_dir, task_config.checker)
-        self.task_config = task_config
+    def __init__(self, env: Env):
+        assert env.config.checker
+        super().__init__(env.config.checker, env)
+        self.env = env
 
     def run_on_file(
         self, input_file: str, subtask_num: int
@@ -33,7 +34,7 @@ class Checker(program.Program):
         Runs the checker on the given file, assuming it is from a specific subtask.
         """
 
-        with open(os.path.join(self.task_config.get_data_dir(), input_file)) as f:
+        with open(os.path.join(self.env.config.get_data_dir(), input_file)) as f:
             res = self.run_raw(
                 [str(subtask_num)],
                 stdin=f,
