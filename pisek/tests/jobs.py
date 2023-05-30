@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
 from typing import List, Dict, AbstractSet, Callable, Any
+import sys
 
 import os.path
 from pisek.tests.cache import Cache, CacheEntry
@@ -18,7 +19,7 @@ class PipelineItem(ABC):
 
     def fail(self, message : str):
         self.state = State.failed
-        self.result = message
+        return message
 
     def cancel(self):
         self.state = State.canceled
@@ -83,9 +84,13 @@ class Job(PipelineItem):
             self.result = cache[self.name]
         else:
             self.result = self._run() 
+
+        if self.state == State.failed:
+            print(f"Job '{self.name}' failed:\n{self.result}", file=sys.stderr)
+        else:
             cache.add(self.export(self.result))
-        
-        self.state = State.succeeded
+            self.state = State.succeeded
+
         return self.result
 
     @abstractmethod
