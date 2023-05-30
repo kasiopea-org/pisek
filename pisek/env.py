@@ -47,7 +47,10 @@ class BaseEnv:
 
     @log_off
     def fork(self, **args):
-        return BaseEnv(**{**deepcopy(self.vars), **args}, accessed=self._accessed,)
+        cls = self.__class__
+        forked = cls.__new__(cls)
+        BaseEnv.__init__(forked, **{**deepcopy(self.vars), **args}, accessed=self._accessed)
+        return forked
 
     @log_off
     def get_accessed(self) -> List[str]:
