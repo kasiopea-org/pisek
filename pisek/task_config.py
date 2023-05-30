@@ -64,7 +64,7 @@ class TaskConfig(BaseEnv):
         config = CheckedConfigParser()
         config_path = os.path.join(task_dir, CONFIG_FILENAME)
         read_files = config.read(config_path)
-        self.task_dir = task_dir
+        self._set("task_dir", task_dir)
 
         if not read_files:
             raise FileNotFoundError(
