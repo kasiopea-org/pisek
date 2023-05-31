@@ -47,14 +47,12 @@ class Job(PipelineItem):
     def __init__(self, name : str, env: Env) -> None:
         self._env = env
         self.result = None
-        self._accessed_files = []
+        self._accessed_files = set([])
         super().__init__(name)
 
     def _access_file(self, filename : str) -> Any:
         filename = os.path.normpath(filename)
-        if not filename in self._accessed_files:
-            self._accessed_files.append(filename)
-        return open(filename)
+        self._accessed_files.add(filename)
 
     def _signature(self, envs: AbstractSet[str], files: List[str]):
         sign = hashlib.sha256()
@@ -72,7 +70,7 @@ class Job(PipelineItem):
 
     def export(self, result: str) -> CacheEntry:
         sign = self._signature(self._env.get_accessed(), self._accessed_files)
-        return CacheEntry(self.name, sign, result, self._env.get_accessed(), self._accessed_files)
+        return CacheEntry(self.name, sign, result, self._env.get_accessed(), list(self._accessed_files))
 
     def run_job(self, cache: Cache) -> str:
         if self.state == State.canceled:
