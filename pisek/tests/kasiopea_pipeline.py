@@ -1,8 +1,11 @@
 from typing import List
 
 from pisek.tests.jobs import Job, JobManager
-from pisek.tests.task_jobs import SampleManager, OnlineGeneratorManager
 from pisek.tests.job_pipeline import JobPipeline
+
+from pisek.tests.parts.samples import SampleManager
+from pisek.tests.parts.generator import OnlineGeneratorManager
+
 
 from pisek.task_config import TaskConfig
 from pisek.env import Env
