@@ -6,6 +6,7 @@ CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
 class CacheEntry(yaml.YAMLObject):
+    """Object representing single cached job."""
     yaml_tag = u'!Entry'
     def __init__(self, name: str, signature: str, result: str, envs: List[str], files: List[str]) -> None:
         self.name = name
@@ -22,6 +23,7 @@ class CacheEntry(yaml.YAMLObject):
         return yaml.dump([self])
 
 class Cache:
+    """Object representing all cached jobs."""
     def __init__(self, env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
         self.cache = self._load()
