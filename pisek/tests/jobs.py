@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
-from typing import List, Dict, AbstractSet, Callable, Any
+from typing import List, Optional, AbstractSet, Callable, Any
 import sys
 
 import os.path
@@ -10,31 +10,32 @@ from pisek.env import Env
 
 State = Enum('State', ['in_queue', 'running', 'succeeded', 'failed', 'canceled'])
 class PipelineItem(ABC):
-    def __init__(self, name : str):
+    """Generic PipelineItem with state and dependencies."""
+    def __init__(self, name : str) -> None:
         self.name = name
         self.state = State.in_queue
 
         self.prerequisites = 0
         self.required_by = []
 
-    def fail(self, message : str):
+    def fail(self, message : str) -> None:
         self.state = State.failed
         return message
 
-    def cancel(self):
+    def cancel(self) -> None:
         self.state = State.canceled
         for item in self.required_by:
             item.cancel()
 
-    def check_prerequisites(self):
+    def check_prerequisites(self) -> None:
         if self.prerequisites > 0:
             raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
     
-    def add_prerequisite(self, item):
+    def add_prerequisite(self, item) -> None:
         self.prerequisites += 1
         item.required_by.append(self)
 
-    def finish(self):
+    def finish(self) -> None:
         if self.state == State.succeeded:
             for item in self.required_by:
                 item.prerequisites -= 1
@@ -44,17 +45,18 @@ class PipelineItem(ABC):
                 item.cancel()
 
 class Job(PipelineItem):
+    """One simple cacheable task in pipeline."""
     def __init__(self, name : str, env: Env) -> None:
         self._env = env
         self.result = None
         self._accessed_files = set([])
         super().__init__(name)
 
-    def _access_file(self, filename : str) -> Any:
+    def _access_file(self, filename : str) -> None:
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
-    def _signature(self, envs: AbstractSet[str], files: List[str]):
+    def _signature(self, envs: AbstractSet[str], files: AbstractSet[str]) -> Optional[str]:
         sign = hashlib.sha256()
         for variable in sorted(envs):
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
@@ -93,10 +95,12 @@ class Job(PipelineItem):
 
     @abstractmethod
     def _run(self):
+        """What the job actually does (without all the management)."""
         pass
 
 
 class JobManager(PipelineItem):
+    """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> List[Job]:
         self.check_prerequisites()
         self.jobs = self._get_jobs(env)
@@ -135,6 +139,7 @@ class JobManager(PipelineItem):
 
     @abstractmethod
     def _get_status(self) -> str:
+        """Return status of job manager to be displayed on stdout."""
         return ""
 
     def finish(self) -> str:
