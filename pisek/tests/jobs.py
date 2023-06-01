@@ -61,6 +61,8 @@ class Job(PipelineItem):
         for variable in sorted(envs):
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
         for file in sorted(files):
+            if not os.path.exists(file):
+                return None
             with open(file, 'rb') as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
@@ -72,6 +74,11 @@ class Job(PipelineItem):
 
     def export(self, result: str) -> CacheEntry:
         sign = self._signature(self._env.get_accessed(), self._accessed_files)
+        if sign is None:
+            raise RuntimeError(
+                f"Cannot compute signature of job {self.name}. "
+                f"Check if something else is changing files in task directory."
+            )
         return CacheEntry(self.name, sign, result, self._env.get_accessed(), list(self._accessed_files))
 
     def run_job(self, cache: Cache) -> str:
