@@ -11,6 +11,10 @@ class TaskJobManager(JobManager):
 
 class TaskJob(Job):
     """Job class that implements useful methods"""
+    def _open_file(self, filename: str, mode='r', **kwargs):
+        self._access_file(filename)
+        return open(filename, mode, **kwargs)
+
     def _file_exists(self, filename: str):
         self._access_file(filename)
         return os.path.isfile(os.path.join(filename))
