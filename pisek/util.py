@@ -151,7 +151,7 @@ def get_samples(task_dir: str) -> List[Tuple[str, str]]:
 
 
 def get_input_name(seed: int, subtask: int) -> str:
-    return f"{seed:x}_{subtask}.in"
+    return f"{'0'*(2-len(str(subtask)))}{subtask}_{seed:x}.in"
 
 
 def get_output_name(input_file: str, solution_name: str) -> str:
