@@ -25,6 +25,8 @@ class JobPipeline(ABC):
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
             self.status_update()
 
+        cache.export()  # Remove duplicate entries
+
     def status_update(self) -> None:
         while len(self.job_managers):
             job_man = self.job_managers.popleft()

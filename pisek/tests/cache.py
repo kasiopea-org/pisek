@@ -52,3 +52,8 @@ class Cache:
                 cache[entry.name] = entry
 
         return cache
+
+    def export(self) -> None:
+        with open(self.cache_path, 'w') as f:
+            for cache_entry in self.cache.values():
+                f.write(cache_entry.yaml_export())
