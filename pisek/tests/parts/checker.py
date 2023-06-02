@@ -3,7 +3,7 @@ from typing import List
 from pisek.env import Env
 from pisek.tests.jobs import State, Job, JobManager
 from pisek.tests.parts.task_job import TaskJob
-from pisek.tests.parts.general import Compile
+from pisek.tests.parts.program import Compile
 
 from pisek.checker import Checker
 
