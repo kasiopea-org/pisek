@@ -48,12 +48,10 @@ class ProgramJob(TaskJob):
 
     def _run_raw(self, args, **kwargs):
         self._access_file(args[0])
-        if 'stdin' in kwargs:
-            self._access_file(kwargs['stdin'])
-            kwargs['stdin'] = open(kwargs['stdin'], "r")
-        if 'stdout' in kwargs:
-            self._access_file(kwargs['stdout'])
-            kwargs['stdout'] = open(kwargs['stdout'], "w")
+        if 'stdin' in kwargs and isinstance(kwargs['stdin'], str):
+            kwargs['stdin'] = self._open_file(kwargs['stdin'], "r")
+        if 'stdout' in kwargs and isinstance(kwargs['stdout'], str):
+            kwargs['stdout'] = self._open_file(kwargs['stdout'], "w")
         return subprocess.run(args, **kwargs)
 
     def _run_program(self, add_args, **kwargs):
