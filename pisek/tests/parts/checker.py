@@ -1,13 +1,15 @@
+from enum import Enum
 from typing import List
 
 from pisek.env import Env
 from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.parts.task_job import TaskJob
-from pisek.tests.parts.program import Compile
+from pisek.tests.parts.task_job import TaskJob, TaskJobManager
+from pisek.tests.parts.program import ProgramJob, Compile
 
 from pisek.checker import Checker
 
-class CheckerManager(JobManager):
+CheckerResult = Enum('CheckerResult', ['ok', 'failed'])
+class CheckerManager(TaskJobManager):
     def __init__(self):
         self.skipped_checker = ""
         super().__init__("Checker Manager")
@@ -20,16 +22,16 @@ class CheckerManager(JobManager):
                 "Warning: No checker specified in config. " \
                 "It is recommended setting `checker` is section [tests]"
         if env.config.no_checker:
-            self.config.no_checker = "Skipping checking"
+            self.skipped_checker = "Skipping checking"
         
         if self.skipped_checker != "":
             return []
 
-        checker = Checker(env)
-        
+        checker = self._resolve_file(env.config.checker)
+
         jobs = [compile := Compile(checker, env)]
         
-        for input_file in env.config:
+        for subtask in env.config.get_subtasks():
                 jobs.append(gen := (checker, env))
                 gen.add_prerequisite(compile)                
         return jobs
@@ -40,21 +42,25 @@ class CheckerManager(JobManager):
         else:
             return ""
 
-    def _get_jobs(self, env: Env) -> list[Job]:
-        checker = Checker(env)
-        compile = Compile(checker_fname)
-        testcases = []
-        for input in env.get_inputs():
-            testcases.append(CheckerTestCase(checker_fname, input, env))
 
-
-class CheckerTestCase(TaskJob):
-    def __init__(self, checker_fname: str, input_fname: str, env):
+class CheckerJob(ProgramJob):
+    def __init__(self, checker: str, input_name: str, subtask: int, env):
+        self.input_name = input_name
+        self.subtask = subtask
         super().__init__(
-            name=f"Check {input_fname}",
-            required_files=[checker_fname, input_fname],
+            name=f"Check {input_name}",
+            program=checker,
             env=env
         )
 
-    def _run(self):
-        pass
+    def _check(self) -> bool:
+        return self._run_program(
+            [str(self.subtask)],
+            stdin=self.input_name
+        ).returncode == 0
+
+    def _run(self) -> CheckerResult:
+        if self._check():
+            return CheckerResult.ok
+        else:
+            return CheckerResult.failed
