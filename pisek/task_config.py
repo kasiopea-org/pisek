@@ -22,7 +22,8 @@ DEFAULT_TIMEOUT : float = 360
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
-from pisek.env import BaseEnv 
+from pisek.env import BaseEnv
+import pisek.util as util
 
 class CheckedConfigParser(configparser.RawConfigParser):
     """
@@ -118,12 +119,12 @@ class TaskConfig(BaseEnv):
 
                 subtask_section_names.add(section_name)
 
-                n = int(m.groups()[0])
-                if n in subtasks:
-                    raise ValueError("Duplicate subtask number {}".format(n))
+                subtask_number = int(m.groups()[0])
+                if subtask_number in subtasks:
+                    raise ValueError("Duplicate subtask number {}".format(subtask_number))
 
-                subtasks[n] = SubtaskConfig(
-                    contest_type, config[section_name]
+                subtasks[subtask_number] = SubtaskConfig(
+                    subtask_number, config[section_name]
                 )
             self._set("subtasks", subtasks)
             self._set("subtask_section_names", subtask_section_names)
@@ -195,14 +196,15 @@ class TaskConfig(BaseEnv):
 
 class SubtaskConfig(BaseEnv):
     def __init__(
-        self, contest_type: str, config_section: configparser.SectionProxy
+        self, subtask_number: int, config_section: configparser.SectionProxy
     ) -> None:
         super().__init__()
         self._set("name", config_section.get("name", None))
         self._set("score", int(config_section["points"]))
+        self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
 
-        if contest_type == "cms":
-            self.set("in_globs", config_section["in_globs"].split())
+    def _all_previous_glob(self, subtask_number):
+        return " ".join([f"{util.pad_num(i)}.in" for i in range(1, subtask_number+1)])
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""

@@ -150,8 +150,12 @@ def get_samples(task_dir: str) -> List[Tuple[str, str]]:
     return list(zip(ins, outs))
 
 
+def pad_num(what: int, length=2):
+    return f"{'0'*(length-len(str(what)))}{what}"
+
+
 def get_input_name(seed: int, subtask: int) -> str:
-    return f"{'0'*(2-len(str(subtask)))}{subtask}_{seed:x}.in"
+    return f"{pad_num(subtask)}_{seed:x}.in"
 
 
 def get_output_name(input_file: str, solution_name: str) -> str:
