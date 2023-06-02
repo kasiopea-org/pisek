@@ -1,6 +1,13 @@
 import os
 
-from pisek.tests.jobs import Job
+from pisek.env import Env
+from pisek.tests.jobs import Job, JobManager
+
+class TaskJobManager(JobManager):
+    """JobManager class that implements useful methods"""
+    def _resolve_file(self, name: str, env: Env):
+        return os.path.join(env.task_dir, name)
+
 
 class TaskJob(Job):
     """Job class that implements useful methods"""

@@ -3,9 +3,9 @@ from typing import List
 import pisek.util as util
 from pisek.env import Env
 from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.parts.task_job import TaskJob
+from pisek.tests.parts.task_job import TaskJob, TaskJobManager
 
-class SampleManager(JobManager):
+class SampleManager(TaskJobManager):
     def __init__(self):
         super().__init__("Sample Manager")
 
