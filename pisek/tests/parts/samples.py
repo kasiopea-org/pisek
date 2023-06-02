@@ -19,8 +19,8 @@ class SampleManager(TaskJobManager):
 
         jobs = []
         for fname in sum(map(list, samples), start=[]):
-            existence = SampleExists(fname, env.fork())
-            non_empty = SampleNotEmpty(fname, env.fork())
+            existence = SampleExists(fname, env)
+            non_empty = SampleNotEmpty(fname, env)
             non_empty.add_prerequisite(existence)
             jobs += [existence, non_empty]
 

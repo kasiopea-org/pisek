@@ -48,7 +48,7 @@ class PipelineItem(ABC):
 class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
     def __init__(self, name : str, env: Env) -> None:
-        self._env = env
+        self._env = env.fork()
         self.result = None
         self._accessed_files = set([])
         super().__init__(name)
@@ -57,7 +57,7 @@ class Job(PipelineItem):
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
-    def _signature(self, envs: AbstractSet[str], files: AbstractSet[str]) -> Optional[str]:
+    def _signature(self, envs: List[str], files: AbstractSet[str]) -> Optional[str]:
         sign = hashlib.sha256()
         for variable in sorted(envs):
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
