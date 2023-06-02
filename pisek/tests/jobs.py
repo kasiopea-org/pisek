@@ -14,13 +14,14 @@ class PipelineItem(ABC):
     def __init__(self, name : str) -> None:
         self.name = name
         self.state = State.in_queue
+        self.fail_msg = ""
 
         self.prerequisites = 0
         self.required_by = []
 
     def fail(self, message : str) -> None:
         self.state = State.failed
-        return message
+        self.fail_msg = message
 
     def cancel(self) -> None:
         self.state = State.canceled
@@ -87,15 +88,18 @@ class Job(PipelineItem):
         self.check_prerequisites()
         self.state = State.running
 
+        cached = False
         if self.name in cache and self.same_signature(cache[self.name]):
-            self.result = cache[self.name]
+            cached = True
+            self.result = cache[self.name].result
         else:
             self.result = self._run() 
 
         if self.state == State.failed:
-            print(f"Job '{self.name}' failed:\n{self.result}", file=sys.stderr)
+            print(f"Job '{self.name}' failed:\n{self.fail_msg}", file=sys.stderr)
         else:
-            cache.add(self.export(self.result))
+            if not cached:
+                cache.add(self.export(self.result))
             self.state = State.succeeded
 
         return self.result
