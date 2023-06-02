@@ -4,19 +4,19 @@ from typing import List
 
 import pisek.util as util
 from pisek.env import Env
-from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.parts.task_job import TaskJob
-from pisek.tests.parts.general import Compile
+from pisek.tests.jobs import State, Job
+from pisek.tests.parts.task_job import TaskJob, TaskJobManager
+from pisek.tests.parts.program import ProgramJob, Compile
 
 from pisek.generator import OnlineGenerator
 
-class OnlineGeneratorManager(JobManager):
+class OnlineGeneratorManager(TaskJobManager):
     def __init__(self):
         super().__init__("Generator Manager")
 
     def _get_jobs(self, env: Env) -> List[Job]:
-        generator = OnlineGenerator(env)
-        
+        generator = util.resolve_extension(".", self._resolve_file(env.config.generator, env))
+
         jobs = [compile := Compile(generator, env)]
 
         random.seed(4)  # Reproducibility!
@@ -44,30 +44,42 @@ class OnlineGeneratorManager(JobManager):
     def _get_status(self) -> str:
         return ""
 
-class GeneratorJob(TaskJob):
-    def __init__(self, name: str, generator : OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
-        self.generator = generator
+class OnlineGeneratorJob(ProgramJob):
+    def __init__(self, name: str, generator : str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         self.subtask = subtask
         self.seed = seed
         self.input_file = input_file
-        super().__init__(name, env)
+        super().__init__(name, generator, env)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> None:
-        if not self.generator.generate(input_file, seed, subtask):
-            return self.fail(
-                f"Error when generating input {input_file} of subtask {self.subtask}"
-                f" with seed {self.seed}"
-            )
+        self._load_compiled()
+        if seed < 0:
+            return self.fail(f"Seed {seed} is negative.")
 
-class OnlineGeneratorGenerate(GeneratorJob):
+        input_dir = os.path.dirname(input_file)
+        os.makedirs(input_dir, exist_ok=True)
+
+        difficulty = str(subtask)
+        hexa_seed = f"{seed:x}"
+
+        result = self._run_program(
+            [difficulty, hexa_seed],
+            stdout=input_file,
+        )
+
+        # TODO: return a CompletedProcess to be consistent with OfflineGenerator
+        return result.returncode == 0
+
+
+class OnlineGeneratorGenerate(OnlineGeneratorJob):
     def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(f"Generate {input_file}", generator, input_file, subtask, seed, env)
 
     def _run(self):
         self._gen(self.input_file, self.seed, self.subtask)
+        
 
-
-class OnlineGeneratorDeterministic(GeneratorJob):
+class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(
             f"Generator is deterministic (subtask {subtask}, seed {seed})",
