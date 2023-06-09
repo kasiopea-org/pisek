@@ -102,7 +102,7 @@ class ProgramJob(TaskJob):
 class Compile(ProgramJob):
     def __init__(self, program: str, env: Env) -> None:
         super().__init__(
-            name=f"Compile {program}",
+            name=f"Compile {os.path.basename(program)}",
             program=program,
             env=env
         )

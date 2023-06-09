@@ -25,7 +25,7 @@ class OnlineGeneratorManager(TaskJobManager):
             last_gen = None
             for i, seed in enumerate(seeds):
                 data_dir = self._env.config.get_data_dir()
-                input_name = os.path.join(data_dir, util.get_input_name(seed, subtask))
+                input_name = util.get_input_name(seed, subtask)
 
                 jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, self._env.fork()))
                 gen.add_prerequisite(compile)
@@ -48,8 +48,8 @@ class OnlineGeneratorJob(ProgramJob):
     def __init__(self, name: str, generator : str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         self.subtask = subtask
         self.seed = seed
-        self.input_file = input_file
         super().__init__(name, generator, env)
+        self.input_file = self._data(input_file)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> None:
         self._load_compiled()
