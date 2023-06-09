@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import pisek.util as util
@@ -9,8 +10,9 @@ class SampleManager(TaskJobManager):
     def __init__(self):
         super().__init__("Sample Manager")
 
-    def _get_jobs(self, env: Env) -> List[Job]:
-        samples = util.get_samples(env.config.get_samples_dir())
+    def _get_jobs(self) -> List[Job]:
+        samples = self._get_samples()
+        unziped_samples = sum(map(list, samples), start=[])
         if len(samples) <= 0:
             return self.fail(
                 f"In subfolder {self._env.task_config.samples_subdir} of task folder are no samples "
@@ -18,9 +20,9 @@ class SampleManager(TaskJobManager):
             )
 
         jobs = []
-        for fname in sum(map(list, samples), start=[]):
-            existence = SampleExists(fname, env)
-            non_empty = SampleNotEmpty(fname, env)
+        for fname in unziped_samples:
+            existence = SampleExists(fname, self._env.fork())
+            non_empty = SampleNotEmpty(fname, self._env.fork())
             non_empty.add_prerequisite(existence)
             jobs += [existence, non_empty]
 
@@ -33,20 +35,23 @@ class SampleManager(TaskJobManager):
             current = sum(map(lambda x: x.state == State.succeeded, self.jobs))
             return f"Checking samples ({current}/{len(self.jobs)})"
 
-class SampleExists(TaskJob):
-    def __init__(self, filename: str, env: Env) -> None:
-        self.filename = filename
-        super().__init__(f"Sample {self.filename} exists", env)
-    
-    def _run(self):
-        if not self._file_exists(self.filename):
-            return self.fail(f"Sample does not exists or is not file: {self.filename}")
+class SampleJob(TaskJob):
+    def __init__(self, name, sample: str, env: Env) -> None:
+        super().__init__(name, env)
+        self.sample = self._resolve_path(env.config.samples_subdir, sample)
 
-class SampleNotEmpty(TaskJob):
-    def __init__(self, filename: str, env: Env) -> None:
-        self.filename = filename
-        super().__init__(f"Sample {self.filename} is not empty", env)
+class SampleExists(SampleJob):
+    def __init__(self, sample: str, env: Env) -> None:
+        super().__init__(f"Sample {sample} exists", sample, env)
     
     def _run(self):
-        if not self._file_not_empty(self.filename):
-            return self.fail(f"Sample is empty: {self.filename}")
+        if not self._file_exists(self.sample):
+            return self.fail(f"Sample does not exists or is not file: {self.sample}")
+
+class SampleNotEmpty(SampleJob):
+    def __init__(self, sample: str, env: Env) -> None:
+        super().__init__(f"Sample {sample} is not empty", sample, env)
+    
+    def _run(self):
+        if not self._file_not_empty(self.sample):
+            return self.fail(f"Sample is empty: {self.sample}")

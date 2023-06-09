@@ -6,6 +6,7 @@ class BaseEnv:
     def __init__(self, accessed : MutableSet[str] = set([]), **vars) -> None:
         self.vars = vars
         self.log_on = True
+        self.reserved = False
         self._accessed = copy(accessed)
 
     def _get(self, name: str) -> Any:
@@ -59,6 +60,13 @@ class BaseEnv:
         forked = cls.__new__(cls)
         BaseEnv.__init__(forked, **{**deepcopy(self.vars), **kwargs}, accessed=self._accessed)
         return forked
+    
+    def reserve(self) -> None:
+        if self.reserved:
+            raise RuntimeError("Env is reserved already.")
+        else:
+            self.reserved = True
+            return self
 
     @log_off
     def get_accessed(self) -> List[str]:

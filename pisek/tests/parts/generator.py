@@ -14,27 +14,27 @@ class OnlineGeneratorManager(TaskJobManager):
     def __init__(self):
         super().__init__("Generator Manager")
 
-    def _get_jobs(self, env: Env) -> List[Job]:
-        generator = util.resolve_extension(".", self._resolve_file(env.config.generator, env))
+    def _get_jobs(self) -> List[Job]:
+        generator = self._resolve_path(self._env.config.generator)
 
-        jobs = [compile := Compile(generator, env)]
+        jobs = [compile := Compile(generator, self._env.fork())]
 
         random.seed(4)  # Reproducibility!
-        seeds = random.sample(range(0, 16**4), env.inputs)
-        for subtask in env.config.subtasks:
+        seeds = random.sample(range(0, 16**4), self._env.inputs)
+        for subtask in self._env.config.subtasks:
             last_gen = None
             for i, seed in enumerate(seeds):
-                data_dir = env.config.get_data_dir()
+                data_dir = self._env.config.get_data_dir()
                 input_name = os.path.join(data_dir, util.get_input_name(seed, subtask))
 
-                jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, env))
+                jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, self._env.fork()))
                 gen.add_prerequisite(compile)
                 if i == 0:
-                    jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, subtask, seed, env))
+                    jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, subtask, seed, self._env.fork()))
                     det.add_prerequisite(gen)
                 elif i == 1:
                     jobs.append(rs := OnlineGeneratorRespectsSeed(subtask, last_gen.seed, gen.seed,
-                                                                  last_gen.input_file, gen.input_file, env))
+                                                                  last_gen.input_file, gen.input_file, self._env.fork()))
                     rs.add_prerequisite(last_gen)
                     rs.add_prerequisite(gen)
                 last_gen = gen
@@ -87,7 +87,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
         )
 
     def _run(self):
-        copy_file = os.path.join(self._env.config.get_data_dir(), util.get_output_name(self.input_file, "copy"))
+        copy_file = self.input_file.replace(".in", ".copy")
         self._gen(copy_file, self.seed, self.subtask)
         if not self._files_equal(self.input_file, copy_file):
             return self.fail(

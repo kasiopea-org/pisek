@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Dict, Optional
 import subprocess
 
@@ -9,6 +10,8 @@ from pisek.tests.parts.task_job import TaskJob
 import pisek.util as util
 import pisek.compile as compile
 
+BUILD_DIR = "build/"
+
 class ProgramJob(TaskJob):
     def __init__(self, name: str, program: str, env: Env) -> None:
         self.program = program
@@ -16,12 +19,10 @@ class ProgramJob(TaskJob):
         super().__init__(name, env)
 
     def _compile(self, compiler_args : Optional[Dict] = None):
-        if not self._file_exists(self.program):
-            self.fail(f"Program {self.program} does not exist")
-            return False
+        program = self._resolve_extension(self.program)
         self.executable = compile.compile(
-            self.program,
-            build_dir=util.get_build_dir(self._env.task_dir),
+            program,
+            build_dir=self._get_build_dir(),
             compiler_args=compiler_args,
         )
         if self.executable is None:
@@ -42,10 +43,6 @@ class ProgramJob(TaskJob):
         self.executable = executable
         return True
 
-    def _get_executable(self) -> str:
-        name = os.path.splitext(os.path.split(self.program)[1])[0]
-        return os.path.normpath(os.path.join(util.get_build_dir(self._env.task_dir), name))
-
     def _run_raw(self, args, **kwargs):
         self._access_file(args[0])
         if 'stdin' in kwargs and isinstance(kwargs['stdin'], str):
@@ -57,6 +54,49 @@ class ProgramJob(TaskJob):
     def _run_program(self, add_args, **kwargs):
         self._load_compiled()
         return self._run_raw([self.executable] + add_args, **kwargs)
+        
+    def _get_build_dir(self) -> str:
+        return os.path.normpath(os.path.join(self._env.task_dir, BUILD_DIR))
+    
+    def _get_executable(self) -> str:
+        name = os.path.basename(self.program)
+        return os.path.normpath(os.path.join(util.get_build_dir(self._env.task_dir), name))
+
+    def _resolve_extension(self, name: str) -> str:
+        """
+        Given `name`, finds a file named `name`.[ext],
+        where [ext] is a file extension for one of the supported languages.
+
+        If a name with a valid extension is given, it is returned unchanged
+        """
+        extensions = compile.supported_extensions()
+        candidates = []
+        for name in [name, self._name_without_expected_score(name)]:
+            for ext in extensions:
+                if os.path.isfile(name + ext):
+                    candidates.append(name + ext)
+                if name.endswith(ext) and os.path.isfile(name):
+                    # Extension already present in `name`
+                    candidates.append(name)
+            if len(candidates):
+                break
+        
+        if len(candidates) == 0:
+            return self.fail(
+                f"No file with given name exists: {name}"
+            )
+        if len(candidates) > 1:
+            return self.fail(
+                f"Multiple files with same name exist: {', '.join(candidates)}"
+            )
+
+        return candidates[0]
+
+    def _name_without_expected_score(self, name: str):
+        match = re.fullmatch(r"(.*?)_([0-9]{1,3}|X)b", name)
+        if match:
+            return match[1]
+        return name
 
 
 class Compile(ProgramJob):

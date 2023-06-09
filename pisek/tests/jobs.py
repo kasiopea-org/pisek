@@ -20,6 +20,8 @@ class PipelineItem(ABC):
         self.required_by = []
 
     def fail(self, message : str) -> None:
+        if self.fail_msg != "":
+            raise RuntimeError("Job cannot fail twice.")    
         self.state = State.failed
         self.fail_msg = message
 
@@ -48,7 +50,7 @@ class PipelineItem(ABC):
 class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
     def __init__(self, name : str, env: Env) -> None:
-        self._env = env.fork()
+        self._env = env.reserve()
         self.result = None
         self._accessed_files = set([])
         super().__init__(name)
@@ -113,8 +115,9 @@ class Job(PipelineItem):
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> List[Job]:
+        self._env = env.reserve()
         self.check_prerequisites()
-        self.jobs = self._get_jobs(env)
+        self.jobs = self._get_jobs()
         self.expectations = []
         return self.jobs
 
