@@ -1,9 +1,16 @@
+from enum import Enum
 from typing import List, Dict, Any
 import os
 import yaml
 
 CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
+
+class CacheResultEnum:
+    def __init__(self, *values):
+        for value in values:
+            setattr(self, value, value)
+
 
 class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
