@@ -204,7 +204,7 @@ class SubtaskConfig(BaseEnv):
         self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
 
     def _all_previous_glob(self, subtask_number):
-        return " ".join([f"{util.pad_num(i)}.in" for i in range(1, subtask_number+1)])
+        return " ".join([f"{util.pad_num(i)}*.in" for i in range(1, subtask_number+1)])
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
