@@ -4,8 +4,8 @@ from typing import List, Tuple, Optional
 
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
-from pisek.tests.jobs import Job, JobManager
-from pisek.tests.status import StatusJobManager
+from pisek.jobs.jobs import Job, JobManager
+from pisek.jobs.status import StatusJobManager
 
 class TaskJobManager(StatusJobManager):
     """JobManager class that implements useful methods"""

@@ -5,7 +5,7 @@ from typing import List, Optional, AbstractSet, Callable, Any
 import sys
 
 import os.path
-from pisek.tests.cache import Cache, CacheEntry
+from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env import Env
 
 State = Enum('State', ['in_queue', 'running', 'succeeded', 'failed', 'canceled'])

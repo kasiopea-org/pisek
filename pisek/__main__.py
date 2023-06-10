@@ -18,7 +18,7 @@ import os
 import unittest
 import sys
 
-from pisek.tests.pipelines import get_test_suite
+from pisek.jobs.pipelines import get_test_suite
 from pisek.program import Program, RunResultKind
 from pisek import util
 from pisek.license import license, license_gnu

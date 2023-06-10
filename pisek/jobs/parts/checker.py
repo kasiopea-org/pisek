@@ -2,10 +2,10 @@ import termcolor
 from typing import List
 
 from pisek.env import Env
-from pisek.tests.cache import CacheResultEnum
-from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.parts.task_job import TaskJob, TaskJobManager
-from pisek.tests.parts.program import ProgramJob, Compile
+from pisek.jobs.cache import CacheResultEnum
+from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
+from pisek.jobs.parts.program import ProgramJob, Compile
 
 
 CheckerResult = CacheResultEnum('ok', 'failed')

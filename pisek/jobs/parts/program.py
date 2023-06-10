@@ -4,8 +4,8 @@ from typing import Dict, Optional
 import subprocess
 
 from pisek.env import Env
-from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.parts.task_job import TaskJob
+from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.parts.task_job import TaskJob
 
 import pisek.util as util
 import pisek.compile as compile

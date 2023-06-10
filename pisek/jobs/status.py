@@ -1,7 +1,7 @@
 import os
 from termcolor import colored
 
-from pisek.tests.jobs import State, PipelineItem, JobManager
+from pisek.jobs.jobs import State, PipelineItem, JobManager
 
 MSG_LEN = 20
 BAR_LEN = 40

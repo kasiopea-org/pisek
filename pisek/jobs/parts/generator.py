@@ -4,9 +4,9 @@ from typing import List
 
 import pisek.util as util
 from pisek.env import Env
-from pisek.tests.jobs import State, Job
-from pisek.tests.parts.task_job import TaskJob, TaskJobManager
-from pisek.tests.parts.program import ProgramJob, Compile
+from pisek.jobs.jobs import State, Job
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
+from pisek.jobs.parts.program import ProgramJob, Compile
 
 from pisek.generator import OnlineGenerator
 

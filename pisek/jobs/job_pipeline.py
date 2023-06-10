@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from collections import deque
 
 from pisek.env import Env
-from pisek.tests.jobs import State, Job, JobManager
-from pisek.tests.cache import Cache
+from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.cache import Cache
 
 class JobPipeline(ABC):
     @abstractmethod
