@@ -14,10 +14,11 @@ from pisek.tests.cache import Cache
 class KasiopeaPipeline(JobPipeline):
     def __init__(self):
         self.pipeline = [
-            SampleManager(),
-            OnlineGeneratorManager(),
-            CheckerManager()
+            samples := SampleManager(),
+            generator := OnlineGeneratorManager(),
+            checker := CheckerManager(),
         ]
+        checker.add_prerequisite(generator)
 
 
 p = KasiopeaPipeline()
