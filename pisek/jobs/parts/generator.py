@@ -50,9 +50,11 @@ class OnlineGeneratorJob(ProgramJob):
         self.input_file = self._data(input_file)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> None:
-        self._load_compiled()
+        if not self._load_compiled():
+            return False
         if seed < 0:
-            return self.fail(f"Seed {seed} is negative.")
+            self.fail(f"Seed {seed} is negative.")
+            return False
 
         input_dir = os.path.dirname(input_file)
         os.makedirs(input_dir, exist_ok=True)
@@ -86,7 +88,8 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
 
     def _run(self):
         copy_file = self.input_file.replace(".in", ".copy")
-        self._gen(copy_file, self.seed, self.subtask)
+        if not self._gen(copy_file, self.seed, self.subtask):
+            return
         if not self._files_equal(self.input_file, copy_file):
             return self.fail(
                 f"Generator is not deterministic. Files {self.input_file} and {copy_file} differ "
