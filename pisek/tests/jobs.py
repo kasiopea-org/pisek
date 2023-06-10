@@ -113,11 +113,14 @@ class Job(PipelineItem):
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> List[Job]:
-        self.state = State.running
-        self._env = env.reserve()
-        self.check_prerequisites()
-        self.jobs = self._get_jobs()
-        self.expectations = []
+        if self.state == State.canceled:
+            self.jobs = []
+        else:
+            self.state = State.running
+            self._env = env.reserve()
+            self.check_prerequisites()
+            self.jobs = self._get_jobs()
+            self.expectations = []
         return self.jobs
 
     def expect_all(self, jobs, state : State, result : Any):
@@ -149,7 +152,9 @@ class JobManager(PipelineItem):
 
     def update(self) -> str:
         states = self._job_states()
-        if State.in_queue in states or State.in_queue in states:
+        if self.state == State.canceled:
+            pass
+        elif State.in_queue in states or State.in_queue in states:
             self.state = State.running
         elif State.failed in states:
             self.state = State.failed

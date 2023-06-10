@@ -7,7 +7,7 @@ MSG_LEN = 20
 BAR_LEN = 40
 TOTAL_LEN = 80
 
-LINE_SEPARATOR = '-'*TOTAL_LEN + '\n'
+LINE_SEPARATOR = '⎯'*TOTAL_LEN + '\n'
 
 def pad(text: str, lenght: int, pad_char: str = " "):
     return text + (lenght - len(text))*pad_char
@@ -23,16 +23,15 @@ class StatusJobManager(JobManager):
         return f"{pad(msg, MSG_LEN)}{colored(filled*'━', color=color)}{colored((BAR_LEN-filled)*'━', color='grey')}  ({part}/{full})"
 
     def _job_bar(self, msg: str) -> str:
-        all_ =  len(self.jobs)
-        finished = self._finished_jobs()
-        
         color = "cyan"
-        if all_ == finished:
+        if self.state == State.canceled:
+            return f"{pad(msg, MSG_LEN)}{colored('canceled', color='yellow')}"
+        elif self.state == State.succeeded:
             color = "green"
         elif State.failed in self._job_states():
             color = "red"
         
-        return self._bar(msg, finished, all_, color=color)
+        return self._bar(msg, self._finished_jobs(), len(self.jobs), color=color)
     
     def _get_status(self) -> str:
         return self._job_bar(self.name)

@@ -39,7 +39,7 @@ class JobPipeline(ABC):
                 if msg: print(msg)
                 print(job_man.failures(), end='')
             elif job_man.state == State.canceled:
-                pass
+                print()
             else:
                 self.job_managers.appendleft(job_man)
                 break
