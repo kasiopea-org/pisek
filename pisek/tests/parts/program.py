@@ -28,6 +28,7 @@ class ProgramJob(TaskJob):
         if self.executable is None:
             self.fail(f"Program {self.program} could not be compiled.")
             return False
+        self._access_file(program)
         self._access_file(self.executable)
 
         return True
