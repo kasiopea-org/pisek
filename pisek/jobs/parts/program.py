@@ -10,8 +10,6 @@ from pisek.jobs.parts.task_job import TaskJob
 import pisek.util as util
 import pisek.compile as compile
 
-BUILD_DIR = "build/"
-
 class ProgramJob(TaskJob):
     def __init__(self, name: str, program: str, env: Env) -> None:
         self.program = program
@@ -25,7 +23,7 @@ class ProgramJob(TaskJob):
 
         self.executable = compile.compile(
             program,
-            build_dir=self._get_build_dir(),
+            build_dir=self._executable("."),
             compiler_args=compiler_args,
         )
         if self.executable is None:
@@ -58,13 +56,9 @@ class ProgramJob(TaskJob):
     def _run_program(self, add_args, **kwargs):
         self._load_compiled()
         return self._run_raw([self.executable] + add_args, **kwargs)
-        
-    def _get_build_dir(self) -> str:
-        return os.path.normpath(os.path.join(self._env.task_dir, BUILD_DIR))
-    
+ 
     def _get_executable(self) -> str:
-        name = os.path.basename(self.program)
-        return os.path.normpath(os.path.join(util.get_build_dir(self._env.task_dir), name))
+        return self._executable(os.path.basename(self.program))
 
     def _resolve_extension(self, name: str) -> str:
         """

@@ -7,11 +7,26 @@ from pisek.task_config import SubtaskConfig
 from pisek.jobs.jobs import Job, JobManager
 from pisek.jobs.status import StatusJobManager
 
-class TaskJobManager(StatusJobManager):
-    """JobManager class that implements useful methods"""
-    def _resolve_path(self, *path):
+BUILD_DIR = "build/"
+
+class TaskHelper: 
+    def _get_build_dir(self) -> str:
+        return BUILD_DIR
+
+    def _resolve_path(self, *path: List[str]):
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
+    def _executable(self, name: str) -> str:
+        return self._resolve_path(self._get_build_dir(), name)
+
+    def _sample(self, name: str) -> str:
+        return self._resolve_path(self._env.config.samples_subdir, name)
+
+    def _data(self, name: str) -> str:
+        return self._resolve_path(self._env.config.data_subdir, name)
+
+class TaskJobManager(StatusJobManager, TaskHelper):
+    """JobManager class that implements useful methods"""
     def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = glob.glob(self._resolve_path("sample*.in"))
@@ -37,7 +52,7 @@ class TaskJobManager(StatusJobManager):
 
         return input_filenames
 
-class TaskJob(Job):
+class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
     def _open_file(self, filename: str, mode='r', **kwargs):
         self._access_file(filename)
@@ -76,12 +91,3 @@ class TaskJob(Job):
                             return False
         except FileNotFoundError:
             return False
-
-    def _resolve_path(self, *path: List[str]):
-        return os.path.normpath(os.path.join(self._env.task_dir, *path))
-
-    def _sample(self, name: str) -> str:
-        return self._resolve_path(self._env.config.samples_subdir, name)
-
-    def _data(self, name: str) -> str:
-        return self._resolve_path(self._env.config.data_subdir, name)
