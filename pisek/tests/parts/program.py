@@ -20,6 +20,9 @@ class ProgramJob(TaskJob):
 
     def _compile(self, compiler_args : Optional[Dict] = None):
         program = self._resolve_extension(self.program)
+        if program is None:
+            return False
+
         self.executable = compile.compile(
             program,
             build_dir=self._get_build_dir(),
