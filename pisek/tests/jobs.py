@@ -21,7 +21,7 @@ class PipelineItem(ABC):
 
     def fail(self, message : str) -> None:
         if self.fail_msg != "":
-            raise RuntimeError("Job cannot fail twice.")
+            raise RuntimeError("PipelineItem cannot fail twice.")
         self.state = State.failed
         self.fail_msg = message
 
@@ -97,9 +97,7 @@ class Job(PipelineItem):
         else:
             self.result = self._run()
 
-        if self.state == State.failed:
-            print(f"Job '{self.name}' failed:\n{self.fail_msg}", file=sys.stderr)
-        else:
+        if self.state != State.failed:
             if not cached:
                 cache.add(self.export(self.result))
             self.state = State.succeeded
@@ -145,6 +143,9 @@ class JobManager(PipelineItem):
     
     def _finished_jobs(self):
         return self._job_states().count(State.succeeded)
+
+    def _failed_jobs(self) -> List[Job]:
+        return list(filter(lambda j: j.state == State.failed, self.jobs))
 
     def update(self) -> str:
         states = self._job_states()
