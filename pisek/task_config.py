@@ -79,9 +79,9 @@ class TaskConfig(BaseEnv):
             self._set("generator", config["tests"]["in_gen"])
             self._set("checker", config["tests"].get("checker"))
             self._set("judge_type", judge_type := config["tests"].get("out_check", "diff"))
-            self._set("judge_name", None)
+            self._set("judge", None)
             if judge_type == "judge":
-                self._set("judge_name", config["tests"]["out_judge"])
+                self._set("judge", config["tests"]["out_judge"])
 
             # Relevant for CMS interactive tasks. The file to be linked with
             # the contestant's solution (primarily for C++)
