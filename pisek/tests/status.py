@@ -1,0 +1,19 @@
+import os
+from termcolor import colored
+
+from pisek.tests.jobs import JobManager
+
+MSG_LEN = 20
+BAR_LEN = 40
+
+def pad(text: str, lenght: int, pad_char : str = " "):
+    return text + (lenght - len(text))*pad_char
+
+class StatusJobManager(JobManager):
+    def _bar(self, msg, part, full):
+        bar_color = "green" if part == full else "cyan"
+        filled = BAR_LEN * part // full
+        return f"{pad(msg, MSG_LEN)}{colored(filled*'━', color=bar_color)}{colored((BAR_LEN-filled)*'━', color='grey')}  ({part}/{full})"
+
+    def _get_status(self) -> str:
+        return self._bar(self.name, self._finished_jobs(), len(self.jobs))

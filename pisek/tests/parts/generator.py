@@ -41,8 +41,6 @@ class OnlineGeneratorManager(TaskJobManager):
 
         return jobs
 
-    def _get_status(self) -> str:
-        return ""
 
 class OnlineGeneratorJob(ProgramJob):
     def __init__(self, name: str, generator : str, input_file: str, subtask: int, seed: int, env: Env) -> None:

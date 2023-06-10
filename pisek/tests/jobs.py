@@ -21,7 +21,7 @@ class PipelineItem(ABC):
 
     def fail(self, message : str) -> None:
         if self.fail_msg != "":
-            raise RuntimeError("Job cannot fail twice.")    
+            raise RuntimeError("Job cannot fail twice.")
         self.state = State.failed
         self.fail_msg = message
 
@@ -33,7 +33,7 @@ class PipelineItem(ABC):
     def check_prerequisites(self) -> None:
         if self.prerequisites > 0:
             raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
-    
+
     def add_prerequisite(self, item) -> None:
         self.prerequisites += 1
         item.required_by.append(self)
@@ -95,7 +95,7 @@ class Job(PipelineItem):
             cached = True
             self.result = cache[self.name].result
         else:
-            self.result = self._run() 
+            self.result = self._run()
 
         if self.state == State.failed:
             print(f"Job '{self.name}' failed:\n{self.fail_msg}", file=sys.stderr)
@@ -115,6 +115,7 @@ class Job(PipelineItem):
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> List[Job]:
+        self.state = State.running
         self._env = env.reserve()
         self.check_prerequisites()
         self.jobs = self._get_jobs()
@@ -139,16 +140,21 @@ class JobManager(PipelineItem):
     def _get_jobs(self, env: Env) -> List[Job]:
         pass
 
+    def _job_states(self):
+        return tuple(map(lambda j: j.state, self.jobs))
+    
+    def _finished_jobs(self):
+        return self._job_states().count(State.succeeded)
+
     def update(self) -> str:
-        new_state = State.succeeded
-        for job in self.jobs:
-            if job.state == State.in_queue or job.state == State.running:
-                new_state = State.in_queue
-                break
-            elif job.state == State.failed:
-                new_state = State.failed
-        self.state = new_state
-        
+        states = self._job_states()
+        if State.in_queue in states or State.in_queue in states:
+            self.state = State.running
+        elif State.failed in states:
+            self.state = State.failed
+        else:
+            self.state = State.succeeded
+
         return self._get_status()
 
     @abstractmethod

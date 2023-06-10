@@ -14,10 +14,11 @@ class SampleManager(TaskJobManager):
         samples = self._get_samples()
         unziped_samples = sum(map(list, samples), start=[])
         if len(samples) <= 0:
-            return self.fail(
+            self.fail(
                 f"In subfolder {self._env.task_config.samples_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",
             )
+            return []
 
         jobs = []
         for fname in unziped_samples:
@@ -30,10 +31,9 @@ class SampleManager(TaskJobManager):
 
     def _get_status(self) -> str:
         if self.state == State.succeeded:
-            return "Samples checked"
+            return "Checking samples ... ok"
         else:
-            current = sum(map(lambda x: x.state == State.succeeded, self.jobs))
-            return f"Checking samples ({current}/{len(self.jobs)})"
+            return f"Checking samples ({self._finished_jobs()}/{len(self.jobs)})"
 
 class SampleJob(TaskJob):
     def __init__(self, name, sample: str, env: Env) -> None:
@@ -43,7 +43,7 @@ class SampleJob(TaskJob):
 class SampleExists(SampleJob):
     def __init__(self, sample: str, env: Env) -> None:
         super().__init__(f"Sample {sample} exists", sample, env)
-    
+
     def _run(self):
         if not self._file_exists(self.sample):
             return self.fail(f"Sample does not exists or is not file: {self.sample}")
@@ -51,7 +51,7 @@ class SampleExists(SampleJob):
 class SampleNotEmpty(SampleJob):
     def __init__(self, sample: str, env: Env) -> None:
         super().__init__(f"Sample {sample} is not empty", sample, env)
-    
+
     def _run(self):
         if not self._file_not_empty(self.sample):
             return self.fail(f"Sample is empty: {self.sample}")

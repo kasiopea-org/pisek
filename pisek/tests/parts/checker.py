@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import List
 
 from pisek.env import Env
@@ -41,7 +40,7 @@ class CheckerManager(TaskJobManager):
         if self.skipped_checker:
             return self.skipped_checker
         else:
-            return ""
+            return super()._get_status()
 
 
 class CheckerJob(ProgramJob):

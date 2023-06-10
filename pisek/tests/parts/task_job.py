@@ -1,27 +1,23 @@
 import os
 import glob
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
 from pisek.tests.jobs import Job, JobManager
+from pisek.tests.status import StatusJobManager
 
-class TaskJobManager(JobManager):
+class TaskJobManager(StatusJobManager):
     """JobManager class that implements useful methods"""
     def _resolve_path(self, *path):
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
-    def _get_samples(self) -> List[Tuple[str, str]]:
+    def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = glob.glob(self._resolve_path("sample*.in"))
-        outs = []
-        for inp in ins:
-            out = os.path.splitext(inp)[0] + ".out"
-            if not os.path.isfile(out):
-                self.fail(f"No matching output {out} for input {inp}.")
-            outs.append(out)
+        outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
         return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
-    
+
     def _all_inputs(self) -> List[str]:
         return list(sorted(set(
             sum([self._subtask_inputs(subtask, self._env) for subtask in self._env.config.subtasks], start=[])
@@ -50,7 +46,7 @@ class TaskJob(Job):
     def _file_exists(self, filename: str):
         self._access_file(filename)
         return os.path.isfile(os.path.join(filename))
-    
+
     def _file_not_empty(self, filename: str):
         self._access_file(filename)
         return os.path.getsize(os.path.join(filename)) > 0
@@ -80,7 +76,7 @@ class TaskJob(Job):
                             return False
         except FileNotFoundError:
             return False
-    
+
     def _resolve_path(self, *path: List[str]):
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
