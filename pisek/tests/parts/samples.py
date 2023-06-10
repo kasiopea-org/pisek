@@ -29,11 +29,6 @@ class SampleManager(TaskJobManager):
 
         return jobs
 
-    def _get_status(self) -> str:
-        if self.state == State.succeeded:
-            return "Checking samples ... ok"
-        else:
-            return f"Checking samples ({self._finished_jobs()}/{len(self.jobs)})"
 
 class SampleJob(TaskJob):
     def __init__(self, name, sample: str, env: Env) -> None:
