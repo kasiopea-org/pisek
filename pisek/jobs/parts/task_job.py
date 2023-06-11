@@ -35,7 +35,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _all_inputs(self) -> List[str]:
         return list(sorted(set(
-            sum([self._subtask_inputs(subtask) for subtask in sorted(self._env.config.subtasks.values())], start=[])
+            sum([self._subtask_inputs(subtask) for _, subtask in sorted(self._env.config.subtasks.items())], start=[])
         )))
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
