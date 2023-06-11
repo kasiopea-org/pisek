@@ -39,7 +39,7 @@ class BaseEnv:
                 self.vars[var]._set_log(val)
     
     @staticmethod
-    def log_off(f : Callable[...,Any]):
+    def log_off(f : Callable[...,Any]) -> Callable[...,Any]:
         """Disables logging for a method."""
         def g(self, *args, **kwargs):
             self._set_log(False)
