@@ -8,9 +8,12 @@ SAVED_LAST_SIGNATURES = 5
 
 class CacheResultEnum:
     def __init__(self, *values):
+        self.values = values
         for value in values:
             setattr(self, value, value)
 
+    def __iter__(self):
+        yield from self.values
 
 class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
