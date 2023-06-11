@@ -2,6 +2,7 @@ import os
 import glob
 from typing import List, Tuple, Optional
 
+import pisek.util as util
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
 from pisek.jobs.jobs import Job, JobManager
@@ -24,6 +25,10 @@ class TaskHelper:
 
     def _data(self, name: str) -> str:
         return self._resolve_path(self._env.config.data_subdir, name)
+
+    def _output(self, input_name: str, solution: str):
+        return self._data(util.get_output_name(input_name, solution))
+
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
