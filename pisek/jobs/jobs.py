@@ -18,6 +18,7 @@ class PipelineItem(ABC):
 
         self.prerequisites = 0
         self.required_by = []
+        self.prerequisites_results = {}
 
     def fail(self, message : str) -> None:
         if self.fail_msg != "":
@@ -34,17 +35,20 @@ class PipelineItem(ABC):
         if self.prerequisites > 0:
             raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
 
-    def add_prerequisite(self, item) -> None:
+    def add_prerequisite(self, item, name: Optional[str] = None) -> None:
         self.prerequisites += 1
-        item.required_by.append(self)
+        item.required_by.append((self, name))
+
 
     def finish(self) -> None:
         if self.state == State.succeeded:
-            for item in self.required_by:
+            for item, name in self.required_by:
                 item.prerequisites -= 1
+                if name is not None:
+                    item.prerequisites_results[name] = self.result
 
         elif self.state == State.failed:
-            for item in self.required_by:
+            for item, _ in self.required_by:
                 item.cancel()
 
 class Job(PipelineItem):
