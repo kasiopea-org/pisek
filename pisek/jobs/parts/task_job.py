@@ -1,7 +1,8 @@
 import os
 import glob
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any, Callable
 
+from pisek.jobs.cache import CacheResultEnum
 import pisek.util as util
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
@@ -9,6 +10,16 @@ from pisek.jobs.jobs import Job, JobManager
 from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
+
+RunResult = CacheResultEnum('ok', 'error', 'timeout')
+Verdict = CacheResultEnum('ok', 'partial', 'wrong_answer', 'error', 'timeout')
+RESULT_MARK = {
+    'ok': '·',
+    'partial': 'P',
+    'error' : '!',
+    'timeout': 'T',
+    'wrong_answer': 'W'
+}
 
 class TaskHelper: 
     def _get_build_dir(self) -> str:
@@ -59,18 +70,29 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
 class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
+    @staticmethod
+    def _file_access(files: int):
+        def dec(f: Callable[...,Any]) -> Callable[...,Any]:
+            def g(self, *args, **kwargs):
+                for i in range(files):
+                    self._access_file(args[i])
+                return f(self, *args, **kwargs)
+            return g
+        return dec
+
+    @_file_access(1)
     def _open_file(self, filename: str, mode='r', **kwargs):
-        self._access_file(filename)
         return open(filename, mode, **kwargs)
 
+    @_file_access(1)
     def _file_exists(self, filename: str):
-        self._access_file(filename)
         return os.path.isfile(os.path.join(filename))
 
+    @_file_access(1)
     def _file_not_empty(self, filename: str):
-        self._access_file(filename)
         return os.path.getsize(os.path.join(filename)) > 0
 
+    @_file_access(2)
     def _files_equal(self, file_a: str, file_b: str) -> bool:
         """
         Checks if the contents of `file_a` and `file_b` are equal,
@@ -78,8 +100,6 @@ class TaskJob(Job, TaskHelper):
 
         If one or both files don't exist, False is returned.
         """
-        self._access_file(file_a)
-        self._access_file(file_b)
         try:
             with open(file_a, "r") as fa:
                 with open(file_b, "r") as fb:
