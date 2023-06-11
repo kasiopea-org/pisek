@@ -74,12 +74,14 @@ class TaskConfig(BaseEnv):
 
         try:
             self._set("task_name", config.get("task", "name"))
-            self._set("solutions", config.get("task", "solutions").split())
+            solutions = config.get("task", "solutions").split()
+            self._set("solutions", solutions)
+            self._set("first_solution", solutions[0])
             self._set("contest_type", contest_type := config["task"].get("contest_type", "kasiopea"))
             self._set("generator", config["tests"]["in_gen"])
             self._set("checker", config["tests"].get("checker"))
             self._set("judge_type", judge_type := config["tests"].get("out_check", "diff"))
-            self._set("judge", None)
+            self._set("judge", "diff")
             if judge_type == "judge":
                 self._set("judge", config["tests"]["out_judge"])
 
