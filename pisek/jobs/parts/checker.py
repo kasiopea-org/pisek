@@ -60,10 +60,13 @@ class CheckerJob(ProgramJob):
         return self._run_program(
             [str(self.subtask)],
             stdin=self.input_name
-        ).returncode == 0
+        )
 
     def _run(self) -> CheckerResult:
-        if self._check():
+        result = self._check()
+        if result is None:
+            return
+        elif result.returncode == 0:
             return CheckerResult.ok
         else:
             return CheckerResult.failed

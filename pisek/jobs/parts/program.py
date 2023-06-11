@@ -54,7 +54,8 @@ class ProgramJob(TaskJob):
         return subprocess.run(args, **kwargs)
 
     def _run_program(self, add_args, **kwargs):
-        self._load_compiled()
+        if not self._load_compiled():
+            return None
         return self._run_raw([self.executable] + add_args, **kwargs)
  
     def _get_executable(self) -> str:

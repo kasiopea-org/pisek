@@ -81,6 +81,8 @@ class RunJudge(ProgramJob):
         solution_res = self.prerequisites_results["run_solution"]
         if solution_res == RunResult.ok:
             judge_result = self._judge()
+            if judge_result is None:
+                return
             if judge_result.returncode == 0:
                 return SolutionResult(Verdict.ok, 1.0)
             elif judge_result.returncode == 1:

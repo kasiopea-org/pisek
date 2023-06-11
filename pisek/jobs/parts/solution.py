@@ -86,10 +86,13 @@ class RunSolution(ProgramJob):
             [],
             stdin=self.input_name,
             stdout=self._output(self.input_name, self.program)
-        ).returncode == 0
+        )
 
     def _run(self) -> str:
-        if self._run_solution():
+        result = self._run_solution()
+        if result is None:
+            return
+        elif result.returncode == 0:
             return RunResult.ok
         else:
             return RunResult.error

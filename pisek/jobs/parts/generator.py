@@ -51,10 +51,9 @@ class OnlineGeneratorJob(ProgramJob):
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> None:
         if not self._load_compiled():
-            return False
+            return None
         if seed < 0:
-            self.fail(f"Seed {seed} is negative.")
-            return False
+            return self.fail(f"Seed {seed} is negative.")
 
         input_dir = os.path.dirname(input_file)
         os.makedirs(input_dir, exist_ok=True)
@@ -67,8 +66,10 @@ class OnlineGeneratorJob(ProgramJob):
             stdout=input_file,
         )
 
-        # TODO: return a CompletedProcess to be consistent with OfflineGenerator
-        return result.returncode == 0
+        if result.returncode != 0:
+            return self.fail(f"{self.program} failed on subtask {subtask}, seed {seed}.") 
+        
+        return result
 
 
 class OnlineGeneratorGenerate(OnlineGeneratorJob):
