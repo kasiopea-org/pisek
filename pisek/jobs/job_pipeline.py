@@ -7,8 +7,8 @@ from pisek.jobs.cache import Cache
 
 class JobPipeline(ABC):
     @abstractmethod
-    def __init__(self):
-        pass
+    def __init__(self, env):
+        env.reserve()
 
     def run_jobs(self, cache: Cache, env: Env):
         self.job_managers = deque()
