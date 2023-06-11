@@ -35,9 +35,9 @@ class BuildDiffJudge(TaskJob):
     def _run(self):
         with self._open_file(self._executable(DIFF_NAME), "w") as f:
             f.write(
-                "#!/bin/bash\n"
-                "if [ $(diff -Bbq $TEST_OUTPUT -) ]; then\n"
-                "   exit 1\n"
-                "fi\n"
+                '#!/bin/bash\n'
+                'if [ "$(diff -Bbq $TEST_OUTPUT -)" ]; then\n'
+                '   exit 1\n'
+                'fi\n'
             )
         
