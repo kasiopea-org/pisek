@@ -15,7 +15,7 @@ class SampleManager(TaskJobManager):
         unziped_samples = sum(map(list, samples), start=[])
         if len(samples) <= 0:
             self.fail(
-                f"In subfolder {self._env.task_config.samples_subdir} of task folder are no samples "
+                f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",
             )
             return []
