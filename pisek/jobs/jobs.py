@@ -156,7 +156,7 @@ class JobManager(PipelineItem):
 
     def update(self) -> str:
         states = self._job_states()
-        if self.state == State.canceled:
+        if self.state in (State.failed, State.canceled):
             pass
         elif State.in_queue in states or State.in_queue in states:
             self.state = State.running
