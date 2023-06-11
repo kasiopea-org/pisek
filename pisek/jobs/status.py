@@ -31,7 +31,7 @@ class StatusJobManager(JobManager):
         elif State.failed in self._job_states():
             color = "red"
         
-        return self._bar(msg, self._finished_jobs(), len(self.jobs), color=color)
+        return self._bar(msg, self._finished_jobs(), max(1, len(self.jobs)), color=color)
     
     def _get_status(self) -> str:
         return self._job_bar(self.name)
