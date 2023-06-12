@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import deque
+import sys
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
@@ -38,7 +39,7 @@ class JobPipeline(ABC):
             elif job_man.state == State.failed:
                 msg = job_man.finish()
                 if msg: print(msg)
-                print(job_man.failures(), end='')
+                print(job_man.failures(), end='', file=sys.stderr)
                 return False
             elif job_man.state == State.canceled:
                 print()
