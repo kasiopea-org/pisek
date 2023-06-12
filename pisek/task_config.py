@@ -85,6 +85,7 @@ class TaskConfig(BaseEnv):
             if judge_type == "judge":
                 self._set("judge", config["tests"]["out_judge"])
 
+            self._set("fail_mode", "all" if contest_type == "kasiopea" else "any")
             # Relevant for CMS interactive tasks. The file to be linked with
             # the contestant's solution (primarily for C++)
             solution_manager = config["tests"].get("solution_manager")
