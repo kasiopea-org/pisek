@@ -56,7 +56,7 @@ class SolutionManager(TaskJobManager):
 
         expected = util.get_expected_score(self.solution, self._env.config)
         if expected is not None and total_points != expected:
-            return self.fail(f"Solution {self.solution} should have gotten {expected} but got {total_points}.")
+            return self.fail(f"Solution {self.solution} should have gotten {expected} but got {total_points} points.")
 
 class SubtaskJobGroup:
     def __init__(self, num) -> None:
