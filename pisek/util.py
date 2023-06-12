@@ -269,7 +269,7 @@ def quote_process_output(
         if proc.stdout:
             cur += "\n" + quote_output(proc.stdout)
         else:
-            cur += " (žádný)"
+            cur += " (none)"
         res.append(cur)
 
     if include_stderr:
@@ -277,7 +277,7 @@ def quote_process_output(
         if proc.stderr:
             cur += "\n" + quote_output(proc.stderr)
         else:
-            cur += " (žádný)"
+            cur += " (none)"
         res.append(cur)
 
     return "\n".join(res)
