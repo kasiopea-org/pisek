@@ -47,6 +47,7 @@ class OnlineGeneratorJob(ProgramJob):
         self.subtask = subtask
         self.seed = seed
         super().__init__(name, generator, env)
+        self.input_name = input_file
         self.input_file = self._data(input_file)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> None:
@@ -69,7 +70,7 @@ class OnlineGeneratorJob(ProgramJob):
             return
         if result.kind != RunResultKind.OK:
             return self.fail(
-                f"{self.program} failed on subtask {subtask}, seed {seed}:\n" +
+                f"{self.program} failed on subtask {subtask}, seed {seed:x}:\n" +
                 result.msg
             )
         
@@ -87,7 +88,7 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(
-            f"Generator is deterministic (subtask {subtask}, seed {seed})",
+            f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
             generator, input_file, subtask, seed, env
         )
 
@@ -97,20 +98,21 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
             return
         if not self._files_equal(self.input_file, copy_file):
             return self.fail(
-                f"Generator is not deterministic. Files {self.input_file} and {copy_file} differ "
+                f"Generator is not deterministic. Files {self.input_name} and {os.path.basename(copy_file)} differ "
                 f"(subtask {self.subtask}, seed {self.seed})",
             )
 
 class OnlineGeneratorRespectsSeed(TaskJob):
     def __init__(self, subtask: int, seed1: int, seed2: int, file1: str, file2: str, env: Env) -> None:
         self.file1, self.file2 = file1, file2
+        self.file1_name, self.file2_name = map(os.path.basename, (file1, file2))
         self.subtask = subtask
         self.seed1, self.seed2 = seed1, seed2
-        super().__init__(f"Generator respects seeds ({file1} and {file2} are different)", env)
+        super().__init__(f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)", env)
 
     def _run(self):
         if self._files_equal(self.file1, self.file2):
             return self.fail(
                 f"Generator doesn't respect seed."
-                f"Files {self.file1} (seed {self.seed1}) and {self.file2} (seed {self.seed2}) are same."
+                f"Files {self.file1_name} (seed {self.seed1:x}) and {self.file2_name} (seed {self.seed2:x}) are same."
             )
