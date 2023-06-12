@@ -230,7 +230,7 @@ def get_name_without_expected_score(solution_name: str) -> str:
     return solution_name
 
 
-def quote_output(s, color="yellow", max_length=1500, max_lines=20):
+def quote_output(s, max_length=1500, max_lines=20):
     """
     Indicates that a string is a quote of another program's output by adding
     indentation and color.
@@ -252,7 +252,7 @@ def quote_output(s, color="yellow", max_length=1500, max_lines=20):
         lines = lines[:max_lines]
         add_ellipsis = True
 
-    s = "\n".join(("  " + termcolor.colored(l, color)) for l in lines)
+    s = "\n".join(("  " + l) for l in lines)
 
     if add_ellipsis:
         s += "\n  [...]"

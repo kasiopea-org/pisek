@@ -4,8 +4,9 @@ from typing import List
 from pisek.env import Env
 from pisek.jobs.cache import CacheResultEnum
 from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import ProgramJob, Compile
+from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
 
 CheckerResult = CacheResultEnum('ok', 'failed')
@@ -54,18 +55,20 @@ class CheckerJob(ProgramJob):
             program=checker,
             env=env
         )
-        self.input_name = self._data(input_name)
+        self.input_name = input_name
+        self.input_file = self._data(input_name)
 
-    def _check(self) -> bool:
+    def _check(self) -> RunResult:
         return self._run_program(
             [str(self.subtask)],
-            stdin=self.input_name
+            stdin=self.input_file
         )
 
-    def _run(self) -> CheckerResult:
+    def _run(self) -> None:
         result = self._check()
         if result is None:
             return
-        return result
+        if result.kind != RunResultKind.OK:
+            return self.fail(f"Checker failed on {self.input_name}:\n{tab(result.msg)}")
 
 # TODO: Checker distinguishes subtasks
