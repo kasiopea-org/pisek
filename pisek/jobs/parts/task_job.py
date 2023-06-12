@@ -82,6 +82,7 @@ class TaskJob(Job, TaskHelper):
 
     @_file_access(1)
     def _open_file(self, filename: str, mode='r', **kwargs):
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         return open(filename, mode, **kwargs)
 
     @_file_access(1)
@@ -92,7 +93,7 @@ class TaskJob(Job, TaskHelper):
     def _file_not_empty(self, filename: str):
         return os.path.getsize(os.path.join(filename)) > 0
     
-    @_file_access(1)
+    @_file_access(2)
     def _copy_file(self, filename: str, dst: str):
         return shutil.copy(filename, dst)
 
