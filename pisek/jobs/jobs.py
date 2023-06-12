@@ -29,7 +29,7 @@ class PipelineItem(ABC):
 
     def cancel(self) -> None:
         self.state = State.canceled
-        for item in self.required_by:
+        for item, _ in self.required_by:
             item.cancel()
 
     def check_prerequisites(self) -> None:
