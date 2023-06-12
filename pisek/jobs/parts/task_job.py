@@ -50,9 +50,17 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
 
     def _all_inputs(self) -> List[str]:
-        return list(sorted(set(
-            sum([self._subtask_inputs(subtask) for _, subtask in sorted(self._env.config.subtasks.items())], start=[])
-        )))
+        all_inputs = sum([
+            self._subtask_inputs(subtask)
+            for _, subtask in sorted(self._env.config.subtasks.items())
+        ], start=[])
+        seen = set()
+        unique_all = []
+        for inp in all_inputs:
+            if inp not in seen:
+                seen.add(inp)
+                unique_all.append(inp)
+        return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
         data_dir = self._env.config.get_data_dir()
