@@ -1,14 +1,52 @@
+from dataclasses import dataclass
+from enum import Enum
 import os
 import re
 from typing import Dict, Optional
 import subprocess
+import yaml
 
+from pisek.task_config import DEFAULT_TIMEOUT
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.parts.task_job import TaskJob
 
 import pisek.util as util
 import pisek.compile as compile
+
+class RunResultKind(Enum):
+    """Represents the way the program execution ended. Specially, a program
+    that finished successfully, but got Wrong Answer, still gets the OK
+    RunResult."""
+
+    OK = 0
+    RUNTIME_ERROR = 1
+    TIMEOUT = 2
+
+@dataclass
+class RunResult(yaml.YAMLObject):
+    kind: RunResultKind
+    returncode: int
+    msg: Optional[str] = None
+
+def completed_process_to_run_result(result: subprocess.CompletedProcess, executable) -> RunResult:
+    if result.returncode == 0:
+        return RunResult(RunResultKind.OK, 0, util.quote_process_output(result))
+    else:
+        error_message = f"Program {os.path.basename(executable)} skončil"
+        if result.returncode < 0:
+            error_message += f" kvůli signálu {-result.returncode}"
+            if result.returncode == -11:
+                error_message += " (segmentation fault, přístup mimo povolenou paměť)"
+        else:
+            error_message += f" s exitcodem {result.returncode}"
+
+        return RunResult(
+            RunResultKind.RUNTIME_ERROR,
+            result.returncode,
+            error_message + "\n" + util.quote_process_output(result),
+        )
+
 
 class ProgramJob(TaskJob):
     def __init__(self, name: str, program: str, env: Env) -> None:
@@ -45,15 +83,21 @@ class ProgramJob(TaskJob):
         self.executable = executable
         return True
 
-    def _run_raw(self, args, **kwargs):
-        self._access_file(args[0])
+    def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, **kwargs) -> RunResult:
+        executable = args[0]
+        self._access_file(executable)
         if 'stdin' in kwargs and isinstance(kwargs['stdin'], str):
             kwargs['stdin'] = self._open_file(kwargs['stdin'], "r")
         if 'stdout' in kwargs and isinstance(kwargs['stdout'], str):
             kwargs['stdout'] = self._open_file(kwargs['stdout'], "w")
-        return subprocess.run(args, **kwargs)
+        
+        try:
+            result = subprocess.run(args, timeout=timeout, **kwargs)
+        except subprocess.TimeoutExpired:
+            return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout po {timeout}s")
+        return completed_process_to_run_result(result, executable)
 
-    def _run_program(self, add_args, **kwargs):
+    def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
         if not self._load_compiled():
             return None
         return self._run_raw([self.executable] + add_args, **kwargs)

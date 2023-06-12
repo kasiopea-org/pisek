@@ -66,9 +66,6 @@ class CheckerJob(ProgramJob):
         result = self._check()
         if result is None:
             return
-        elif result.returncode == 0:
-            return CheckerResult.ok
-        else:
-            return CheckerResult.failed
+        return result
 
 # TODO: Checker distinguishes subtasks

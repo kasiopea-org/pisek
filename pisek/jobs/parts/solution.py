@@ -1,10 +1,10 @@
 import os
-from typing import List, Any
+from typing import List, Any, Optional
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, RunResult, Verdict
-from pisek.jobs.parts.program import ProgramJob, Compile
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
+from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
 from pisek.jobs.parts.judge import RunJudge
 
 class SolutionManager(TaskJobManager):
@@ -44,14 +44,14 @@ class SolutionManager(TaskJobManager):
 
 
 class SubtaskJobGroup:
-    def __init__(self):
+    def __init__(self) -> None:
         self.previous_jobs = []
         self.new_jobs = []
     
     def _job_results(self, jobs: List[Job]) -> List[Any]:
         return list(map(lambda j: j.result, jobs))
     
-    def __str__(self):
+    def __str__(self) -> str:
         s = "("
         previous = self._job_results(self.previous_jobs)
         for result in Verdict:
@@ -72,7 +72,7 @@ class SubtaskJobGroup:
 
 
 class RunSolution(ProgramJob):
-    def __init__(self, solution: str, input_name: str, env: Env):
+    def __init__(self, solution: str, input_name: str, env: Env) -> None:
         super().__init__(
             name=f"Run {solution} on input {input_name}",
             program=solution,
@@ -80,19 +80,15 @@ class RunSolution(ProgramJob):
         )
         self.input_name = self._data(input_name)
 
-    def _run_solution(self) -> RunResult:
-        # TODO: timeout
+    def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(
             [],
             stdin=self.input_name,
             stdout=self._output(self.input_name, self.program)
         )
 
-    def _run(self) -> str:
+    def _run(self) -> Optional[RunResult]:
         result = self._run_solution()
         if result is None:
             return
-        elif result.returncode == 0:
-            return RunResult.ok
-        else:
-            return RunResult.error
+        return result

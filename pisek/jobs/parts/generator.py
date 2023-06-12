@@ -6,7 +6,7 @@ import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import ProgramJob, Compile
+from pisek.jobs.parts.program import RunResultKind, ProgramJob, Compile
 
 from pisek.generator import OnlineGenerator
 
@@ -65,9 +65,13 @@ class OnlineGeneratorJob(ProgramJob):
             [difficulty, hexa_seed],
             stdout=input_file,
         )
-
-        if result.returncode != 0:
-            return self.fail(f"{self.program} failed on subtask {subtask}, seed {seed}.") 
+        if result is None:
+            return
+        if result.kind != RunResultKind.OK:
+            return self.fail(
+                f"{self.program} failed on subtask {subtask}, seed {seed}:\n" +
+                result.msg
+            )
         
         return result
 

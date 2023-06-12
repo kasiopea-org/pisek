@@ -11,7 +11,6 @@ from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
 
-RunResult = CacheResultEnum('ok', 'error', 'timeout')
 Verdict = CacheResultEnum('ok', 'partial', 'wrong_answer', 'error', 'timeout')
 RESULT_MARK = {
     'ok': '·',
