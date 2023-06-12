@@ -175,7 +175,7 @@ class JobManager(PipelineItem):
         Returns whether manager is ready for evaluation.
         (i.e. All of it's jobs have finished)
         """
-        return self._finished_jobs() == len(self.jobs)
+        return self.state == State.running and self._finished_jobs() == len(self.jobs)
 
     def finish(self) -> str:
         if self.state == State.running:

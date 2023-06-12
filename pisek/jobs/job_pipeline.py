@@ -23,11 +23,12 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            self.status_update()
+            if not self.status_update():
+                break
 
-        cache.export()  # Remove duplicate entries
+        cache.export()  # Remove duplicate cache entries
 
-    def status_update(self) -> None:
+    def status_update(self) -> bool:
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
             print(job_man.update(), end='\r')
@@ -38,8 +39,10 @@ class JobPipeline(ABC):
                 msg = job_man.finish()
                 if msg: print(msg)
                 print(job_man.failures(), end='')
+                return False
             elif job_man.state == State.canceled:
                 print()
             else:
                 self.job_managers.appendleft(job_man)
                 break
+        return True
