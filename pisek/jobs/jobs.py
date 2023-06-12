@@ -14,6 +14,7 @@ class PipelineItem(ABC):
     def __init__(self, name : str) -> None:
         self.name = name
         self.state = State.in_queue
+        self.result = None
         self.fail_msg = ""
 
         self.prerequisites = 0
@@ -55,7 +56,6 @@ class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
     def __init__(self, name : str, env: Env) -> None:
         self._env = env.reserve()
-        self.result = None
         self._accessed_files = set([])
         super().__init__(name)
 
@@ -158,13 +158,11 @@ class JobManager(PipelineItem):
         states = self._job_states()
         if self.state in (State.failed, State.canceled):
             pass
-        elif State.in_queue in states or State.in_queue in states:
-            self.state = State.running
         elif State.failed in states:
             self.state = State.failed
         else:
-            self.state = State.succeeded
-
+            self.state = State.running
+ 
         return self._get_status()
 
     @abstractmethod
@@ -172,6 +170,21 @@ class JobManager(PipelineItem):
         """Return status of job manager to be displayed on stdout."""
         return ""
 
+    def ready(self) -> bool:
+        """
+        Returns whether manager is ready for evaluation.
+        (i.e. All of it's jobs have finished)
+        """
+        return self._finished_jobs() == len(self.jobs)
+
     def finish(self) -> str:
+        if self.state == State.running:
+            self.result = self._evaluate()
+            if self.state == State.running:
+                self.state = State.succeeded
         super().finish()
         return self._get_status()
+
+    def _evaluate(self) -> Any:
+        """Decide whether jobs did run as expected and return result."""
+        pass

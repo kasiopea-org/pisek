@@ -31,7 +31,7 @@ class JobPipeline(ABC):
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
             print(job_man.update(), end='\r')
-            if job_man.state == State.succeeded:
+            if job_man.ready():
                 msg = job_man.finish()
                 if msg: print(msg)
             elif job_man.state == State.failed:
