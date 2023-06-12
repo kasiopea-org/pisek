@@ -97,10 +97,11 @@ class ProgramJob(TaskJob):
     def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, **kwargs) -> RunResult:
         executable = args[0]
         self._access_file(executable)
-        if 'stdin' in kwargs and isinstance(kwargs['stdin'], str):
-            kwargs['stdin'] = self._open_file(kwargs['stdin'], "r")
-        if 'stdout' in kwargs and isinstance(kwargs['stdout'], str):
-            kwargs['stdout'] = self._open_file(kwargs['stdout'], "w")
+        for std, mode in [('stdin', 'r'), ('stdout', 'w'), ('stderr', 'w')]:
+            if std in kwargs and isinstance(kwargs[std], str):
+                kwargs[std] = self._open_file(kwargs[std], mode)
+            else:
+                kwargs[std] = subprocess.PIPE
         
         try:
             result = subprocess.run(args, timeout=timeout, **kwargs)
