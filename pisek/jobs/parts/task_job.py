@@ -1,4 +1,5 @@
 import os
+import shutil
 import glob
 from typing import List, Tuple, Optional, Any, Callable
 
@@ -90,6 +91,10 @@ class TaskJob(Job, TaskHelper):
     @_file_access(1)
     def _file_not_empty(self, filename: str):
         return os.path.getsize(os.path.join(filename)) > 0
+    
+    @_file_access(1)
+    def _copy_file(self, filename: str, dst: str):
+        return shutil.copy(filename, dst)
 
     @_file_access(2)
     def _files_equal(self, file_a: str, file_b: str) -> bool:

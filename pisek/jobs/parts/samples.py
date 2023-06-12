@@ -22,10 +22,13 @@ class SampleManager(TaskJobManager):
 
         jobs = []
         for fname in unziped_samples:
-            existence = SampleExists(fname, self._env.fork())
-            non_empty = SampleNotEmpty(fname, self._env.fork())
+            jobs += [
+                existence := SampleExists(fname, self._env.fork()),
+                non_empty := SampleNotEmpty(fname, self._env.fork()),
+                copy := CopySample(fname, self._env.fork())
+            ]
             non_empty.add_prerequisite(existence)
-            jobs += [existence, non_empty]
+            copy.add_prerequisite(existence)
 
         return jobs
 
@@ -50,3 +53,12 @@ class SampleNotEmpty(SampleJob):
     def _run(self):
         if not self._file_not_empty(self.sample):
             return self.fail(f"Sample is empty: {self.sample}")
+
+class CopySample(SampleJob):
+    """Copies samples into data so we can treat them as inputs."""
+    def __init__(self, sample: str, env: Env) -> None:
+        data_subdir = env.config.data_subdir.rstrip("/") + "/"
+        super().__init__(f"Copy {sample} to {data_subdir}", sample, env)
+    
+    def _run(self):
+        self._copy_file(self.sample, self._data(os.path.basename(self.sample)))
