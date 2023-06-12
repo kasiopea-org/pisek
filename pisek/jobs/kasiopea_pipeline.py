@@ -25,6 +25,7 @@ class KasiopeaPipeline(JobPipeline):
             first_solution := SolutionManager(env.config.first_solution)
         ]
         checker.add_prerequisite(generator)
+        first_solution.add_prerequisite(generator)
         first_solution.add_prerequisite(judge)
 
         for solution in env.config.solutions:
