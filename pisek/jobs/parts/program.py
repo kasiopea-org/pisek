@@ -24,10 +24,21 @@ class RunResultKind(Enum):
     TIMEOUT = 2
 
 @dataclass
-class RunResult(yaml.YAMLObject):
+class RunResult():
     kind: RunResultKind
     returncode: int
     msg: Optional[str] = None
+
+def run_result_representer(dumper, run_result):
+    return dumper.represent_sequence(u'!RunResult', [run_result.kind.name, run_result.returncode, run_result.msg])
+
+def run_result_constructor(loader, value):
+    kind, returncode, msg = loader.construct_sequence(value)
+    return RunResult(RunResultKind[kind], returncode, msg)
+
+yaml.add_representer(RunResult, run_result_representer)
+yaml.add_constructor(u'!RunResult', run_result_constructor)
+
 
 def completed_process_to_run_result(result: subprocess.CompletedProcess, executable) -> RunResult:
     if result.returncode == 0:
