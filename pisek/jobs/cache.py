@@ -30,7 +30,7 @@ class CacheEntry(yaml.YAMLObject):
                f"result={self.result}, envs={self.envs}, files={self.files})"
 
     def yaml_export(self) -> str:
-        return yaml.dump([self])
+        return yaml.dump([self], allow_unicode=True)
 
 class Cache:
     """Object representing all cached jobs."""
@@ -40,7 +40,7 @@ class Cache:
 
     def add(self, cache_entry: CacheEntry):
         self.cache[cache_entry.name] = cache_entry
-        with open(self.cache_path, 'a') as f:
+        with open(self.cache_path, 'a', encoding='utf-8') as f:
             f.write(cache_entry.yaml_export())
 
     def __contains__(self, name: str) -> bool:
@@ -54,7 +54,7 @@ class Cache:
             return {}
 
         cache = {}
-        with open(self.cache_path) as f:
+        with open(self.cache_path, encoding='utf-8') as f:
             entries = yaml.full_load(f)
             if entries is None:
                 return {}
@@ -64,6 +64,6 @@ class Cache:
         return cache
 
     def export(self) -> None:
-        with open(self.cache_path, 'w') as f:
+        with open(self.cache_path, 'w', encoding='utf-8') as f:
             for cache_entry in self.cache.values():
                 f.write(cache_entry.yaml_export())
