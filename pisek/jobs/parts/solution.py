@@ -8,9 +8,12 @@ from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verd
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
 from pisek.jobs.parts.judge import SolutionResult, RunJudge
 
+# TODO: Samples
+
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
         self.solution = solution
+        self.subtasks = []
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> List[Job]:
@@ -28,7 +31,6 @@ class SolutionManager(TaskJobManager):
             testcases[inp] = run_judge
 
         used_inp = set()
-        self.subtasks = []
         for sub_num, sub in sorted(self._env.config.subtasks.items()):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
