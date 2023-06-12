@@ -158,6 +158,8 @@ class JobManager(PipelineItem):
         states = self._job_states()
         if self.state in (State.failed, State.canceled):
             pass
+        elif State.in_queue in states or State.running in states:
+            self.state = State.running
         elif State.failed in states:
             self.state = State.failed
         else:
