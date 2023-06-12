@@ -126,7 +126,8 @@ class ProgramJob(TaskJob):
         """
         extensions = compile.supported_extensions()
         candidates = []
-        for name in [name, self._name_without_expected_score(name)]:
+        candidate_names = [name, self._name_without_expected_score(name)]
+        for name in candidate_names: 
             for ext in extensions:
                 if os.path.isfile(name + ext):
                     candidates.append(name + ext)
@@ -138,7 +139,7 @@ class ProgramJob(TaskJob):
         
         if len(candidates) == 0:
             return self.fail(
-                f"No file with given name exists: {name}"
+                f"No file with given name exists: {' or '.join(map(os.path.basename, candidate_names))}"
             )
         if len(candidates) > 1:
             return self.fail(
