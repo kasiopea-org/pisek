@@ -43,7 +43,10 @@ class SolutionManager(TaskJobManager):
         return jobs
 
     def _get_status(self) -> str:
-        return f"Testing {self.solution} " + "|".join(map(str, self.subtasks))
+        msg = f"Testing {self.solution} "
+        if self.state == State.canceled:
+            return self._job_bar(msg)
+        return  msg + "|".join(map(str, self.subtasks))
 
     def _evaluate(self) -> Any:
         total_points = 0
