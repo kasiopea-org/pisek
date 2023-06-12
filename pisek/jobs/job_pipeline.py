@@ -33,14 +33,13 @@ class JobPipeline(ABC):
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
             print(job_man.update(), end='\r')
-            if job_man.ready():
+            if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finish()
-                if msg: print(msg)
-            elif job_man.state == State.failed:
-                msg = job_man.finish()
-                if msg: print(msg)
-                print(job_man.failures(), end='', file=sys.stderr)
-                return False
+                if msg:
+                    print(msg)
+                if job_man.state == State.failed:
+                    print(job_man.failures(), end='', file=sys.stderr)
+                    return False
             elif job_man.state == State.canceled:
                 print()
             else:
