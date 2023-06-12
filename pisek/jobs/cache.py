@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Dict, Any
+from typing import Any
 import os
 import yaml
 
@@ -18,16 +18,18 @@ class CacheResultEnum:
 class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
     yaml_tag = u'!Entry'
-    def __init__(self, name: str, signature: str, result: str, envs: List[str], files: List[str]) -> None:
+    def __init__(self, name: str, signature: str, result: str, envs: list[str], files: list[str], results: list[Any]) -> None:
         self.name = name
         self.signature = signature
         self.result = result
         self.envs = envs
         self.files = files
+        self.prerequisites_results = results
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name}, signature={self.signature}" \
-               f"result={self.result}, envs={self.envs}, files={self.files})"
+        return f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, " \
+               f"result={self.result}, envs={self.envs}, files={self.files}, " \
+               f"prerequisites_results={self.prerequisites_results})"
 
     def yaml_export(self) -> str:
         return yaml.dump([self], allow_unicode=True)
@@ -49,7 +51,7 @@ class Cache:
     def __getitem__(self, name: str) -> CacheEntry:
         return self.cache[name]
 
-    def _load(self) -> Dict[str, CacheEntry]:
+    def _load(self) -> dict[str, CacheEntry]:
         if not os.path.exists(self.cache_path):
             return {}
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
-from typing import List, Optional, AbstractSet, Callable, Any
+from typing import Optional, AbstractSet, Callable, Any
 import sys
 
 import os.path
@@ -63,7 +63,7 @@ class Job(PipelineItem):
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
-    def _signature(self, envs: List[str], files: AbstractSet[str]) -> Optional[str]:
+    def _signature(self, envs: list[str], files: AbstractSet[str], results: dict[Any]) -> Optional[str]:
         sign = hashlib.sha256()
         for variable in sorted(envs):
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
@@ -73,20 +73,29 @@ class Job(PipelineItem):
             with open(file, 'rb') as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+        for name, result in sorted(results.items()):
+            sign.update(f"{name}={result}".encode())
         return sign.hexdigest()
 
     def same_signature(self, cache_entry: CacheEntry) -> bool:
-        sign = self._signature(cache_entry.envs, cache_entry.files)
+        sign = self._signature(cache_entry.envs, cache_entry.files, self.prerequisites_results)
         return cache_entry.signature == sign
 
     def export(self, result: str) -> CacheEntry:
-        sign = self._signature(self._env.get_accessed(), self._accessed_files)
+        sign = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
         if sign is None:
             raise RuntimeError(
                 f"Cannot compute signature of job {self.name}. "
                 f"Check if something else is changing files in task directory."
             )
-        return CacheEntry(self.name, sign, result, self._env.get_accessed(), list(self._accessed_files))
+        return CacheEntry(
+            self.name,
+            sign,
+            result,
+            self._env.get_accessed(),
+            list(self._accessed_files),
+            list(self.prerequisites_results)
+        )
 
     def run_job(self, cache: Cache) -> str:
         if self.state == State.canceled:
@@ -116,7 +125,7 @@ class Job(PipelineItem):
 
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
-    def create_jobs(self, env: Env) -> List[Job]:
+    def create_jobs(self, env: Env) -> list[Job]:
         if self.state == State.canceled:
             self.jobs = []
         else:
@@ -133,7 +142,7 @@ class JobManager(PipelineItem):
     def expect_any(self, jobs, state : State, result : Any):
         self.expect(any, jobs, state, result)
 
-    def expect(self, what : Callable[[List[bool]], bool], jobs : List[Job], state : State, result : Any) -> Callable[[], bool]:
+    def expect(self, what : Callable[[list[bool]], bool], jobs : list[Job], state : State, result : Any) -> Callable[[], bool]:
         def f():
             return what(map(
                 lambda j: j.state == state and (result is None or j.result == result),
@@ -142,7 +151,7 @@ class JobManager(PipelineItem):
         self.expectations.append(f)
 
     @abstractmethod
-    def _get_jobs(self, env: Env) -> List[Job]:
+    def _get_jobs(self, env: Env) -> list[Job]:
         pass
 
     def _job_states(self):
@@ -151,7 +160,7 @@ class JobManager(PipelineItem):
     def _finished_jobs(self):
         return self._job_states().count(State.succeeded)
 
-    def _failed_jobs(self) -> List[Job]:
+    def _failed_jobs(self) -> list[Job]:
         return list(filter(lambda j: j.state == State.failed, self.jobs))
 
     def update(self) -> str:
