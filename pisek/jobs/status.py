@@ -3,11 +3,11 @@ from termcolor import colored
 
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
-MSG_LEN = 20
+MSG_LEN = 25
 BAR_LEN = 40
-TOTAL_LEN = 80
 
-LINE_SEPARATOR = '⎯'*TOTAL_LEN + '\n'
+terminal_width, terminal_height = os.get_terminal_size()
+line_sepatator = '⎯'*terminal_width + '\n'
 
 def pad(text: str, lenght: int, pad_char: str = " "):
     return text + (lenght - len(text))*pad_char
@@ -48,5 +48,5 @@ class StatusJobManager(JobManager):
         if self.fail_msg != "":
             fails.append(self._fail_message(self))
 
-        msg = LINE_SEPARATOR + LINE_SEPARATOR.join(fails) + LINE_SEPARATOR
+        msg = line_sepatator + line_sepatator.join(fails) + line_sepatator
         return colored(msg, color="red")
