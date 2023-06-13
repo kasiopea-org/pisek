@@ -7,7 +7,7 @@ from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
-from pisek.jobs.parts.judge import SolutionResult, RunKasiopeaJudge
+from pisek.jobs.parts.judge import SolutionResult, RunKasiopeaJudge, RunCMSJudge
 
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
@@ -31,15 +31,20 @@ class SolutionManager(TaskJobManager):
 
                     env = self._env.fork()
                     if env.config.contest_type == "cms":
-                        raise NotImplementedError()
+                        jobs.append(
+                            run_judge := RunCMSJudge(
+                                inp,
+                                os.path.basename(self._output(inp, solution)),
+                                env
+                        ))
                     else:
                         jobs.append(
                             run_judge := RunKasiopeaJudge(
-                            inp,
-                            os.path.basename(self._output(inp, solution)),
-                            sub_num,
-                            self._get_seed(inp),
-                            env
+                                inp,
+                                os.path.basename(self._output(inp, solution)),
+                                sub_num,
+                                self._get_seed(inp),
+                                env
                         ))
                     run_judge.add_prerequisite(run_solution, name="run_solution")
                     testcases[inp] = run_judge
