@@ -44,13 +44,13 @@ def completed_process_to_run_result(result: subprocess.CompletedProcess, executa
     if result.returncode == 0:
         return RunResult(RunResultKind.OK, 0, util.quote_process_output(result))
     else:
-        error_message = f"Program {os.path.basename(executable)} skončil"
+        error_message = f"Program {os.path.basename(executable)} ended"
         if result.returncode < 0:
-            error_message += f" kvůli signálu {-result.returncode}"
+            error_message += f" because of signal {-result.returncode}"
             if result.returncode == -11:
-                error_message += " (segmentation fault, přístup mimo povolenou paměť)"
+                error_message += " (segmentation fault, access outside of own memory)"
         else:
-            error_message += f" s exitcodem {result.returncode}"
+            error_message += f" with exitcode {result.returncode}"
 
         return RunResult(
             RunResultKind.RUNTIME_ERROR,
