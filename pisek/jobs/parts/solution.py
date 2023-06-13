@@ -4,6 +4,7 @@ from typing import List, Any, Optional
 import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.status import pad, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
 from pisek.jobs.parts.judge import SolutionResult, RunJudge
@@ -46,7 +47,7 @@ class SolutionManager(TaskJobManager):
         msg = f"Testing {self.solution} "
         if self.state == State.canceled:
             return self._job_bar(msg)
-        return  msg + "|".join(map(str, self.subtasks))
+        return  pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
 
     def _evaluate(self) -> Any:
         total_points = 0
