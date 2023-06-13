@@ -45,7 +45,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
     def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = glob.glob(self._resolve_path("sample*.in"))
+        ins = self._globs_to_files(self._env.config.subtasks[0].in_globs, dir=self._env.config.samples_subdir)
         outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
         return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
 
@@ -63,18 +63,23 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
-        data_dir = self._env.config.get_data_dir()
         # XXX: As we iterate through all inputs we don't want to log this.
         globs = subtask.get_without_log('in_globs')
+        return self._globs_to_files(globs)
 
-        input_filenames: List[str] = []
+    def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
+        if dir is None:
+            dir = self._env.config.data_subdir
+        dir = self._resolve_path(dir)
+
+        input_filenames: list[str] = []
         for g in globs:
             input_filenames += [
-                os.path.basename(f) for f in glob.glob(os.path.join(data_dir, g))
+                os.path.basename(f) for f in glob.glob(os.path.join(dir, g))
             ]
         input_filenames.sort()
-
         return input_filenames
+
 
 class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""

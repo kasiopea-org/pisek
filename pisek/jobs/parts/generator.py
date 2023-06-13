@@ -22,6 +22,8 @@ class OnlineGeneratorManager(TaskJobManager):
         random.seed(4)  # Reproducibility!
         seeds = random.sample(range(0, 16**4), self._env.inputs)
         for subtask in self._env.config.subtasks:
+            if subtask == 0:
+                continue  # skip samples
             last_gen = None
             for i, seed in enumerate(seeds):
                 data_dir = self._env.config.get_data_dir()

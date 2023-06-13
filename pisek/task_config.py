@@ -129,8 +129,13 @@ class TaskConfig(BaseEnv):
                 subtasks[subtask_number] = SubtaskConfig(
                     subtask_number, config[section_name]
                 )
+
+            if 0 not in subtasks:  # Add samples
+                subtasks[0] = SubtaskConfig(0, configparser.SectionProxy(config, "test00"))
+
             self._set("subtasks", subtasks)
             self._set("subtask_section_names", subtask_section_names)
+
         except Exception as e:
             raise RuntimeError("Chyba při načítání configu") from e
 
@@ -202,9 +207,14 @@ class SubtaskConfig(BaseEnv):
         self, subtask_number: int, config_section: configparser.SectionProxy
     ) -> None:
         super().__init__()
-        self._set("name", config_section.get("name", None))
-        self._set("score", int(config_section["points"]))
-        self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
+        if subtask_number == 0:  # samples
+            self._set("name", config_section.get("name", "Samples"))
+            self._set("score", int(config_section.get("points", 0)))
+            self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
+        else:
+            self._set("name", config_section.get("name", None))
+            self._set("score", int(config_section["points"]))
+            self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
 
     def _all_previous_glob(self, subtask_number):
         return " ".join([f"{util.pad_num(i)}*.in" for i in range(1, subtask_number+1)])

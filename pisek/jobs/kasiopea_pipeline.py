@@ -24,7 +24,9 @@ class KasiopeaPipeline(JobPipeline):
             judge := JudgeManager(),
             first_solution := SolutionManager(env.config.first_solution)
         ]
+        checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)
+        
         first_solution.add_prerequisite(generator)
         first_solution.add_prerequisite(judge)
 
@@ -36,7 +38,7 @@ class KasiopeaPipeline(JobPipeline):
         
 
 path = "./fixtures/soucet_kasiopea"
-os.remove(path + "/.pisek_cache")
+# os.remove(path + "/.pisek_cache")
 env = Env(
     task_dir=path,
     inputs=5,
