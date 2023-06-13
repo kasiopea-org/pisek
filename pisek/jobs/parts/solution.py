@@ -117,7 +117,7 @@ class SubtaskJobGroup:
         elif len(new_points) == 0:
             return (min(prev_points), "")
 
-        if fail_mode == "all":
+        if fail_mode == "all" and self.num > 0:  # Don't check this on samples 
             if max(new_points) != min(new_points):
                 return (None, "Only some inputs were not correct.")
             if len(prev_points) > 0 and min(new_points) > min(prev_points):
