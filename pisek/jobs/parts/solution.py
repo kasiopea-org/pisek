@@ -9,8 +9,6 @@ from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verd
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
 from pisek.jobs.parts.judge import SolutionResult, RunJudge
 
-# TODO: Samples
-
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
         self.solution = solution
