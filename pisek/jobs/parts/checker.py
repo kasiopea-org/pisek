@@ -69,6 +69,6 @@ class CheckerJob(ProgramJob):
         if result is None:
             return
         if result.kind != RunResultKind.OK:
-            return self.fail(f"Checker failed on {self.input_name}:\n{tab(result.msg)}")
+            return self._program_fail(f"Checker failed on {self.input_name}:", result)
 
 # TODO: Checker distinguishes subtasks

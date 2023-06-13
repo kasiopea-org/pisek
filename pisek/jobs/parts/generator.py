@@ -76,10 +76,7 @@ class OnlineGeneratorJob(ProgramJob):
         if result is None:
             return
         if result.kind != RunResultKind.OK:
-            return self.fail(
-                f"{self.program} failed on subtask {subtask}, seed {seed:x}:\n" +
-                result.msg
-            )
+            return self._program_fail(f"{self.program} failed on subtask {subtask}, seed {seed:x}:", result)
         
         return result
 
@@ -139,7 +136,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         if result is None:
             return
         if result.kind != RunResultKind.OK:
-            return self.fail(f"Generator failed:\n" + tab(result.msg))
+            return self._program_fail(f"Generator failed:", result)
 
         for sub_num, subtask in self._env.config.subtasks.items():
             if sub_num == 0:

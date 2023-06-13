@@ -100,6 +100,23 @@ class RunKasiopeaJudge(RunJudge):
         elif result.returncode == 1:
             return SolutionResult(Verdict.wrong_answer, 0.0)
         else:
-            return self.fail(
-                f"Judge {self.program} failed on output {self.output_name}:\n" + tab(result.msg)
-            )
+            return self._program_fail(f"Judge {self.program} failed on output {self.output_name}:", result)
+
+
+class RunCMSJudge(RunJudge):
+    def __init__(self, input_name: str, output_name: str, env: Env):
+        super().__init__(input_name, output_name, env)
+
+    def _judge(self) -> Optional[RunResult]:
+        self._access_file(self.input_name)
+        self._access_file(self.correct_output_name)
+        result = self._run_program(
+            [self.input_name, self.correct_output_name, self.output_name]
+        )
+        if result is None:
+            return
+        if result.returncode == 0:
+            points, msg = result.msg.split('\n')
+            return SolutionResult(Verdict.ok, 1.0)
+        else:
+            return self.fail(f"Judge {self.program} failed on output {self.output_name}:", result)

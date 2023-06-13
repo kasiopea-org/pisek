@@ -9,6 +9,7 @@ import yaml
 from pisek.task_config import DEFAULT_TIMEOUT
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob
 
 import pisek.util as util
@@ -27,36 +28,29 @@ class RunResultKind(Enum):
 class RunResult():
     kind: RunResultKind
     returncode: int
-    msg: Optional[str] = None
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
 
-def run_result_representer(dumper, run_result):
-    return dumper.represent_sequence(u'!RunResult', [run_result.kind.name, run_result.returncode, run_result.msg])
+def run_result_representer(dumper, run_result: RunResult):
+    return dumper.represent_sequence(
+        u'!RunResult', [run_result.kind.name, run_result.returncode, run_result.stdout, run_result.stderr]
+    )
 
 def run_result_constructor(loader, value):
-    kind, returncode, msg = loader.construct_sequence(value)
-    return RunResult(RunResultKind[kind], returncode, msg)
+    kind, returncode, stdout, stderr = loader.construct_sequence(value)
+    return RunResult(RunResultKind[kind], returncode, stdout, stderr)
 
 yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor(u'!RunResult', run_result_constructor)
 
 
-def completed_process_to_run_result(result: subprocess.CompletedProcess, executable) -> RunResult:
+def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunResult:
+    stdout = result.stdout.decode("utf-8") if result.stdout is not None else result.stdout
+    stderr = result.stderr.decode("utf-8") if result.stderr is not None else result.stderr
     if result.returncode == 0:
-        return RunResult(RunResultKind.OK, 0, util.quote_process_output(result))
+        return RunResult(RunResultKind.OK, 0, stdout, stderr)
     else:
-        error_message = f"Program {os.path.basename(executable)} ended"
-        if result.returncode < 0:
-            error_message += f" because of signal {-result.returncode}"
-            if result.returncode == -11:
-                error_message += " (segmentation fault, access outside of own memory)"
-        else:
-            error_message += f" with exitcode {result.returncode}"
-
-        return RunResult(
-            RunResultKind.RUNTIME_ERROR,
-            result.returncode,
-            error_message + "\n" + util.quote_process_output(result),
-        )
+        return RunResult(RunResultKind.RUNTIME_ERROR, result.returncode, stdout, stderr)
 
 
 class ProgramJob(TaskJob):
@@ -107,7 +101,7 @@ class ProgramJob(TaskJob):
             result = subprocess.run(args, timeout=timeout, **kwargs)
         except subprocess.TimeoutExpired:
             return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout po {timeout}s")
-        return completed_process_to_run_result(result, executable)
+        return completed_process_to_run_result(result)
 
     def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
         if not self._load_compiled():
@@ -154,6 +148,17 @@ class ProgramJob(TaskJob):
             return match[1]
         return name
 
+    def _program_fail(self, msg: str, res: RunResult):
+        program_msg = ""
+        for std in ('stdout', 'stderr'):
+            program_msg += f"{std}:"
+            text = getattr(res, std)
+            if text:
+                program_msg += "\n" + util.quote_output(text)
+            else:
+                program_msg += " (none)"
+            program_msg += "\n"
+        self.fail(f"{msg}\n{program_msg}")
 
 class Compile(ProgramJob):
     def __init__(self, program: str, env: Env) -> None:
