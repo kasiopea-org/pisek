@@ -50,11 +50,11 @@ class SolutionManager(TaskJobManager):
 
     def _evaluate(self) -> Any:
         total_points = 0
-        for sub_jobs in self.subtasks:
-            subtask = self._env.config.subtasks[sub_jobs.num]
-            points, err = sub_jobs.result(self._env.config.fail_mode)
+        for sub_job in self.subtasks:
+            subtask = self._env.config.subtasks[sub_job.num]
+            points, err = sub_job.result(self._env.config.fail_mode)
             if points is None:
-                return self.fail(f"Scoring on subtask {subtask.num} failed:\n  " + err)
+                return self.fail(f"Scoring on subtask {sub_job.num} failed:\n  " + err)
             total_points += subtask.score * points
 
         expected = util.get_expected_score(self.solution, self._env.config)
@@ -95,10 +95,16 @@ class SubtaskJobGroup:
     def result(self, fail_mode) -> tuple[Optional[int], str]:
         prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
         new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
+        
+        if len(new_points) == 0 and len(prev_points) == 0:
+            return (1.0, "")
+        elif len(new_points) == 0:
+            return (min(prev_points), "")
+
         if fail_mode == "all":
             if max(new_points) != min(new_points):
                 return (None, "Only some inputs were not correct.")
-            if len(prev_points) > 0 and min(prev_points) > max(prev_points):
+            if len(prev_points) > 0 and min(new_points) > min(prev_points):
                 return (None, "Previous subtask failed but this did not.")
 
         return (min(prev_points + new_points), "")
