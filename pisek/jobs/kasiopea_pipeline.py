@@ -38,12 +38,13 @@ class KasiopeaPipeline(JobPipeline):
         
 
 path = "./fixtures/soucet_kasiopea"
-# os.remove(path + "/.pisek_cache")
+os.remove(path + "/.pisek_cache")
 env = Env(
     task_dir=path,
     inputs=5,
     strict=False,
     no_checker=False,
+    full=True,
     config=TaskConfig(path)
 )
 p = KasiopeaPipeline(env.fork())

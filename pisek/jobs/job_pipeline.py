@@ -24,7 +24,7 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            if not self.status_update():
+            if not self.status_update() and not env.full:  # we really need to call status_update to update messages
                 break
 
         cache.export()  # Remove duplicate cache entries
