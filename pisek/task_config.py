@@ -88,9 +88,7 @@ class TaskConfig(BaseEnv):
             self._set("fail_mode", "all" if contest_type == "kasiopea" else "any")
             # Relevant for CMS interactive tasks. The file to be linked with
             # the contestant's solution (primarily for C++)
-            solution_manager = config["tests"].get("solution_manager")
-            if solution_manager:
-                self._set("solution_manager", os.path.join(self.task_dir, solution_manager))
+            self._set("solution_manager", config["tests"].get("solution_manager"))
 
             if contest_type == "cms":
                 # Warning: these timeouts are currently ignored in Kasiopea!

@@ -161,7 +161,8 @@ class ProgramJob(TaskJob):
         self.fail(f"{msg}\n{program_msg}")
 
 class Compile(ProgramJob):
-    def __init__(self, program: str, env: Env) -> None:
+    def __init__(self, program: str, env: Env, compile_args: Dict = {}) -> None:
+        self._compile_args = compile_args
         super().__init__(
             name=f"Compile {os.path.basename(program)}",
             program=program,
@@ -169,4 +170,4 @@ class Compile(ProgramJob):
         )
 
     def _run(self):
-        self._compile()
+        return self._compile(self._compile_args)

@@ -18,7 +18,12 @@ class SolutionManager(TaskJobManager):
     def _get_jobs(self) -> List[Job]:
         solution = self._solution(self.solution)
 
-        jobs = [compile := Compile(solution, self._env.fork())]
+        jobs = []
+        
+        compile_args = {}
+        if self._env.config.solution_manager:
+            compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
+        jobs.append(compile := Compile(solution, self._env.fork(), compile_args))
 
         testcases = {}
         used_inp = set()
