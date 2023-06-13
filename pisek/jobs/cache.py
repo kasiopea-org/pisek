@@ -22,9 +22,9 @@ class CacheEntry(yaml.YAMLObject):
         self.name = name
         self.signature = signature
         self.result = result
-        self.envs = envs
-        self.files = files
-        self.prerequisites_results = results
+        self.envs = list(sorted(envs))
+        self.files = list(sorted(files))
+        self.prerequisites_results = sorted(list(results))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, " \
