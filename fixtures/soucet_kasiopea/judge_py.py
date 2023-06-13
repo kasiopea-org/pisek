@@ -9,7 +9,7 @@ def main():
     assert len(sys.argv) == 3, "Expected two arguments: $difficulty $seed"
 
     diff = int(sys.argv[1])
-    assert diff in [1, 2]
+    assert diff in [0, 1, 2]
 
     # Check that the seed is a hex string
     _seed = int(sys.argv[2], 16)
@@ -30,7 +30,7 @@ def main():
 
                 # Normally we would not need to do this in the judge, but here we want
                 # to verify that the command line arguments are passed as expected.
-                if diff == 1:
+                if diff <= 1:
                     assert abs(a) <= 1e9, "Input out of bounds for the easy version"
                     assert abs(b) <= 1e9, "Input out of bounds for the easy version"
 
