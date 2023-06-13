@@ -68,11 +68,26 @@ class RunJudge(ProgramJob):
         self.output_name = self._data(output_name)
         self.correct_output_name = self._output(input_name, env.config.first_solution)
 
+    def _run(self) -> Optional[SolutionResult]:
+        solution_res = self.prerequisites_results["run_solution"]
+        if solution_res.kind == RunResultKind.OK:
+            return self._judge()
+        elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
+            return SolutionResult(Verdict.error, 0.0)
+        elif solution_res.kind == RunResultKind.TIMEOUT:
+            return SolutionResult(Verdict.timeout, 0.0)
+
+class RunKasiopeaJudge(RunJudge):
+    def __init__(self, input_name: str, output_name: str, subtask: int, seed: str, env: Env):
+        self.subtask = subtask
+        self.seed = seed
+        super().__init__(input_name, output_name, env)
+
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
         self._access_file(self.correct_output_name)
         result = self._run_program(
-            [],
+            [str(self.subtask), self.seed],
             stdin=self.output_name,
             env={"TEST_INPUT": self.input_name, "TEST_OUTPUT": self.correct_output_name},
         )
@@ -87,13 +102,3 @@ class RunJudge(ProgramJob):
                 f"Judge {self.program} failed on output {self.output_name} "
                 f"with code {result.returncode}."
             )
-
-
-    def _run(self) -> Optional[SolutionResult]:
-        solution_res = self.prerequisites_results["run_solution"]
-        if solution_res.kind == RunResultKind.OK:
-            return self._judge()
-        elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-            return SolutionResult(Verdict.error, 0.0)
-        elif solution_res.kind == RunResultKind.TIMEOUT:
-            return SolutionResult(Verdict.timeout, 0.0)

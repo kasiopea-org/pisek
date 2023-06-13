@@ -40,6 +40,12 @@ class TaskHelper:
     def _output(self, input_name: str, solution: str):
         return self._data(util.get_output_name(input_name, solution))
 
+    def _get_seed(self, input_name: str):
+        parts = os.path.splitext(os.path.basename(input_name))[0].split("_")
+        if len(parts) == 1:
+            return "0"
+        else:
+            return parts[-1]
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""

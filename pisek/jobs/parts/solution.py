@@ -7,7 +7,7 @@ from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
-from pisek.jobs.parts.judge import SolutionResult, RunJudge
+from pisek.jobs.parts.judge import SolutionResult, RunKasiopeaJudge
 
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
@@ -21,19 +21,29 @@ class SolutionManager(TaskJobManager):
         jobs = [compile := Compile(solution, self._env.fork())]
 
         testcases = {}
-        for inp in self._all_inputs():
-            jobs.append(run_solution := RunSolution(solution, inp, self._env.fork()))
-            run_solution.add_prerequisite(compile)
-            
-            jobs.append(run_judge := RunJudge(inp, os.path.basename(self._output(inp, solution)), self._env.fork()))
-            run_judge.add_prerequisite(run_solution, name="run_solution")
-            testcases[inp] = run_judge
-
         used_inp = set()
         for sub_num, sub in sorted(self._env.config.subtasks.items()):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
+                    jobs.append(run_solution := RunSolution(solution, inp, self._env.fork()))
+                    run_solution.add_prerequisite(compile)
+
+                    env = self._env.fork()
+                    if env.config.contest_type == "cms":
+                        raise NotImplementedError()
+                    else:
+                        jobs.append(
+                            run_judge := RunKasiopeaJudge(
+                            inp,
+                            os.path.basename(self._output(inp, solution)),
+                            sub_num,
+                            self._get_seed(inp),
+                            env
+                        ))
+                    run_judge.add_prerequisite(run_solution, name="run_solution")
+                    testcases[inp] = run_judge
+                    
                     used_inp.add(inp)
                     self.subtasks[-1].new_jobs.append(testcases[inp])
                 else:
