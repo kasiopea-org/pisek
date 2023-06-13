@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 import yaml
 
+import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
+from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
@@ -100,5 +102,5 @@ class RunKasiopeaJudge(RunJudge):
         else:
             return self.fail(
                 f"Judge {self.program} failed on output {self.output_name} "
-                f"with code {result.returncode}."
+                f"with code {result.returncode}.:\n" + tab(result.msg)
             )
