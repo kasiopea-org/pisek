@@ -1,12 +1,14 @@
+import glob
 import random
 import os
-from typing import List
+from typing import List, Optional
 
 import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
+from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import RunResultKind, ProgramJob, Compile
+from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
 from pisek.generator import OnlineGenerator
 
@@ -19,27 +21,30 @@ class OnlineGeneratorManager(TaskJobManager):
 
         jobs = [compile := Compile(generator, self._env.fork())]
 
-        random.seed(4)  # Reproducibility!
-        seeds = random.sample(range(0, 16**4), self._env.get_without_log('inputs'))
-        for subtask in self._env.config.subtasks:
-            if subtask == 0:
-                continue  # skip samples
-            last_gen = None
-            for i, seed in enumerate(seeds):
-                data_dir = self._env.config.get_data_dir()
-                input_name = util.get_input_name(seed, subtask)
+        if self._env.config.contest_type == "kasiopea":
+            random.seed(4)  # Reproducibility!
+            seeds = random.sample(range(0, 16**4), self._env.get_without_log('inputs'))
+            for subtask in self._env.config.subtasks:
+                if subtask == 0:
+                    continue  # skip samples
+                last_gen = None
+                for i, seed in enumerate(seeds):
+                    data_dir = self._env.config.get_data_dir()
+                    input_name = util.get_input_name(seed, subtask)
 
-                jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, self._env.fork()))
-                gen.add_prerequisite(compile)
-                if i == 0:
-                    jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, subtask, seed, self._env.fork()))
-                    det.add_prerequisite(gen)
-                elif i == 1:
-                    jobs.append(rs := OnlineGeneratorRespectsSeed(subtask, last_gen.seed, gen.seed,
-                                                                  last_gen.input_file, gen.input_file, self._env.fork()))
-                    rs.add_prerequisite(last_gen)
-                    rs.add_prerequisite(gen)
-                last_gen = gen
+                    jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, self._env.fork()))
+                    gen.add_prerequisite(compile)
+                    if i == 0:
+                        jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, subtask, seed, self._env.fork()))
+                        det.add_prerequisite(gen)
+                    elif i == 1:
+                        jobs.append(rs := OnlineGeneratorRespectsSeed(subtask, last_gen.seed, gen.seed,
+                                                                    last_gen.input_file, gen.input_file, self._env.fork()))
+                        rs.add_prerequisite(last_gen)
+                        rs.add_prerequisite(gen)
+                    last_gen = gen
+        else:
+            jobs.append(OfflineGeneratorGenerate(generator, self._env.fork()))
 
         return jobs
 
@@ -52,7 +57,7 @@ class OnlineGeneratorJob(ProgramJob):
         self.input_name = input_file
         self.input_file = self._data(input_file)
 
-    def _gen(self, input_file: str, seed: int, subtask: int) -> None:
+    def _gen(self, input_file: str, seed: int, subtask: int) -> Optional[RunResult]:
         if not self._load_compiled():
             return None
         if seed < 0:
@@ -83,8 +88,8 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
     def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(f"Generate {input_file}", generator, input_file, subtask, seed, env)
 
-    def _run(self):
-        self._gen(self.input_file, self.seed, self.subtask)
+    def _run(self) -> Optional[RunResult]:
+        return self._gen(self.input_file, self.seed, self.subtask)
         
 
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
@@ -94,7 +99,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
             generator, input_file, subtask, seed, env
         )
 
-    def _run(self):
+    def _run(self) -> None:
         copy_file = self.input_file.replace(".in", ".copy")
         if not self._gen(copy_file, self.seed, self.subtask):
             return
@@ -112,9 +117,44 @@ class OnlineGeneratorRespectsSeed(TaskJob):
         self.seed1, self.seed2 = seed1, seed2
         super().__init__(f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)", env)
 
-    def _run(self):
+    def _run(self) -> None:
         if self._files_equal(self.file1, self.file2):
             return self.fail(
                 f"Generator doesn't respect seed."
                 f"Files {self.file1_name} (seed {self.seed1:x}) and {self.file2_name} (seed {self.seed2:x}) are same."
             )
+
+class OfflineGeneratorGenerate(ProgramJob):
+    def __init__(self, program: str, env: Env) -> None:
+        super().__init__("Generate inputs", program, env)
+
+    def _gen(self) -> Optional[RunResult]:
+        if not self._load_compiled():
+            return None
+
+        data_dir = self._env.config.get_data_dir()
+
+        result = self._run_program([data_dir])
+
+        if result is None:
+            return
+        if result.kind != RunResultKind.OK:
+            return self.fail(f"Generator failed:\n" + tab(result.msg))
+
+        for sub_num, subtask in self._env.config.subtasks.items():
+            if sub_num == 0:
+                continue
+            files = self._subtask_inputs(subtask)
+            if len(files) == 0:
+                return self.fail(f"Generator did not generate any inputs for subtask {sub_num}.")
+            for file in files:
+                self._access_file(self._data(file))
+
+        test_files = glob.glob(os.path.join(data_dir, "*.in"))
+        if len(test_files) == 0:
+            return self.fail(f"Generator did not generate ant inputs.")
+
+        return result
+
+    def _run(self) -> Optional[RunResult]:
+        return self._gen()

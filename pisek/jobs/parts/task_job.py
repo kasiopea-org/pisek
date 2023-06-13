@@ -46,9 +46,7 @@ class TaskHelper:
             return "0"
         else:
             return parts[-1]
-
-class TaskJobManager(StatusJobManager, TaskHelper):
-    """JobManager class that implements useful methods"""
+    
     def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._globs_to_files(self._env.config.subtasks[0].in_globs, dir=self._env.config.samples_subdir)
@@ -69,9 +67,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
-        # XXX: As we iterate through all inputs we don't want to log this.
-        globs = subtask.get_without_log('in_globs')
-        return self._globs_to_files(globs)
+        return self._globs_to_files(subtask.in_globs)
 
     def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
         if dir is None:
@@ -85,6 +81,10 @@ class TaskJobManager(StatusJobManager, TaskHelper):
             ]
         input_filenames.sort()
         return input_filenames
+
+class TaskJobManager(StatusJobManager, TaskHelper):
+    """JobManager class that implements useful methods"""
+    pass
 
 
 class TaskJob(Job, TaskHelper):
