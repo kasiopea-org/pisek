@@ -34,10 +34,14 @@ class JudgeManager(TaskJobManager):
     def _get_jobs(self) -> List[Job]:
         jobs = []
         if self._env.config.judge_type == "diff":
-            jobs = [
-                build := BuildDiffJudge(self._env.fork()),
-                comp := Compile(self._executable(DIFF_NAME), self._env.fork()) 
-            ]
+            jobs = []
+            
+            if self._env.config.contest_type == "cms":
+                jobs.append(build := BuildCMSDiff(self._env.fork()))
+            else:
+                jobs.append(build := BuildCMSDiff(self._env.fork()))
+            
+            jobs.append(comp := Compile(self._executable(DIFF_NAME), self._env.fork())) 
             comp.add_prerequisite(build)
         else:
             jobs = [
@@ -50,12 +54,25 @@ class BuildDiffJudge(TaskJob):
     def __init__(self, env: Env) -> None:
         super().__init__("Build WhiteDiffJudge", env)
 
+class BuildKasiopeaDiff(BuildDiffJudge):
     def _run(self):
         with self._open_file(self._executable(DIFF_NAME), "w") as f:
             f.write(
                 '#!/bin/bash\n'
                 'if [ "$(diff -Bbq $TEST_OUTPUT -)" ]; then\n'
                 '   exit 1\n'
+                'fi\n'
+            )
+
+class BuildCMSDiff(BuildDiffJudge):
+    def _run(self):
+        with self._open_file(self._executable(DIFF_NAME), "w") as f:
+            f.write(
+                '#!/bin/bash\n'
+                'if [ "$(diff -Bbq "$2" "$3")" ]; then\n'
+                '   echo 0\n'
+                'else\n'
+                '   echo 1\n'
                 'fi\n'
             )
 
@@ -133,4 +150,4 @@ class RunCMSJudge(RunJudge):
             else:
                 return SolutionResult(Verdict.partial, points, msg)
         else:
-            return self.fail(f"Judge failed on output {self.output_name}:", result)
+            return self._program_fail(f"Judge failed on output {self.output_name}:", result)
