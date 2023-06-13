@@ -20,7 +20,7 @@ class OnlineGeneratorManager(TaskJobManager):
         jobs = [compile := Compile(generator, self._env.fork())]
 
         random.seed(4)  # Reproducibility!
-        seeds = random.sample(range(0, 16**4), self._env.inputs)
+        seeds = random.sample(range(0, 16**4), self._env.get_without_log('inputs'))
         for subtask in self._env.config.subtasks:
             if subtask == 0:
                 continue  # skip samples
