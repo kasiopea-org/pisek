@@ -51,14 +51,16 @@ class SolutionManager(TaskJobManager):
 
     def _evaluate(self) -> Any:
         total_points = 0
+        expected = util.get_expected_score(self.solution, self._env.config)
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
             points, err = sub_job.result(self._env.config.fail_mode)
             if points is None:
                 return self.fail(f"Scoring on subtask {sub_job.num} failed:\n  " + err)
+            elif sub_job.num == 0 and points == 0 and expected == self._env.config.get_maximum_score():
+                return self.fail(f"Solution {self.solution} should have passed all inputs but failed on samples.")
             total_points += subtask.score * points
 
-        expected = util.get_expected_score(self.solution, self._env.config)
         if expected is not None and total_points != expected:
             return self.fail(f"Solution {self.solution} should have gotten {expected} but got {total_points} points.")
 
