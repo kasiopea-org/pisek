@@ -101,6 +101,5 @@ class RunKasiopeaJudge(RunJudge):
             return SolutionResult(Verdict.wrong_answer, 0.0)
         else:
             return self.fail(
-                f"Judge {self.program} failed on output {self.output_name} "
-                f"with code {result.returncode}.:\n" + tab(result.msg)
+                f"Judge {self.program} failed on output {self.output_name}:\n" + tab(result.msg)
             )
