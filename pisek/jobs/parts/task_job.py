@@ -39,6 +39,9 @@ class TaskHelper:
 
     def _output(self, input_name: str, solution: str):
         return self._data(util.get_output_name(input_name, solution))
+    
+    def _solution(self, name: str) -> str:
+        return self._resolve_path(self._env.config.solutions_subdir, name)
 
     def _get_seed(self, input_name: str):
         parts = os.path.splitext(os.path.basename(input_name))[0].split("_")

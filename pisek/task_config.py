@@ -104,11 +104,7 @@ class TaskConfig(BaseEnv):
             # Support for different directory structures
             self._set("samples_subdir", config["task"].get("samples_subdir", "."))
             self._set("data_subdir", config["task"].get("data_subdir", DATA_SUBDIR))
-
-            if "solutions_subdir" in config["task"]:
-                # Prefix each solution name with solutions_subdir/
-                subdir = config["task"].get("solutions_subdir", ".")
-                self._set("solutions", [os.path.join(subdir, sol) for sol in self.get_without_log("solutions")])
+            self._set("solutions_subdir", config["task"].get("solutions_subdir", "."))
 
             subtasks: Dict[int, SubtaskConfig] = {}
             subtask_section_names = set()

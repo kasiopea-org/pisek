@@ -16,7 +16,7 @@ class SolutionManager(TaskJobManager):
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> List[Job]:
-        solution = self._resolve_path(self.solution)
+        solution = self._solution(self.solution)
 
         jobs = [compile := Compile(solution, self._env.fork())]
 
