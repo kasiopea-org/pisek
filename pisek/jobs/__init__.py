@@ -13,7 +13,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .test_case import TestCase
-from .pipelines import get_test_suite
-from .kasiopea_test_suite import kasiopea_test_suite
-from .cms_test_suite import cms_test_suite
+from .task_pipeline import TaskPipeline
