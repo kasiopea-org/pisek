@@ -37,7 +37,7 @@ class JudgeManager(TaskJobManager):
             if self._env.config.contest_type == "cms":
                 jobs.append(build := BuildCMSDiff(self._env.fork()))
             else:
-                jobs.append(build := BuildCMSDiff(self._env.fork()))
+                jobs.append(build := BuildKasiopeaDiff(self._env.fork()))
             
             jobs.append(comp := Compile(self._executable(DIFF_NAME), self._env.fork())) 
             comp.add_prerequisite(build)
@@ -57,7 +57,7 @@ class BuildKasiopeaDiff(BuildDiffJudge):
         with self._open_file(self._executable(DIFF_NAME), "w") as f:
             f.write(
                 '#!/bin/bash\n'
-                'if [ "$(diff -Bbq $TEST_OUTPUT -)" ]; then\n'
+                'if [ "$(diff -Bbq "$TEST_OUTPUT" -)" ]; then\n'
                 '   exit 1\n'
                 'fi\n'
             )
