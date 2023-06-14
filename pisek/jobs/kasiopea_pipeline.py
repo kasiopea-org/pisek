@@ -4,7 +4,7 @@ from pisek.jobs.jobs import Job, JobManager
 from pisek.jobs.job_pipeline import JobPipeline
 
 from pisek.jobs.parts.samples import SampleManager
-from pisek.jobs.parts.generator import OnlineGeneratorManager
+from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
@@ -19,26 +19,27 @@ class KasiopeaPipeline(JobPipeline):
         super().__init__(env)
         self.pipeline = [
             samples := SampleManager(),
-            generator := OnlineGeneratorManager(),
+            generator := GeneratorManager(),
             checker := CheckerManager(),
             judge := JudgeManager(),
-            first_solution := SolutionManager(env.config.first_solution)
+            primary_solution := SolutionManager(env.config.primary_solution)
         ]
         checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)
         
-        first_solution.add_prerequisite(generator)
-        first_solution.add_prerequisite(judge)
+        primary_solution.add_prerequisite(generator)
+        primary_solution.add_prerequisite(judge)
 
         for solution in env.config.solutions:
-            if solution == env.config.first_solution:
+            if solution == env.config.primary_solution:
                 continue
             self.pipeline.append(solution := SolutionManager(solution))
-            solution.add_prerequisite(first_solution)
+            solution.add_prerequisite(primary_solution)
         
 
-path = "./fixtures/soucet_kasiopea"
-os.remove(path + "/.pisek_cache")
+path = "./fixtures/guess"
+if os.path.exists(path + "/.pisek_cache"):
+    os.remove(path + "/.pisek_cache")
 env = Env(
     task_dir=path,
     inputs=5,

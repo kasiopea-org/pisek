@@ -83,7 +83,7 @@ class RunJudge(ProgramJob):
         )
         self.input_name = self._data(input_name)
         self.output_name = self._data(output_name)
-        self.correct_output_name = self._output(input_name, env.config.first_solution)
+        self.correct_output_name = self._output(input_name, env.config.primary_solution)
 
     def _run(self) -> Optional[SolutionResult]:
         solution_res = self.prerequisites_results["run_solution"]

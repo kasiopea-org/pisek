@@ -76,7 +76,7 @@ class TaskConfig(BaseEnv):
             self._set("task_name", config.get("task", "name"))
             solutions = config.get("task", "solutions").split()
             self._set("solutions", solutions)
-            self._set("first_solution", solutions[0])
+            self._set("primary_solution", solutions[0])
             self._set("contest_type", contest_type := config["task"].get("contest_type", "kasiopea"))
             self._set("generator", config["tests"]["in_gen"])
             self._set("checker", config["tests"].get("checker"))
