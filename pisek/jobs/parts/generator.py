@@ -10,9 +10,7 @@ from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
-from pisek.generator import OnlineGenerator
-
-class OnlineGeneratorManager(TaskJobManager):
+class GeneratorManager(TaskJobManager):
     def __init__(self):
         super().__init__("Generator Manager")
 
@@ -82,7 +80,7 @@ class OnlineGeneratorJob(ProgramJob):
 
 
 class OnlineGeneratorGenerate(OnlineGeneratorJob):
-    def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
+    def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(f"Generate {input_file}", generator, input_file, subtask, seed, env)
 
     def _run(self) -> Optional[RunResult]:
@@ -90,7 +88,7 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
         
 
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
-    def __init__(self, generator: OnlineGenerator, input_file: str, subtask: int, seed: int, env: Env) -> None:
+    def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(
             f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
             generator, input_file, subtask, seed, env

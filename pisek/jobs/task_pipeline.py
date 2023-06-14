@@ -15,7 +15,7 @@
 from pisek.jobs.job_pipeline import JobPipeline
 
 from pisek.jobs.parts.samples import SampleManager
-from pisek.jobs.parts.generator import OnlineGeneratorManager
+from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
