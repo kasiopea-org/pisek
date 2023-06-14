@@ -124,6 +124,7 @@ class RunCMSJudge(RunJudge):
 
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
+        self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
         result = self._run_program(
             [self.input_name, self.correct_output_name, self.output_name]
