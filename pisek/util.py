@@ -30,81 +30,11 @@ DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
 
 
-def file_exists(filename):
-    return os.path.isfile(os.path.join(filename))
-
-def file_not_empty(filename):
-    return os.path.getsize(os.path.join(filename)) > 0
-
-
 def rm_f(fn):
     try:
         os.unlink(fn)
     except FileNotFoundError:
         pass
-
-
-def files_are_equal(file_a: str, file_b: str) -> bool:
-    """
-    Checks if the contents of `file_a` and `file_b` are equal,
-    ignoring leading and trailing whitespace.
-
-    If one or both files don't exist, False is returned.
-    """
-
-    try:
-        with open(file_a, "r") as fa:
-            with open(file_b, "r") as fb:
-                while True:
-                    la = fa.readline()
-                    lb = fb.readline()
-                    if not la and not lb:
-                        # We have reached the end of both files
-                        return True
-                    # ignore leading/trailing whitespace
-                    la = la.strip()
-                    lb = lb.strip()
-                    if la != lb:
-                        return False
-    except FileNotFoundError:
-        return False
-
-
-def diff_files(
-    file_a: str,
-    file_b: str,
-    file_a_name: Optional[str] = None,
-    file_b_name: Optional[str] = None,
-) -> Iterator[str]:
-    """
-    Produces a human-friendly diff of `file_a` and `file_b`
-    as a string iterator.
-
-    Uses `file_a_name` and `file_b_name` for specifying
-    a human-friendly name for the files.
-    """
-    if file_a_name is None:
-        file_a_name = file_a
-    if file_b_name is None:
-        file_b_name = file_b
-
-    try:
-        with open(file_a, "r") as fa:
-            lines_a = [line.strip() + "\n" for line in fa.readlines()]
-    except FileNotFoundError:
-        lines_a = [f"({file_a_name} neexistuje)"]
-
-    try:
-        with open(file_b, "r") as fb:
-            lines_b = [line.strip() + "\n" for line in fb.readlines()]
-    except FileNotFoundError:
-        lines_b = [f"({file_b_name} neexistuje)"]
-
-    diff = difflib.unified_diff(
-        lines_a, lines_b, fromfile=file_a_name, tofile=file_b_name, n=2
-    )
-
-    return diff
 
 
 def resolve_extension(path: str, name: str) -> Optional[str]:
@@ -136,18 +66,6 @@ def resolve_extension(path: str, name: str) -> Optional[str]:
 
 def get_build_dir(task_dir: str) -> str:
     return os.path.normpath(os.path.join(task_dir, BUILD_DIR))
-
-
-def get_samples(task_dir: str) -> List[Tuple[str, str]]:
-    """Returns the list [(sample1.in, sample1.out), …] in the given directory."""
-    ins = glob(os.path.normpath(os.path.join(task_dir, "sample*.in")))
-    outs = []
-    for i in ins:
-        out = os.path.splitext(i)[0] + ".out"
-        if not os.path.isfile(out):
-            raise RuntimeError(f"Ke vzorovému vstupu {i} neexistuje výstup {out}")
-        outs.append(out)
-    return list(zip(ins, outs))
 
 
 def pad_num(what: int, length=2):
@@ -258,37 +176,3 @@ def quote_output(s, max_length=1500, max_lines=20):
         s += "\n  [...]"
 
     return s
-
-
-def quote_process_output(
-    proc: subprocess.CompletedProcess, include_stdout=True, include_stderr=True
-):
-    res = []
-    if include_stdout:
-        cur = "stdout:"
-        if proc.stdout:
-            cur += "\n" + quote_output(proc.stdout)
-        else:
-            cur += " (none)"
-        res.append(cur)
-
-    if include_stderr:
-        cur = "stderr:"
-        if proc.stderr:
-            cur += "\n" + quote_output(proc.stderr)
-        else:
-            cur += " (none)"
-        res.append(cur)
-
-    return "\n".join(res)
-
-
-def file_is_newer(file_a: str, file_b: str) -> Optional[bool]:
-    """
-    Returns True if file in `path_a` is newer (more recently modified) than `path_b`.
-    Returns None if either of the files does not exist.
-    """
-    try:
-        return os.path.getmtime(file_a) > os.path.getmtime(file_b)
-    except FileNotFoundError:
-        return None
