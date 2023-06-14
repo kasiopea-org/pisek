@@ -42,7 +42,10 @@ class CheckerManager(TaskJobManager):
     
     def _get_status(self) -> str:
         if self.skipped_checker:
-            return self.skipped_checker
+            if self.state == State.succeeded:
+                return self.skipped_checker
+            else:
+                return ""
         else:
             return super()._get_status()
 
