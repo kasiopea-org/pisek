@@ -90,14 +90,12 @@ class TaskConfig(BaseEnv):
             # the contestant's solution (primarily for C++)
             self._set("solution_manager", config["tests"].get("solution_manager"))
 
-            if contest_type == "cms":
-                # Warning: these timeouts are currently ignored in Kasiopea!
-                self._set("timeout_model_solution", apply_to_optional(
-                    config.get("limits", "solve_time_limit", fallback=None), float
-                ))
-                self._set("timeout_other_solutions", apply_to_optional(
-                    config.get("limits", "sec_solve_time_limit", fallback=None), float
-                ))
+            self._set("timeout_model_solution", apply_to_optional(
+                config.get("limits", "solve_time_limit", fallback=None), float
+            ))
+            self._set("timeout_other_solutions", apply_to_optional(
+                config.get("limits", "sec_solve_time_limit", fallback=None), float
+            ))
 
             # Support for different directory structures
             self._set("samples_subdir", config["task"].get("samples_subdir", "."))
