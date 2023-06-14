@@ -88,7 +88,10 @@ class ProgramJob(TaskJob):
         self.executable = executable
         return True
 
-    def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, **kwargs) -> RunResult:
+    def _run_raw(self, args, timeout: Optional[float] = None, **kwargs) -> RunResult:
+        if timeout is None:
+            timeout = DEFAULT_TIMEOUT
+
         executable = args[0]
         self._access_file(executable)
         for std, mode in [('stdin', 'r'), ('stdout', 'w'), ('stderr', 'w')]:

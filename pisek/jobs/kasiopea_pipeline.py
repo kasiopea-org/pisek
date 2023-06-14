@@ -7,7 +7,7 @@ from pisek.jobs.parts.samples import SampleManager
 from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
-from pisek.jobs.parts.solution import SolutionManager
+from pisek.jobs.parts.solution import SolutionManager, PrimarySolutionManager
 
 import os
 from pisek.task_config import TaskConfig
@@ -22,7 +22,7 @@ class KasiopeaPipeline(JobPipeline):
             generator := GeneratorManager(),
             checker := CheckerManager(),
             judge := JudgeManager(),
-            primary_solution := SolutionManager(env.config.primary_solution)
+            primary_solution := PrimarySolutionManager(env.config.primary_solution)
         ]
         checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)

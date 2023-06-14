@@ -14,9 +14,16 @@ class SolutionManager(TaskJobManager):
         self.solution = solution
         self.subtasks = []
         super().__init__(f"Solution {solution} Manager")
+        self.primary = False
 
     def _get_jobs(self) -> List[Job]:
         solution = self._solution(self.solution)
+        
+        timeout = None
+        if not self.primary and self._env.config.timeout_other_solutions:
+            timeout = self._env.config.timeout_other_solutions
+        elif self._env.config.timeout_model_solution:
+            timeout = self._env.config.timeout_model_solution
 
         jobs = []
         
@@ -31,7 +38,7 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(solution, inp, self._env.fork()))
+                    jobs.append(run_solution := RunSolution(solution, inp, timeout, self._env.fork()))
                     run_solution.add_prerequisite(compile)
 
                     env = self._env.fork()
@@ -82,6 +89,12 @@ class SolutionManager(TaskJobManager):
         if expected is not None and total_points != expected:
             return self.fail(f"Solution {self.solution} should have gotten {expected} but got {total_points} points.")
 
+
+class PrimarySolutionManager(SolutionManager):
+    def __init__(self, solution: str):
+        super().__init__(solution)
+        self.primary = True
+
 class SubtaskJobGroup:
     def __init__(self, num) -> None:
         self.num = num
@@ -131,19 +144,21 @@ class SubtaskJobGroup:
         return (min(prev_points + new_points), "")
 
 class RunSolution(ProgramJob):
-    def __init__(self, solution: str, input_name: str, env: Env) -> None:
+    def __init__(self, solution: str, input_name: str, timeout: Optional[float], env: Env) -> None:
         super().__init__(
             name=f"Run {solution} on input {input_name}",
             program=solution,
             env=env
         )
         self.input_name = self._data(input_name)
+        self.timeout = timeout
 
     def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(
             [],
             stdin=self.input_name,
-            stdout=self._output(self.input_name, self.program)
+            stdout=self._output(self.input_name, self.program),
+            timeout=self.timeout
         )
 
     def _run(self) -> Optional[RunResult]:
