@@ -27,3 +27,7 @@ points=4
 name=Těžký vstup
 file_name=H-tezky.txt
 points=6
+
+[limits]
+# Time limit (seconds) for solutions
+solve_time_limit=1
