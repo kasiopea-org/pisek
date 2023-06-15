@@ -18,49 +18,35 @@ import os
 import unittest
 import sys
 
-from pisek.jobs.pipelines import get_test_suite
-from pisek.program import Program, RunResultKind
+from pisek.task_config import TaskConfig
+from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.env import Env
+from pisek.jobs.cache import Cache
+
 from pisek import util
 from pisek.license import license, license_gnu
 import pisek.cms as cms
-from .visualize import visualize_command
+from pisek.visualize import visualize_command
 
+DEFAULT_ENVS = {
+    'full': False,
+    'strict': False,
+    'no_checker': False,
+    'inputs': 5,
+}
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
-class TextTestResultHideTraceback(unittest.TextTestResult):
-    def _exc_info_to_string(self, err, test):
-        """Converts a sys.exc_info()-style tuple of values into a string."""
-        exctype, value, tb = err
-        return f"{value}"
-
-
-def get_resultclass(args):
-    if args.pisek_traceback:
-        return None
-    return TextTestResultHideTraceback
-
-
-def run_tests(args, full=False, all_tests=False):
+def test_task(args, **additional_args):
     cwd = os.getcwd()
-    eprint(f"Testuji úlohu {cwd}")
 
-    suite = get_test_suite(
-        cwd,
-        timeout=args.timeout,
-        strict=args.strict,
-        no_checker=args.no_checker,
-        all_tests=all_tests
-    )
+    config = TaskConfig(cwd)
+    err = config.load()
+    if err:
+        print(f"Error when loading config:\n  {err}", file=sys.stderr)
+        return 1
 
-    runner = unittest.TextTestRunner(
-        verbosity=args.verbose, failfast=not full, resultclass=get_resultclass(args)
-    )
-    result = runner.run(suite)
-
-    return result
+    env = Env.from_namespace(cwd, config, args, **additional_args)
+    pipeline = TaskPipeline(env.fork())
+    return pipeline.run_jobs(Cache(env), env)
 
 
 def run_solution(args, unknown_args):
@@ -134,14 +120,6 @@ def main(argv):
         parser.add_argument(
             "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
         )
-
-    def add_argument_pisek_traceback(parser):
-        parser.add_argument(
-            "--pisek-traceback",
-            action="store_true",
-            help="Při chybách vypiš traceback písku",
-        )
-
     def add_argument_timeout(parser):
         parser.add_argument(
             "--timeout",
@@ -160,7 +138,7 @@ def main(argv):
             action="store_true",
             help="pro závěrečnou kontrolu: vynutit, že checker existuje",
         )
-    
+
     def add_argument_no_checker(parser):
         parser.add_argument(
             "--no-checker",
@@ -168,9 +146,13 @@ def main(argv):
             help="nepouštět checker",
         )
 
-    def add_argument_all_tests(parser):
+    def add_argument_ninputs(parser):
         parser.add_argument(
-            "--all-tests", action="store_true", help="testovat i další vstupy po chybě"
+            "--number-of-tests",
+            "-n",
+            type=int,
+            default=5,
+            help="počet testů (pouze pro kasiopeu)",
         )
 
     def add_argument_clean(parser):
@@ -263,12 +245,11 @@ def main(argv):
         )
 
     add_argument_verbose(parser)
-    add_argument_pisek_traceback(parser)
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
     add_argument_no_checker(parser)
-    add_argument_all_tests(parser)
+    add_argument_ninputs(parser)
     add_argument_clean(parser)
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
@@ -292,19 +273,11 @@ def main(argv):
     parser_test.add_argument(
         "solution", type=str, help="název řešení ke spuštění", nargs="?"
     )
-    parser_test.add_argument(
-        "--number-of-tests",
-        "-n",
-        type=int,
-        default=10,
-        help="počet testů (pouze pro kasiopeu)",
-    )
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
     add_argument_strict(parser_test)
     add_argument_no_checker(parser_test)
-    add_argument_all_tests(parser_test)
-    add_argument_pisek_traceback(parser_test)
+    add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
@@ -365,14 +338,17 @@ def main(argv):
         clean_directory(args)
 
     if args.subcommand == "run":
-        result = run_solution(args, args.command_args)
+        raise NotImplementedError()
     elif args.subcommand == "test":
+        raise NotImplementedError()
         if args.target == "solution":
             result = test_solution(args)
         elif args.target == "generator":
             result = test_generator(args)
         else:
             assert False
+    elif args.subcommand is None:
+        result = test_task(args)
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
         actions = {
@@ -402,8 +378,6 @@ def main(argv):
         visualize_command(args)
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
-    elif args.subcommand is None:
-        result = run_tests(args, full=args.full, all_tests=args.all_tests)
     else:
         raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
 
@@ -414,9 +388,8 @@ def main_wrapped():
     try:
         result = main(sys.argv[1:])
 
-        if result is not None:
-            if result.errors or result.failures:
-                exit(1)
+        if result:
+            exit(1)
     except KeyboardInterrupt as e:
         print("Přerušeno uživatelem.")
         exit(1)

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from .. import task_config
-from ..jobs.pipelines import get_test_suite
+from ..jobs.task_pipeline import get_test_suite
 from ..util import quote_output, clean_task_dir
 
 
