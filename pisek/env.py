@@ -89,4 +89,14 @@ class BaseEnv:
 
 class Env(BaseEnv):
     """Top level BaseEnv"""
-    pass
+    @staticmethod
+    def from_namespace(path, config, ns, **add):
+        return Env(
+            task_dir=path,
+            inputs=ns.number_of_tests,
+            strict=ns.strict,
+            no_checker=ns.no_checker,
+            full=ns.full,
+            config=config,
+            **add
+        )
