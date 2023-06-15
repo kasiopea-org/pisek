@@ -10,8 +10,9 @@ class JobPipeline(ABC):
     @abstractmethod
     def __init__(self, env):
         env.reserve()
+        self.failed = False
 
-    def run_jobs(self, cache: Cache, env: Env):
+    def run_jobs(self, cache: Cache, env: Env) -> bool:
         self.job_managers = deque()
         self.pipeline = deque(self.pipeline)
         while len(self.pipeline) or len(self.job_managers):
@@ -28,6 +29,7 @@ class JobPipeline(ABC):
                 break
 
         cache.export()  # Remove duplicate cache entries
+        return self.failed
 
     def status_update(self) -> bool:
         while len(self.job_managers):
@@ -39,6 +41,7 @@ class JobPipeline(ABC):
                     print(msg)
                 if job_man.state == State.failed:
                     print(job_man.failures(), end='', file=sys.stderr)
+                    self.failed = True
                     return False
             elif job_man.state == State.canceled:
                 print()
