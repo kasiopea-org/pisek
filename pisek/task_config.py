@@ -23,7 +23,6 @@ CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
 from pisek.env import BaseEnv
-import pisek.util as util
 
 class CheckedConfigParser(configparser.RawConfigParser):
     """
@@ -80,7 +79,7 @@ class TaskConfig(BaseEnv):
         
         needed_keys = [("task", "solutions"), ("tests", "in_gen")]
         if config["tests"].get("out_check") == "judge":
-            needed_keys.append(("task", "out_judge"))
+            needed_keys.append(("tests", "out_judge"))
         for section, key in needed_keys:
             if config.get(section, key) is None:
                 return f"Missing key '{key}' in section [{section}]"
@@ -224,7 +223,11 @@ class SubtaskConfig(BaseEnv):
             self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
 
     def _all_previous_glob(self, subtask_number):
-        return " ".join([f"{util.pad_num(i)}*.in" for i in range(1, subtask_number+1)])
+        globs = []
+        for i in range(1, subtask_number+1):
+            i = str(i)
+            globs.append(f"{'0'*(2 - len(i))}{i}*.in")
+        return " ".join(globs)
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
