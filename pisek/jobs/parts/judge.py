@@ -75,10 +75,10 @@ class BuildCMSDiff(BuildDiffJudge):
             )
 
 class RunJudge(ProgramJob):
-    def __init__(self, input_name: str, output_name: str, env: Env):
+    def __init__(self, judge: str, input_name: str, output_name: str, env: Env):
         super().__init__(
             name=f"Judge {output_name}",
-            program=env.config.judge,
+            program=judge,
             env=env
         )
         self.input_name = self._data(input_name)
@@ -95,10 +95,10 @@ class RunJudge(ProgramJob):
             return SolutionResult(Verdict.timeout, 0.0)
 
 class RunKasiopeaJudge(RunJudge):
-    def __init__(self, input_name: str, output_name: str, subtask: int, seed: str, env: Env):
+    def __init__(self, judge: str, input_name: str, output_name: str, subtask: int, seed: str, env: Env):
         self.subtask = subtask
         self.seed = seed
-        super().__init__(input_name, output_name, env)
+        super().__init__(judge, input_name, output_name, env)
 
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
@@ -119,8 +119,8 @@ class RunKasiopeaJudge(RunJudge):
 
 
 class RunCMSJudge(RunJudge):
-    def __init__(self, input_name: str, output_name: str, env: Env):
-        super().__init__(input_name, output_name, env)
+    def __init__(self, judge: str, input_name: str, output_name: str, env: Env):
+        super().__init__(judge, input_name, output_name, env)
 
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
