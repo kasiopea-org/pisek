@@ -15,6 +15,7 @@
 
 import argparse
 import os
+from typing import Optional
 import unittest
 import sys
 
@@ -35,84 +36,58 @@ DEFAULT_ENVS = {
     'inputs': 5,
 }
 
-def test_task(args, **additional_args):
+def eprint(msg, *args, **kwargs):
+    print(msg, *args, file=sys.stderr, **kwargs)
+
+
+def test_task(args, solutions: Optional[list[str]] = None, **additional_args):
     cwd = os.getcwd()
 
     config = TaskConfig(cwd)
     err = config.load()
     if err:
-        print(f"Error when loading config:\n  {err}", file=sys.stderr)
-        return 1
+        eprint(f"Error when loading config:\n  {err}")
+        exit(1)
 
-    env = Env.from_namespace(cwd, config, args, **additional_args)
+    if solutions is None:
+        solutions = config.get_without_log('solutions')
+
+    env = Env.from_namespace(
+        cwd, config, args,
+        solutions=solutions,
+        **additional_args
+    )
+
     pipeline = TaskPipeline(env.fork())
     return pipeline.run_jobs(Cache(env), env)
 
 
-def run_solution(args, unknown_args):
-    eprint(f"Spouštím program: {args.solution}")
-
-    cwd = os.getcwd()
-    sol = Program(cwd, args.solution)
-    run_result = sol.run(unknown_args)
-
-    if run_result.kind != RunResultKind.OK:
-        eprint(f"Chyba při běhu: {run_result.msg}")
-        exit(1)
-
-    return None
-
-
 def test_solution(args):
     if args.solution is None:
-        eprint(f"Zadejte název řešení, které chcete testovat!")
-        eprint(f"Příklad:   pisek [--all_tests] test solution solve_slow_4b")
+        eprint(f"Enter solution name to test")
+        eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
         exit(1)
 
-    eprint(f"Testuji řešení: {args.solution}")
-    cwd = os.getcwd()
-
-    suite = get_test_suite(
-        cwd,
-        solutions=[args.solution],
-        n_seeds=args.number_of_tests,
-        timeout=args.timeout,
-        only_necessary=True,
-        all_tests=args.all_tests,
-    )
-    runner = unittest.TextTestRunner(
-        verbosity=args.verbose, failfast=True, resultclass=get_resultclass(args)
-    )
-    result = runner.run(suite)
-
-    return result
+    eprint(f"Testing solution: {args.solution}")
+    return test_task(args, solutions=[args.solution])
 
 
 def test_generator(args):
-    eprint(f"Testuji generátor")
-    cwd = os.getcwd()
-
-    suite = get_test_suite(cwd, solutions=[])
-
-    runner = unittest.TextTestRunner(
-        verbosity=args.verbose, failfast=True, resultclass=get_resultclass(args)
-    )
-    result = runner.run(suite)
-
-    return result
+    eprint(f"Testing generator")
+    return test_task(args, solutions=[])
 
 
 def clean_directory(args):
     task_dir = os.getcwd()
-    eprint(f"Čistím složku: {task_dir}")
+    eprint(f"Cleaning repository: {task_dir}")
     util.clean_task_dir(task_dir)
 
 
 def main(argv):
     parser = argparse.ArgumentParser(
         description=(
-            "Nástroj na testování úloh do programovacích soutěží. "
-            "Plná dokumentace je k dispozici na https://github.com/kasiopea-org/pisek"
+            "Tool for developing tasks for programming competitions."
+            "Full documentation is at https://github.com/kasiopea-org/pisek"
         )
     )
 
@@ -340,15 +315,15 @@ def main(argv):
     if args.subcommand == "run":
         raise NotImplementedError()
     elif args.subcommand == "test":
-        raise NotImplementedError()
         if args.target == "solution":
             result = test_solution(args)
         elif args.target == "generator":
             result = test_generator(args)
         else:
-            assert False
+            eprint(f"Unknown testing target: {args.target}")
+            exit(1)
     elif args.subcommand is None:
-        result = test_task(args)
+        result = test_task(args, solutions=None)
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
         actions = {
@@ -379,19 +354,14 @@ def main(argv):
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
     else:
-        raise RuntimeError(f"Neznámý podpříkaz {args.subcommand}")
+        raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 
     return result
 
 
 def main_wrapped():
-    try:
-        result = main(sys.argv[1:])
-
-        if result:
-            exit(1)
-    except KeyboardInterrupt as e:
-        print("Přerušeno uživatelem.")
+    result = main(sys.argv[1:])
+    if result:
         exit(1)
 
 

@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
 import re
 import difflib
 import subprocess
@@ -23,6 +24,7 @@ from typing import Optional, Iterator, List, Tuple
 
 import termcolor
 
+from pisek.jobs.cache import CACHE_FILENAME
 from .compile import supported_extensions
 from .task_config import TaskConfig
 
@@ -88,9 +90,6 @@ def get_output_name(input_file: str, solution_name: str) -> str:
 
 
 def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
-    config = TaskConfig(task_dir)
-    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
-    # directory
     for subdir in subdirs:
         full = os.path.join(task_dir, subdir)
         try:
@@ -115,11 +114,17 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
 
 def clean_task_dir(task_dir: str) -> None:
     config = TaskConfig(task_dir)
+    err = config.load()
+    if err:
+        print(err, file=sys.stderr)
+        exit(1)
+    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
+    # directory
 
     from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
     rm_f(SAMPLES_ZIP)
     rm_f(TESTS_ZIP)
-
+    rm_f(CACHE_FILENAME)
     return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
 
 
