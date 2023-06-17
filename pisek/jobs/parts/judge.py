@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import random
 from typing import Optional, Union, Callable
 import yaml
 
@@ -8,6 +9,7 @@ from pisek.jobs.jobs import State, Job
 from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
+from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 
 DIFF_NAME = "diff.sh"
 
@@ -53,7 +55,19 @@ class JudgeManager(TaskJobManager):
         for inp, out in samples:
             jobs.append(judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env.fork()))
 
+            for job, times in [(Incomplete, 2), (ChaosMonkey, 20)]:
+                random.seed(4)  # Reproducibility!
+                seeds = random.sample(range(0, 16**4), times)
+                for seed in seeds:
+                    inv_out = out.replace(".out", f".{seed:x}.invalid")
+                    jobs += [
+                        invalidate := job(out, inv_out, seed, self._env.fork()),
+                        run_judge := judge_job(self._env.config.judge, inp, inv_out, out,
+                                               0, lambda: "0", None, self._env.fork())
+                    ]
+                    run_judge.add_prerequisite(invalidate)
         return jobs
+
 
 class BuildDiffJudge(TaskJob):
     def __init__(self, env: Env) -> None:
@@ -173,6 +187,7 @@ class RunCMSJudge(RunJudge):
                 return SolutionResult(Verdict.partial, points, msg)
         else:
             return self._program_fail(f"Judge failed on output {self.output_name}:", result)
+
 
 def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
               expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
