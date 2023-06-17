@@ -25,7 +25,7 @@ class TaskHelper:
     def _get_build_dir(self) -> str:
         return BUILD_DIR
 
-    def _resolve_path(self, *path: List[str]):
+    def _resolve_path(self, *path: str):
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
     def _executable(self, name: str) -> str:
