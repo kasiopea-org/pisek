@@ -138,20 +138,20 @@ class TaskConfig(BaseEnv):
             if subtask_number > 0 and "points" not in config[section_name]:
                 return f"Missing key 'points' in section [{section_name}]"
 
-            subtasks[subtask_number] = SubtaskConfig(
+            subtasks[str(subtask_number)] = SubtaskConfig(
                 subtask_number, config[section_name]
             )
 
-        if 0 not in subtasks:  # Add samples
-            subtasks[0] = SubtaskConfig(0, configparser.SectionProxy(config, "test00"))
+        if "0" not in subtasks:  # Add samples
+            subtasks["0"] = SubtaskConfig(0, configparser.SectionProxy(config, "test00"))
 
-        self._set("subtasks", subtasks)
+        self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
 
         return self.check_unused_keys(config)
 
     def get_maximum_score(self) -> int:
-        return sum([subtask.score for subtask in self.subtasks.values()])
+        return sum([subtask.score for _, subtask in self.subtasks.items()])
 
     def get_data_dir(self):
         return os.path.normpath(os.path.join(self.task_dir, self.data_subdir))

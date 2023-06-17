@@ -17,17 +17,14 @@ class SolutionManager(TaskJobManager):
         self.primary = False
 
     def _get_jobs(self) -> List[Job]:
+        # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
+        # If you use the wrong one caching bugs will arise.
+        solution_env = self._env.fork()
         solution = self._solution(self.solution)
 
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
         
-        timeout = None
-        if not self.primary and self._env.config.timeout_other_solutions:
-            timeout = self._env.config.timeout_other_solutions
-        elif self._env.config.timeout_model_solution:
-            timeout = self._env.config.timeout_model_solution
-
         jobs = []
         
         compile_args = {}
@@ -35,31 +32,41 @@ class SolutionManager(TaskJobManager):
             compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
         jobs.append(compile := Compile(solution, self._env.fork(), compile_args))
 
+        timeout = None
+        if not self.primary and solution_env.config.timeout_other_solutions:
+            timeout = solution_env.config.timeout_other_solutions
+        elif solution_env.config.timeout_model_solution:
+            timeout = solution_env.config.timeout_model_solution
+
         testcases = {}
         used_inp = set()
-        judge_env.config.subtasks  # We need to access it
-        for sub_num, sub in sorted(self._env.config.subtasks.items()):
+        subtasks = list(zip(
+            solution_env.iterate("config.subtasks", self._env),
+            judge_env.iterate("config.subtasks", judge_env)
+        ))  # Yes we really need to do it like this.
 
+        for (sub_num, sub, sol_env), (_, sub2, jud_env) in subtasks:
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
+                self._subtask_inputs(sub2) # Yes it also depends on this
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(solution, inp, timeout, self._env.fork()))
+                    jobs.append(run_solution := RunSolution(solution, inp, timeout, sol_env.fork()))
                     run_solution.add_prerequisite(compile)
 
-                    if sub_num == 0:
+                    if sub_num == "0":
                         c_out = inp.replace(".in", ".out")
                     else:
-                        c_out =  util.get_output_name(inp, judge_env.config.primary_solution)
+                        c_out = util.get_output_name(inp, jud_env.config.primary_solution)
                     jobs.append(
                         run_judge := judge_job(
                             judge,
                             inp,
-                            os.path.basename(self._output(inp, solution)),
+                            util.get_output_name(inp, solution),
                             c_out,
                             sub_num,
                             lambda: self._get_seed(inp),
                             None,
-                            judge_env.fork()
+                            jud_env.fork()
                         )
                     )
  
@@ -102,7 +109,7 @@ class PrimarySolutionManager(SolutionManager):
 
 class SubtaskJobGroup:
     def __init__(self, num) -> None:
-        self.num = num
+        self.num = int(num)
         self.previous_jobs = []
         self.new_jobs = []
     

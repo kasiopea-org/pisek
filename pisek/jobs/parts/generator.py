@@ -22,21 +22,21 @@ class GeneratorManager(TaskJobManager):
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
             seeds = random.sample(range(0, 16**4), self._env.get_without_log('inputs'))
-            for subtask in self._env.config.subtasks:
-                if subtask == 0:
+            for sub_num in self._env.config.subtasks.keys():
+                if sub_num == "0":
                     continue  # skip samples
                 last_gen = None
                 for i, seed in enumerate(seeds):
                     data_dir = self._env.config.get_data_dir()
-                    input_name = util.get_input_name(seed, subtask)
+                    input_name = util.get_input_name(seed, sub_num)
 
-                    jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, subtask, seed, self._env.fork()))
+                    jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, sub_num, seed, self._env.fork()))
                     gen.add_prerequisite(compile)
                     if i == 0:
-                        jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, subtask, seed, self._env.fork()))
+                        jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, sub_num, seed, self._env.fork()))
                         det.add_prerequisite(gen)
                     elif i == 1:
-                        jobs.append(rs := OnlineGeneratorRespectsSeed(subtask, last_gen.seed, gen.seed,
+                        jobs.append(rs := OnlineGeneratorRespectsSeed(sub_num, last_gen.seed, gen.seed,
                                                                     last_gen.input_file, gen.input_file, self._env.fork()))
                         rs.add_prerequisite(last_gen)
                         rs.add_prerequisite(gen)
@@ -137,7 +137,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             return self._program_fail(f"Generator failed:", result)
 
         for sub_num, subtask in self._env.config.subtasks.items():
-            if sub_num == 0:
+            if sub_num == "0":
                 continue
             files = self._subtask_inputs(subtask)
             if len(files) == 0:

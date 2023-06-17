@@ -33,9 +33,9 @@ class CheckerManager(TaskJobManager):
 
         jobs = [compile := Compile(checker, self._env.fork())]
         
-        for sub_num, sub in sorted(self._env.config.subtasks.items()):
+        for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
             for inp in self._subtask_inputs(sub):
-                jobs.append(check := CheckerJob(checker, inp, sub_num, self._env.fork()))
+                jobs.append(check := CheckerJob(checker, inp, sub_num, new_env.fork()))
                 check.add_prerequisite(compile)
 
         return jobs
