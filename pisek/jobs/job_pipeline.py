@@ -28,20 +28,24 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            if not self.status_update() and not env.full:  # we really need to call status_update to update messages
+            if not self.status_update(env) and not env.full:  # we really need to call status_update to update messages
                 break
 
         cache.export()  # Remove duplicate cache entries
         return self.failed
 
-    def status_update(self) -> bool:
-        for i in range(self._tmp_lines):
+    def status_update(self, env: Env) -> bool:
+        for _ in range(self._tmp_lines):
             print(CLCU, end="")
         self._tmp_lines = 0
 
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
             self.print_tmp(job_man.update())
+            if not env.full and job_man.any_failed():
+                print(job_man.failures(), end='', file=sys.stderr)
+                self.failed = True
+                return False
             if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finish()
                 if msg:

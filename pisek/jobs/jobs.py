@@ -188,6 +188,10 @@ class JobManager(PipelineItem):
         """
         return self.state == State.running and self._finished_jobs() == len(self.jobs)
 
+    def any_failed(self) -> bool:
+        """Returns whether this manager or its jobs had any failures so far."""
+        return self.state == State.failed or len(self._failed_jobs())
+
     def finish(self) -> str:
         if self.state == State.running:
             self.result = self._evaluate()
