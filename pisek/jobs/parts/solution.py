@@ -7,7 +7,7 @@ from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
-from pisek.jobs.parts.judge import SolutionResult, RunKasiopeaJudge, RunCMSJudge
+from pisek.jobs.parts.judge import judge_job
 
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
@@ -46,24 +46,23 @@ class SolutionManager(TaskJobManager):
                     jobs.append(run_solution := RunSolution(solution, inp, timeout, self._env.fork()))
                     run_solution.add_prerequisite(compile)
 
-                    if judge_env.config.contest_type == "cms":
-                        jobs.append(
-                            run_judge := RunCMSJudge(
-                                judge,
-                                inp,
-                                os.path.basename(self._output(inp, solution)),
-                                judge_env.fork()
-                        ))
+                    if sub_num == 0:
+                        c_out = inp.replace(".in", ".out")
                     else:
-                        jobs.append(
-                            run_judge := RunKasiopeaJudge(
-                                judge,
-                                inp,
-                                os.path.basename(self._output(inp, solution)),
-                                sub_num,
-                                self._get_seed(inp),
-                                judge_env.fork()
-                        ))
+                        c_out =  util.get_output_name(inp, judge_env.config.primary_solution)
+                    jobs.append(
+                        run_judge := judge_job(
+                            judge,
+                            inp,
+                            os.path.basename(self._output(inp, solution)),
+                            c_out,
+                            sub_num,
+                            lambda: self._get_seed(inp),
+                            None,
+                            judge_env.fork()
+                        )
+                    )
+ 
                     run_judge.add_prerequisite(run_solution, name="run_solution")
                     testcases[inp] = run_judge
                     

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional, Union, Callable
 import yaml
 
 import pisek.util as util
@@ -29,7 +29,7 @@ class JudgeManager(TaskJobManager):
     def __init__(self):
         super().__init__("Judge Manager")
 
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self) -> list[Job]:
         jobs = []
         if self._env.config.judge_type == "diff":
             jobs = []
@@ -45,6 +45,13 @@ class JudgeManager(TaskJobManager):
             jobs = [
                 Compile(self._resolve_path(self._env.config.judge), self._env.fork()) 
             ]
+
+        samples = self._get_samples()
+        if samples is None:
+            return []
+
+        for inp, out in samples:
+            jobs.append(judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env.fork()))
 
         return jobs
 
@@ -75,7 +82,8 @@ class BuildCMSDiff(BuildDiffJudge):
             )
 
 class RunJudge(ProgramJob):
-    def __init__(self, judge: str, input_name: str, output_name: str, env: Env):
+    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
+                 expected_points: Optional[float], env: Env) -> None:
         super().__init__(
             name=f"Judge {output_name}",
             program=judge,
@@ -83,22 +91,36 @@ class RunJudge(ProgramJob):
         )
         self.input_name = self._data(input_name)
         self.output_name = self._data(output_name)
-        self.correct_output_name = self._output(input_name, env.config.primary_solution)
+        self.correct_output_name = self._data(correct_output)
+        self.expected_points = expected_points
 
     def _run(self) -> Optional[SolutionResult]:
-        solution_res = self.prerequisites_results["run_solution"]
-        if solution_res.kind == RunResultKind.OK:
-            return self._judge()
-        elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-            return SolutionResult(Verdict.error, 0.0)
-        elif solution_res.kind == RunResultKind.TIMEOUT:
-            return SolutionResult(Verdict.timeout, 0.0)
+        if "run_solution" in self.prerequisites_results:
+            solution_res = self.prerequisites_results["run_solution"]
+            if solution_res.kind == RunResultKind.OK:
+                result = self._judge()
+            elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
+                result = SolutionResult(Verdict.error, 0.0)
+            elif solution_res.kind == RunResultKind.TIMEOUT:
+                result = SolutionResult(Verdict.timeout, 0.0)
+        else:
+            result = self._judge()
+
+        if self.expected_points is not None and result is not None and \
+                result.points != self.expected_points:
+            return self.fail(
+                f"Output {self.output_name} for input {self.input_name} "
+                f"should have got {self.expected_points} points but got {result.points} points."
+            )
+        return result
+
 
 class RunKasiopeaJudge(RunJudge):
-    def __init__(self, judge: str, input_name: str, output_name: str, subtask: int, seed: str, env: Env):
+    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
+                 subtask: int, seed: str, expected_points: Optional[float], env: Env) -> None:
         self.subtask = subtask
         self.seed = seed
-        super().__init__(judge, input_name, output_name, env)
+        super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
 
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
@@ -119,8 +141,9 @@ class RunKasiopeaJudge(RunJudge):
 
 
 class RunCMSJudge(RunJudge):
-    def __init__(self, judge: str, input_name: str, output_name: str, env: Env):
-        super().__init__(judge, input_name, output_name, env)
+    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
+                 expected_points: Optional[float], env: Env) -> None:
+        super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
 
     def _judge(self) -> Optional[RunResult]:
         self._access_file(self.input_name)
@@ -150,3 +173,26 @@ class RunCMSJudge(RunJudge):
                 return SolutionResult(Verdict.partial, points, msg)
         else:
             return self._program_fail(f"Judge failed on output {self.output_name}:", result)
+
+def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
+              expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
+    if env.config.contest_type == "cms":
+        return RunCMSJudge(
+            judge,
+            input_name,
+            output_name,
+            correct_ouput,
+            expected_points,
+            env
+        )
+    else:
+        return RunKasiopeaJudge(
+            judge,
+            input_name,
+            output_name,
+            correct_ouput,
+            str(subtask),
+            get_seed(),
+            expected_points,
+            env
+        )
