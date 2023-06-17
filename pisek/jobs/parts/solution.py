@@ -18,7 +18,9 @@ class SolutionManager(TaskJobManager):
 
     def _get_jobs(self) -> List[Job]:
         solution = self._solution(self.solution)
-        judge = self._executable(self._env.config.judge)
+
+        judge_env = self._env.fork()
+        judge = self._executable(judge_env.config.judge)
         
         timeout = None
         if not self.primary and self._env.config.timeout_other_solutions:
@@ -35,21 +37,22 @@ class SolutionManager(TaskJobManager):
 
         testcases = {}
         used_inp = set()
+        judge_env.config.subtasks  # We need to access it
         for sub_num, sub in sorted(self._env.config.subtasks.items()):
+
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
                     jobs.append(run_solution := RunSolution(solution, inp, timeout, self._env.fork()))
                     run_solution.add_prerequisite(compile)
 
-                    env = self._env.fork()
-                    if env.config.contest_type == "cms":
+                    if judge_env.config.contest_type == "cms":
                         jobs.append(
                             run_judge := RunCMSJudge(
                                 judge,
                                 inp,
                                 os.path.basename(self._output(inp, solution)),
-                                env
+                                judge_env.fork()
                         ))
                     else:
                         jobs.append(
@@ -59,7 +62,7 @@ class SolutionManager(TaskJobManager):
                                 os.path.basename(self._output(inp, solution)),
                                 sub_num,
                                 self._get_seed(inp),
-                                env
+                                judge_env.fork()
                         ))
                     run_judge.add_prerequisite(run_solution, name="run_solution")
                     testcases[inp] = run_judge
