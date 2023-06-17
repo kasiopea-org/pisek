@@ -6,11 +6,14 @@ from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.cache import Cache
 
+CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
+
 class JobPipeline(ABC):
     @abstractmethod
     def __init__(self, env):
         env.reserve()
         self.failed = False
+        self._tmp_lines = 0
 
     def run_jobs(self, cache: Cache, env: Env) -> bool:
         self.job_managers = deque()
@@ -32,20 +35,35 @@ class JobPipeline(ABC):
         return self.failed
 
     def status_update(self) -> bool:
+        for i in range(self._tmp_lines):
+            print(CLCU, end="")
+        self._tmp_lines = 0
+
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
-            print(job_man.update(), end='\r')
+            self.print_tmp(job_man.update())
             if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finish()
                 if msg:
-                    print(msg)
+                    self.reprint_final(msg)
                 if job_man.state == State.failed:
                     print(job_man.failures(), end='', file=sys.stderr)
                     self.failed = True
                     return False
             elif job_man.state == State.canceled:
-                print()
+                pass
             else:
                 self.job_managers.appendleft(job_man)
                 break
+        
+        if len(self.pipeline):
+            self.print_tmp(f"Active job: {self.pipeline[0].name}")
         return True
+
+    def print_tmp(self, msg, *args, **kwargs):
+        self._tmp_lines += 1
+        print(str(msg), *args, **kwargs)
+
+    def reprint_final(self, msg, *args, **kwargs):
+        self._tmp_lines = 0
+        print(CLCU + str(msg), *args, **kwargs)
