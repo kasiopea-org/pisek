@@ -27,11 +27,12 @@ in_globs=01*.in
 name=Subtask B
 points=2
 in_globs=02*.in
+predecessors=
 
 [test03]
 name=Subtask C
 points=6
-in_globs=02*.in 03*.in
+in_globs=03*.in
 
 [limits]
 # Time limit (seconds) for solutions
