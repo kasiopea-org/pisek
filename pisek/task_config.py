@@ -16,7 +16,7 @@
 import configparser
 import os
 import re
-from typing import List, Dict, Optional, TypeVar, Callable
+from typing import Union, Optional, TypeVar, Callable
 
 DEFAULT_TIMEOUT : float = 360
 CONFIG_FILENAME = "config"
@@ -30,7 +30,7 @@ class CheckedConfigParser(configparser.RawConfigParser):
     Like ConfigParser, but allows checking whether there are unused keys.
     """
 
-    used_vars: Dict[str, set] = {}
+    used_vars: dict[str, set] = {}
 
     def get_unused_keys(self, section):
         all_options = self.options(section)
@@ -148,6 +148,11 @@ class TaskConfig(BaseEnv):
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
 
+        for subtask in subtasks.values():
+            err = subtask.construct_globs(subtasks)
+            if isinstance(err, str):
+                return err
+
         return self.check_unused_keys(config)
 
     def get_maximum_score(self) -> int:
@@ -217,17 +222,17 @@ class SubtaskConfig(BaseEnv):
             self._set("name", config_section.get("name", "Samples"))
             self._set("score", int(config_section.get("points", 0)))
             self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
+            self._set("predecessors", config_section.get("predecessors", "").split())
         else:
             self._set("name", config_section.get("name", None))
             self._set("score", int(config_section["points"]))
-            self._set("in_globs", config_section.get("in_globs", self._all_previous_glob(subtask_number)).split())
+            self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
+            prev = "" if subtask_number == 1 else str(subtask_number-1)
+            self._set("predecessors",config_section.get("predecessors", prev).split())
+        self._constructing = False
 
-    def _all_previous_glob(self, subtask_number):
-        globs = []
-        for i in range(1, subtask_number+1):
-            i = str(i)
-            globs.append(f"{'0'*(2 - len(i))}{i}*.in")
-        return " ".join(globs)
+    def _glob_i(self, i):
+        return f"{'0'*(2 - len(str(i)))}{i}*.in"
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
@@ -239,6 +244,27 @@ class SubtaskConfig(BaseEnv):
     
     def globs_regex(self) -> str:
         return "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
+    
+    @BaseEnv.log_off
+    def construct_globs(self, subtasks) -> Union[str,list[str]]:
+        if self._constructing:
+            return "Cyclic predecessors subtasks."
+        self._constructing = True
+        if "all_globs" not in self._vars:
+            all_globs = set(self.in_globs)
+            for prev in self.predecessors:
+                if str(prev) not in subtasks:
+                    return f"No predecessor subtask with number {prev}"
+                prev_globs = subtasks[str(prev)].construct_globs(subtasks)
+                if isinstance(prev_globs, str):
+                    return prev_globs
+                for glob in prev_globs:
+                    all_globs.add(glob)
+            self._set("all_globs", list(sorted(all_globs)))
+
+        self._constructing = False
+        return self.all_globs
+
 
     @BaseEnv.log_off
     def __repr__(self):

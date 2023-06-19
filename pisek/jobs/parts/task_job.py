@@ -52,7 +52,7 @@ class TaskHelper:
     
     def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._globs_to_files(self._env.config.subtasks[0].in_globs, dir=self._env.config.samples_subdir)
+        ins = self._globs_to_files(self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir)
         outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
         return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
 
@@ -70,7 +70,7 @@ class TaskHelper:
         return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
-        return self._globs_to_files(subtask.in_globs)
+        return self._globs_to_files(subtask.all_globs)
 
     def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
         if dir is None:
