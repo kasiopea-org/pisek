@@ -52,6 +52,9 @@ class CheckerManager(TaskJobManager):
         return jobs
     
     def _evaluate(self) -> Any:
+        if len(self.jobs) == 0:
+            return
+
         for loose_subtask in self.loose_subtasks:
             err = loose_subtask.failed(self._env.config.fail_mode)
             if err is not None:
@@ -73,7 +76,7 @@ class LooseCheckJobGroup:
 
     def failed(self, fail_mode: str) -> Optional[str]:
         for pred in self.jobs:
-            results = map(lambda x: x.result, self.jobs[pred])
+            results = map(lambda x: x.result.kind, self.jobs[pred])
             if fail_mode == "all" and RunResultKind.OK in results:
                 job = self._index_job(pred, results, RunResultKind.OK)
                 return (
