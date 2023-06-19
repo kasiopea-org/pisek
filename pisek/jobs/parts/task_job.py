@@ -71,6 +71,9 @@ class TaskHelper:
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
         return self._globs_to_files(subtask.all_globs)
+    
+    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> List[str]:
+        return self._globs_to_files(subtask.in_globs)
 
     def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
         if dir is None:

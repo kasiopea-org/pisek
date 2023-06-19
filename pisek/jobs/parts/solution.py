@@ -91,7 +91,7 @@ class SolutionManager(TaskJobManager):
         expected = util.get_expected_score(self.solution, self._env.config)
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
-            points, err = sub_job.result(self._env.config.solution_fail_mode)
+            points, err = sub_job.result(self._env.config.fail_mode)
             if points is None:
                 return self.fail(f"Scoring on subtask {sub_job.num} failed:\n  " + err)
             elif sub_job.num == 0 and points == 0 and expected == self._env.config.get_maximum_score():
@@ -138,7 +138,7 @@ class SubtaskJobGroup:
 
         return s
 
-    def result(self, solution_fail_mode) -> tuple[Optional[int], str]:
+    def result(self, fail_mode) -> tuple[Optional[int], str]:
         prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
         new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
         
@@ -147,7 +147,7 @@ class SubtaskJobGroup:
         elif len(new_points) == 0:
             return (min(prev_points), "")
 
-        if solution_fail_mode == "all" and self.num > 0:  # Don't check this on samples 
+        if fail_mode == "all" and self.num > 0:  # Don't check this on samples 
             if max(new_points) != min(new_points):
                 return (None, "Only some inputs were not correct.")
             if len(prev_points) > 0 and min(new_points) > min(prev_points):

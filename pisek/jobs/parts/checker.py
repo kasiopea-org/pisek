@@ -1,5 +1,5 @@
 import termcolor
-from typing import List
+from typing import Any, Optional
 
 from pisek.env import Env
 from pisek.jobs.cache import CacheResultEnum
@@ -15,7 +15,7 @@ class CheckerManager(TaskJobManager):
         self.skipped_checker = ""
         super().__init__("Checker Manager")
 
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self) -> list[Job]:
         if self._env.config.checker is None:
             if self._env.strict:
                 return self.fail("No checker specified in config.")
@@ -33,13 +33,30 @@ class CheckerManager(TaskJobManager):
 
         jobs = [compile := Compile(checker, self._env.fork())]
         
+        self.loose_subtasks = []
         for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
             for inp in self._subtask_inputs(sub):
-                jobs.append(check := CheckerJob(checker, inp, sub_num, new_env.fork()))
+                jobs.append(check := CheckerJob(checker, inp, sub_num, RunResultKind.OK, new_env.fork()))
                 check.add_prerequisite(compile)
+
+        for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
+            if sub.predecessors:
+                self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
+                for pred in sub.predecessors:
+                    self.loose_subtasks[-1].jobs[pred] = []
+                    for inp in self._subtask_new_inputs(sub):
+                        jobs.append(check := CheckerJob(checker, inp, pred, None, new_env.fork()))
+                        self.loose_subtasks[-1].jobs[pred].append(check)
+                        check.add_prerequisite(compile)
 
         return jobs
     
+    def _evaluate(self) -> Any:
+        for loose_subtask in self.loose_subtasks:
+            err = loose_subtask.failed(self._env.config.fail_mode)
+            if err is not None:
+                return self.fail(err)
+
     def _get_status(self) -> str:
         if self.skipped_checker:
             if self.state == State.succeeded:
@@ -49,9 +66,39 @@ class CheckerManager(TaskJobManager):
         else:
             return super()._get_status()
 
+class LooseCheckJobGroup:
+    def __init__(self, num: int):
+        self.num = num
+        self.jobs = {}
+
+    def failed(self, fail_mode: str) -> Optional[str]:
+        for pred in self.jobs:
+            results = map(lambda x: x.result, self.jobs[pred])
+            if fail_mode == "all" and RunResultKind.OK in results:
+                job = self._index_job(pred, results, RunResultKind.OK)
+                return (
+                    f"Checker is not strict enough:\n"
+                    f"All inputs of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
+                    f"but on input {job.input_name} did not."
+                )
+            if fail_mode == "any" and RunResultKind.RUNTIME_ERROR not in results:
+                return (
+                    f"Checker is not strict enough:\n"
+                    f"An input of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
+                    f"but all have passed."
+                )
+            if RunResultKind.TIMEOUT in results:
+                job = self._index_job(pred, results, RunResultKind.TIMEOUT)
+                return (
+                    f"Checker timeouted on input {job.input_name}, subtask {self.num}."
+                )
+
+    def _index_job(self, pred: int, results: list[RunResultKind], result: RunResultKind) -> Job:
+        return self.jobs[pred][results.index(result)]
+
 
 class CheckerJob(ProgramJob):
-    def __init__(self, checker: str, input_name: str, subtask: int, env):
+    def __init__(self, checker: str, input_name: str, subtask: int, expected: Optional[RunResultKind], env: Env):
         self.subtask = subtask
         super().__init__(
             name=f"Check {input_name} on subtask {subtask}",
@@ -60,6 +107,7 @@ class CheckerJob(ProgramJob):
         )
         self.input_name = input_name
         self.input_file = self._data(input_name)
+        self.expected = expected
 
     def _check(self) -> RunResult:
         return self._run_program(
@@ -71,7 +119,12 @@ class CheckerJob(ProgramJob):
         result = self._check()
         if result is None:
             return
-        if result.kind != RunResultKind.OK:
-            return self._program_fail(f"Checker failed on {self.input_name}:", result)
-
-# TODO: Checker distinguishes subtasks
+        if self.expected == RunResultKind.OK != result.kind:
+            return self._program_fail(
+                f"Checker failed on {self.input_name} (subtask {self.subtask}) but should have succeeded.", result
+            )
+        elif self.expected == RunResultKind.RUNTIME_ERROR != result.kind:
+            return self._program_fail(
+                f"Checker succeeded on {self.input_name} (subtask {self.subtask}) but should have failed.", result
+            )
+        return result

@@ -102,7 +102,7 @@ class TaskConfig(BaseEnv):
         else:
             self._set("judge", "diff")
 
-        self._set("solution_fail_mode", "all" if contest_type == "kasiopea" else "any")
+        self._set("fail_mode", "all" if contest_type == "kasiopea" else "any")
         # Relevant for CMS interactive tasks. The file to be linked with
         # the contestant's solution (primarily for C++)
         self._set("solution_manager", config["tests"].get("solution_manager"))
