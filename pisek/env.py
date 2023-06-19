@@ -5,7 +5,7 @@ class BaseEnv:
     """Collection of enviroment variables witch logs whether each variable was accessed."""
     def __init__(self, accessed : MutableSet[str] = set([]), **vars) -> None:
         self._vars = vars
-        self._log_on = True
+        self._log_off = 0
         self._reserved = False
         self._accessed = copy(accessed)
 
@@ -16,7 +16,7 @@ class BaseEnv:
             return self
         
         first = name.split(".", 1)[0]
-        if self._log_on and first in self._vars:  # I don't know how __iter__ can get in here, but apparently
+        if self._log_off <= 0 and first in self._vars:  # I don't know how __iter__ can get in here, but apparently
             self._accessed.add(first)
 
         if "." in name:
@@ -58,7 +58,11 @@ class BaseEnv:
 
     def _set_log(self, val: bool) -> None:
         """Sets logging for this env and all subenvs."""
-        self._log_on = val
+        if val:
+            self._log_off -= 1
+        else:
+            self._log_off += 1
+
         for var in self._vars:
             if isinstance(self._vars[var], BaseEnv):
                 self._vars[var]._set_log(val)
