@@ -37,6 +37,8 @@ class TaskPipeline(JobPipeline):
         checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)
 
+        judge.add_prerequisite(samples)
+        
         if env.solutions:
             self.pipeline.append(primary_solution := SolutionManager(env.config.primary_solution))
             primary_solution.add_prerequisite(generator)
