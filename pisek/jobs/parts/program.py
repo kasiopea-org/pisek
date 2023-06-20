@@ -81,15 +81,17 @@ class ProgramJob(TaskJob):
         return True
     
     def _load_compiled(self) -> bool:
-        executable = self._get_executable()
-        if not self._file_exists(executable):
-            self.fail(
-                f"Program {self.executable} does not exist, "
-                f"although it should have been compiled already."
-            )
-            return False
-        self.executable = executable
-        return True
+        program_name = os.path.basename(self.program)
+        for name in [program_name, self._name_without_expected_score(program_name)]:
+            self.executable = self._executable(name)
+            if not os.path.exists(self.executable):  # No caching here is intentional
+                continue
+            return True
+        
+        return self.fail(
+            f"Program {self.name} does not exist, "
+            f"although it should have been compiled already."
+        )
 
     def _run_raw(self, args, timeout: Optional[float] = None, **kwargs) -> RunResult:
         if timeout is None:
