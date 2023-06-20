@@ -74,15 +74,15 @@ class ScriptCompileRules(CompileRules):
             return result_filepath
 
         if not self.valid_shebang(filepath):
-            raise RuntimeError(
-                f"{filename} má neplatný shebang. "
-                "Pro Python by měl první řádek být pravděpodobně '#!/usr/bin/env python3' či ekvivalent. "
-                " Zkontroluj taky, že soubor používá linuxové konce řádků."
+            return (
+                f"{filename} has invalid shebang. "
+                "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
+                "Check also that you are using linux eol."
             )
 
         shutil.copyfile(filepath, result_filepath)
         self._chmod_exec(result_filepath)
-        return result_filepath
+        return None
 
     @staticmethod
     def valid_shebang(filepath: str) -> bool:
@@ -142,7 +142,7 @@ class CPPCompileRules(CompileRules):
             cpp_flags += manager_flags(dirname, manager, ".cpp")
 
         gpp = subprocess.run(["g++", filepath, "-o", result_filepath] + cpp_flags)
-        return result_filepath if gpp.returncode == 0 else None
+        return None if gpp.returncode == 0 else "Compilation failed"
 
 
 class CCompileRules(CompileRules):
@@ -169,7 +169,7 @@ class CCompileRules(CompileRules):
             c_flags += manager_flags(dirname, manager, ".c")
 
         gcc = subprocess.run(["gcc", filepath, "-o", result_filepath] + c_flags)
-        return result_filepath if gcc.returncode == 0 else None
+        return None if gcc.returncode == 0 else "Compilation failed"
 
 
 class PascalCompileRules(CompileRules):
@@ -191,7 +191,7 @@ class PascalCompileRules(CompileRules):
 
         pas_flags = ["-gl", "-O3", "-Sg", "-FE" + build_dir]
         fpc = subprocess.run(["fpc"] + pas_flags + [filepath])
-        return result_filepath if fpc.returncode == 0 else None
+        return None if fpc.returncode == 0 else "Compilation failed"
 
 
 COMPILE_RULES: List[CompileRules] = [

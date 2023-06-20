@@ -64,14 +64,17 @@ class ProgramJob(TaskJob):
         if program is None:
             return False
 
-        self.executable = compile.compile(
+        result = compile.compile(
             program,
             build_dir=self._executable("."),
             compiler_args=compiler_args,
         )
-        if self.executable is None:
-            self.fail(f"Program {self.program} could not be compiled.")
+        if result is not None:
+            self.fail(f"Program {self.program} could not be compiled: {tab(result)}")
             return False
+        if not self._load_compiled():
+            return False
+
         self._access_file(program)
         self._access_file(self.executable)
 
