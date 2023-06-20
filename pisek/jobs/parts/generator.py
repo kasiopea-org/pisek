@@ -127,8 +127,13 @@ class OfflineGeneratorGenerate(ProgramJob):
         if not self._load_compiled():
             return None
 
-        data_dir = self._env.config.get_data_dir()
+        # Clear old inputs
+        samples = self._subtask_inputs(self._env.config.subtasks['0'])
+        for inp in self._all_inputs():
+            if inp not in samples:
+                os.remove(self._data(inp))
 
+        data_dir = self._env.config.get_data_dir()
         result = self._run_program([data_dir])
 
         if result is None:
