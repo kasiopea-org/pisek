@@ -76,7 +76,7 @@ class LooseCheckJobGroup:
 
     def failed(self, fail_mode: str) -> Optional[str]:
         for pred in self.jobs:
-            results = map(lambda x: x.result.kind, self.jobs[pred])
+            results = list(map(lambda x: x.result.kind, self.jobs[pred]))
             if fail_mode == "all" and RunResultKind.OK in results:
                 job = self._index_job(pred, results, RunResultKind.OK)
                 return (
