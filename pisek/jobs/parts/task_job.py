@@ -70,10 +70,19 @@ class TaskHelper:
         return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
-        return self._globs_to_files(subtask.all_globs)
+        if self._env.config.contest_type == "cms":
+            return self._globs_to_files(subtask.all_globs)
+        else:
+            inputs = set([])
+            for glob in subtask.all_globs:
+                inputs |= set(self._globs_to_files([glob])[:self._env.inputs])
+            return list(sorted(inputs))
     
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> List[str]:
-        return self._globs_to_files(subtask.in_globs)
+        inputs = self._globs_to_files(subtask.in_globs)
+        if self._env.config.contest_type == "kasiopea":
+            inputs = inputs[:self._env.inputs]
+        return inputs
 
     def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
         if dir is None:
