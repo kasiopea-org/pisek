@@ -13,7 +13,7 @@ CheckerResult = CacheResultEnum('ok', 'failed')
 class CheckerManager(TaskJobManager):
     def __init__(self):
         self.skipped_checker = ""
-        super().__init__("Checker Manager")
+        super().__init__("Running checker")
 
     def _get_jobs(self) -> list[Job]:
         if self._env.config.checker is None:

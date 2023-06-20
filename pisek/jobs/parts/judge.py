@@ -29,7 +29,7 @@ class SolutionResult(yaml.YAMLObject):
 
 class JudgeManager(TaskJobManager):
     def __init__(self):
-        super().__init__("Judge Manager")
+        super().__init__("Preparing judge")
 
     def _get_jobs(self) -> list[Job]:
         jobs = []

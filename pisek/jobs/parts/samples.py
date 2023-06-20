@@ -8,7 +8,7 @@ from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 
 class SampleManager(TaskJobManager):
     def __init__(self):
-        super().__init__("Sample Manager")
+        super().__init__("Checking samples")
 
     def _get_jobs(self) -> List[Job]:
         samples = self._get_samples()

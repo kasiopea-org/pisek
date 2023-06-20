@@ -12,7 +12,7 @@ from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compi
 
 class GeneratorManager(TaskJobManager):
     def __init__(self):
-        super().__init__("Generator Manager")
+        super().__init__("Running generator")
 
     def _get_jobs(self) -> List[Job]:
         generator = self._resolve_path(self._env.config.generator)
