@@ -138,12 +138,15 @@ class TaskConfig(BaseEnv):
             if subtask_number > 0 and "points" not in config[section_name]:
                 return f"Missing key 'points' in section [{section_name}]"
 
-            subtasks[str(subtask_number)] = SubtaskConfig(
-                subtask_number, config[section_name]
-            )
+            subtask_config = SubtaskConfig(subtask_number, config[section_name])
+            subtasks[str(subtask_number)] = subtask_config
+            err = subtask_config.load()
+            if err:
+                return self.fail(f"Error while loading subtask {m}:\n{tab(err)}")
 
         if "0" not in subtasks:  # Add samples
             subtasks["0"] = SubtaskConfig(0, configparser.SectionProxy(config, "test00"))
+            subtasks["0"].load()  # This shouldn't fail for default values
 
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
@@ -218,17 +221,21 @@ class SubtaskConfig(BaseEnv):
         self, subtask_number: int, config_section: configparser.SectionProxy
     ) -> None:
         super().__init__()
-        if subtask_number == 0:  # samples
-            self._set("name", config_section.get("name", "Samples"))
-            self._set("score", int(config_section.get("points", 0)))
-            self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
-            self._set("predecessors", config_section.get("predecessors", "").split())
+        self._subtask_number = subtask_number
+        self._config_section = config_section
+
+    def load(self) -> Optional[str]:
+        if self._subtask_number == 0:  # samples
+            self._set("name", self._config_section.get("name", "Samples"))
+            self._set("score", int(self._config_section.get("points", 0)))
+            self._set("in_globs", self._config_section.get("in_globs", "sample*.in").split())
+            self._set("predecessors", self._config_section.get("predecessors", "").split())
         else:
-            self._set("name", config_section.get("name", None))
-            self._set("score", int(config_section["points"]))
-            self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
-            prev = "" if subtask_number == 1 else str(subtask_number-1)
-            self._set("predecessors",config_section.get("predecessors", prev).split())
+            self._set("name", self._config_section.get("name", None))
+            self._set("score", int(self._config_section["points"]))
+            self._set("in_globs", self._config_section.get("in_globs", self._glob_i(self._subtask_number)).split())
+            prev = "" if self._subtask_number == 1 else str(self._subtask_number-1)
+            self._set("predecessors",self._config_section.get("predecessors", prev).split())
         self._constructing = False
 
     def _glob_i(self, i):
