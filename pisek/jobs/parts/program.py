@@ -94,9 +94,11 @@ class ProgramJob(TaskJob):
 
         executable = args[0]
         self._access_file(executable)
+        opened = []
         for std, mode in [('stdin', 'r'), ('stdout', 'w'), ('stderr', 'w')]:
             if std in kwargs and isinstance(kwargs[std], str):
                 kwargs[std] = self._open_file(kwargs[std], mode)
+                opened.append(kwargs[std])
             else:
                 kwargs[std] = subprocess.PIPE
         
@@ -104,6 +106,9 @@ class ProgramJob(TaskJob):
             result = subprocess.run(args, timeout=timeout, **kwargs)
         except subprocess.TimeoutExpired:
             return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout po {timeout}s")
+        finally:
+            for stream in opened:
+                stream.close()
         return completed_process_to_run_result(result)
 
     def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
