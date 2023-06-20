@@ -5,9 +5,9 @@ import shutil
 import tempfile
 import unittest
 
-from .. import task_config
-from ..jobs.task_pipeline import get_test_suite
-from ..util import quote_output, clean_task_dir
+from pisek import task_config
+from pisek.__main__ import test_task_path 
+from pisek.util import quote_output, clean_task_dir
 
 
 class TestFixture(unittest.TestCase):
@@ -69,42 +69,24 @@ class TestFixtureVariant(TestFixture):
 
         self.modify_task()
 
-        try:
-            # We lower the timeout to make the self-tests run faster. The solutions
-            # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
-            # and we want to consider it a timeout
-            suite = get_test_suite(
-                self.task_dir, timeout=1, n_seeds=1, in_self_test=True
+        # We lower the timeout to make the self-tests run faster. The solutions
+        # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
+        # and we want to consider it a timeout
+        @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
+        @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
+        def run(*args):
+            return test_task_path(
+                self.task_dir,
+                inputs=1,
+                strict=False,
+                no_checker=False,
+                full=False,
+                timeout=1,
             )
 
-            # with open(os.devnull, "w") as devnull:
-            output = io.StringIO()
-            runner = unittest.TextTestRunner(stream=output, failfast=True)
+        runner = unittest.TextTestRunner(failfast=True)
 
-            result = runner.run(suite)
-        except Exception as e:
-            if not self.catch_exceptions():
-                raise e
-            else:
-                self.assertFalse(
-                    self.expecting_success(),
-                    f"Neočekávaný výsledek testu: test vyhodil výjimku i když neměl: {e}",
-                )
-                return
-
-        out = output.getvalue()
-        out = quote_output(out)
-        # out = "\n".join([f"> {x}" for x in out.split("\n")])
-
-        self.assertEqual(
-            result.wasSuccessful(),
-            self.expecting_success(),
-            "Neočekávaný výsledek testu: test {}měl projít, ale {}prošel.".format(
-                "" if self.expecting_success() else "ne",
-                "" if result.wasSuccessful() else "ne",
-            )
-            + "\nVýstup testu:\n{}".format(out),
-        )
+        self.assertEqual(run(), not self.expecting_success())
 
         self.check_end_state()
 
