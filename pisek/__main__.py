@@ -29,33 +29,29 @@ from pisek.license import license, license_gnu
 import pisek.cms as cms
 from pisek.visualize import visualize_command
 
-DEFAULT_ENVS = {
-    'full': False,
-    'strict': False,
-    'no_checker': False,
-    'inputs': 5,
-}
-
 def eprint(msg, *args, **kwargs):
     print(msg, *args, file=sys.stderr, **kwargs)
 
 
-def test_task(args, solutions: Optional[list[str]] = None, **additional_args):
+def test_task(args, **kwargs):
     cwd = os.getcwd()
+    return (test_task_path(cwd, **vars(args), **kwargs))
 
-    config = TaskConfig(cwd)
+def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
+    config = TaskConfig(path)
     err = config.load()
     if err:
         eprint(f"Error when loading config:\n  {err}")
-        exit(1)
+        return 1
 
     if solutions is None:
         solutions = config.get_without_log('solutions')
 
-    env = Env.from_namespace(
-        cwd, config, args,
+    env = Env(
+        task_dir=path,
+        config=config,
         solutions=solutions,
-        **additional_args
+        **env_args
     )
 
     pipeline = TaskPipeline(env.fork())
@@ -66,7 +62,7 @@ def test_solution(args):
     if args.solution is None:
         eprint(f"Enter solution name to test")
         eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
-        exit(1)
+        return 1
 
     eprint(f"Testing solution: {args.solution}")
     return test_task(args, solutions=[args.solution])
@@ -123,7 +119,7 @@ def main(argv):
 
     def add_argument_ninputs(parser):
         parser.add_argument(
-            "--number-of-tests",
+            "--inputs",
             "-n",
             type=int,
             default=5,
