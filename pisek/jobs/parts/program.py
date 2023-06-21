@@ -81,17 +81,15 @@ class ProgramJob(TaskJob):
         return True
     
     def _load_compiled(self) -> bool:
-        program_name = os.path.basename(self.program)
-        for name in [program_name, self._name_without_expected_score(program_name)]:
-            self.executable = self._executable(name)
-            if not os.path.exists(self.executable):  # No caching here is intentional
-                continue
-            return True
+        self.executable = self._executable(os.path.basename(self.program))
+        if not self._file_exists(self.executable):
+            self.fail(
+                f"Program {self.name} does not exist, "
+                f"although it should have been compiled already."
+            )
+            return False
+        return True
         
-        return self.fail(
-            f"Program {self.name} does not exist, "
-            f"although it should have been compiled already."
-        )
 
     def _run_raw(self, args, timeout: Optional[float] = None, **kwargs) -> RunResult:
         if timeout is None:
@@ -133,17 +131,13 @@ class ProgramJob(TaskJob):
         """
         extensions = compile.supported_extensions()
         candidates = []
-        candidate_names = [name, self._name_without_expected_score(name)]
-        for name in candidate_names: 
-            for ext in extensions:
-                if os.path.isfile(name + ext):
-                    candidates.append(name + ext)
-                if name.endswith(ext) and os.path.isfile(name):
-                    # Extension already present in `name`
-                    candidates.append(name)
-            if len(candidates):
-                break
-        
+        for ext in extensions:
+            if os.path.isfile(name + ext):
+                candidates.append(name + ext)
+            if name.endswith(ext) and os.path.isfile(name):
+                # Extension already present in `name`
+                candidates.append(name)
+
         if len(candidates) == 0:
             return self.fail(
                 f"No file with given name exists: {' or '.join(map(os.path.basename, candidate_names))}"
@@ -154,12 +148,6 @@ class ProgramJob(TaskJob):
             )
 
         return candidates[0]
-
-    def _name_without_expected_score(self, name: str):
-        match = re.fullmatch(r"(.*?)_([0-9]{1,3}|X)b", name)
-        if match:
-            return match[1]
-        return name
 
     def _program_fail(self, msg: str, res: RunResult):
         program_msg = ""
