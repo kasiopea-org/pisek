@@ -10,6 +10,7 @@ contest_type=cms
 
 solutions_subdir=solutions/
 solutions=solve solve_0b
+version=2
 
 [tests]
 in_mode=build
@@ -36,3 +37,14 @@ in_globs=*.in
 solve_time_limit=2
 # Time limit (seconds) for other solutions
 sec_solve_time_limit=2
+
+[solve]
+name=solve
+points=10
+subtasks=11
+
+[solve_0b]
+name=solve_0b
+points=0
+subtasks=10
+

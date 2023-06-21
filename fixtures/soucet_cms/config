@@ -7,6 +7,7 @@ name=vyberko-soucet
 # (generator doesn't require seed)
 contest_type=cms
 solutions=solve solve_3b solve_slow_4b solve_0b
+version=2
 
 [tests]
 # generator source file
@@ -37,4 +38,24 @@ in_globs=03*.in
 [limits]
 # Time limit (seconds) for solutions
 solve_time_limit=2
+
+[solve]
+name=solve
+points=10
+subtasks=1111
+
+[solve_3b]
+name=solve_3b
+points=3
+subtasks=X1X0
+
+[solve_slow_4b]
+name=solve_slow_4b
+points=4
+subtasks=1110
+
+[solve_0b]
+name=solve_0b
+points=0
+subtasks=0000
 

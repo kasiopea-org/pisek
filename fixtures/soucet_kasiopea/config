@@ -8,6 +8,7 @@ name=2019-doma-H
 tests=2
 
 solutions=solve solve_4b solve_slow_4b solve_0b
+version=2
 
 [tests]
 in_mode=online
@@ -27,6 +28,26 @@ points=4
 name=Těžký vstup
 file_name=H-tezky.txt
 points=6
+
+[solve]
+name=solve
+points=10
+subtasks=111
+
+[solve_4b]
+name=solve_4b
+points=4
+subtasks=110
+
+[solve_slow_4b]
+name=solve_slow_4b
+points=4
+subtasks=110
+
+[solve_0b]
+name=solve_0b
+points=0
+subtasks=100
 
 [limits]
 # Time limit (seconds) for solutions
