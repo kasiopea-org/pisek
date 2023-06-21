@@ -46,7 +46,7 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
         return 1
 
     if solutions is None:
-        solutions = config.get_without_log('solutions')
+        solutions = config.get_without_log('solution_names')
 
     env = Env(
         task_dir=path,

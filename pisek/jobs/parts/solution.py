@@ -89,7 +89,7 @@ class SolutionManager(TaskJobManager):
 
     def _evaluate(self) -> Any:
         total_points = 0
-        solution_conf = self._env.solutions[self.solution]
+        solution_conf = self._env.config.solutions[self.solution]
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]

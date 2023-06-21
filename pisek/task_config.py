@@ -168,7 +168,8 @@ class TaskConfig(BaseEnv):
             err = solutions[solution].load()
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
-
+        
+        self._set("solution_names", solutions_sections)
         self._set("solutions", BaseEnv(**solutions))
         self._set("primary_solution", solutions_sections[0])
 
