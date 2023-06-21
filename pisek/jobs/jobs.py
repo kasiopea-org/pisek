@@ -85,7 +85,7 @@ class Job(PipelineItem):
 
     def export(self, result: str) -> CacheEntry:
         sign, err = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
-        if err is "File nonexistent":
+        if err == "File nonexistent":
             raise RuntimeError(
                 f"Cannot compute signature of job {self.name}. "
                 f"Check if something else is changing files in task directory."
