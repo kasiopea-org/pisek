@@ -10,11 +10,14 @@ class BaseEnv:
         self._accessed = copy(accessed)
 
     def _get(self, name: str) -> Any:
-        """Gets variable of given name. If name contains a dot it is interpreted as variable of subenv."""
+        """
+        Gets variable of given name.
+        If name contains a dot it is interpreted as variable of subenv.
+        """
         name = name.lstrip(".")
         if name == "":
             return self
-        
+
         first = name.split(".", 1)[0]
         if self._log_off <= 0 and first in self._vars:  # I don't know how __iter__ can get in here, but apparently
             self._accessed.add(first)
@@ -28,6 +31,23 @@ class BaseEnv:
             if name not in self._vars:
                 raise KeyError(f"Env has no variable {name}")
             return self._vars[name]
+
+    def __contains__(self, name: str):
+        """
+        Returns whether variable of given name exists.
+        If name contains a dot it is interpreted as variable of subenv.
+        """
+        name = name.lstrip(".")
+        if name == "":
+            return self
+
+        if "." in name:
+            first, rest = name.split(".", 1)
+            if first not in self._vars:
+                return False
+            return (rest in self._vars[first])
+        else:
+            return name in self._vars
 
     def __getitem__(self, key) -> Any:
         return self._get(str(key))
