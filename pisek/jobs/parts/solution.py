@@ -20,7 +20,7 @@ class SolutionManager(TaskJobManager):
         # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
         # If you use the wrong one caching bugs will arise.
         solution_env = self._env.fork()
-        solution = self._solution(self.solution)
+        solution = self._solution(self._env.config.solutions[self.solution].name)
 
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
@@ -56,7 +56,8 @@ class SolutionManager(TaskJobManager):
                     if sub_num == "0":
                         c_out = inp.replace(".in", ".out")
                     else:
-                        c_out = util.get_output_name(inp, jud_env.config.primary_solution)
+                        primary_sol = jud_env.config.solutions[jud_env.config.primary_solution].name
+                        c_out = util.get_output_name(inp, primary_sol)
                     jobs.append(
                         run_judge := judge_job(
                             judge,
@@ -84,22 +85,35 @@ class SolutionManager(TaskJobManager):
         msg = f"Testing {self.solution} "
         if self.state == State.canceled:
             return self._job_bar(msg)
-        return  pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
+        return pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
 
     def _evaluate(self) -> Any:
         total_points = 0
-        expected = util.get_expected_score(self.solution, self._env.config)
+        solution_conf = self._env.solutions[self.solution]
+        expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
             points, err = sub_job.result(self._env.config.fail_mode)
             if points is None:
                 return self.fail(f"Scoring on subtask {sub_job.num} failed:\n  " + err)
-            elif sub_job.num == 0 and points == 0 and expected == self._env.config.get_maximum_score():
-                return self.fail(f"Solution {self.solution} should have passed all inputs but failed on samples.")
+
+            if expected[sub_job.num] == 1 and points != 1:
+                return self.fail(f"Solution {self.solution} should have succeeded on subtask {sub_job.num}.")
+            elif expected[sub_job.num] == 0 and points != 0:
+                return self.fail(f"Solution {self.solution} should have failed on subtask {sub_job.num}.")
+
             total_points += subtask.score * points
 
-        if expected is not None and total_points != expected:
-            return self.fail(f"Solution {self.solution} should have gotten {expected} but got {total_points} points.")
+        points = solution_conf.points
+        above = solution_conf.points_above
+        below = solution_conf.points_below
+
+        if points is not None and total_points != points:
+            return self.fail(f"Solution {self.solution} should have gotten {points} but got {total_points} points.")
+        elif above is not None and total_points < above:
+            return self.fail(f"Solution {self.solution} should have gotten at least {above} but got {total_points} points.")
+        elif below is not None and total_points > below:
+            return self.fail(f"Solution {self.solution} should have gotten at most {above} but got {total_points} points.")
 
 
 class PrimarySolutionManager(SolutionManager):
@@ -141,7 +155,7 @@ class SubtaskJobGroup:
     def result(self, fail_mode) -> tuple[Optional[int], str]:
         prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
         new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
-        
+
         if len(new_points) == 0 and len(prev_points) == 0:
             return (1.0, "")
         elif len(new_points) == 0:

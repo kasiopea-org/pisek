@@ -35,7 +35,7 @@ class JudgeManager(TaskJobManager):
         jobs = []
         if self._env.config.judge_type == "diff":
             jobs = []
-            
+
             if self._env.config.contest_type == "cms":
                 jobs.append(build := BuildCMSDiff(self._env.fork()))
             else:
