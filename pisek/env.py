@@ -116,6 +116,14 @@ class BaseEnv:
         memo[id(copy)] = copy
         return copy
 
+    def __repr__(self):
+        return (f"<{self.__class__.__name__} " +
+            ", ".join([f"{name}=<{var.__class__.__name__}>" if isinstance(var, BaseEnv) else f"{name}={var}"
+                for name, var in self._vars.items()]) +
+        ">")
+
+    __str__ = __repr__
+
 class Env(BaseEnv):
     """Top level BaseEnv"""
     pass
