@@ -23,6 +23,7 @@ from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.env import Env
 from pisek.jobs.cache import Cache
+from pisek.jobs.status import tab
 
 from pisek import util
 from pisek.license import license, license_gnu
@@ -41,7 +42,7 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
     config = TaskConfig(path)
     err = config.load()
     if err:
-        eprint(f"Error when loading config:\n  {err}")
+        eprint(f"Error when loading config:\n{tab(err)}")
         return 1
 
     if solutions is None:
