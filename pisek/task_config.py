@@ -170,7 +170,7 @@ class TaskConfig(BaseEnv):
                 return f"Error while loading solution {solution}:\n  {err}"
 
         self._set("solutions", BaseEnv(**solutions))
-        self._set("primary_solution", solutions[solutions_sections[0]])
+        self._set("primary_solution", solutions_sections[0])
 
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
