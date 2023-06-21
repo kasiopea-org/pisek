@@ -63,27 +63,29 @@ class Job(PipelineItem):
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
-    def _signature(self, envs: list[str], files: AbstractSet[str], results: dict[Any]) -> Optional[str]:
+    def _signature(self, envs: list[str], files: AbstractSet[str], results: dict[Any]) -> tuple[Optional[str]]:
         sign = hashlib.sha256()
         for variable in sorted(envs):
+            if variable not in self._env:
+                return (None, "Env nonexistent")
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
         for file in sorted(files):
             if not os.path.exists(file):
-                return None
+                return (None, "File nonexistent")
             with open(file, 'rb') as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
         for name, result in sorted(results.items()):
             sign.update(f"{name}={result}".encode())
-        return sign.hexdigest()
+        return (sign.hexdigest(), None)
 
     def same_signature(self, cache_entry: CacheEntry) -> bool:
         sign = self._signature(cache_entry.envs, cache_entry.files, self.prerequisites_results)
         return cache_entry.signature == sign
 
     def export(self, result: str) -> CacheEntry:
-        sign = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
-        if sign is None:
+        sign, err = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
+        if err is "File nonexistent":
             raise RuntimeError(
                 f"Cannot compute signature of job {self.name}. "
                 f"Check if something else is changing files in task directory."
