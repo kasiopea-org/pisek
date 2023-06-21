@@ -140,7 +140,7 @@ class ProgramJob(TaskJob):
 
         if len(candidates) == 0:
             return self.fail(
-                f"No file with given name exists: {' or '.join(map(os.path.basename, candidate_names))}"
+                f"No file with given name exists: {name}"
             )
         if len(candidates) > 1:
             return self.fail(
