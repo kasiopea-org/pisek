@@ -108,7 +108,7 @@ class ProgramJob(TaskJob):
         try:
             result = subprocess.run(args, timeout=timeout, **kwargs)
         except subprocess.TimeoutExpired:
-            return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout po {timeout}s")
+            return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout after {timeout}s")
         finally:
             for stream in opened:
                 stream.close()
