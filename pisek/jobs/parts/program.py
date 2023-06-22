@@ -162,7 +162,7 @@ class ProgramJob(TaskJob):
             else:
                 program_msg += " (none)"
             program_msg += "\n"
-        return program_msg
+        return program_msg[:-1]
 
 class Compile(ProgramJob):
     def __init__(self, program: str, env: Env, compile_args: Dict = {}) -> None:
