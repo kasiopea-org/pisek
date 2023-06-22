@@ -150,6 +150,9 @@ class ProgramJob(TaskJob):
         return candidates[0]
 
     def _program_fail(self, msg: str, res: RunResult):
+        self.fail(f"{msg}\n{self._quote_program(res)}")
+ 
+    def _quote_program(self, res: RunResult):
         program_msg = ""
         for std in ('stdout', 'stderr'):
             program_msg += f"{std}:"
@@ -159,7 +162,7 @@ class ProgramJob(TaskJob):
             else:
                 program_msg += " (none)"
             program_msg += "\n"
-        self.fail(f"{msg}\n{program_msg}")
+        return program_msg
 
 class Compile(ProgramJob):
     def __init__(self, program: str, env: Env, compile_args: Dict = {}) -> None:

@@ -114,9 +114,9 @@ class RunJudge(ProgramJob):
             if solution_res.kind == RunResultKind.OK:
                 result = self._judge()
             elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-                result = SolutionResult(Verdict.error, 0.0)
+                result = SolutionResult(Verdict.error, 0.0, self._quote_program(solution_res))
             elif solution_res.kind == RunResultKind.TIMEOUT:
-                result = SolutionResult(Verdict.timeout, 0.0)
+                result = SolutionResult(Verdict.timeout, 0.0, self._quote_program(solution_res))
         else:
             result = self._judge()
 
@@ -147,9 +147,9 @@ class RunKasiopeaJudge(RunJudge):
         if result is None:
             return
         if result.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0)
+            return SolutionResult(Verdict.ok, 1.0, self._quote_program(result))
         elif result.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0)
+            return SolutionResult(Verdict.wrong_answer, 0.0, self._quote_program(result))
         else:
             return self._program_fail(f"Judge failed on output {self.output_name}:", result)
 

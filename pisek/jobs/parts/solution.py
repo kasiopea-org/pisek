@@ -4,10 +4,10 @@ from typing import List, Any, Optional
 import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
-from pisek.jobs.status import pad, MSG_LEN
+from pisek.jobs.status import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
-from pisek.jobs.parts.judge import judge_job
+from pisek.jobs.parts.judge import judge_job, RunJudge
 
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
@@ -93,14 +93,24 @@ class SolutionManager(TaskJobManager):
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
-            points, err = sub_job.result(self._env.config.fail_mode)
+            exp_sub = expected[sub_job.num]
+            (points, err), results = sub_job.result(self._env.config.fail_mode)
             if points is None:
-                return self.fail(f"Scoring on subtask {sub_job.num} failed:\n  " + err)
+                return self.fail(
+                    f"Scoring on subtask {sub_job.num} failed:\n" +
+                    tab(f"{err}:\n{tab(results[0 if exp_sub is None else exp_sub])}")
+                )
 
-            if expected[sub_job.num] == 1 and points != 1:
-                return self.fail(f"Solution {self.solution} should have succeeded on subtask {sub_job.num}.")
-            elif expected[sub_job.num] == 0 and points != 0:
-                return self.fail(f"Solution {self.solution} should have failed on subtask {sub_job.num}.")
+            if exp_sub == 1 and points != 1:
+                return self.fail(
+                    f"Solution {self.solution} should have succeeded on subtask {sub_job.num}:\n" +
+                    tab(results[1])
+                )
+            elif exp_sub == 0 and points != 0:
+                return self.fail(
+                    f"Solution {self.solution} should have failed on subtask {sub_job.num}:\n" +
+                    tab(results[0])
+                )
 
             total_points += subtask.score * points
 
@@ -126,10 +136,10 @@ class SubtaskJobGroup:
         self.num = int(num)
         self.previous_jobs = []
         self.new_jobs = []
-    
+
     def _job_results(self, jobs: List[Job]) -> List[Optional[Verdict]]:
         return list(map(lambda j: j.result, jobs))
-    
+
     def __str__(self) -> str:
         s = "("
         previous = list(map(
@@ -143,7 +153,7 @@ class SubtaskJobGroup:
         s += ") "
         if s == "() ":
             s = ""
- 
+
         for result in self._job_results(self.new_jobs):
             if result is None:
                 s += ' '
@@ -152,22 +162,43 @@ class SubtaskJobGroup:
 
         return s
 
-    def result(self, fail_mode) -> tuple[Optional[int], str]:
+    def result(self, fail_mode) -> tuple[tuple[Optional[int], str], tuple[str]]:
         prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
         new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
+        
+        all_jobs = self.previous_jobs + self.new_jobs
+        all_points = prev_points + new_points
+        result_msg = tuple(self._job_msg(all_jobs[all_points.index(fn(all_points))]) for fn in (max, min))
 
         if len(new_points) == 0 and len(prev_points) == 0:
-            return (1.0, "")
+            return (1.0, ""), result_msg
         elif len(new_points) == 0:
-            return (min(prev_points), "")
+            return (min(prev_points), ""), result_msg
 
         if fail_mode == "all" and self.num > 0:  # Don't check this on samples 
             if max(new_points) != min(new_points):
-                return (None, "Only some inputs were not correct.")
+                return (None, "Only some inputs were incorrect"), result_msg
             if len(prev_points) > 0 and min(new_points) > min(prev_points):
-                return (None, "Previous subtask failed but this did not.")
+                return (None, "Previous subtask failed but this did not"), result_msg
 
-        return (min(prev_points + new_points), "")
+        return (min(prev_points + new_points), ""), result_msg
+
+    def _job_msg(self, job: RunJudge) -> str:
+        res = job.result
+        inp = os.path.basename(job.input_name)
+        out = os.path.basename(job.output_name)
+        if res.verdict == Verdict.ok:
+            head = f"Judge accepted {out}"
+        elif res.verdict == Verdict.wrong_answer:
+            head = f"Judge rejected {out}"
+        elif res.verdict == Verdict.partial:
+            head = f"Judge partially accepted {out}"
+        elif res.verdict == Verdict.error:
+            head = f"Solution ended with errors on input {inp}"
+        elif res.verdict == Verdict.timeout:
+            head = f"Solution did timeout on input {inp}"
+
+        return f"{head}:\n{tab(res.message)}"
 
 class RunSolution(ProgramJob):
     def __init__(self, solution: str, input_name: str, timeout: Optional[float], env: Env) -> None:
