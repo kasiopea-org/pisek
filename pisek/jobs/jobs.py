@@ -80,7 +80,7 @@ class Job(PipelineItem):
         return (sign.hexdigest(), None)
 
     def same_signature(self, cache_entry: CacheEntry) -> bool:
-        sign = self._signature(cache_entry.envs, cache_entry.files, self.prerequisites_results)
+        sign, err = self._signature(cache_entry.envs, cache_entry.files, self.prerequisites_results)
         return cache_entry.signature == sign
 
     def export(self, result: str) -> CacheEntry:
