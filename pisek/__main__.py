@@ -264,6 +264,8 @@ def main(argv):
     add_argument_limit(parser_visualize)
     add_argument_segments(parser_visualize)
 
+    parser_update = subparsers.add_parser("update", help="Update config to newer version")
+
     parser_license = subparsers.add_parser("license", help="vypiš licenci písku")
     parser_license.add_argument(
         "--print", action="store_true", help="Vypiš celou licenci"
