@@ -7,7 +7,7 @@ import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
 from pisek.jobs.status import tab
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict, VerdictStr
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 
@@ -16,7 +16,7 @@ DIFF_NAME = "diff.sh"
 @dataclass
 class SolutionResult(yaml.YAMLObject):
     yaml_tag = u'!SolutionResult'
-    verdict: str
+    verdict: VerdictStr
     points: float
     message: str = ""
 

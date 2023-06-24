@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-from typing import List, Tuple, Optional, Any, Callable
+from typing import List, Tuple, Optional, Any, Callable, TypeVar
 
 from pisek.jobs.cache import CacheResultEnum
 import pisek.util as util
@@ -12,6 +12,7 @@ from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
 
+VerdictStr = TypeVar('VerdictStr', bound=str)
 Verdict = CacheResultEnum('ok', 'partial', 'wrong_answer', 'error', 'timeout')
 RESULT_MARK = {
     'ok': '·',
