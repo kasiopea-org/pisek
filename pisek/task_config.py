@@ -85,13 +85,13 @@ class TaskConfig(BaseEnv):
                 return f"Missing key '{key}' in section [{section}]"
 
         if "version" not in config["task"]:
-            return f"Config is of former version. Upgrade it with `pisek upgrade`"
+            return f"Config is of former version. Upgrade it with `pisek update`"
         try:
             version = int(config["task"]["version"])
         except ValueError:
             return f"Invalid version: {config['task']['version']}"
         if version < 2:
-            return f"Config is of former version. Upgrade it with `pisek upgrade`"
+            return f"Config is of former version. Upgrade it with `pisek update`"
         elif version > 2:
             return f"Unknown config version: {config['task']['version']}"
 
