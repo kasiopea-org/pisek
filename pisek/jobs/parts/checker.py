@@ -2,14 +2,12 @@ import termcolor
 from typing import Any, Optional
 
 from pisek.env import Env
-from pisek.jobs.cache import CacheResultEnum
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
 
-CheckerResult = CacheResultEnum('ok', 'failed')
 class CheckerManager(TaskJobManager):
     def __init__(self):
         self.skipped_checker = ""
