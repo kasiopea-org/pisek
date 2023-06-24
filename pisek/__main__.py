@@ -28,6 +28,7 @@ from pisek.jobs.status import tab
 from pisek import util
 from pisek.license import license, license_gnu
 import pisek.cms as cms
+from pisek.update_config import update
 from pisek.visualize import visualize_command
 
 def eprint(msg, *args, **kwargs):
@@ -350,6 +351,10 @@ def main(argv):
         visualize_command(args)
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
+    elif args.subcommand == "update":
+        result = update(os.getcwd())
+        if result:
+            eprint(result)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 
