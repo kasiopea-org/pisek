@@ -33,6 +33,8 @@ class CheckerManager(TaskJobManager):
         
         self.loose_subtasks = []
         for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
+            if sub_num == '0':
+                continue  # Skip samples
             for inp in self._subtask_inputs(sub):
                 jobs.append(check := CheckerJob(checker, inp, sub_num, RunResultKind.OK, new_env.fork()))
                 check.add_prerequisite(compile)
