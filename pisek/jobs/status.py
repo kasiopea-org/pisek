@@ -17,12 +17,15 @@ def tab(text: str, tab_str: str="  "):
 
 
 class StatusJobManager(JobManager):
+    """JobManager that implements useful methods for terminal interaction."""
     @staticmethod
     def _bar(msg: str, part: int, full: int, color : str = "cyan") -> str:
+        """Return progress bar with given parameters."""
         filled = BAR_LEN * part // full
         return f"{pad(msg, MSG_LEN)}{colored(filled*'━', color=color)}{colored((BAR_LEN-filled)*'━', color='grey')}  ({part}/{full})"
 
     def _job_bar(self, msg: str) -> str:
+        """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
         if self.state == State.canceled:
             return f"{pad(msg, MSG_LEN)}{colored('canceled', color='yellow')}"
@@ -38,9 +41,11 @@ class StatusJobManager(JobManager):
 
     @staticmethod
     def _fail_message(pitem: PipelineItem) -> str:
+        """Get fail message of given job."""
         return f'"{pitem.name}" failed:\n{tab(pitem.fail_msg)}\n'
 
     def failures(self) -> str:
+        """Returns failures of failed jobs."""
         fails = []
         for job in self._jobs_with_state(State.failed):
             fails.append(self._fail_message(job))
