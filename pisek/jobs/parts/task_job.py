@@ -27,24 +27,31 @@ class TaskHelper:
         return BUILD_DIR
 
     def _resolve_path(self, *path: str):
+        """Like os.path.join but adds current task directory."""
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
     def _executable(self, name: str) -> str:
+        """Path to executable with given basename."""
         return self._resolve_path(self._get_build_dir(), name)
 
     def _sample(self, name: str) -> str:
+        """Path to sample with given basename."""
         return self._resolve_path(self._env.config.samples_subdir, name)
 
     def _data(self, name: str) -> str:
+        """Path to data file (input or output) with given basename."""
         return self._resolve_path(self._env.config.data_subdir, name)
 
     def _output(self, input_name: str, solution: str):
+        """Path to output from given input and solution."""
         return self._data(util.get_output_name(input_name, solution))
     
     def _solution(self, name: str) -> str:
+        """Path to ssolution with given basename."""
         return self._resolve_path(self._env.config.solutions_subdir, name)
 
     def _get_seed(self, input_name: str):
+        """Get seed from input name."""
         parts = os.path.splitext(os.path.basename(input_name))[0].split("_")
         if len(parts) == 1:
             return "0"
@@ -58,6 +65,7 @@ class TaskHelper:
         return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
 
     def _all_inputs(self) -> List[str]:
+        """Get all input files"""
         all_inputs = sum([
             self._subtask_inputs(subtask)
             for _, subtask in sorted(self._env.config.subtasks.items())
@@ -71,6 +79,7 @@ class TaskHelper:
         return unique_all
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
+        """Get all inputs of given subtask."""
         if self._env.config.contest_type == "cms":
             return self._globs_to_files(subtask.all_globs)
         else:
@@ -80,6 +89,7 @@ class TaskHelper:
             return list(sorted(inputs))
     
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> List[str]:
+        """Get new inputs of given subtask."""
         inputs = self._globs_to_files(subtask.in_globs)
         if self._env.config.contest_type == "kasiopea":
             inputs = inputs[:self._env.inputs]
@@ -107,6 +117,7 @@ class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
     @staticmethod
     def _file_access(files: int):
+        """Adds first i args as accessed files."""
         def dec(f: Callable[...,Any]) -> Callable[...,Any]:
             def g(self, *args, **kwargs):
                 for i in range(files):
