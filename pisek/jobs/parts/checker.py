@@ -16,7 +16,7 @@ class CheckerManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         if self._env.config.checker is None:
             if self._env.strict:
-                return self.fail("No checker specified in config.")
+                return self._fail("No checker specified in config.")
             self.skipped_checker = termcolor.colored(
                 "Warning: No checker specified in config.\n"
                 "It is recommended to set `checker` is section [tests]",
@@ -58,7 +58,7 @@ class CheckerManager(TaskJobManager):
         for loose_subtask in self.loose_subtasks:
             err = loose_subtask.failed(self._env.config.fail_mode)
             if err is not None:
-                return self.fail(err)
+                return self._fail(err)
 
     def _get_status(self) -> str:
         if self.skipped_checker:

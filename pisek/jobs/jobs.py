@@ -21,27 +21,32 @@ class PipelineItem(ABC):
         self.required_by = []
         self.prerequisites_results = {}
 
-    def fail(self, message : str) -> None:
+    def _fail(self, message : str) -> None:
         if self.fail_msg != "":
             raise RuntimeError("PipelineItem cannot fail twice.")
         self.state = State.failed
         self.fail_msg = message
 
     def cancel(self) -> None:
+        """Cancels job and all that require it."""
+        if self.state == State.canceled:
+            return  # Canceled already
         self.state = State.canceled
         for item, _ in self.required_by:
             item.cancel()
 
-    def check_prerequisites(self) -> None:
+    def _check_prerequisites(self) -> None:
+        """Checks if all prerequisites are finished raises error otherwise."""
         if self.prerequisites > 0:
             raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
 
     def add_prerequisite(self, item, name: Optional[str] = None) -> None:
+        """Adds given PipelineItem as a prerequisite to this job."""
         self.prerequisites += 1
         item.required_by.append((self, name))
 
-
     def finish(self) -> None:
+        """Notifies PipelineItems that depend on this job."""
         if self.state == State.succeeded:
             for item, name in self.required_by:
                 item.prerequisites -= 1
@@ -60,10 +65,12 @@ class Job(PipelineItem):
         super().__init__(name)
 
     def _access_file(self, filename : str) -> None:
+        """Add file this job depends on."""
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
     def _signature(self, envs: list[str], files: AbstractSet[str], results: dict[Any]) -> tuple[Optional[str]]:
+        """Compute a signature (i.e. hash) of given envs, files and prerequisites results. """
         sign = hashlib.sha256()
         for variable in sorted(envs):
             if variable not in self._env:
@@ -79,11 +86,13 @@ class Job(PipelineItem):
             sign.update(f"{name}={result}".encode())
         return (sign.hexdigest(), None)
 
-    def same_signature(self, cache_entry: CacheEntry) -> bool:
+    def _same_signature(self, cache_entry: CacheEntry) -> bool:
+        """Checks whether this job has a same signature as a corresponding CacheEntry."""
         sign, err = self._signature(cache_entry.envs, cache_entry.files, self.prerequisites_results)
         return cache_entry.signature == sign
 
-    def export(self, result: str) -> CacheEntry:
+    def _export(self, result: str) -> CacheEntry:
+        """Export this job into CacheEntry."""
         sign, err = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
         if err == "File nonexistent":
             raise RuntimeError(
@@ -100,13 +109,14 @@ class Job(PipelineItem):
         )
 
     def run_job(self, cache: Cache) -> str:
+        """Run this job. If result is already in cache use it instead."""
         if self.state == State.canceled:
             return None
-        self.check_prerequisites()
+        self._check_prerequisites()
         self.state = State.running
 
         cached = False
-        if self.name in cache and self.same_signature(cache[self.name]):
+        if self.name in cache and self._same_signature(cache[self.name]):
             cached = True
             self.result = cache[self.name].result
         else:
@@ -114,58 +124,45 @@ class Job(PipelineItem):
 
         if self.state != State.failed:
             if not cached:
-                cache.add(self.export(self.result))
+                cache.add(self._export(self.result))
             self.state = State.succeeded
 
         return self.result
 
     @abstractmethod
     def _run(self):
-        """What the job actually does (without all the management)."""
+        """What this job actually does (without all the management)."""
         pass
 
 
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> list[Job]:
+        """Crates this JobManager's jobs."""
         if self.state == State.canceled:
             self.jobs = []
         else:
             self.state = State.running
             self._env = env.reserve()
-            self.check_prerequisites()
+            self._check_prerequisites()
             self.jobs = self._get_jobs()
             self.expectations = []
         return self.jobs
 
-    def expect_all(self, jobs, state : State, result : Any):
-        self.expect(all, jobs, state, result)
-
-    def expect_any(self, jobs, state : State, result : Any):
-        self.expect(any, jobs, state, result)
-
-    def expect(self, what : Callable[[list[bool]], bool], jobs : list[Job], state : State, result : Any) -> Callable[[], bool]:
-        def f():
-            return what(map(
-                lambda j: j.state == state and (result is None or j.result == result),
-                jobs
-            ))
-        self.expectations.append(f)
-
     @abstractmethod
     def _get_jobs(self, env: Env) -> list[Job]:
+        """Actually creates this JobManager's jobs (without management)."""
         pass
 
-    def _job_states(self):
+    def _job_states(self) -> tuple[State]:
+        """States of this manager's jobs."""
         return tuple(map(lambda j: j.state, self.jobs))
     
-    def _finished_jobs(self):
-        return self._job_states().count(State.succeeded)
-
-    def _failed_jobs(self) -> list[Job]:
-        return list(filter(lambda j: j.state == State.failed, self.jobs))
+    def _jobs_with_state(self, state: State) -> list[Job]:
+        return list(filter(lambda j: j.state == state, self.jobs))
 
     def update(self) -> str:
+        """Update this manager's state according to its jobs and return status."""
         states = self._job_states()
         if self.state in (State.failed, State.canceled):
             pass
@@ -188,13 +185,15 @@ class JobManager(PipelineItem):
         Returns whether manager is ready for evaluation.
         (i.e. All of it's jobs have finished)
         """
-        return self.state == State.running and self._finished_jobs() == len(self.jobs)
+        return self.state == State.running and len(self._jobs_with_state(State.succeeded)) == len(self.jobs)
 
     def any_failed(self) -> bool:
         """Returns whether this manager or its jobs had any failures so far."""
-        return self.state == State.failed or len(self._failed_jobs())
+        return self.state == State.failed or len(self._jobs_with_state(State.failed))
 
     def finish(self) -> str:
+        """Finishes this JobManager - Does final evaluation and returns final status."""
+
         if self.state == State.running:
             self.result = self._evaluate()
             if self.state == State.running:

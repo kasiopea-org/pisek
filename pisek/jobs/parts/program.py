@@ -70,7 +70,7 @@ class ProgramJob(TaskJob):
             compiler_args=compiler_args,
         )
         if result is not None:
-            self.fail(f"Program {self.program} could not be compiled: {tab(result)}")
+            self._fail(f"Program {self.program} could not be compiled: {tab(result)}")
             return False
         if not self._load_compiled():
             return False
@@ -83,7 +83,7 @@ class ProgramJob(TaskJob):
     def _load_compiled(self) -> bool:
         self.executable = self._executable(os.path.basename(self.program))
         if not self._file_exists(self.executable):
-            self.fail(
+            self._fail(
                 f"Program {self.name} does not exist, "
                 f"although it should have been compiled already."
             )
@@ -139,18 +139,18 @@ class ProgramJob(TaskJob):
                 candidates.append(name)
 
         if len(candidates) == 0:
-            return self.fail(
+            return self._fail(
                 f"No file with given name exists: {name}"
             )
         if len(candidates) > 1:
-            return self.fail(
+            return self._fail(
                 f"Multiple files with same name exist: {', '.join(candidates)}"
             )
 
         return candidates[0]
 
     def _program_fail(self, msg: str, res: RunResult):
-        self.fail(f"{msg}\n{self._quote_program(res)}")
+        self._fail(f"{msg}\n{self._quote_program(res)}")
  
     def _quote_program(self, res: RunResult):
         program_msg = ""

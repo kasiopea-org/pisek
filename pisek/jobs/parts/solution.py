@@ -96,18 +96,18 @@ class SolutionManager(TaskJobManager):
             exp_sub = expected[sub_job.num]
             (points, err), results = sub_job.result(self._env.config.fail_mode)
             if points is None:
-                return self.fail(
+                return self._fail(
                     f"Scoring on subtask {sub_job.num} failed:\n" +
                     tab(f"{err}:\n{tab(results[0 if exp_sub is None else exp_sub])}")
                 )
 
             if exp_sub == 1 and points != 1:
-                return self.fail(
+                return self._fail(
                     f"Solution {self.solution} should have succeeded on subtask {sub_job.num}:\n" +
                     tab(results[1])
                 )
             elif exp_sub == 0 and points != 0:
-                return self.fail(
+                return self._fail(
                     f"Solution {self.solution} should have failed on subtask {sub_job.num}:\n" +
                     tab(results[0])
                 )
@@ -119,11 +119,11 @@ class SolutionManager(TaskJobManager):
         below = solution_conf.points_below
 
         if points is not None and total_points != points:
-            return self.fail(f"Solution {self.solution} should have gotten {points} but got {total_points} points.")
+            return self._fail(f"Solution {self.solution} should have gotten {points} but got {total_points} points.")
         elif above is not None and total_points < above:
-            return self.fail(f"Solution {self.solution} should have gotten at least {above} but got {total_points} points.")
+            return self._fail(f"Solution {self.solution} should have gotten at least {above} but got {total_points} points.")
         elif below is not None and total_points > below:
-            return self.fail(f"Solution {self.solution} should have gotten at most {above} but got {total_points} points.")
+            return self._fail(f"Solution {self.solution} should have gotten at most {above} but got {total_points} points.")
 
 
 class PrimarySolutionManager(SolutionManager):

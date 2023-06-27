@@ -122,7 +122,7 @@ class RunJudge(ProgramJob):
 
         if self.expected_points is not None and result is not None and \
                 result.points != self.expected_points:
-            return self.fail(
+            return self._fail(
                 f"Output {self.output_name} for input {self.input_name} "
                 f"should have got {self.expected_points} points but got {result.points} points."
             )

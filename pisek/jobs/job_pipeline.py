@@ -9,6 +9,7 @@ from pisek.jobs.cache import Cache
 CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
 
 class JobPipeline(ABC):
+    """Runs given Jobs and JobManagers according to their prerequisites."""
     @abstractmethod
     def __init__(self, env):
         env.reserve()
@@ -28,20 +29,21 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            if not self.status_update(env) and not env.full:  # we really need to call status_update to update messages
+            if not self._status_update(env) and not env.full:  # we really need to call status_update to update messages
                 break
 
         cache.export()  # Remove duplicate cache entries
         return self.failed
 
-    def status_update(self, env: Env) -> bool:
+    def _status_update(self, env: Env) -> bool:
+        """Display current progress"""
         for _ in range(self._tmp_lines):
             print(CLCU, end="")
         self._tmp_lines = 0
 
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
-            self.print_tmp(job_man.update())
+            self._print_tmp(job_man.update())
             if not env.full and job_man.any_failed():
                 print(job_man.failures(), end='', file=sys.stderr)
                 self.failed = True
@@ -49,7 +51,7 @@ class JobPipeline(ABC):
             if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finish()
                 if msg:
-                    self.reprint_final(msg)
+                    self._reprint_final(msg)
                 if job_man.state == State.failed:
                     print(job_man.failures(), end='', file=sys.stderr)
                     self.failed = True
@@ -61,13 +63,15 @@ class JobPipeline(ABC):
                 break
         
         if len(self.pipeline):
-            self.print_tmp(f"Active job: {self.pipeline[0].name}")
+            self._print_tmp(f"Active job: {self.pipeline[0].name}")
         return True
 
-    def print_tmp(self, msg, *args, **kwargs):
-        self._tmp_lines += 1
+    def _print_tmp(self, msg, *args, **kwargs):
+        """Prints a text to be rewriten latter."""
+        self._tmp_lines += msg.count('\n') + 1
         print(str(msg), *args, **kwargs)
 
-    def reprint_final(self, msg, *args, **kwargs):
+    def _reprint_final(self, msg, *args, **kwargs):
+        """Rewrites current line with final messages."""
         self._tmp_lines = 0
         print(CLCU + str(msg), *args, **kwargs)

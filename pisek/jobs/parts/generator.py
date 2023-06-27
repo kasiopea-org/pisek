@@ -59,7 +59,7 @@ class OnlineGeneratorJob(ProgramJob):
         if not self._load_compiled():
             return None
         if seed < 0:
-            return self.fail(f"Seed {seed} is negative.")
+            return self._fail(f"Seed {seed} is negative.")
 
         input_dir = os.path.dirname(input_file)
         os.makedirs(input_dir, exist_ok=True)
@@ -99,7 +99,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
         if not self._gen(copy_file, self.seed, self.subtask):
             return
         if not self._files_equal(self.input_file, copy_file):
-            return self.fail(
+            return self._fail(
                 f"Generator is not deterministic. Files {self.input_name} and {os.path.basename(copy_file)} differ "
                 f"(subtask {self.subtask}, seed {self.seed})",
             )
@@ -114,7 +114,7 @@ class OnlineGeneratorRespectsSeed(TaskJob):
 
     def _run(self) -> None:
         if self._files_equal(self.file1, self.file2):
-            return self.fail(
+            return self._fail(
                 f"Generator doesn't respect seed."
                 f"Files {self.file1_name} (seed {self.seed1:x}) and {self.file2_name} (seed {self.seed2:x}) are same."
             )
@@ -146,13 +146,13 @@ class OfflineGeneratorGenerate(ProgramJob):
                 continue
             files = self._subtask_inputs(subtask)
             if len(files) == 0:
-                return self.fail(f"Generator did not generate any inputs for subtask {sub_num}.")
+                return self._fail(f"Generator did not generate any inputs for subtask {sub_num}.")
             for file in files:
                 self._access_file(self._data(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
         if len(test_files) == 0:
-            return self.fail(f"Generator did not generate ant inputs.")
+            return self._fail(f"Generator did not generate ant inputs.")
 
         return result
 

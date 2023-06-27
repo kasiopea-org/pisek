@@ -14,7 +14,7 @@ class SampleManager(TaskJobManager):
         samples = self._get_samples()
         unziped_samples = sum(map(list, samples), start=[])
         if len(samples) <= 0:
-            self.fail(
+            self._fail(
                 f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",
             )
@@ -44,7 +44,7 @@ class SampleExists(SampleJob):
 
     def _run(self):
         if not self._file_exists(self.sample):
-            return self.fail(f"Sample does not exists or is not file: {self.sample}")
+            return self._fail(f"Sample does not exists or is not file: {self.sample}")
 
 class SampleNotEmpty(SampleJob):
     def __init__(self, sample: str, env: Env) -> None:
@@ -52,7 +52,7 @@ class SampleNotEmpty(SampleJob):
 
     def _run(self):
         if not self._file_not_empty(self.sample):
-            return self.fail(f"Sample is empty: {self.sample}")
+            return self._fail(f"Sample is empty: {self.sample}")
 
 class CopySample(SampleJob):
     """Copies samples into data so we can treat them as inputs."""
