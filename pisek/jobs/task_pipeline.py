@@ -19,6 +19,7 @@ from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
+from pisek.jobs.parts.data import DataManager
 
 import os
 from pisek.task_config import TaskConfig
@@ -40,13 +41,21 @@ class TaskPipeline(JobPipeline):
 
         judge.add_prerequisite(samples)
 
+        solutions = []
         if env.solutions:
             self.pipeline.append(primary_solution := SolutionManager(env.config.primary_solution))
             primary_solution.add_prerequisite(generator)
             primary_solution.add_prerequisite(judge)
+            solutions.append(primary_solution)
 
         for solution in env.solutions:
             if solution == env.config.primary_solution:
                 continue
             self.pipeline.append(solution := SolutionManager(solution))
             solution.add_prerequisite(primary_solution)
+            solutions.append(solution)
+        
+        if env.config.contest_type == "kasiopea" and env.solutions:
+            self.pipeline.append(data_check := DataManager())
+            for solution in solutions:
+                data_check.add_prerequisite(solution)
