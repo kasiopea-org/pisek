@@ -137,8 +137,14 @@ class TaskJob(Job, TaskHelper):
         return os.path.isfile(os.path.join(filename))
 
     @_file_access(1)
+    def _file_size(self, filename: str):
+        return os.path.getsize(filename)
+
+    @_file_access(1)
     def _file_not_empty(self, filename: str):
-        return os.path.getsize(os.path.join(filename)) > 0
+        with self._open_file(filename) as f:
+            content = f.read()
+        return len(content.strip()) > 0
     
     @_file_access(2)
     def _copy_file(self, filename: str, dst: str):
