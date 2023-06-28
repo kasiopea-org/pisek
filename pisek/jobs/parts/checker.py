@@ -70,11 +70,16 @@ class CheckerManager(TaskJobManager):
             return super()._get_status()
 
 class LooseCheckJobGroup:
+    """
+    Groups jobs on subtask where checker is run on predecessors instead.
+    Checking that checker is strict enough - checking fails when run on predecessor.
+    """
     def __init__(self, num: int):
         self.num = num
         self.jobs = {}
 
     def failed(self, fail_mode: str) -> Optional[str]:
+        """Returns whether jobs resulted as expected."""
         for pred in self.jobs:
             results = list(map(lambda x: x.result.kind, self.jobs[pred]))
             if fail_mode == "all" and RunResultKind.OK in results:
@@ -101,6 +106,7 @@ class LooseCheckJobGroup:
 
 
 class CheckerJob(ProgramJob):
+    """Runs checker on single input."""
     def __init__(self, checker: str, input_name: str, subtask: int, expected: Optional[RunResultKind], env: Env):
         self.subtask = subtask
         super().__init__(

@@ -48,6 +48,7 @@ class GeneratorManager(TaskJobManager):
 
 
 class OnlineGeneratorJob(ProgramJob):
+    """Abstract class for jobs with OnlineGenerator."""
     def __init__(self, name: str, generator : str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         self.subtask = subtask
         self.seed = seed
@@ -80,6 +81,7 @@ class OnlineGeneratorJob(ProgramJob):
 
 
 class OnlineGeneratorGenerate(OnlineGeneratorJob):
+    """Generates single input using OnlineGenerator."""
     def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(f"Generate {input_file}", generator, input_file, subtask, seed, env)
 
@@ -88,6 +90,7 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
         
 
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
+    """Test whether generating given input again has same result."""
     def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
         super().__init__(
             f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
@@ -105,6 +108,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
             )
 
 class OnlineGeneratorRespectsSeed(TaskJob):
+    """Test whether two files generated with different seed are different."""
     def __init__(self, subtask: int, seed1: int, seed2: int, file1: str, file2: str, env: Env) -> None:
         self.file1, self.file2 = file1, file2
         self.file1_name, self.file2_name = map(os.path.basename, (file1, file2))
@@ -120,10 +124,12 @@ class OnlineGeneratorRespectsSeed(TaskJob):
             )
 
 class OfflineGeneratorGenerate(ProgramJob):
+    """Job that generates all inputs using OfflineGenerator."""
     def __init__(self, program: str, env: Env) -> None:
         super().__init__("Generate inputs", program, env)
 
     def _gen(self) -> Optional[RunResult]:
+        """Generates all inputs."""
         if not self._load_compiled():
             return None
 

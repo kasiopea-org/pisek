@@ -88,6 +88,7 @@ class SolutionManager(TaskJobManager):
         return pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
 
     def _evaluate(self) -> Any:
+        """Evaluates whether solution preformed as expected."""
         total_points = 0
         solution_conf = self._env.config.solutions[self.solution]
         expected = solution_conf.subtasks
@@ -132,6 +133,7 @@ class PrimarySolutionManager(SolutionManager):
         self.primary = True
 
 class SubtaskJobGroup:
+    """Groups jobs of a single subtask."""
     def __init__(self, num) -> None:
         self.num = int(num)
         self.previous_jobs = []
@@ -201,6 +203,7 @@ class SubtaskJobGroup:
         return f"{head}:\n{tab(res.message)}"
 
 class RunSolution(ProgramJob):
+    """Runs solution on given input."""
     def __init__(self, solution: str, input_name: str, timeout: Optional[float], env: Env) -> None:
         super().__init__(
             name=f"Run {solution} on input {input_name}",

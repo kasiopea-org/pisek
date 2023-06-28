@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from dataclasses import dataclass
 import random
 from typing import Optional, Union, Callable
@@ -15,6 +16,7 @@ DIFF_NAME = "diff.sh"
 
 @dataclass
 class SolutionResult(yaml.YAMLObject):
+    """Class representing result of a solution on given input."""
     yaml_tag = u'!SolutionResult'
     verdict: VerdictStr
     points: float
@@ -96,6 +98,7 @@ class BuildCMSDiff(BuildDiffJudge):
             )
 
 class RunJudge(ProgramJob):
+    """Runs judge on single input. (Abstract class)"""
     def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
                  expected_points: Optional[float], env: Env) -> None:
         super().__init__(
@@ -107,6 +110,10 @@ class RunJudge(ProgramJob):
         self.output_name = self._data(output_name)
         self.correct_output_name = self._data(correct_output)
         self.expected_points = expected_points
+
+    @abstractmethod
+    def _judge(self):
+        pass
 
     def _run(self) -> Optional[SolutionResult]:
         if "run_solution" in self.prerequisites_results:
@@ -191,6 +198,7 @@ class RunCMSJudge(RunJudge):
 
 def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
               expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
+    """Returns JudgeJob according to contest type."""
     if env.config.contest_type == "cms":
         return RunCMSJudge(
             judge,

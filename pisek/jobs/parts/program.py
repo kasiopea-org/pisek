@@ -16,16 +16,15 @@ import pisek.util as util
 import pisek.compile as compile
 
 class RunResultKind(Enum):
-    """Represents the way the program execution ended. Specially, a program
-    that finished successfully, but got Wrong Answer, still gets the OK
-    RunResult."""
-
     OK = 0
     RUNTIME_ERROR = 1
     TIMEOUT = 2
 
 @dataclass
 class RunResult():
+    """Represents the way the program execution ended. Specially, a program
+    that finished successfully, but got Wrong Answer, still gets the OK
+    RunResul."""
     kind: RunResultKind
     returncode: int
     stdout: Optional[str] = None
@@ -54,12 +53,14 @@ def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunR
 
 
 class ProgramJob(TaskJob):
+    """Job that deals with a program."""
     def __init__(self, name: str, program: str, env: Env) -> None:
         self.program = program
         self.executable = None
         super().__init__(name, env)
 
     def _compile(self, compiler_args : Optional[Dict] = None):
+        """Compiles program."""
         program = self._resolve_extension(self.program)
         if program is None:
             return False
@@ -81,6 +82,7 @@ class ProgramJob(TaskJob):
         return True
     
     def _load_compiled(self) -> bool:
+        """Loads name of compiled program."""
         self.executable = self._executable(os.path.basename(self.program))
         if not self._file_exists(self.executable):
             self._fail(
@@ -92,6 +94,7 @@ class ProgramJob(TaskJob):
         
 
     def _run_raw(self, args, timeout: Optional[float] = None, **kwargs) -> RunResult:
+        """Runs args as a command."""
         if timeout is None:
             timeout = DEFAULT_TIMEOUT
 
@@ -115,11 +118,13 @@ class ProgramJob(TaskJob):
         return completed_process_to_run_result(result)
 
     def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
+        """Runs program."""
         if not self._load_compiled():
             return None
         return self._run_raw([self.executable] + add_args, **kwargs)
  
     def _get_executable(self) -> str:
+        """Get a name of a compiled program."""
         return self._executable(os.path.basename(self.program))
 
     def _resolve_extension(self, name: str) -> str:
@@ -150,9 +155,11 @@ class ProgramJob(TaskJob):
         return candidates[0]
 
     def _program_fail(self, msg: str, res: RunResult):
+        """Fail that nicely formats RunResult"""
         self._fail(f"{msg}\n{self._quote_program(res)}")
  
     def _quote_program(self, res: RunResult):
+        """Quotes program's stdout and stderr."""
         program_msg = ""
         for std in ('stdout', 'stderr'):
             program_msg += f"{std}:"
@@ -165,6 +172,7 @@ class ProgramJob(TaskJob):
         return program_msg[:-1]
 
 class Compile(ProgramJob):
+    """Job that compiles a program."""
     def __init__(self, program: str, env: Env, compile_args: Dict = {}) -> None:
         self._compile_args = compile_args
         super().__init__(
