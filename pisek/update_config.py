@@ -45,7 +45,6 @@ def update(path):
             subtasks = get_subtask_mask(points, subtask_points)
 
         config.add_section(solution)
-        config[solution]["name"] = name
         config[solution]["points"] = 'X' if points is None else str(points)
         config[solution]["subtasks"] = subtasks
 
