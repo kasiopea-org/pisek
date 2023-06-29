@@ -59,9 +59,9 @@ class BaseEnv:
     def keys(self) -> list[str]:
         return sorted(self._vars.keys())
 
-    def items(self) -> list[tuple,Any]:
+    def items(self) -> list[tuple[str,Any]]:
         self._accessed |= self._vars.keys()
-        return sorted(self._vars.items())
+        return list(sorted(self._vars.items()))
 
     def iterate(self, name: str, env = None):
         """
