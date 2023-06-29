@@ -4,11 +4,12 @@ from itertools import product
 import os
 import re
 import shutil
+from typing import Optional
 
 from pisek.task_config import CONFIG_FILENAME
 
 
-def update(path):
+def update(path) -> Optional[str]:
     config_path = os.path.join(path, CONFIG_FILENAME)
     if not os.path.exists(config_path):
         return f"Config {config_path} does not exist."
@@ -23,11 +24,16 @@ def update(path):
     subtask_points = []
     for section in sorted(config.sections()):
         if re.fullmatch(r'test[0-9]{2}', section):
+            if 'points' not in config[section]:
+                return f"Missing key 'points' in section [{section}]"
             subtask_points.append(int(config[section]['points']))
     if "test00" not in config.sections():
         subtask_points = [0] + subtask_points
 
+    if 'solutions' not in config["task"]:
+        return f"Missing key 'solutions' in section [{task}]"
     solutions = config["task"]["solutions"].split()
+
     for solution in solutions:
         if match := re.fullmatch(r'(.*?)_([0-9]{1,3}|X)b', solution):
             points = None if match[2] == 'X' else int(match[2])
