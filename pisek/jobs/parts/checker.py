@@ -16,7 +16,8 @@ class CheckerManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         if self._env.config.checker is None:
             if self._env.strict:
-                return self._fail("No checker specified in config.")
+                self._fail("No checker specified in config.")
+                return []
             self.skipped_checker = termcolor.colored(
                 "Warning: No checker specified in config.\n"
                 "It is recommended to set `checker` is section [tests]",
@@ -29,7 +30,7 @@ class CheckerManager(TaskJobManager):
 
         checker = self._resolve_path(self._env.config.checker)
 
-        jobs = [compile := Compile(checker, self._env.fork())]
+        jobs : list[Job] = [compile := Compile(checker, self._env.fork())]
         
         self.loose_subtasks = []
         for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):

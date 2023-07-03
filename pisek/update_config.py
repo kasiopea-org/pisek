@@ -31,7 +31,7 @@ def update(path) -> Optional[str]:
         subtask_points = [0] + subtask_points
 
     if 'solutions' not in config["task"]:
-        return f"Missing key 'solutions' in section [{task}]"
+        return f"Missing key 'solutions' in section [task]"
     solutions = config["task"]["solutions"].split()
 
     for solution in solutions:
@@ -56,6 +56,8 @@ def update(path) -> Optional[str]:
 
     with open(config_path, "w") as f:
         config.write(f, space_around_delimiters=False)
+    
+    return None
 
 def get_subtask_mask(points, subtasks):
     all_valid = [0]*len(subtasks)

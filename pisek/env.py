@@ -49,7 +49,7 @@ class BaseEnv:
         else:
             return name in self._vars
 
-    def __getitem__(self, key) -> Any:
+    def __getitem__(self, key: str) -> Any:
         return self._get(str(key))
  
     def __getattr__(self, name: str) -> Any:
@@ -110,7 +110,7 @@ class BaseEnv:
         BaseEnv.__init__(forked, **{**deepcopy(self._vars), **kwargs}, accessed=self._accessed)
         return forked
     
-    def reserve(self) -> None:
+    def reserve(self) -> 'BaseEnv':
         if self._reserved:
             raise RuntimeError("Env is reserved already.")
         else:

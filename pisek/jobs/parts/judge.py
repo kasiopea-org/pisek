@@ -34,7 +34,7 @@ class JudgeManager(TaskJobManager):
         super().__init__("Preparing judge")
 
     def _get_jobs(self) -> list[Job]:
-        jobs = []
+        jobs : list[Job] = []
         if self._env.config.judge_type == "diff":
             jobs = []
 

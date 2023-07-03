@@ -7,7 +7,7 @@ from pisek.jobs.parts.task_job import TaskJob
 def randword(length: int):
    letters = string.ascii_lowercase
    return ''.join(random.choice(letters) for _ in range(length))
-        
+ 
 
 NUMER_MODIFIERS = [
     lambda x: int(x)+1,
@@ -34,7 +34,7 @@ class Invalidate(TaskJob):
 
 class Incomplete(Invalidate):
     """Makes an incomplete output."""
-    def __init__(self: str, from_file: str, to_file: str, seed: int, env: Env) -> None:
+    def __init__(self, from_file: str, to_file: str, seed: int, env: Env) -> None:
         super().__init__(f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
                          from_file, to_file, seed, env)
 
@@ -50,7 +50,7 @@ class Incomplete(Invalidate):
 
 class ChaosMonkey(Invalidate):
     """Tries to break judge by generating nasty output."""
-    def __init__(self: str, from_file: str, to_file: str, seed: int, env: Env) -> None:
+    def __init__(self, from_file: str, to_file: str, seed: int, env: Env) -> None:
         super().__init__(f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",
                          from_file, to_file, seed, env)
 

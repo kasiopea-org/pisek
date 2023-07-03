@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 import pisek.util as util
 from pisek.env import Env
@@ -10,9 +9,9 @@ class SampleManager(TaskJobManager):
     def __init__(self):
         super().__init__("Checking samples")
 
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self) -> list[Job]:
         samples = self._get_samples()
-        unziped_samples = sum(map(list, samples), start=[])
+        unzipped_samples : list[str] = sum(map(list[str], samples), start=[])
         if len(samples) <= 0:
             self._fail(
                 f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
@@ -20,8 +19,8 @@ class SampleManager(TaskJobManager):
             )
             return []
 
-        jobs = []
-        for fname in unziped_samples:
+        jobs : list[Job] = []
+        for fname in unzipped_samples:
             jobs += [
                 existence := SampleExists(fname, self._env.fork()),
                 non_empty := SampleNotEmpty(fname, self._env.fork()),

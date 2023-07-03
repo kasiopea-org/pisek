@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-from typing import List, Tuple, Optional, Any, Callable, TypeVar
+from typing import Optional, Any, Callable, TypeVar
 
 from pisek.jobs.cache import CacheResultEnum
 import pisek.util as util
@@ -22,11 +22,11 @@ RESULT_MARK = {
     'wrong_answer': 'W'
 }
 
-class TaskHelper: 
+class TaskHelper:
     def _get_build_dir(self) -> str:
         return BUILD_DIR
 
-    def _resolve_path(self, *path: str):
+    def _resolve_path(self, *path: str) -> str:
         """Like os.path.join but adds current task directory."""
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
 
@@ -58,15 +58,19 @@ class TaskHelper:
         else:
             return parts[-1]
     
-    def _get_samples(self) -> Optional[List[Tuple[str, str]]]:
+    def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._globs_to_files(self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir)
         outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
-        return [tuple(map(os.path.basename, (ins[i], outs[i]))) for i in range(len(ins))]
+        
+        def basename(s: str):
+            return str(os.path.basename(s))
 
-    def _all_inputs(self) -> List[str]:
+        return list(zip(map(basename, ins), map(basename, outs)))
+
+    def _all_inputs(self) -> list[str]:
         """Get all input files"""
-        all_inputs = sum([
+        all_inputs : list[str] = sum([
             self._subtask_inputs(subtask)
             for _, subtask in sorted(self._env.config.subtasks.items())
         ], start=[])
@@ -78,7 +82,7 @@ class TaskHelper:
                 unique_all.append(inp)
         return unique_all
 
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> List[str]:
+    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get all inputs of given subtask."""
         if self._env.config.contest_type == "cms":
             return self._globs_to_files(subtask.all_globs)
@@ -88,7 +92,7 @@ class TaskHelper:
                 inputs |= set(self._globs_to_files([glob])[:self._env.inputs])
             return list(sorted(inputs))
     
-    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> List[str]:
+    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get new inputs of given subtask."""
         inputs = self._globs_to_files(subtask.in_globs)
         if self._env.config.contest_type == "kasiopea":

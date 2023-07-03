@@ -1,5 +1,5 @@
 import os
-from typing import List, Any, Optional
+from typing import Any, Optional
 
 import pisek.util as util
 from pisek.env import Env
@@ -12,11 +12,11 @@ from pisek.jobs.parts.judge import judge_job, RunJudge
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
         self.solution = solution
-        self.subtasks = []
+        self.subtasks : list[SubtaskJobGroup] = []
         super().__init__(f"Solution {solution} Manager")
         self.primary = False
 
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self) -> list[Job]:
         # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
         # If you use the wrong one caching bugs will arise.
         solution_env = self._env.fork()
@@ -25,7 +25,7 @@ class SolutionManager(TaskJobManager):
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
         
-        jobs = []
+        jobs : list[Job] = []
         
         compile_args = {}
         if self._env.config.solution_manager:
@@ -136,10 +136,10 @@ class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
     def __init__(self, num) -> None:
         self.num = int(num)
-        self.previous_jobs = []
-        self.new_jobs = []
+        self.previous_jobs : list[RunJudge] = []
+        self.new_jobs : list[RunJudge] = []
 
-    def _job_results(self, jobs: List[Job]) -> List[Optional[VerdictStr]]:
+    def _job_results(self, jobs: list[Job]) -> list[Optional[VerdictStr]]:
         return list(map(lambda j: j.result, jobs))
 
     def __str__(self) -> str:
@@ -164,7 +164,7 @@ class SubtaskJobGroup:
 
         return s
 
-    def result(self, fail_mode) -> tuple[tuple[Optional[int], str], tuple[str]]:
+    def result(self, fail_mode) -> tuple[tuple[Optional[int], str], tuple[str, str]]:
         prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
         new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
         

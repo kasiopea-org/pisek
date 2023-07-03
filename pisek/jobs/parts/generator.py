@@ -17,7 +17,7 @@ class GeneratorManager(TaskJobManager):
     def _get_jobs(self) -> List[Job]:
         generator = self._resolve_path(self._env.config.generator)
 
-        jobs = [compile := Compile(generator, self._env.fork())]
+        jobs : list[Job] = [compile := Compile(generator, self._env.fork())]
 
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
@@ -152,13 +152,15 @@ class OfflineGeneratorGenerate(ProgramJob):
                 continue
             files = self._subtask_inputs(subtask)
             if len(files) == 0:
-                return self._fail(f"Generator did not generate any inputs for subtask {sub_num}.")
+                self._fail(f"Generator did not generate any inputs for subtask {sub_num}.")
+                return None
             for file in files:
                 self._access_file(self._data(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
         if len(test_files) == 0:
-            return self._fail(f"Generator did not generate ant inputs.")
+            self._fail(f"Generator did not generate ant inputs.")
+            return None
 
         return result
 

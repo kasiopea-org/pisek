@@ -3,7 +3,8 @@ from collections import deque
 import sys
 
 from pisek.env import Env
-from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
+from pisek.jobs.status import StatusJobManager
 from pisek.jobs.cache import Cache
 
 CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
@@ -17,8 +18,8 @@ class JobPipeline(ABC):
         self._tmp_lines = 0
 
     def run_jobs(self, cache: Cache, env: Env) -> bool:
-        self.job_managers = deque()
-        self.pipeline = deque(self.pipeline)
+        self.job_managers : deque[JobManager] = deque()
+        self.pipeline : deque[PipelineItem] = deque(self.pipeline)
         while len(self.pipeline) or len(self.job_managers):
             p_item = self.pipeline.popleft()
             if isinstance(p_item, JobManager):
@@ -49,7 +50,7 @@ class JobPipeline(ABC):
                 self.failed = True
                 return False
             if job_man.state == State.failed or job_man.ready():
-                msg = job_man.finish()
+                msg = job_man.finalize()
                 if msg:
                     self._reprint_final(msg)
                 if job_man.state == State.failed:

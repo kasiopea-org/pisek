@@ -19,7 +19,7 @@ class CacheResultEnum:
 class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
     yaml_tag = u'!Entry'
-    def __init__(self, name: str, signature: str, result: str, envs: list[str], files: list[str], results: list[Any]) -> None:
+    def __init__(self, name: str, signature: str, result: Any, envs: list[str], files: list[str], results: list[Any]) -> None:
         self.name = name
         self.signature = signature
         self.result = result

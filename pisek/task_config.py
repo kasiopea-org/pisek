@@ -127,7 +127,7 @@ class TaskConfig(BaseEnv):
         self._set("data_subdir", config["task"].get("data_subdir", DATA_SUBDIR))
         self._set("solutions_subdir", config["task"].get("solutions_subdir", "."))
 
-        subtasks: Dict[int, SubtaskConfig] = {}
+        subtasks: dict[str, SubtaskConfig] = {}
         subtask_section_names = set()
 
         for section_name in config.sections():
@@ -237,6 +237,8 @@ class TaskConfig(BaseEnv):
                 if key not in section_ignored_keys:
                     return f"Unexpected key '{key}' in section [{section_name}] of config."
 
+        return None
+
 
 class SubtaskConfig(BaseEnv):
     def __init__(
@@ -267,6 +269,7 @@ class SubtaskConfig(BaseEnv):
             prev = "" if self._subtask_number == 1 else str(self._subtask_number-1)
             self._set("predecessors",self._config_section.get("predecessors", prev).split())
         self._constructing = False
+        return None
 
     def _glob_i(self, i):
         return f"{'0'*(2 - len(str(i)))}{i}*.in"
@@ -367,6 +370,7 @@ class SolutionConfig(BaseEnv):
                     return f"Unallowed char in subtask string: {char}"
 
         self._set("subtasks", subtasks)
+        return None
 
 T = TypeVar("T")
 U = TypeVar("U")

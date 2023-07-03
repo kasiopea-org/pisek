@@ -56,7 +56,7 @@ class ProgramJob(TaskJob):
     """Job that deals with a program."""
     def __init__(self, name: str, program: str, env: Env) -> None:
         self.program = program
-        self.executable = None
+        self.executable : Optional[str] = None
         super().__init__(name, env)
 
     def _compile(self, compiler_args : Optional[Dict] = None):
@@ -127,7 +127,7 @@ class ProgramJob(TaskJob):
         """Get a name of a compiled program."""
         return self._executable(os.path.basename(self.program))
 
-    def _resolve_extension(self, name: str) -> str:
+    def _resolve_extension(self, name: str) -> Optional[str]:
         """
         Given `name`, finds a file named `name`.[ext],
         where [ext] is a file extension for one of the supported languages.
@@ -144,14 +144,15 @@ class ProgramJob(TaskJob):
                 candidates.append(name)
 
         if len(candidates) == 0:
-            return self._fail(
+            self._fail(
                 f"No file with given name exists: {name}"
             )
+            return None
         if len(candidates) > 1:
-            return self._fail(
+            self._fail(
                 f"Multiple files with same name exist: {', '.join(candidates)}"
             )
-
+            return None
         return candidates[0]
 
     def _program_fail(self, msg: str, res: RunResult):
