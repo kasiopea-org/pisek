@@ -324,7 +324,7 @@ class SolutionConfig(BaseEnv):
         self._config_section = config_section
 
     def load(self) -> Optional[str]:
-        self._set("name", self._config_section.get("name", self._solution_name))
+        self._set("source", self._config_section.get("source", self._solution_name))
 
         if "subtasks" in self._config_section:
             points = self._config_section.get("points")

@@ -40,22 +40,22 @@ in_globs=03*.in
 solve_time_limit=2
 
 [solve]
-name=solve
+source=solve
 points=10
 subtasks=1111
 
 [solve_3b]
-name=solve_3b
+source=solve_3b
 points=3
 subtasks=X1X0
 
 [solve_slow_4b]
-name=solve_slow_4b
+source=solve_slow_4b
 points=4
 subtasks=1110
 
 [solve_0b]
-name=solve_0b
+source=solve_0b
 points=0
 subtasks=0000
 

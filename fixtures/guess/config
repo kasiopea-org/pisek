@@ -39,12 +39,12 @@ solve_time_limit=2
 sec_solve_time_limit=2
 
 [solve]
-name=solve
+source=solve
 points=10
 subtasks=11
 
 [solve_0b]
-name=solve_0b
+source=solve_0b
 points=0
 subtasks=10
 

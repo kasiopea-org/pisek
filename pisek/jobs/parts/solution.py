@@ -20,7 +20,7 @@ class SolutionManager(TaskJobManager):
         # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
         # If you use the wrong one caching bugs will arise.
         solution_env = self._env.fork()
-        solution = self._solution(self._env.config.solutions[self.solution].name)
+        solution = self._solution(self._env.config.solutions[self.solution].source)
 
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
@@ -56,7 +56,7 @@ class SolutionManager(TaskJobManager):
                     if sub_num == "0":
                         c_out = inp.replace(".in", ".out")
                     else:
-                        primary_sol = jud_env.config.solutions[jud_env.config.primary_solution].name
+                        primary_sol = jud_env.config.solutions[jud_env.config.primary_solution].source
                         c_out = util.get_output_name(inp, primary_sol)
                     jobs.append(
                         run_judge := judge_job(
