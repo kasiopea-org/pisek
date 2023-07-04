@@ -5,7 +5,7 @@ import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, tab, MSG_LEN
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict, VerdictStr
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
 from pisek.jobs.parts.judge import judge_job, RunJudge
 
@@ -139,7 +139,7 @@ class SubtaskJobGroup:
         self.previous_jobs : list[RunJudge] = []
         self.new_jobs : list[RunJudge] = []
 
-    def _job_results(self, jobs: list[Job]) -> list[Optional[VerdictStr]]:
+    def _job_results(self, jobs: list[Job]) -> list[Optional[Verdict]]:
         return list(map(lambda j: j.result, jobs))
 
     def __str__(self) -> str:

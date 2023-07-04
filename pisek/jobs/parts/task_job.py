@@ -1,9 +1,9 @@
+from enum import Enum
 import os
 import shutil
 import glob
 from typing import Optional, Any, Callable, TypeVar
 
-from pisek.jobs.cache import CacheResultEnum
 import pisek.util as util
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
@@ -12,14 +12,13 @@ from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
 
-VerdictStr = TypeVar('VerdictStr', bound=str)
-Verdict = CacheResultEnum('ok', 'partial', 'wrong_answer', 'error', 'timeout')
+Verdict = Enum('Verdict', ['ok', 'partial', 'wrong_answer', 'error', 'timeout'])
 RESULT_MARK = {
-    'ok': '·',
-    'partial': 'P',
-    'error' : '!',
-    'timeout': 'T',
-    'wrong_answer': 'W'
+    Verdict.ok: '·',
+    Verdict.partial: 'P',
+    Verdict.error: '!',
+    Verdict.timeout: 'T',
+    Verdict.wrong_answer: 'W'
 }
 
 class TaskHelper:

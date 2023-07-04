@@ -8,17 +8,16 @@ import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
 from pisek.jobs.status import tab
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict, VerdictStr
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 
 DIFF_NAME = "diff.sh"
 
 @dataclass
-class SolutionResult(yaml.YAMLObject):
+class SolutionResult():
     """Class representing result of a solution on given input."""
-    yaml_tag = u'!SolutionResult'
-    verdict: VerdictStr
+    verdict: Verdict
     points: float
     message: str = ""
 
@@ -27,6 +26,18 @@ class SolutionResult(yaml.YAMLObject):
             return f"[{self.points:.2f}]"
         else:
             return RESULT_MARK[self.verdict]
+
+def sol_result_representer(dumper, sol_result: SolutionResult):
+    return dumper.represent_sequence(
+        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.message]
+    )
+
+def sol_result_constructor(loader, value) -> SolutionResult:
+    verdict, points, message = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, message)
+
+yaml.add_representer(SolutionResult, sol_result_representer)
+yaml.add_constructor(u'!SolutionResult', sol_result_constructor)
 
 
 class JudgeManager(TaskJobManager):
