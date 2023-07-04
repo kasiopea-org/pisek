@@ -60,7 +60,8 @@ class OnlineGeneratorJob(ProgramJob):
         if not self._load_compiled():
             return None
         if seed < 0:
-            return self._fail(f"Seed {seed} is negative.")
+            self._fail(f"Seed {seed} is negative.")
+            return None
 
         input_dir = os.path.dirname(input_file)
         os.makedirs(input_dir, exist_ok=True)
@@ -73,7 +74,7 @@ class OnlineGeneratorJob(ProgramJob):
             stdout=input_file,
         )
         if result is None:
-            return
+            return None
         if result.kind != RunResultKind.OK:
             return self._program_fail(f"{self.program} failed on subtask {subtask}, seed {seed:x}:", result)
         
@@ -111,7 +112,7 @@ class OnlineGeneratorRespectsSeed(TaskJob):
     """Test whether two files generated with different seed are different."""
     def __init__(self, subtask: int, seed1: int, seed2: int, file1: str, file2: str, env: Env) -> None:
         self.file1, self.file2 = file1, file2
-        self.file1_name, self.file2_name = map(os.path.basename, (file1, file2))
+        self.file1_name, self.file2_name = map(lambda s: str(os.path.basename(s)), (file1, file2))
         self.subtask = subtask
         self.seed1, self.seed2 = seed1, seed2
         super().__init__(f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)", env)
@@ -143,7 +144,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         result = self._run_program([data_dir])
 
         if result is None:
-            return
+            return None
         if result.kind != RunResultKind.OK:
             return self._program_fail(f"Generator failed:", result)
 

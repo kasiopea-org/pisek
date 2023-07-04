@@ -27,8 +27,8 @@ class RunResult():
     RunResul."""
     kind: RunResultKind
     returncode: int
-    stdout: Optional[str] = None
-    stderr: Optional[str] = None
+    stdout: str = ""
+    stderr: str = ""
 
 def run_result_representer(dumper, run_result: RunResult):
     return dumper.represent_sequence(
@@ -44,8 +44,8 @@ yaml.add_constructor(u'!RunResult', run_result_constructor)
 
 
 def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunResult:
-    stdout = result.stdout.decode("utf-8") if result.stdout is not None else result.stdout
-    stderr = result.stderr.decode("utf-8") if result.stderr is not None else result.stderr
+    stdout = result.stdout.decode("utf-8") if result.stdout is not None else ""
+    stderr = result.stderr.decode("utf-8") if result.stderr is not None else ""
     if result.returncode == 0:
         return RunResult(RunResultKind.OK, 0, stdout, stderr)
     else:

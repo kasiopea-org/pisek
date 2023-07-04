@@ -49,6 +49,7 @@ class JudgeManager(TaskJobManager):
         if self._env.config.judge_type == "diff":
             jobs = []
 
+            build : BuildDiffJudge
             if self._env.config.contest_type == "cms":
                 jobs.append(build := BuildCMSDiff(self._env.fork()))
             else:
@@ -140,10 +141,11 @@ class RunJudge(ProgramJob):
 
         if self.expected_points is not None and result is not None and \
                 result.points != self.expected_points:
-            return self._fail(
+            self._fail(
                 f"Output {self.output_name} for input {self.input_name} "
                 f"should have got {self.expected_points} points but got {result.points} points."
             )
+            return None
         return result
 
 
@@ -154,7 +156,7 @@ class RunKasiopeaJudge(RunJudge):
         self.seed = seed
         super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
 
-    def _judge(self) -> Optional[RunResult]:
+    def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)
         self._access_file(self.correct_output_name)
         result = self._run_program(
@@ -163,7 +165,7 @@ class RunKasiopeaJudge(RunJudge):
             env={"TEST_INPUT": self.input_name, "TEST_OUTPUT": self.correct_output_name},
         )
         if result is None:
-            return
+            return None
         if result.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, self._quote_program(result))
         elif result.returncode == 1:
@@ -177,7 +179,7 @@ class RunCMSJudge(RunJudge):
                  expected_points: Optional[float], env: Env) -> None:
         super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
 
-    def _judge(self) -> Optional[RunResult]:
+    def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)
         self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
@@ -185,12 +187,12 @@ class RunCMSJudge(RunJudge):
             [self.input_name, self.correct_output_name, self.output_name]
         )
         if result is None:
-            return
+            return None
         if result.returncode == 0:
-            points = result.stdout.split('\n')[0]
+            points_str = result.stdout.split('\n')[0]
             msg = result.stderr.split('\n')[0]
             try:
-                points = float(points)
+                points = float(points_str)
             except ValueError:
                 return self._program_fail("Judge wrote didn't write points on stdout:", result)
 
@@ -225,7 +227,7 @@ def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str,
             input_name,
             output_name,
             correct_ouput,
-            str(subtask),
+            subtask,
             get_seed(),
             expected_points,
             env

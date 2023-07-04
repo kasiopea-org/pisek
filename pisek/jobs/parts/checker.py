@@ -77,12 +77,17 @@ class LooseCheckJobGroup:
     """
     def __init__(self, num: int):
         self.num = num
-        self.jobs = {}
+        self.jobs : dict[int, list[CheckerJob]] = {}
 
     def failed(self, fail_mode: str) -> Optional[str]:
         """Returns whether jobs resulted as expected."""
+        def result_kind(job: CheckerJob) -> RunResultKind:
+            if job.result is None:
+                raise RuntimeError(f"Job {job.name} has not finished yet.")
+            return job.result.kind
+
         for pred in self.jobs:
-            results = list(map(lambda x: x.result.kind, self.jobs[pred]))
+            results = list(map(result_kind, self.jobs[pred]))
             if fail_mode == "all" and RunResultKind.OK in results:
                 job = self._index_job(pred, results, RunResultKind.OK)
                 return (
@@ -97,12 +102,13 @@ class LooseCheckJobGroup:
                     f"but all have passed."
                 )
             if RunResultKind.TIMEOUT in results:
-                job = self._index_job(pred, results, RunResultKind.TIMEOUT)
+                to_job = self._index_job(pred, results, RunResultKind.TIMEOUT)
                 return (
-                    f"Checker timeouted on input {job.input_name}, subtask {self.num}."
+                    f"Checker timeouted on input {to_job.input_name}, subtask {self.num}."
                 )
+        return None
 
-    def _index_job(self, pred: int, results: list[RunResultKind], result: RunResultKind) -> Job:
+    def _index_job(self, pred: int, results: list[RunResultKind], result: RunResultKind) -> 'CheckerJob':
         return self.jobs[pred][results.index(result)]
 
 
@@ -119,16 +125,16 @@ class CheckerJob(ProgramJob):
         self.input_file = self._data(input_name)
         self.expected = expected
 
-    def _check(self) -> RunResult:
+    def _check(self) -> Optional[RunResult]:
         return self._run_program(
             [str(self.subtask)],
             stdin=self.input_file
         )
 
-    def _run(self) -> None:
+    def _run(self) -> Optional[RunResult]:
         result = self._check()
         if result is None:
-            return
+            return None
         if self.expected == RunResultKind.OK != result.kind:
             return self._program_fail(
                 f"Checker failed on {self.input_name} (subtask {self.subtask}) but should have succeeded.", result

@@ -7,7 +7,7 @@ from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
-from pisek.jobs.parts.judge import judge_job, RunJudge
+from pisek.jobs.parts.judge import SolutionResult, judge_job, RunJudge
 
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
@@ -139,7 +139,7 @@ class SubtaskJobGroup:
         self.previous_jobs : list[RunJudge] = []
         self.new_jobs : list[RunJudge] = []
 
-    def _job_results(self, jobs: list[Job]) -> list[Optional[Verdict]]:
+    def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
 
     def __str__(self) -> str:
@@ -148,10 +148,10 @@ class SubtaskJobGroup:
             lambda x: x.verdict if x else None,
             self._job_results(self.previous_jobs)
         ))
-        for result in Verdict:
-            count = previous.count(result)
+        for verdict in Verdict:
+            count = previous.count(verdict)
             if count > 0:
-                s += f"{count}{RESULT_MARK[result]}"
+                s += f"{count}{RESULT_MARK[verdict]}"
         s += ") "
         if s == "() ":
             s = ""
@@ -164,13 +164,27 @@ class SubtaskJobGroup:
 
         return s
 
-    def result(self, fail_mode) -> tuple[tuple[Optional[int], str], tuple[str, str]]:
-        prev_points = list(map(lambda x: x.points, self._job_results(self.previous_jobs)))
-        new_points = list(map(lambda x: x.points, self._job_results(self.new_jobs)))
-        
+    def result(self, fail_mode) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
+        """
+        Checks whether subtask jobs have resulted as expected and computes points.
+        Returns (points, error msg), (best program output, worst program output)
+        """
+
+        def to_points(job: RunJudge) -> float:
+            res = job.result
+            if res is None:
+                raise RuntimeError(f"Job {job.name} has not finished yet.")
+            return res.points
+ 
+        prev_points = list(map(to_points, self.previous_jobs))
+        new_points = list(map(to_points, self.new_jobs))
+
         all_jobs = self.previous_jobs + self.new_jobs
         all_points = prev_points + new_points
-        result_msg = tuple(self._job_msg(all_jobs[all_points.index(fn(all_points))]) for fn in (max, min))
+        result_msg = (
+            self._job_msg(all_jobs[all_points.index(max(all_points))]),
+            self._job_msg(all_jobs[all_points.index(min(all_points))])
+        )
 
         if len(new_points) == 0 and len(prev_points) == 0:
             return (1.0, ""), result_msg
@@ -189,6 +203,8 @@ class SubtaskJobGroup:
         res = job.result
         inp = os.path.basename(job.input_name)
         out = os.path.basename(job.output_name)
+        if res is None:
+            raise RuntimeError(f"Job {job.name} has not finished yet.")
         if res.verdict == Verdict.ok:
             head = f"Judge accepted {out}"
         elif res.verdict == Verdict.wrong_answer:
@@ -224,5 +240,5 @@ class RunSolution(ProgramJob):
     def _run(self) -> Optional[RunResult]:
         result = self._run_solution()
         if result is None:
-            return
+            return None
         return result
