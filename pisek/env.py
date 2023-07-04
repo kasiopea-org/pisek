@@ -105,11 +105,8 @@ class BaseEnv:
     @log_off
     def fork(self, **kwargs):
         """Make copy of this env overriding variables specified in **kwargs."""
-        cls = self.__class__
-        forked = cls.__new__(cls)
-        BaseEnv.__init__(forked, **{**deepcopy(self._vars), **kwargs}, accessed=self._accessed)
-        return forked
-    
+        return self.__class__(accessed=self._accessed, **{**deepcopy(self._vars), **kwargs})
+
     def reserve(self) -> 'BaseEnv':
         if self._reserved:
             raise RuntimeError("Env is reserved already.")

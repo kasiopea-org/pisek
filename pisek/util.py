@@ -110,8 +110,8 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
 
 
 def clean_task_dir(task_dir: str) -> None:
-    config = TaskConfig(task_dir)
-    err = config.load()
+    config = TaskConfig()
+    err = config.load(task_dir)
     if err:
         print(err, file=sys.stderr)
         exit(1)

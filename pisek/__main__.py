@@ -40,8 +40,8 @@ def test_task(args, **kwargs):
     return (test_task_path(cwd, **vars(args), **kwargs))
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
-    config = TaskConfig(path)
-    err = config.load()
+    config = TaskConfig()
+    err = config.load(path)
     if err:
         eprint(f"Error when loading config:\n{tab(err)}")
         return 1

@@ -59,18 +59,14 @@ class CheckedConfigParser(configparser.RawConfigParser):
 
 
 class TaskConfig(BaseEnv):
-    def __init__(self, task_dir: str) -> None:
-        super().__init__()
-        self._task_dir = task_dir
-
-    def load(self) -> Optional[str]:
+    def load(self, task_dir: str) -> Optional[str]:
         config = CheckedConfigParser()
-        config_path = os.path.join(self._task_dir, CONFIG_FILENAME)
+        config_path = os.path.join(task_dir, CONFIG_FILENAME)
         read_files = config.read(config_path)
         if not read_files:
             return f"No configuration file {config_path}. Is this task folder?"
         
-        self._set("task_dir", self._task_dir)
+        self._set("task_dir", task_dir)
 
         needed_sections = ["task", "tests"]
         for section in needed_sections:
@@ -146,15 +142,15 @@ class TaskConfig(BaseEnv):
             if subtask_number > 0 and "points" not in config[section_name]:
                 return f"Missing key 'points' in section [{section_name}]"
 
-            subtask_config = SubtaskConfig(subtask_number, config[section_name])
+            subtask_config = SubtaskConfig()
             subtasks[str(subtask_number)] = subtask_config
-            err = subtask_config.load()
+            err = subtask_config.load(subtask_number, config[section_name])
             if err:
                 return f"Error while loading subtask {m}:\n  {err}"
 
         if "0" not in subtasks:  # Add samples
-            subtasks["0"] = SubtaskConfig(0, configparser.SectionProxy(config, "test00"))
-            subtasks["0"].load()  # This shouldn't fail for default values
+            subtasks["0"] = SubtaskConfig()
+            subtasks["0"].load(0, configparser.SectionProxy(config, "test00"))  # This shouldn't fail for default values
 
         total_points = sum(map(lambda s: s.get_without_log('score'), subtasks.values()))
 
@@ -166,9 +162,9 @@ class TaskConfig(BaseEnv):
         for solution in solutions_sections:
             if solution not in config:
                 return f"Missing section for solution {solution}"
-            solutions[solution] = SolutionConfig(solution, total_points, len(subtasks), config[solution])
+            solutions[solution] = SolutionConfig()
 
-            err = solutions[solution].load()
+            err = solutions[solution].load(solution, total_points, len(subtasks), config[solution])
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
         
@@ -241,33 +237,26 @@ class TaskConfig(BaseEnv):
 
 
 class SubtaskConfig(BaseEnv):
-    def __init__(
-        self, subtask_number: int, config_section: configparser.SectionProxy
-    ) -> None:
-        super().__init__()
-        self._subtask_number = subtask_number
-        self._config_section = config_section
-
-    def load(self) -> Optional[str]:
-        if self._subtask_number == 0:  # samples
-            self._set("name", self._config_section.get("name", "Samples"))
-            self._set("score", int(self._config_section.get("points", 0)))
-            self._set("in_globs", self._config_section.get("in_globs", "sample*.in").split())
-            self._set("predecessors", self._config_section.get("predecessors", "").split())
+    def load(self, subtask_number: int, config_section: configparser.SectionProxy) -> Optional[str]:
+        if subtask_number == 0:  # samples
+            self._set("name", config_section.get("name", "Samples"))
+            self._set("score", int(config_section.get("points", 0)))
+            self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
+            self._set("predecessors", config_section.get("predecessors", "").split())
         else:
-            self._set("name", self._config_section.get("name", None))
+            self._set("name", config_section.get("name", None))
 
-            if "points" not in self._config_section:
+            if "points" not in config_section:
                 return "Missing key 'points'" 
             try:
-                score = int(self._config_section["points"])
+                score = int(config_section["points"])
             except ValueError:
                 return "'points' must be number"
             self._set("score", score)
 
-            self._set("in_globs", self._config_section.get("in_globs", self._glob_i(self._subtask_number)).split())
-            prev = "" if self._subtask_number == 1 else str(self._subtask_number-1)
-            self._set("predecessors",self._config_section.get("predecessors", prev).split())
+            self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
+            prev = "" if subtask_number == 1 else str(subtask_number-1)
+            self._set("predecessors",config_section.get("predecessors", prev).split())
         self._constructing = False
         return None
 
@@ -317,29 +306,21 @@ class SubtaskConfig(BaseEnv):
         )
 
 class SolutionConfig(BaseEnv):
-    def __init__(
-        self, solution_name: str, full_points: int, total_subtasks: int, config_section: configparser.SectionProxy
-    ) -> None:
-        super().__init__()
-        self._solution_name = solution_name
-        self._full_points = full_points
-        self._total_subtasks = total_subtasks
-        self._config_section = config_section
+    def load(self, solution_name: str, full_points: int, total_subtasks: int,
+                                    config_section: configparser.SectionProxy) -> Optional[str]:
+        self._set("source", config_section.get("source", solution_name))
 
-    def load(self) -> Optional[str]:
-        self._set("source", self._config_section.get("source", self._solution_name))
-
-        if "subtasks" in self._config_section:
-            points = self._config_section.get("points")
+        if "subtasks" in config_section:
+            points = config_section.get("points")
         else:
-            points = self._config_section.get("points", self._full_points)
+            points = config_section.get("points", self._full_points)
 
         for points_limit in ["points_above", "points_below"]:
-            if points is not None and points_limit in self._config_section:
+            if points is not None and points_limit in config_section:
                 return f"Both points and {points_limit} are present."
 
-        points_above = self._config_section.get("points_above", points)
-        points_below = self._config_section.get("points_below", points)
+        points_above = config_section.get("points_above", points)
+        points_below = config_section.get("points_below", points)
 
         for name, value in [("points", points), ("points_above", points_above), ("points_below", points_below)]:
             if value is None or value == "X":
@@ -351,13 +332,13 @@ class SolutionConfig(BaseEnv):
                     return f"{name} is not a number: {value}"
                 self._set(name, value)
 
-        subtasks = self._config_section.get("subtasks")
+        subtasks = config_section.get("subtasks")
         if subtasks is None:
-            subtasks = [None]*self._total_subtasks
+            subtasks = [None]*total_subtasks
         else:
             subtasks_str = subtasks.strip()
-            if len(subtasks_str) != self._total_subtasks:
-                return f"There are {self._total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
+            if len(subtasks_str) != total_subtasks:
+                return f"There are {total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
             subtasks = []
             for char in subtasks_str:
                 if char == '1':
