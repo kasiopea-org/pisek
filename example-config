@@ -1,100 +1,123 @@
-# Ukázka a vysvětlení konfiguračního souboru úloh písku
-# Parsováno pomocí configparser.RawConfigParser s kontrolou nepoužitých klíčů
-# Viz https://docs.python.org/3.10/library/configparser.html
+# Example and explanation of a config file for task made in pisek
+# Parsed by configparser.RawConfigParser with checking of unused keys
+# See more here: https://docs.python.org/3.10/library/configparser.html
 
-# Umístěte jako 'config' do složku úlohy
+# Move 'config' into a task folder 
 
 
 [task]
 
-# Jméno úlohy (pro automatický import řešení do CMS)
+# Name of task (for automatic CMS import)
 name=blecha
 
 contest_type=cms
-# Prostředí, pro které je úloha vyvíjena
-# kasiopea (výchozí) / cms
+# Enviroment for which is task developed
+# kasiopea (default) / cms
 
 solutions_subdir=solutions/
-# Řešení hledat v uvedené složce relativně vůči pozici configu
-# Výchozí: .
+# Try to find solutions in this folder relative to config
+# Default: .
 samples_subdir=sample_tests/
-# Ukázkové vstupy hledat v uvedené složce relativně vůči pozici configu
-# Výchozí: .
+# Try to find sample inputs and outputs in this folder relative to config
+# Default: .
 data_subdir=tests/
-# Pracovní složka písku, kam se budou generovat vstupy, výstupy, ...
-# Výchozí: data/
+# Directory for automatically generated files (inputs, outputs, ...)
+# Default: data/
 
-solutions=solve solve_5b solve_3b solve_n_0b od_ucastnika_Xb
-# Seznam řešení oddělených whitespacem
-# První z nich se považuje za vzorové a tedy se např. používají jeho výstupy ke kontrole ostatních
-# Přípona _<int>b určuje, kolik má dané řešení získat bodů (neuvedeno znamená maximum)
-# Přípona _Xb vypíná kontrolu počtu bodů
-# Pro každé řešení se hledá soubor s daným názvem a libovolnou příponou
-# programovacího jazyka ve složce definované solutions_subdir.
-# Pokud zádný takový neexistuje, zkusí se to stejné po odstranění přípony
-# počtu bodů.
+solutions=correct partially_correct wrong
+# List of names of solutions separated by whitespace
+# First is example solution - correct outputs are genearated with it
 
 tests = ??? (ignorováno)
-# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+# Ignored (because of compatibility with KSP/Kasiopea web)
 
 
 [tests]
 
 in_gen=src/gen
-# Zdroják generátoru, bez přípony
+# Source code of generator (without suffix)
 
 checker=check
-# Program (bez přípony) který validuje korektnost vstupů
-# Neuvedení znamená bez kontroly
+# Program (without suffix) that validates inputs
+# No value means no checking
 
 out_check=diff
-# Popisuje, jakým způsobem se má kontrolovat řešení.
-#   - diff: prostě zkontroluje, že se řešení rovná vzorovému (ignoruje whitespace) (výchozí)
-#   - judge: pokud je řešení nejednoznačné a je potřeba jej kontrolovat
-#        pomocí programu (tzv. "judge")
+# Describes how to check outputs
+#   - diff: checks that contestant output equals correct output (ignores whitespace) (deafault)
+#   - judge: if there can be multiple solutions, checks with program (called 'judge')
 
 out_judge=judge
-# Pouze pro out_check=judge
-# Název judge programu bez přípony
+# Only for out_check=judge
+# Source code of judge (without suffix)
 
 solution_manager=src/manager
-# Pouze pro C++ CMS úlohy
-# Linkovat každé řešení s uvedeným programem (opět zapsáno bez přípony)
-# Výběrko často využívá pro interaktivní úlohy
+# Only for C++ CMS tasks
+# Link each solution with given program (without suffix)
+# Used commonly for interactive tasks
 
 in_mode = ??? (ignorováno)
 out_mode = ??? (ignorováno)
 out_format = ??? (ignorováno)
 online_validity = ??? (ignorováno)
-# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+# Ignored (because of compatibility with KSP/Kasiopea web)
 
 
 [test01]
-# Sekce pro každý subtask (indexováno od jedné)
+# Section for each subtask (indexed from one)
 
 name=Subtask 1
-# Název subtasku (nepovinný)
+# Name of subtask (optional)
 
 points=3
-# Počet bodů (<int>)
+# Number of points (<int>)
 
 in_globs=01*.in
-# Pouze v CMS režimu
-# Popis, které soubory se mají použit jako testy pro daný subtask.
-# Podporuje expanzi * a ? jako v shelu
+# Which new inputs are introduced in this subtask.
+# Supports expansion of * and ? as in shell
 
 file_name = ??? (ignorováno)
-# Ignorováno (z důvodu kompatibility s KSP/Kasiopea webem)
+# Ignored (because of compatibility with KSP/Kasiopea web)
 
+predeccessors =
+# Space separated list of subtasks easier than this subtask
+# Inputs from these subtasks are included into this subtask as well
+# Defaults to previous subtask (or nohting if subtask has number <= 1)
+
+[test00]
+# Section for samples subtasks
+# Can be ommited and has the following defaults
+name=Samples
+points=0
+in_globs=sample*.in
+predeccessors=
+
+[correct]
+# Section for each solution
+
+source=solve
+# Filename of the program (without suffix)
+
+points=10
+# Points that program should get or X for any number of points
+# Defaults to X
+
+points_above=5
+points_below=7
+# Upper and lower bounds on points
+# Default to X
+# Cannot be set simultaneously with points
+
+subtasks=X10
+# Bitmask wheter subtasks should pass or fail
+# 1 - success, 0 - fail, X - any
+# Defaults to XX...
 
 [limits]
 
 solve_time_limit=3
-# Pouze CMS
-# Časový limit pro vzorové (první v pořadí) řešení
-# Při neuvedení 6 minut
+# Time limit (seconds) for example solution (first in key solutions)
+# No value defaults to 6 minutes
 
 sec_solve_time_limit=4
-# Pouze CMS
-# Časový limit pro ostatní řešení
-# Při neuvedení solve_time_limit
+# Time limit for other solutions
+# No value means solve_time_limit
