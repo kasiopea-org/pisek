@@ -310,14 +310,11 @@ class SolutionConfig(BaseEnv):
                                     config_section: configparser.SectionProxy) -> Optional[str]:
         self._set("source", config_section.get("source", solution_name))
 
-        if "subtasks" in config_section:
-            points = config_section.get("points")
-        else:
-            points = config_section.get("points", self._full_points)
+        points = config_section.get("points")
 
         for points_limit in ["points_above", "points_below"]:
             if points is not None and points_limit in config_section:
-                return f"Both points and {points_limit} are present."
+                return f"Both 'points' and '{points_limit}' are present in section [{solution_name}]."
 
         points_above = config_section.get("points_above", points)
         points_below = config_section.get("points_below", points)
