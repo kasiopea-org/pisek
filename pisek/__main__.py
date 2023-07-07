@@ -89,34 +89,30 @@ def main(argv):
         )
     )
 
-    def add_argument_verbose(parser):
-        parser.add_argument(
-            "--verbose", "-v", action="count", default=2, help="zvyš ukecanost výstupů"
-        )
     def add_argument_timeout(parser):
         parser.add_argument(
             "--timeout",
             type=float,
-            help="po kolika sekundách ukončit běžící řešení (pouze CMS)",
+            help="after how many seconds kill running solution",
         )
 
     def add_argument_full(parser):
         parser.add_argument(
-            "--full", action="store_true", help="nezastavit se při první chybě"
+            "--full", action="store_true", help="don't stop on first failure"
         )
 
     def add_argument_strict(parser):
         parser.add_argument(
             "--strict",
             action="store_true",
-            help="pro závěrečnou kontrolu: vynutit, že checker existuje",
+            help="for final check: force that checker exists",
         )
 
     def add_argument_no_checker(parser):
         parser.add_argument(
             "--no-checker",
             action="store_true",
-            help="nepouštět checker",
+            help="don't run checker",
         )
 
     def add_argument_ninputs(parser):
@@ -125,7 +121,7 @@ def main(argv):
             "-n",
             type=int,
             default=5,
-            help="počet testů (pouze pro kasiopeu)",
+            help="number of test (only for kasiopea)",
         )
 
     def add_argument_clean(parser):
@@ -133,7 +129,7 @@ def main(argv):
             "--clean",
             "-c",
             action="store_true",
-            help="nejprve vyčisti, pak proveď žádané",
+            help="clean directory beforehand",
         )
 
     def add_argument_cms_contest(parser):
@@ -217,7 +213,6 @@ def main(argv):
             help="Počet segmentů do limitu.",
         )
 
-    add_argument_verbose(parser)
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
