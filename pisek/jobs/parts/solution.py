@@ -24,7 +24,7 @@ class SolutionManager(TaskJobManager):
 
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
-        
+
         jobs : list[Job] = []
         
         compile_args = {}
@@ -33,7 +33,9 @@ class SolutionManager(TaskJobManager):
         jobs.append(compile := Compile(solution, self._env.fork(), compile_args))
 
         timeout = None
-        if not self.primary and solution_env.config.timeout_other_solutions:
+        if self._env.timeout is not None:
+            timeout = self._env.timeout
+        elif not self.primary and solution_env.config.timeout_other_solutions:
             timeout = solution_env.config.timeout_other_solutions
         elif solution_env.config.timeout_model_solution:
             timeout = solution_env.config.timeout_model_solution
