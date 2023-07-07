@@ -130,7 +130,7 @@ class BaseEnv:
 
     def __deepcopy__(self, memo):
         copy = self.fork()
-        memo[id(copy)] = copy
+        memo[id(self)] = copy
         return copy
 
     def __repr__(self):
