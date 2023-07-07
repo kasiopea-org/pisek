@@ -73,7 +73,7 @@ class TaskConfig(BaseEnv):
             if section not in config:
                 return f"Missing section [{section}]"
         
-        needed_keys = [("task", "solutions"), ("tests", "in_gen")]
+        needed_keys = [("tests", "in_gen")]
         if config["tests"].get("out_check") == "judge":
             needed_keys.append(("tests", "out_judge"))
         for section, key in needed_keys:
@@ -139,9 +139,6 @@ class TaskConfig(BaseEnv):
             if subtask_number in subtasks:
                 return f"Duplicate subtask number {subtask_number}"
 
-            if subtask_number > 0 and "points" not in config[section_name]:
-                return f"Missing key 'points' in section [{section_name}]"
-
             subtask_config = SubtaskConfig()
             subtasks[str(subtask_number)] = subtask_config
             err = subtask_config.load(subtask_number, config[section_name])
@@ -154,23 +151,34 @@ class TaskConfig(BaseEnv):
 
         total_points = sum(map(lambda s: s.get_without_log('score'), subtasks.values()))
 
-        solutions_sections = config.get("task", "solutions").split()
-        if len(solutions_sections) == 0:
-            return "No solutions in config"
-        
+        self.solution_section_names = set()
         solutions = {}
-        for solution in solutions_sections:
-            if solution not in config:
-                return f"Missing section for solution {solution}"
+        primary = None
+        for section_name in config.sections():
+            m = re.match(r"solution_(.*)", section_name)
+
+            if not m:
+                # One of the other sections ([task], [tests]...)
+                continue
+            self.solution_section_names.add(m[0])
+            solution = m[1]
+
             solutions[solution] = SolutionConfig()
 
-            err = solutions[solution].load(solution, total_points, len(subtasks), config[solution])
+            err = solutions[solution].load(solution, total_points, len(subtasks), config[section_name])
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
-        
-        self._set("solution_names", solutions_sections)
+            if solutions[solution].get_without_log('primary') == "yes":
+                if primary is None:
+                    primary = solution
+                else:
+                    return f"Multiple primary solutions: {primary} and {solution}"
+
+        if len(solutions) and primary is None:
+            return "No primary solution set."
+
         self._set("solutions", BaseEnv(set([]), **solutions))
-        self._set("primary_solution", solutions_sections[0])
+        self._set("primary_solution", primary)
 
         self._set("subtasks", BaseEnv(set([]), **subtasks))
         self._set("subtask_section_names", subtask_section_names)
@@ -200,7 +208,8 @@ class TaskConfig(BaseEnv):
     def check_unused_keys(self, config: CheckedConfigParser) -> Optional[str]:
         """Verify that there are no unused keys in the config, raise otherwise."""
 
-        accepted_section_names = self.subtask_section_names | set(self.solutions.keys()) | {
+        accepted_section_names = self.subtask_section_names | self.solution_section_names | \
+        {
             "task",
             "tests",
             "limits",
@@ -214,7 +223,7 @@ class TaskConfig(BaseEnv):
             "limits": {},
             # Any subtask section like "test01", "test02"...
             "subtask": {"file_name"},
-            # Any subtask section specified in solutions
+            # Any solution section like solution_solve, solution_slow, ...
             "solution": {},
         }
 
@@ -224,7 +233,7 @@ class TaskConfig(BaseEnv):
 
             if section_name in self.subtask_section_names:
                 section_ignored_keys = ignored_keys["subtask"]
-            elif section_name in self.solutions.keys():
+            elif section_name in self.solution_section_names:
                 section_ignored_keys = ignored_keys["solution"]
             else:
                 section_ignored_keys = ignored_keys[section_name]
@@ -299,6 +308,7 @@ class SolutionConfig(BaseEnv):
     def load(self, solution_name: str, full_points: int, total_subtasks: int,
                                     config_section: configparser.SectionProxy) -> Optional[str]:
         self._set("source", config_section.get("source", solution_name))
+        self._set("primary", config_section.get("primary", "no"))
 
         points = config_section.get("points")
 

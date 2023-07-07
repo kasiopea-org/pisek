@@ -6,7 +6,6 @@ name=vyberko-soucet
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
-solutions=solve solve_3b solve_slow_4b solve_0b
 version=2
 
 [tests]
@@ -39,22 +38,23 @@ in_globs=03*.in
 # Time limit (seconds) for solutions
 solve_time_limit=2
 
-[solve]
+[solution_solve]
 source=solve
+primary=yes
 points=10
 subtasks=1111
 
-[solve_3b]
+[solution_solve_3b]
 source=solve_3b
 points=3
 subtasks=X1X0
 
-[solve_slow_4b]
+[solution_solve_slow_4b]
 source=solve_slow_4b
 points=4
 subtasks=1110
 
-[solve_0b]
+[solution_solve_0b]
 source=solve_0b
 points=0
 subtasks=0000

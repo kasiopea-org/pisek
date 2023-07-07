@@ -24,10 +24,6 @@ data_subdir=tests/
 # Directory for automatically generated files (inputs, outputs, ...)
 # Default: data/
 
-solutions=correct partially_correct wrong
-# List of names of solutions separated by whitespace
-# First is example solution - correct outputs are genearated with it
-
 tests = ??? (ignorováno)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
@@ -92,11 +88,17 @@ points=0
 in_globs=sample*.in
 predeccessors=
 
-[correct]
+[solution_correct]
 # Section for each solution
 
 source=solve
 # Filename of the program (without suffix)
+
+primary=yes
+# Use this solution to generate correct outputs?
+# Exactly one solution has to be set to primary
+# (or zero if there are no solutions in config)
+# Defaults to no
 
 points=10
 # Points that program should get or X for any number of points

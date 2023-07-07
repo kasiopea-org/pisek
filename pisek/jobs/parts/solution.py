@@ -14,13 +14,12 @@ class SolutionManager(TaskJobManager):
         self.solution = solution
         self.subtasks : list[SubtaskJobGroup] = []
         super().__init__(f"Solution {solution} Manager")
-        self.primary = False
 
     def _get_jobs(self) -> list[Job]:
         # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
         # If you use the wrong one caching bugs will arise.
         solution_env = self._env.fork()
-        solution = self._solution(self._env.config.solutions[self.solution].source)
+        solution = self._solution(solution_env.config.solutions[self.solution].source)
 
         judge_env = self._env.fork()
         judge = self._executable(judge_env.config.judge)
@@ -35,7 +34,7 @@ class SolutionManager(TaskJobManager):
         timeout = None
         if self._env.timeout is not None:
             timeout = self._env.timeout
-        elif not self.primary and solution_env.config.timeout_other_solutions:
+        elif not solution_env.config.solutions[self.solution].primary and solution_env.config.timeout_other_solutions:
             timeout = solution_env.config.timeout_other_solutions
         elif solution_env.config.timeout_model_solution:
             timeout = solution_env.config.timeout_model_solution
@@ -128,11 +127,6 @@ class SolutionManager(TaskJobManager):
         elif below is not None and total_points > below:
             return self._fail(f"Solution {self.solution} should have gotten at most {above} but got {total_points} points.")
 
-
-class PrimarySolutionManager(SolutionManager):
-    def __init__(self, solution: str):
-        super().__init__(solution)
-        self.primary = True
 
 class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
