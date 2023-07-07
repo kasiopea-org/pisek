@@ -74,6 +74,7 @@ points=3
 in_globs=01*.in
 # Which new inputs are introduced in this subtask.
 # Supports expansion of * and ? as in shell
+# Defaults to {subtask_number:02}*.in
 
 file_name = ??? (ignorováno)
 # Ignored (because of compatibility with KSP/Kasiopea web)
