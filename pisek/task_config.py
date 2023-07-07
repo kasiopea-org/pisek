@@ -295,16 +295,6 @@ class SubtaskConfig(BaseEnv):
         return self.all_globs
 
 
-    @BaseEnv.log_off
-    def __repr__(self):
-        return "<SubTaskConfig %s>" % ", ".join(
-            f"{k} = {getattr(self, k)}"
-            for k in filter(
-                lambda k: not k.startswith("_") and not callable(getattr(self, k)),
-                dir(self),
-            )
-        )
-
 class SolutionConfig(BaseEnv):
     def load(self, solution_name: str, full_points: int, total_subtasks: int,
                                     config_section: configparser.SectionProxy) -> Optional[str]:
