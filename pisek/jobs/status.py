@@ -3,10 +3,10 @@ from termcolor import colored
 
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
-MSG_LEN = 25
-BAR_LEN = 40
-
 terminal_width, terminal_height = os.get_terminal_size()
+
+MSG_LEN = 25
+MAX_BAR_LEN = 60
 line_sepatator = '⎯'*terminal_width + '\n'
 
 def pad(text: str, lenght: int, pad_char: str = " "):
@@ -21,8 +21,13 @@ class StatusJobManager(JobManager):
     @staticmethod
     def _bar(msg: str, part: int, full: int, color : str = "cyan") -> str:
         """Return progress bar with given parameters."""
-        filled = BAR_LEN * part // full
-        return f"{pad(msg, MSG_LEN)}{colored(filled*'━', color=color)}{colored((BAR_LEN-filled)*'━', color='grey')}  ({part}/{full})"
+        msg = pad(msg, MSG_LEN)
+        progress_msg = f"  ({part}/{full})"
+
+        bar_len = min(terminal_width - len(msg) - len(progress_msg), MAX_BAR_LEN)
+        filled = bar_len * part // full
+
+        return f"{msg}{colored(filled*'━', color=color)}{colored((bar_len-filled)*'━', color='grey')}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
