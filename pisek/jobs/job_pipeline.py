@@ -30,36 +30,37 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            if not self._status_update(env) and not env.full:  # we really need to call status_update to update messages
+            self.failed |= not self._status_update(env)  # we really need to call status_update to update messages
+            if self.failed and not env.full:
                 break
 
         cache.export()  # Remove duplicate cache entries
         return self.failed
 
     def _status_update(self, env: Env) -> bool:
-        """Display current progress"""
+        """Display current progress. Return true if there were no failures."""
         for _ in range(self._tmp_lines):
             print(CLCU, end="")
         self._tmp_lines = 0
 
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
-            self._print_tmp(job_man.update())
+            ongoing_msg = job_man.update()  # We are updating job_man's state with this call!
             if not env.full and job_man.any_failed():
+                print(ongoing_msg)
                 print(job_man.failures(), end='', file=sys.stderr)
-                self.failed = True
                 return False
             if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finalize()
                 if msg:
-                    self._reprint_final(msg)
+                    print(msg)
                 if job_man.state == State.failed:
                     print(job_man.failures(), end='', file=sys.stderr)
-                    self.failed = True
                     return False
             elif job_man.state == State.canceled:
-                pass
+                print(ongoing_msg)
             else:
+                self._print_tmp(ongoing_msg)
                 self.job_managers.appendleft(job_man)
                 break
         
@@ -71,8 +72,3 @@ class JobPipeline(ABC):
         """Prints a text to be rewriten latter."""
         self._tmp_lines += msg.count('\n') + 1
         print(str(msg), *args, **kwargs)
-
-    def _reprint_final(self, msg, *args, **kwargs):
-        """Rewrites current line with final messages."""
-        self._tmp_lines = 0
-        print(CLCU + str(msg), *args, **kwargs)
