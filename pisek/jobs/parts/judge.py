@@ -59,7 +59,7 @@ class JudgeManager(TaskJobManager):
             comp.add_prerequisite(build)
         else:
             jobs = [
-                Compile(self._resolve_path(self._env.config.judge), self._env.fork()) 
+                comp := Compile(self._resolve_path(self._env.config.judge), self._env.fork()) 
             ]
 
         samples = self._get_samples()
@@ -67,8 +67,8 @@ class JudgeManager(TaskJobManager):
             return []
 
         for inp, out in samples:
-            jobs.append(judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env.fork()))
-
+            jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env.fork()))
+            judge.add_prerequisite(comp)
             for job, times in [(Incomplete, 2), (ChaosMonkey, 20)]:
                 random.seed(4)  # Reproducibility!
                 seeds = random.sample(range(0, 16**4), times)
@@ -79,6 +79,7 @@ class JudgeManager(TaskJobManager):
                         run_judge := judge_job(self._env.config.judge, inp, inv_out, out,
                                                0, lambda: "0", None, self._env.fork())
                     ]
+                    run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
 
