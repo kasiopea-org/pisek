@@ -12,7 +12,7 @@ CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
 class JobPipeline(ABC):
     """Runs given Jobs and JobManagers according to their prerequisites."""
     @abstractmethod
-    def __init__(self, env):
+    def __init__(self, env: Env):
         env.reserve()
         self.failed = False
         self._tmp_lines = 0
@@ -30,8 +30,10 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
-            self.failed |= not self._status_update(env)  # we really need to call status_update to update messages
-            if self.failed and not env.full:
+            # we really need to call status_update to update messages
+            # Also no logs into env for just writing to stdout
+            self.failed |= not self._status_update(env.fork())
+            if self.failed and not env.get_without_log('full'):
                 break
 
         cache.export()  # Remove duplicate cache entries
@@ -47,28 +49,34 @@ class JobPipeline(ABC):
             job_man = self.job_managers.popleft()
             ongoing_msg = job_man.update()  # We are updating job_man's state with this call!
             if not env.full and job_man.any_failed():
-                print(ongoing_msg)
-                print(job_man.failures(), end='', file=sys.stderr)
+                self._print(ongoing_msg, env)
+                self._print(job_man.failures(), env, end='', file=sys.stderr)
                 return False
             if job_man.state == State.failed or job_man.ready():
                 msg = job_man.finalize()
                 if msg:
-                    print(msg)
+                    self._print(msg, env)
                 if job_man.state == State.failed:
-                    print(job_man.failures(), end='', file=sys.stderr)
+                    self._print(job_man.failures(), env, end='', file=sys.stderr)
                     return False
             elif job_man.state == State.canceled:
-                print(ongoing_msg)
+                self._print(ongoing_msg, env)
             else:
-                self._print_tmp(ongoing_msg)
+                self._print_tmp(ongoing_msg, env)
                 self.job_managers.appendleft(job_man)
                 break
         
         if len(self.pipeline):
-            self._print_tmp(f"Active job: {self.pipeline[0].name}")
+            self._print_tmp(f"Active job: {self.pipeline[0].name}", env)
         return True
 
-    def _print_tmp(self, msg, *args, **kwargs):
+    def _print_tmp(self, msg, env: Env, *args, **kwargs):
         """Prints a text to be rewriten latter."""
-        self._tmp_lines += msg.count('\n') + 1
+        if not env.plain:
+            self._tmp_lines += msg.count('\n') + 1
+            print(str(msg), *args, **kwargs)
+    
+    def _print(self, msg, env: Env, *args, **kwargs):
+        """Prints a text."""
+        self._tmp_lines += 0
         print(str(msg), *args, **kwargs)

@@ -82,6 +82,7 @@ class TestFixtureVariant(TestFixture):
                 no_checker=False,
                 full=False,
                 timeout=1,
+                plain=False
             )
 
         runner = unittest.TextTestRunner(failfast=True)

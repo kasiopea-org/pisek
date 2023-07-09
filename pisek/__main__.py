@@ -131,6 +131,13 @@ def main(argv):
             action="store_true",
             help="clean directory beforehand",
         )
+    
+    def add_argument_plain(parser):
+        parser.add_argument(
+            "--plain",
+            action="store_true",
+            help="Do not use ANSI escape sequences.",
+        )
 
     def add_argument_cms_contest(parser):
         parser.add_argument(
@@ -219,6 +226,7 @@ def main(argv):
     add_argument_no_checker(parser)
     add_argument_ninputs(parser)
     add_argument_clean(parser)
+    add_argument_plain(parser)
 
     subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
 

@@ -1,9 +1,13 @@
+from math import inf
 import os
 from termcolor import colored
 
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
-terminal_width, terminal_height = os.get_terminal_size()
+try:
+    terminal_width, terminal_height = os.get_terminal_size()
+except OSError:
+    terminal_width, terminal_height = 100, inf
 
 MSG_LEN = 25
 MAX_BAR_LEN = 60
@@ -38,7 +42,7 @@ class StatusJobManager(JobManager):
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():
             color = "red"
-        
+
         return self._bar(msg, len(self._jobs_with_state(State.succeeded)), max(1, len(self.jobs)), color=color)
     
     def _get_status(self) -> str:
