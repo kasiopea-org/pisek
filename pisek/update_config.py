@@ -33,8 +33,9 @@ def update(path) -> Optional[str]:
     if 'solutions' not in config["task"]:
         return f"Missing key 'solutions' in section [task]"
     solutions = config["task"]["solutions"].split()
+    del config["task"]["solutions"]
 
-    for solution in solutions:
+    for i, solution in enumerate(solutions):
         if match := re.fullmatch(r'(.*?)_([0-9]{1,3}|X)b', solution):
             points = None if match[2] == 'X' else int(match[2])
             if len(glob.glob(os.path.join(path, config["task"].get("solutions_subdir", ""), f"{solution}.*"))):
@@ -50,7 +51,10 @@ def update(path) -> Optional[str]:
         else:
             subtasks = get_subtask_mask(points, subtask_points)
 
+        solution = f"solution_{solution}"
         config.add_section(solution)
+        if i == 0:
+            config[solution]["primary"] = "yes"
         config[solution]["points"] = 'X' if points is None else str(points)
         config[solution]["subtasks"] = subtasks
 
