@@ -36,7 +36,7 @@ class StatusJobManager(JobManager):
             return f"{pad(msg, MSG_LEN)}{colored('canceled', color='yellow')}"
         elif self.state == State.succeeded:
             color = "green"
-        elif State.failed in self._job_states():
+        elif self.state == State.failed or State.failed in self._job_states():
             color = "red"
         
         return self._bar(msg, len(self._jobs_with_state(State.succeeded)), max(1, len(self.jobs)), color=color)
