@@ -36,8 +36,8 @@ def eprint(msg, *args, **kwargs):
 
 
 def test_task(args, **kwargs):
-    cwd = os.getcwd()
-    return (test_task_path(cwd, **vars(args), **kwargs))
+    path = '.'
+    return (test_task_path(path, **vars(args), **kwargs))
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
     config = TaskConfig()
