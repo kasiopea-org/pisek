@@ -13,17 +13,17 @@ class CacheEntry(yaml.YAMLObject):
         self.name = name
         self.signature = signature
         self.result = result
+        self.prerequisites_results = sorted(list(results))
         self.envs = list(sorted(envs))
         self.files = list(sorted(files))
-        self.prerequisites_results = sorted(list(results))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, " \
-               f"result={self.result}, envs={self.envs}, files={self.files}, " \
-               f"prerequisites_results={self.prerequisites_results})"
+               f"result={self.result}, prerequisites_results={self.prerequisites_results}, " \
+               f"envs={self.envs}, files={self.files})"
 
     def yaml_export(self) -> str:
-        return yaml.dump([self], allow_unicode=True)
+        return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
 class Cache:
     """Object representing all cached jobs."""
