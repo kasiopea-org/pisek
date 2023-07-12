@@ -26,17 +26,17 @@ ANY_MODIFIERS = [
 
 class Invalidate(TaskJob):
     """Abstract Job for Invalidating an output."""
-    def __init__(self, name: str, from_file: str, to_file: str, seed: int, env: Env) -> None:
-        super().__init__(name, env)
+    def _init(self, name: str, from_file: str, to_file: str, seed: int) -> None:
+        super()._init(name)
         self.seed = seed
         self.from_file = self._data(from_file)
         self.to_file = self._data(to_file)
 
 class Incomplete(Invalidate):
     """Makes an incomplete output."""
-    def __init__(self, from_file: str, to_file: str, seed: int, env: Env) -> None:
-        super().__init__(f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
-                         from_file, to_file, seed, env)
+    def _init(self, from_file: str, to_file: str, seed: int) -> None:
+        super()._init(f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
+                         from_file, to_file, seed)
 
     def _run(self):
         with self._open_file(self.from_file) as f:
@@ -50,9 +50,9 @@ class Incomplete(Invalidate):
 
 class ChaosMonkey(Invalidate):
     """Tries to break judge by generating nasty output."""
-    def __init__(self, from_file: str, to_file: str, seed: int, env: Env) -> None:
-        super().__init__(f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",
-                         from_file, to_file, seed, env)
+    def _init(self, from_file: str, to_file: str, seed: int) -> None:
+        super()._init(f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",
+                         from_file, to_file, seed)
 
     def _run(self):
         lines = []

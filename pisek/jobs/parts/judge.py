@@ -51,15 +51,15 @@ class JudgeManager(TaskJobManager):
 
             build : BuildDiffJudge
             if self._env.config.contest_type == "cms":
-                jobs.append(build := BuildCMSDiff(self._env.fork()))
+                jobs.append(build := BuildCMSDiff(self._env).init())
             else:
-                jobs.append(build := BuildKasiopeaDiff(self._env.fork()))
+                jobs.append(build := BuildKasiopeaDiff(self._env).init())
             
-            jobs.append(comp := Compile(self._executable(DIFF_NAME), self._env.fork())) 
+            jobs.append(comp := Compile(self._env).init(self._executable(DIFF_NAME))) 
             comp.add_prerequisite(build)
         else:
             jobs = [
-                comp := Compile(self._resolve_path(self._env.config.judge), self._env.fork()) 
+                comp := Compile(self._env).init(self._resolve_path(self._env.config.judge)) 
             ]
 
         samples = self._get_samples()
@@ -67,7 +67,7 @@ class JudgeManager(TaskJobManager):
             return []
 
         for inp, out in samples:
-            jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env.fork()))
+            jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env))
             judge.add_prerequisite(comp)
             for job, times in [(Incomplete, 2), (ChaosMonkey, 20)]:
                 random.seed(4)  # Reproducibility!
@@ -75,9 +75,9 @@ class JudgeManager(TaskJobManager):
                 for seed in seeds:
                     inv_out = out.replace(".out", f".{seed:x}.invalid")
                     jobs += [
-                        invalidate := job(out, inv_out, seed, self._env.fork()),
+                        invalidate := job(self._env).init(out, inv_out, seed),
                         run_judge := judge_job(self._env.config.judge, inp, inv_out, out,
-                                               0, lambda: "0", None, self._env.fork())
+                                               0, lambda: "0", None, self._env)
                     ]
                     run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
@@ -85,8 +85,8 @@ class JudgeManager(TaskJobManager):
 
 
 class BuildDiffJudge(TaskJob):
-    def __init__(self, env: Env) -> None:
-        super().__init__("Build WhiteDiffJudge", env)
+    def _init(self) -> None:
+        super()._init("Build WhiteDiffJudge")
 
 class BuildKasiopeaDiff(BuildDiffJudge):
     def _run(self):
@@ -112,17 +112,13 @@ class BuildCMSDiff(BuildDiffJudge):
 
 class RunJudge(ProgramJob):
     """Runs judge on single input. (Abstract class)"""
-    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
-                 expected_points: Optional[float], env: Env) -> None:
-        super().__init__(
-            name=f"Judge {output_name}",
-            program=judge,
-            env=env
-        )
+    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
+                 expected_points: Optional[float]) -> None:
         self.input_name = self._data(input_name)
         self.output_name = self._data(output_name)
         self.correct_output_name = self._data(correct_output)
         self.expected_points = expected_points
+        super()._init(f"Judge {output_name}", judge)
 
     @abstractmethod
     def _judge(self):
@@ -151,11 +147,11 @@ class RunJudge(ProgramJob):
 
 
 class RunKasiopeaJudge(RunJudge):
-    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
-                 subtask: int, seed: str, expected_points: Optional[float], env: Env) -> None:
+    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
+                 subtask: int, seed: str, expected_points: Optional[float]) -> None:
         self.subtask = subtask
         self.seed = seed
-        super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
+        super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)
@@ -176,9 +172,9 @@ class RunKasiopeaJudge(RunJudge):
 
 
 class RunCMSJudge(RunJudge):
-    def __init__(self, judge: str, input_name: str, output_name: str, correct_output: str,
+    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
                  expected_points: Optional[float], env: Env) -> None:
-        super().__init__(judge, input_name, output_name, correct_output, expected_points, env)
+        super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)
@@ -214,22 +210,20 @@ def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str,
               expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.contest_type == "cms":
-        return RunCMSJudge(
+        return RunCMSJudge(env).init(
             judge,
             input_name,
             output_name,
             correct_ouput,
-            expected_points,
-            env
+            expected_points
         )
     else:
-        return RunKasiopeaJudge(
+        return RunKasiopeaJudge(env).init(
             judge,
             input_name,
             output_name,
             correct_ouput,
             subtask,
             get_seed(),
-            expected_points,
-            env
+            expected_points
         )
