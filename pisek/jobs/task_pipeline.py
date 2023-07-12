@@ -29,7 +29,7 @@ from pisek.jobs.cache import Cache
 class TaskPipeline(JobPipeline):
     """JobPipeline that checks whether task behaves as expected."""
     def __init__(self, env):
-        super().__init__(env)
+        super().__init__()
         self.pipeline = [
             samples := SampleManager(),
             generator := GeneratorManager(),

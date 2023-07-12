@@ -12,8 +12,7 @@ CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
 class JobPipeline(ABC):
     """Runs given Jobs and JobManagers according to their prerequisites."""
     @abstractmethod
-    def __init__(self, env: Env):
-        env.reserve()
+    def __init__(self):
         self.failed = False
         self._tmp_lines = 0
 
@@ -24,7 +23,7 @@ class JobPipeline(ABC):
             p_item = self.pipeline.popleft()
             if isinstance(p_item, JobManager):
                 self.job_managers.append(p_item)
-                self.pipeline.extendleft(reversed(p_item.create_jobs(env.fork())))
+                self.pipeline.extendleft(reversed(p_item.create_jobs(env)))
             elif isinstance(p_item, Job):
                 p_item.run_job(cache)
                 p_item.finish()
@@ -33,7 +32,7 @@ class JobPipeline(ABC):
             # we really need to call status_update to update messages
             # Also no logs into env for just writing to stdout
             self.failed |= not self._status_update(env.fork())
-            if self.failed and not env.get_without_log('full'):
+            if self.failed and not env.full:
                 break
 
         cache.export()  # Remove duplicate cache entries
