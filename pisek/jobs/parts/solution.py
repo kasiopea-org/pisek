@@ -16,19 +16,15 @@ class SolutionManager(TaskJobManager):
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> list[Job]:
-        # WATCH OUT: To avoid unnecessary dependencies there are multiple env in this section.
-        # If you use the wrong one caching bugs will arise.
         solution = self._solution(self._env.config.solutions[self.solution].source)
-
-        judge_env = self._env.fork()
-        judge = self._executable(judge_env.config.judge)
+        judge = self._executable(self._env.config.judge)
 
         jobs : list[Job] = []
-        
+
         compile_args = {}
         if self._env.config.solution_manager:
             compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
-        jobs.append(compile := Compile(solution, self._env.fork(), compile_args))
+        jobs.append(compile := Compile(self._env).init(solution, compile_args))
 
         timeout = None
         if self._env.timeout is not None:
@@ -40,23 +36,17 @@ class SolutionManager(TaskJobManager):
 
         testcases = {}
         used_inp = set()
-        subtasks = list(zip(
-            self._env.iterate("config.subtasks", self._env),
-            judge_env.iterate("config.subtasks", judge_env)
-        ))  # Yes we really need to do it like this.
-
-        for (sub_num, sub, sol_env), (_, sub2, jud_env) in subtasks:
+        for sub_num, sub in self._env.config.subtasks.items():
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
-                self._subtask_inputs(sub2) # Yes it also depends on this
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(solution, inp, timeout, sol_env.fork()))
+                    jobs.append(run_solution := RunSolution(self._env).init(solution, inp, timeout))
                     run_solution.add_prerequisite(compile)
 
                     if sub_num == "0":
                         c_out = inp.replace(".in", ".out")
                     else:
-                        primary_sol = jud_env.config.solutions[jud_env.config.primary_solution].source
+                        primary_sol = self._env.config.solutions[self._env.config.primary_solution].source
                         c_out = util.get_output_name(inp, primary_sol)
                     jobs.append(
                         run_judge := judge_job(
@@ -67,7 +57,7 @@ class SolutionManager(TaskJobManager):
                             sub_num,
                             lambda: self._get_seed(inp),
                             None,
-                            jud_env.fork()
+                            self._env
                         )
                     )
  
@@ -215,14 +205,10 @@ class SubtaskJobGroup:
 
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
-    def __init__(self, solution: str, input_name: str, timeout: Optional[float], env: Env) -> None:
-        super().__init__(
-            name=f"Run {solution} on input {input_name}",
-            program=solution,
-            env=env
-        )
+    def _init(self, solution: str, input_name: str, timeout: Optional[float]) -> None:
         self.input_name = self._data(input_name)
         self.timeout = timeout
+        super()._init(f"Run {solution} on input {input_name}", solution)
 
     def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(
