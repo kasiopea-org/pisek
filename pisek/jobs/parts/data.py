@@ -12,7 +12,7 @@ class DataManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         jobs : list[Job] = []
 
-        files = self._globs_to_files([self._data("*")])
+        files = self._globs_to_files(["*"])
         for file in files:
             if file.endswith(".in"):
                 jobs.append(InputSmall(file, self._env.fork()))
