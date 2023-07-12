@@ -22,8 +22,6 @@ from glob import glob
 import shutil
 from typing import Optional, Iterator, List, Tuple
 
-import termcolor
-
 from pisek.jobs.cache import CACHE_FILENAME
 from .compile import supported_extensions
 from .task_config import TaskConfig

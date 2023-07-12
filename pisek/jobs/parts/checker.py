@@ -1,9 +1,8 @@
-import termcolor
 from typing import Any, Optional
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
-from pisek.jobs.status import tab
+from pisek.jobs.status import tab, colored
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob, Compile
 
@@ -18,12 +17,12 @@ class CheckerManager(TaskJobManager):
             if self._env.strict:
                 self._fail("No checker specified in config.")
                 return []
-            self.skipped_checker = termcolor.colored(
+            self.skipped_checker = colored(
                 "Warning: No checker specified in config.\n"
                 "It is recommended to set `checker` is section [tests]",
-            color="yellow")
+            "yellow", self._env)
         if self._env.no_checker:
-            self.skipped_checker = termcolor.colored("Skipping checking", color="yellow")
+            self.skipped_checker = colored("Skipping checking", "yellow", self._env)
 
         if self.skipped_checker != "":
             return []

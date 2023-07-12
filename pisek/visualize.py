@@ -4,7 +4,8 @@ from math import ceil
 import os
 import re
 import sys
-import termcolor
+from ansi.color import fg
+from ansi.color.fx import reset
 from typing import List, Dict, Optional, Union, Iterable
 
 from pisek import util
@@ -23,6 +24,9 @@ VERDICTS_ORDER = ['·', 't', 'T', 'W', '!']
 
 # subtask section
 TestCaseResult = namedtuple('TestCaseResult', ('name', 'verdict', 'value', 'points'))
+
+def red(msg: str) -> str:
+    return f"{fg.red}{msg}{reset}"
 
 def group_by_subtask(results : List[TestCaseResult], config : TaskConfig) -> List[List[TestCaseResult]]:
     subtasks = {num:[] for num in config.subtasks.keys()}
@@ -132,7 +136,7 @@ def visualize(
     
     if len(unexpected_solutions):
         print(
-            termcolor.colored(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů.", color="red"),
+            red(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů."),
             file=sys.stderr
         ),
 
@@ -187,7 +191,7 @@ def visualize_solution(
     print(f"{solution_name}: ({score}b)")
     if not as_expected:
         print(
-            termcolor.colored(f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b.", color="red"),
+            red(f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."),
             file=sys.stderr
         ),
     
