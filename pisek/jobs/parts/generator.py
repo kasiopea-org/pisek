@@ -17,7 +17,7 @@ class GeneratorManager(TaskJobManager):
     def _get_jobs(self) -> List[Job]:
         generator = self._resolve_path(self._env.config.generator)
 
-        jobs : list[Job] = [compile := Compile(generator, self._env.fork())]
+        jobs : list[Job] = [compile := Compile(self._env).init(generator)]
 
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
@@ -30,31 +30,31 @@ class GeneratorManager(TaskJobManager):
                     data_dir = self._env.config.get_data_dir()
                     input_name = util.get_input_name(seed, sub_num)
 
-                    jobs.append(gen := OnlineGeneratorGenerate(generator, input_name, sub_num, seed, self._env.fork()))
+                    jobs.append(gen := OnlineGeneratorGenerate(self._env).init(generator, input_name, sub_num, seed))
                     gen.add_prerequisite(compile)
                     if i == 0:
-                        jobs.append(det := OnlineGeneratorDeterministic(generator, input_name, sub_num, seed, self._env.fork()))
+                        jobs.append(det := OnlineGeneratorDeterministic(self._env).init(generator, input_name, sub_num, seed))
                         det.add_prerequisite(gen)
                     elif i == 1:
-                        jobs.append(rs := OnlineGeneratorRespectsSeed(sub_num, last_gen.seed, gen.seed,
-                                                                    last_gen.input_file, gen.input_file, self._env.fork()))
+                        jobs.append(rs := OnlineGeneratorRespectsSeed(self._env).init(sub_num, last_gen.seed, gen.seed,
+                                                                    last_gen.input_file, gen.input_file))
                         rs.add_prerequisite(last_gen)
                         rs.add_prerequisite(gen)
                     last_gen = gen
         else:
-            jobs.append(OfflineGeneratorGenerate(generator, self._env.fork()))
+            jobs.append(OfflineGeneratorGenerate(self._env).init(generator))
 
         return jobs
 
 
 class OnlineGeneratorJob(ProgramJob):
     """Abstract class for jobs with OnlineGenerator."""
-    def __init__(self, name: str, generator : str, input_file: str, subtask: int, seed: int, env: Env) -> None:
+    def _init(self, name: str, generator : str, input_file: str, subtask: int, seed: int) -> None:
         self.subtask = subtask
         self.seed = seed
-        super().__init__(name, generator, env)
         self.input_name = input_file
         self.input_file = self._data(input_file)
+        super()._init(name, generator)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> Optional[RunResult]:
         if not self._load_compiled():
@@ -83,8 +83,8 @@ class OnlineGeneratorJob(ProgramJob):
 
 class OnlineGeneratorGenerate(OnlineGeneratorJob):
     """Generates single input using OnlineGenerator."""
-    def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
-        super().__init__(f"Generate {input_file}", generator, input_file, subtask, seed, env)
+    def _init(self, generator: str, input_file: str, subtask: int, seed: int) -> None:
+        super()._init(f"Generate {input_file}", generator, input_file, subtask, seed)
 
     def _run(self) -> Optional[RunResult]:
         return self._gen(self.input_file, self.seed, self.subtask)
@@ -92,10 +92,10 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
 
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     """Test whether generating given input again has same result."""
-    def __init__(self, generator: str, input_file: str, subtask: int, seed: int, env: Env) -> None:
-        super().__init__(
+    def _init(self, generator: str, input_file: str, subtask: int, seed: int) -> None:
+        super()._init(
             f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
-            generator, input_file, subtask, seed, env
+            generator, input_file, subtask, seed
         )
 
     def _run(self) -> None:
@@ -110,12 +110,12 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
 
 class OnlineGeneratorRespectsSeed(TaskJob):
     """Test whether two files generated with different seed are different."""
-    def __init__(self, subtask: int, seed1: int, seed2: int, file1: str, file2: str, env: Env) -> None:
+    def _init(self, subtask: int, seed1: int, seed2: int, file1: str, file2: str) -> None:
         self.file1, self.file2 = file1, file2
         self.file1_name, self.file2_name = map(lambda s: str(os.path.basename(s)), (file1, file2))
         self.subtask = subtask
         self.seed1, self.seed2 = seed1, seed2
-        super().__init__(f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)", env)
+        super()._init(f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)")
 
     def _run(self) -> None:
         if self._files_equal(self.file1, self.file2):
@@ -126,8 +126,8 @@ class OnlineGeneratorRespectsSeed(TaskJob):
 
 class OfflineGeneratorGenerate(ProgramJob):
     """Job that generates all inputs using OfflineGenerator."""
-    def __init__(self, program: str, env: Env) -> None:
-        super().__init__("Generate inputs", program, env)
+    def _init(self, program: str) -> None:
+        super()._init("Generate inputs", program)
 
     def _gen(self) -> Optional[RunResult]:
         """Generates all inputs."""

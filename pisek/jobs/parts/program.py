@@ -54,10 +54,10 @@ def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunR
 
 class ProgramJob(TaskJob):
     """Job that deals with a program."""
-    def __init__(self, name: str, program: str, env: Env) -> None:
+    def _init(self, name: str, program: str) -> None:
         self.program = program
         self.executable : Optional[str] = None
-        super().__init__(name, env)
+        super()._init(name)
 
     def _compile(self, compiler_args : Optional[Dict] = None):
         """Compiles program."""
@@ -174,13 +174,9 @@ class ProgramJob(TaskJob):
 
 class Compile(ProgramJob):
     """Job that compiles a program."""
-    def __init__(self, program: str, env: Env, compile_args: Dict = {}) -> None:
+    def _init(self, program: str, compile_args: Dict = {}) -> None:
         self._compile_args = compile_args
-        super().__init__(
-            name=f"Compile {os.path.basename(program)}",
-            program=program,
-            env=env
-        )
+        super()._init(f"Compile {os.path.basename(program)}", program)
 
     def _run(self):
         return self._compile(self._compile_args)
