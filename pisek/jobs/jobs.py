@@ -66,7 +66,8 @@ class Job(PipelineItem):
         super().__init__("Unnamed job")
 
     def init(self, *args, **kwargs) -> 'Job':
-        # TODO: Cache here
+        self._args = args
+        self._kwargs = kwargs
         self._init(*args, **kwargs)
         self._initialized = True
         return self
@@ -82,6 +83,10 @@ class Job(PipelineItem):
     def _signature(self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results. """
         sign = hashlib.sha256()
+        for i, arg in enumerate(self._args):
+            sign.update(f"{i}={arg}".encode())
+        for key, val in self._kwargs.items():
+            sign.update(f"{kay}={val}".encode())
         for variable in sorted(envs):
             if variable not in self._env:
                 return (None, "Env nonexistent")
