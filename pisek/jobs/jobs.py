@@ -59,10 +59,20 @@ class PipelineItem(ABC):
 
 class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
-    def __init__(self, name : str, env: Env) -> None:
-        self._env = env.reserve()
+    def __init__(self, env: Env) -> None:
+        self._initialized = False
+        self._env = env.fork()
         self._accessed_files : MutableSet[str] = set([])
-        super().__init__(name)
+        super().__init__("Unnamed job")
+
+    def init(self, *args, **kwargs) -> 'Job':
+        # TODO: Cache here
+        self._init(*args, **kwargs)
+        self._initialized = True
+        return self
+
+    def _init(self, name: str) -> None:
+        self.name = name
 
     def _access_file(self, filename : str) -> None:
         """Add file this job depends on."""
@@ -114,6 +124,8 @@ class Job(PipelineItem):
 
     def run_job(self, cache: Cache) -> Optional[str]:
         """Run this job. If result is already in cache use it instead."""
+        if not self._initialized:
+            raise RuntimeError("Job must be initialized before running it. (call Job.init)")
         if self.state == State.canceled:
             return None
         self._check_prerequisites()
