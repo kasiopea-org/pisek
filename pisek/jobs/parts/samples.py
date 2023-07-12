@@ -22,9 +22,9 @@ class SampleManager(TaskJobManager):
         jobs : list[Job] = []
         for fname in unzipped_samples:
             jobs += [
-                existence := SampleExists(fname, self._env.fork()),
-                non_empty := SampleNotEmpty(fname, self._env.fork()),
-                copy := CopySample(fname, self._env.fork())
+                existence := SampleExists(self._env).init(fname),
+                non_empty := SampleNotEmpty(self._env).init(fname),
+                copy := CopySample(self._env).init(fname),
             ]
             non_empty.add_prerequisite(existence)
             copy.add_prerequisite(existence)
@@ -33,21 +33,21 @@ class SampleManager(TaskJobManager):
 
 
 class SampleJob(TaskJob):
-    def __init__(self, name, sample: str, env: Env) -> None:
-        super().__init__(name, env)
-        self.sample = self._resolve_path(env.config.samples_subdir, sample)
+    def _init(self, name: str, sample : str) -> None:
+        self.sample = self._sample(sample)
+        super()._init(name)
 
 class SampleExists(SampleJob):
-    def __init__(self, sample: str, env: Env) -> None:
-        super().__init__(f"Sample {sample} exists", sample, env)
+    def _init(self, sample: str) -> None:
+        super()._init(f"Sample {sample} exists", sample)
 
     def _run(self):
         if not self._file_exists(self.sample):
             return self._fail(f"Sample does not exists or is not file: {self.sample}")
 
 class SampleNotEmpty(SampleJob):
-    def __init__(self, sample: str, env: Env) -> None:
-        super().__init__(f"Sample {sample} is not empty", sample, env)
+    def _init(self, sample: str) -> None:
+        super()._init(f"Sample {sample} is not empty", sample)
 
     def _run(self):
         if not self._file_not_empty(self.sample):
@@ -55,9 +55,10 @@ class SampleNotEmpty(SampleJob):
 
 class CopySample(SampleJob):
     """Copies samples into data so we can treat them as inputs."""
-    def __init__(self, sample: str, env: Env) -> None:
-        data_subdir = env.config.data_subdir.rstrip("/") + "/"
-        super().__init__(f"Copy {sample} to {data_subdir}", sample, env)
+    def _init(self, sample: str) -> None:
+        data_subdir = self._env.config.data_subdir.rstrip("/") + "/"
+        super()._init(f"Copy {sample} to {data_subdir}", sample)
+
     
     def _run(self):
         self._copy_file(self.sample, self._data(os.path.basename(self.sample)))
