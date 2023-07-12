@@ -59,6 +59,7 @@ class CheckedConfigParser(configparser.RawConfigParser):
 
 
 class TaskConfig(BaseEnv):
+    @BaseEnv.log_off
     def load(self, task_dir: str) -> Optional[str]:
         config = CheckedConfigParser()
         config_path = os.path.join(task_dir, CONFIG_FILENAME)
@@ -93,17 +94,17 @@ class TaskConfig(BaseEnv):
 
         self._set("task_name", config.get("task", "name"))
 
-        self._set("contest_type", contest_type := config["task"].get("contest_type", "kasiopea"))
+        self._set("contest_type", config["task"].get("contest_type", "kasiopea"))
 
         self._set("generator", config["tests"]["in_gen"])
         self._set("checker", config["tests"].get("checker"))
-        self._set("judge_type", judge_type := config["tests"].get("out_check", "diff"))
-        if judge_type == "judge":
+        self._set("judge_type", config["tests"].get("out_check", "diff"))
+        if self.judge_type == "judge":
             self._set("judge", config["tests"]["out_judge"])
         else:
             self._set("judge", "diff")
 
-        self._set("fail_mode", "all" if contest_type == "kasiopea" else "any")
+        self._set("fail_mode", "all" if self.contest_type == "kasiopea" else "any")
         # Relevant for CMS interactive tasks. The file to be linked with
         # the contestant's solution (primarily for C++)
         self._set("solution_manager", config["tests"].get("solution_manager"))
@@ -114,7 +115,7 @@ class TaskConfig(BaseEnv):
         self._set("timeout_other_solutions", apply_to_optional(
             config.get("limits", "sec_solve_time_limit", fallback=None), float
         ))
-        if contest_type == "kasiopea":
+        if self.contest_type == "kasiopea":
             self._set("input_max_size", config.get("limits", "input_max_size", fallback=50))  # MB
             self._set("output_max_size", config.get("limits", "output_max_size", fallback=10))  # MB
 
@@ -151,6 +152,9 @@ class TaskConfig(BaseEnv):
 
         total_points = sum(map(lambda s: s.get_without_log('score'), subtasks.values()))
 
+        self._set("subtasks", BaseEnv(**subtasks))
+        self._set("subtask_section_names", subtask_section_names)
+
         self.solution_section_names = set()
         solutions = {}
         primary = None
@@ -179,9 +183,6 @@ class TaskConfig(BaseEnv):
 
         self._set("solutions", BaseEnv(**solutions))
         self._set("primary_solution", primary)
-
-        self._set("subtasks", BaseEnv(**subtasks))
-        self._set("subtask_section_names", subtask_section_names)
 
         for subtask in subtasks.values():
             err = subtask.construct_globs(subtasks)
@@ -246,6 +247,7 @@ class TaskConfig(BaseEnv):
 
 
 class SubtaskConfig(BaseEnv):
+    @BaseEnv.log_off
     def load(self, subtask_number: int, config_section: configparser.SectionProxy) -> Optional[str]:
         if subtask_number == 0:  # samples
             self._set("name", config_section.get("name", "Samples"))
@@ -258,10 +260,9 @@ class SubtaskConfig(BaseEnv):
             if "points" not in config_section:
                 return "Missing key 'points'" 
             try:
-                score = int(config_section["points"])
+                self._set("score", int(config_section["points"]))
             except ValueError:
                 return "'points' must be number"
-            self._set("score", score)
 
             self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
             prev = "" if subtask_number == 1 else str(subtask_number-1)
@@ -269,8 +270,8 @@ class SubtaskConfig(BaseEnv):
         self._constructing = False
         return None
 
-    def _glob_i(self, i):
-        return f"{'0'*(2 - len(str(i)))}{i}*.in"
+    def _glob_i(self, i: int):
+        return f"{i:02}*.in"
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
@@ -305,6 +306,7 @@ class SubtaskConfig(BaseEnv):
 
 
 class SolutionConfig(BaseEnv):
+    @BaseEnv.log_off
     def load(self, solution_name: str, full_points: int, total_subtasks: int,
                                     config_section: configparser.SectionProxy) -> Optional[str]:
         self._set("source", config_section.get("source", solution_name))
