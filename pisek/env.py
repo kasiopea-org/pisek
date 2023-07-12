@@ -15,7 +15,7 @@ class BaseEnv:
     def __init__(self, accessed : MutableSet[str] = set([]), **vars) -> None:
         self._vars = vars
         self._log_off = 0
-        self._reserved = False
+        self._locked = False
         self._accessed = copy(accessed)
 
     def _get(self, name: str) -> Any:
@@ -68,10 +68,10 @@ class BaseEnv:
     def keys(self) -> list[str]:
         """
         Return all names of variables stored.
-        
-        Do not use this to check whether variable exists as that would be not logged.
+        Logs each variable.
         """
-        return sorted(self._vars.keys())
+        self._accessed |= self._vars.keys()
+        return list(sorted(self._vars.keys()))
 
     def items(self) -> list[tuple[str,Any]]:
         """
@@ -80,15 +80,6 @@ class BaseEnv:
         """
         self._accessed |= self._vars.keys()
         return list(sorted(self._vars.items()))
-
-    def iterate(self, name: str, env = None):
-        """
-        Iterate through vars of (sub)env with given name.
-        Each iterations get its own forked env witch accessed only current variable.
-        """
-        for var in self._get(name).keys():
-            fork = env.fork()
-            yield (var, getattr(fork, f"{name}.{var}"), fork)
 
     def _set(self, name: str, value: Any):
         """Sets variable to value. Use only in __init__ and for other cases use fork."""
@@ -128,18 +119,14 @@ class BaseEnv:
         Accesses to env's variables (to this point) are logged in forked env as well.
         Subsequent accesses are logged only to respective BaseEnv.
         """
-        return self.__class__(accessed=self._accessed, **{**deepcopy(self._vars), **kwargs})
+        if self._locked:
+            raise RuntimeError("Locked BaseEnv cannot be forked.")
+        return self.__class__(**{**deepcopy(self._vars), **kwargs})
 
-    def reserve(self) -> 'BaseEnv':
-        """
-        Reserves env so no one else can access it.
-        (Env can be reserved only once, then it is necessary to fork it.)
-        """
-        if self._reserved:
-            raise RuntimeError("Env is reserved already.")
-        else:
-            self._reserved = True
-            return self
+    def lock(self) -> 'BaseEnv':
+        """Lock this BaseEnv so it cannot be forked."""
+        self._locked = True
+        return self
 
     @log_off
     def get_accessed(self) -> list[str]:
