@@ -172,8 +172,8 @@ class RunKasiopeaJudge(RunJudge):
 
 
 class RunCMSJudge(RunJudge):
-    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
-                 expected_points: Optional[float], env: Env) -> None:
+    def _init(self, judge: str, input_name: str, output_name: str,
+              correct_output: str, expected_points: Optional[float]) -> None:
         super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
