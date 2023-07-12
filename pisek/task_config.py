@@ -177,10 +177,10 @@ class TaskConfig(BaseEnv):
         if len(solutions) and primary is None:
             return "No primary solution set."
 
-        self._set("solutions", BaseEnv(set([]), **solutions))
+        self._set("solutions", BaseEnv(**solutions))
         self._set("primary_solution", primary)
 
-        self._set("subtasks", BaseEnv(set([]), **subtasks))
+        self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
 
         for subtask in subtasks.values():

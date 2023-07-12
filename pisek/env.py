@@ -12,11 +12,11 @@ class BaseEnv:
     Unset variables cannot be accessed. (That raises an error.)
     Set them to default value instead.
     """
-    def __init__(self, accessed : MutableSet[str] = set([]), **vars) -> None:
+    def __init__(self, **vars) -> None:
         self._vars = vars
         self._log_off = 0
         self._locked = False
-        self._accessed = copy(accessed)
+        self._accessed = set([])
 
     def _get(self, name: str) -> Any:
         """
@@ -106,7 +106,7 @@ class BaseEnv:
             return result
         return g
     
-    @log_off    
+    @log_off
     def get_without_log(self, name: str) -> Any:
         """Gets variable without logging."""
         return self._get(name)
