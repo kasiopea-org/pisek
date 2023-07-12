@@ -29,14 +29,14 @@ class CheckerManager(TaskJobManager):
 
         checker = self._resolve_path(self._env.config.checker)
 
-        jobs : list[Job] = [compile := Compile(checker, self._env.fork())]
+        jobs : list[Job] = [compile := Compile(self._env).init(checker)]
         
         self.loose_subtasks = []
         for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
             if sub_num == '0':
                 continue  # Skip samples
             for inp in self._subtask_inputs(sub):
-                jobs.append(check := CheckerJob(checker, inp, sub_num, RunResultKind.OK, new_env.fork()))
+                jobs.append(check := CheckerJob(self._env).init(checker, inp, sub_num, RunResultKind.OK))
                 check.add_prerequisite(compile)
 
         for sub_num, sub, new_env in self._env.iterate("config.subtasks", self._env):
@@ -45,7 +45,7 @@ class CheckerManager(TaskJobManager):
                 for pred in sub.predecessors:
                     self.loose_subtasks[-1].jobs[pred] = []
                     for inp in self._subtask_new_inputs(sub):
-                        jobs.append(check := CheckerJob(checker, inp, pred, None, new_env.fork()))
+                        jobs.append(check := CheckerJob(self._env).init(checker, inp, pred, None))
                         self.loose_subtasks[-1].jobs[pred].append(check)
                         check.add_prerequisite(compile)
 
@@ -113,16 +113,12 @@ class LooseCheckJobGroup:
 
 class CheckerJob(ProgramJob):
     """Runs checker on single input."""
-    def __init__(self, checker: str, input_name: str, subtask: int, expected: Optional[RunResultKind], env: Env):
+    def _init(self, checker: str, input_name: str, subtask: int, expected: Optional[RunResultKind]):
         self.subtask = subtask
-        super().__init__(
-            name=f"Check {input_name} on subtask {subtask}",
-            program=checker,
-            env=env
-        )
         self.input_name = input_name
         self.input_file = self._data(input_name)
         self.expected = expected
+        super()._init(f"Check {input_name} on subtask {subtask}", checker)
 
     def _check(self) -> Optional[RunResult]:
         return self._run_program(
