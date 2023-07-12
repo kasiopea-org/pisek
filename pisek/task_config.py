@@ -150,7 +150,7 @@ class TaskConfig(BaseEnv):
             subtasks["0"] = SubtaskConfig()
             subtasks["0"].load(0, configparser.SectionProxy(config, "test00"))  # This shouldn't fail for default values
 
-        total_points = sum(map(lambda s: s.get_without_log('score'), subtasks.values()))
+        total_points = sum(map(lambda s: s.score, subtasks.values()))
 
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
@@ -172,7 +172,7 @@ class TaskConfig(BaseEnv):
             err = solutions[solution].load(solution, total_points, len(subtasks), config[section_name])
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
-            if solutions[solution].get_without_log('primary') == "yes":
+            if solutions[solution].primary == "yes":
                 if primary is None:
                     primary = solution
                 else:
