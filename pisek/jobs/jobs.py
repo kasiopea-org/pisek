@@ -61,7 +61,7 @@ class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
     def __init__(self, env: Env) -> None:
         self._initialized = False
-        self._env = env.fork()
+        self._env = env.fork().lock()
         self._accessed_files : MutableSet[str] = set([])
         super().__init__("Unnamed job")
 
@@ -159,7 +159,7 @@ class JobManager(PipelineItem):
             self.jobs = []
         else:
             self.state = State.running
-            self._env = env.reserve()
+            self._env = env
             self._check_prerequisites()
             self.jobs = self._get_jobs()
         return self.jobs
