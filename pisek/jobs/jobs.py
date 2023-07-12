@@ -160,11 +160,11 @@ class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
     def create_jobs(self, env: Env) -> list[Job]:
         """Crates this JobManager's jobs."""
+        self._env = env
         if self.state == State.canceled:
             self.jobs = []
         else:
             self.state = State.running
-            self._env = env
             self._check_prerequisites()
             self.jobs = self._get_jobs()
         return self.jobs
