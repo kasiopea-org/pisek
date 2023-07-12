@@ -21,7 +21,7 @@ class GeneratorManager(TaskJobManager):
 
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
-            seeds = random.sample(range(0, 16**4), self._env.get_without_log('inputs'))
+            seeds = random.sample(range(0, 16**4), self._env.inputs)
             for sub_num in self._env.config.subtasks.keys():
                 if sub_num == "0":
                     continue  # skip samples
