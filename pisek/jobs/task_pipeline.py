@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pisek.jobs.job_pipeline import JobPipeline
 
+from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.samples import SampleManager
 from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
@@ -31,11 +32,14 @@ class TaskPipeline(JobPipeline):
     def __init__(self, env):
         super().__init__()
         self.pipeline = [
+            tools := ToolsManager(),
             samples := SampleManager(),
             generator := GeneratorManager(),
             checker := CheckerManager(),
             judge := JudgeManager(),
         ]
+        generator.add_prerequisite(tools)
+        
         checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)
 

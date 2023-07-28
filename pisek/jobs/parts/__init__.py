@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from .tools import ToolsManager
 from .samples import SampleManager
 from .generator import GeneratorManager
 from .checker import CheckerManager
