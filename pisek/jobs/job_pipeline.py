@@ -29,6 +29,10 @@ class JobPipeline(ABC):
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
+
+            if p_item.dirty:
+                self._tmp_lines = 0
+
             # we really need to call status_update to update messages
             # Also no logs into env for just writing to stdout
             self.failed |= not self._status_update(env.fork())

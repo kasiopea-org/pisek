@@ -16,6 +16,7 @@ class PipelineItem(ABC):
         self.state = State.in_queue
         self.result = None
         self.fail_msg = ""
+        self.dirty = False  # Prints something to console?
 
         self.prerequisites = 0
         self.required_by : list[tuple['PipelineItem', Optional[str]]] = []

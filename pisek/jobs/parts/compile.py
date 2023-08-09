@@ -17,6 +17,7 @@ from functools import partial
 import os
 import shutil
 import subprocess
+import sys
 from typing import Dict, List, Optional, Tuple
 
 from pisek.jobs.jobs import State
@@ -119,7 +120,15 @@ class Compile(ProgramJob):
         )
 
     def _run_compilation(self, args, program, **kwargs):
-        comp = subprocess.run(args, **kwargs)
+        comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
+        while True:
+            line = comp.stderr.readline().decode()
+            if not line:
+                break
+            print(line, end="", file=sys.stderr)
+            self.dirty = True
+
+        comp.wait()
         if comp.returncode != 0:
             return self._fail(f"Compilation of {program} failed.")
     
