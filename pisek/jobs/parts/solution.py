@@ -25,7 +25,7 @@ class SolutionManager(TaskJobManager):
         compile_args = {}
         if self._env.config.solution_manager:
             compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
-        jobs.append(compile := Compile(self._env).init(solution, compile_args))
+        jobs.append(compile := Compile(self._env).init(solution, True, compile_args))
 
         timeout = None
         if self._env.timeout is not None:

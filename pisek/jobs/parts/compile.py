@@ -24,15 +24,16 @@ from pisek.jobs.parts.program import ProgramJob
 
 class Compile(ProgramJob):
     """Job that compiles a program."""
-
-    def _init(self, program: str, compile_args: Dict = {}) -> None:
+    def _init(self, program: str, use_manager: bool = False, compile_args: Dict = {}) -> None:
+        self.use_manager = use_manager
         self._compile_args = compile_args
         self.target = self._executable(os.path.basename(program))
 
-        self.manager = self._env.config.solution_manager
-        if self.manager:
-            self.manager = self._resolve_path(self.manager)
-            self._access_file(self.manager + ".h")
+        self.manager = None
+        if self.use_manager:
+            manager = self._env.config.solution_manager
+            if manager:
+                self.manager = self._resolve_path(manager)
 
         super()._init(f"Compile {os.path.basename(program)}", program)
 
@@ -93,7 +94,7 @@ class Compile(ProgramJob):
 
         manager = self._env.config.solution_manager
         if manager is not None:  # Interactive task
-            cpp_flags += manager_flags(os.path.dirname(program), self.manager, ".cpp")
+            cpp_flags += self.manager_flags(".cpp")
 
         return self._run_compilation(
             ["g++", program, "-o", self.target] + cpp_flags,
@@ -105,7 +106,7 @@ class Compile(ProgramJob):
 
         manager = self._env.config.solution_manager
         if manager is not None:  # Interactive task
-            c_flags += manager_flags(os.path.dirname(program), self.manager, ".c")
+            c_flags += self.manager_flags(".c")
 
         return self._run_compilation(
             ["gcc", program, "-o", self.target] + c_flags,
@@ -163,6 +164,22 @@ class Compile(ProgramJob):
         st = os.stat(filepath)
         os.chmod(filepath, st.st_mode | 0o111)
 
+    def manager_flags(self, extension):
+        # For interactive tasks - compile with the manager and add its directory
+        # to the search path to allow `#include "manager.h"`
+        res = []
+        if os.path.dirname(self.manager):
+            res.append(f"-I{os.path.dirname(self.manager)}")
+        res.append(self.manager + extension)
+        
+        self._access_file(self.manager + extension)
+        
+        return res
+
+
+# This is the list of supported Python interpreters.
+# Used for checking the shebang.
+VALID_PYTHON_INTERPRETERS = ["python3", "pypy3"]
 
 COMPILE_RULES = {
     '.py': Compile._compile_script,
@@ -173,70 +190,6 @@ COMPILE_RULES = {
     '.pas': Compile._compile_pas,
 }
 
-class CompileRules:
-    """Abstract class for compile rules"""
-    def __init__(self, supported_extensions: List[str]) -> None:
-        self.supported = supported_extensions
-
-    def compile(
-        self,
-        filepath: str,
-        build_dir: Optional[str] = None,
-        dry_run: bool = False,
-        **kwargs,
-    ) -> Optional[str]:
-        """Takes a `filepath` and either:
-        - compiles it and returns the path to the executable (str) or
-        - returns None if an error occurred
-        If dry_run is True, returns the path to the would-be executable and does nothing.
-        """
-        raise NotImplementedError
-
-
-
-# This is the list of supported Python interpreters.
-# Used for checking the shebang.
-VALID_PYTHON_INTERPRETERS = ["python3", "pypy3"]
-
-
-class ScriptCompileRules(CompileRules):
-    """
-    For e.g. Python or Bash, languages whose source code can be directly executed
-    when an appropriate shebang is present
-    """
-
-    def __init__(self, supported_extensions: List[str]) -> None:
-        super().__init__(supported_extensions)
-
-    def compile(
-        self,
-        filepath: str,
-        build_dir: Optional[str] = None,
-        dry_run: bool = True,
-        **kwargs,
-    ) -> Optional[str]:
-        dirname, filename, _ = _split_path(filepath)
-        build_dir = build_dir or util.get_build_dir(dirname)
-        result_filepath = os.path.join(build_dir, filename)
-        if dry_run:
-            return result_filepath
-
-
-        shutil.copyfile(filepath, result_filepath)
-        self._chmod_exec(result_filepath)
-        return None
-
-
-
-def manager_flags(dir, manager, extension):
-    # For interactive tasks - compile with the manager and add its directory
-    # to the search path to allow `#include "manager.h"`
-    res = []
-    if os.path.dirname(manager):
-        res.append(f"-I{os.path.dirname(manager)}")
-    res.append(manager + extension)
-
-    return res
 
 
 def supported_extensions() -> List[str]:
