@@ -30,7 +30,7 @@ class CheckerManager(TaskJobManager):
         checker = self._resolve_path(self._env.config.checker)
 
         jobs : list[Job] = [compile := Compile(self._env).init(checker)]
-        
+
         self.loose_subtasks = []
         for sub_num, sub in self._env.config.subtasks.items():
             if sub_num == '0':
@@ -48,7 +48,7 @@ class CheckerManager(TaskJobManager):
                         check.add_prerequisite(compile)
 
         return jobs
-    
+
     def _evaluate(self) -> Any:
         if len(self.jobs) == 0:
             return

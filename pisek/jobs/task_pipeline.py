@@ -39,7 +39,7 @@ class TaskPipeline(JobPipeline):
             judge := JudgeManager(),
         ]
         generator.add_prerequisite(tools)
-        
+
         checker.add_prerequisite(samples)
         checker.add_prerequisite(generator)
 
@@ -58,7 +58,7 @@ class TaskPipeline(JobPipeline):
             self.pipeline.append(solution := SolutionManager(solution))
             solution.add_prerequisite(primary_solution)
             solutions.append(solution)
-        
+
         if env.config.contest_type == "kasiopea" and env.solutions:
             self.pipeline.append(data_check := DataManager())
             for solution in solutions:

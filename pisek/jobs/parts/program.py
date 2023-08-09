@@ -125,7 +125,7 @@ class ProgramJob(TaskJob):
         self._access_file(self.executable)
 
         return True
-    
+
     def _load_compiled(self) -> bool:
         """Loads name of compiled program."""
         self.executable = self._executable(os.path.basename(self.program))
@@ -147,7 +147,7 @@ class ProgramJob(TaskJob):
         self._access_file(executable)
 
         minibox_args = []
-        
+
         minibox_args.append(f"--time={timeout}")
         minibox_args.append(f"--wall-time={timeout}")
         minibox_args.append(f"--mem={mem}")
@@ -169,7 +169,7 @@ class ProgramJob(TaskJob):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         process.wait()
-        
+
         meta_raw = process.stdout.read().decode().strip().split('\n')
         meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
 
@@ -191,7 +191,7 @@ class ProgramJob(TaskJob):
         if not self._load_compiled():
             return None
         return self._run_raw([self.executable] + add_args, **kwargs)
- 
+
     def _get_executable(self) -> str:
         """Get a name of a compiled program."""
         return self._executable(os.path.basename(self.program))
@@ -227,7 +227,7 @@ class ProgramJob(TaskJob):
     def _program_fail(self, msg: str, res: RunResult):
         """Fail that nicely formats RunResult"""
         self._fail(f"{msg}\n{tab(self._quote_program(res))}")
- 
+
     def _quote_program(self, res: RunResult):
         """Quotes program's stdout and stderr."""
         program_msg = ""

@@ -26,7 +26,7 @@ def colored(msg: str, color: str, env: Env) -> str:
         return msg
     else:
         return f"{getattr(fg, color)}{msg}{fx.reset}"
-    
+
 
 class StatusJobManager(JobManager):
     """JobManager that implements useful methods for terminal interaction."""

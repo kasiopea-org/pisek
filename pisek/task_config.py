@@ -66,14 +66,14 @@ class TaskConfig(BaseEnv):
         read_files = config.read(config_path)
         if not read_files:
             return f"No configuration file {config_path}. Is this task folder?"
-        
+
         self._set("task_dir", task_dir)
 
         needed_sections = ["task", "tests"]
         for section in needed_sections:
             if section not in config:
                 return f"Missing section [{section}]"
-        
+
         needed_keys = [("tests", "in_gen")]
         if config["tests"].get("out_check") == "judge":
             needed_keys.append(("tests", "out_judge"))
@@ -258,7 +258,7 @@ class SubtaskConfig(BaseEnv):
             self._set("name", config_section.get("name", None))
 
             if "points" not in config_section:
-                return "Missing key 'points'" 
+                return "Missing key 'points'"
             try:
                 self._set("score", int(config_section["points"]))
             except ValueError:
@@ -280,10 +280,10 @@ class SubtaskConfig(BaseEnv):
         if not pattern:
             pattern = ".*" # probably ok either way, but just to be sure
         return pattern
-    
+
     def globs_regex(self) -> str:
         return "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
-    
+
     @BaseEnv.log_off
     def construct_globs(self, subtasks) -> Union[str,list[str]]:
         if self._constructing:

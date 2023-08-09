@@ -4,7 +4,7 @@ from typing import Iterator, Callable, MutableSet, Any
 class BaseEnv:
     """
     Collection of enviroment variables witch logs whether each variable was accessed.
-    
+
     Variable can be accessed as such:
         env.variable
     It is then logged as used. Use BaseEnv.get_accessed to get all of them.
@@ -35,7 +35,7 @@ class BaseEnv:
             first, rest = name.split(".", 1)
             if first not in self._vars:
                 raise KeyError(f"Env has no variable {first}")
-            return getattr(self._vars[first], rest) 
+            return getattr(self._vars[first], rest)
         else:
             if name not in self._vars:
                 raise KeyError(f"Env has no variable {name}")
@@ -60,7 +60,7 @@ class BaseEnv:
 
     def __getitem__(self, key: str) -> Any:
         return self._get(str(key))
- 
+
     def __getattr__(self, name: str) -> Any:
         """Gets variable with given name and logs access to it."""
         return self._get(name)
@@ -95,7 +95,7 @@ class BaseEnv:
         for var in self._vars:
             if isinstance(self._vars[var], BaseEnv):
                 self._vars[var]._set_log(val)
-    
+
     @staticmethod
     def log_off(f : Callable[...,Any]) -> Callable[...,Any]:
         """Disables logging for a method."""
@@ -105,7 +105,7 @@ class BaseEnv:
             self._set_log(True)
             return result
         return g
-    
+
     @log_off
     def get_without_log(self, name: str) -> Any:
         """Gets variable without logging."""
@@ -115,7 +115,7 @@ class BaseEnv:
     def fork(self, **kwargs):
         """
         Make copy of this env overriding variables specified in **kwargs.
-        
+
         Accesses to env's variables (to this point) are logged in forked env as well.
         Subsequent accesses are logged only to respective BaseEnv.
         """

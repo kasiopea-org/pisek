@@ -77,7 +77,7 @@ class OnlineGeneratorJob(ProgramJob):
             return None
         if result.kind != RunResultKind.OK:
             return self._program_fail(f"{self.program} failed on subtask {subtask}, seed {seed:x}:", result)
-        
+
         return result
 
 
@@ -88,7 +88,7 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
 
     def _run(self) -> Optional[RunResult]:
         return self._gen(self.input_file, self.seed, self.subtask)
-        
+
 
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     """Test whether generating given input again has same result."""

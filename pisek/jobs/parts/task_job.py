@@ -44,7 +44,7 @@ class TaskHelper:
     def _output(self, input_name: str, solution: str):
         """Path to output from given input and solution."""
         return self._data(util.get_output_name(input_name, solution))
-    
+
     def _solution(self, name: str) -> str:
         """Path to ssolution with given basename."""
         return self._resolve_path(self._env.config.solutions_subdir, name)
@@ -56,12 +56,12 @@ class TaskHelper:
             return "0"
         else:
             return parts[-1]
-    
+
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._globs_to_files(self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir)
         outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
-        
+
         def basename(s: str):
             return str(os.path.basename(s))
 
@@ -90,7 +90,7 @@ class TaskHelper:
             for glob in subtask.all_globs:
                 inputs |= set(self._globs_to_files([glob])[:self._env.inputs])
             return list(sorted(inputs))
-    
+
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get new inputs of given subtask."""
         inputs = self._globs_to_files(subtask.in_globs)
@@ -148,7 +148,7 @@ class TaskJob(Job, TaskHelper):
         with self._open_file(filename) as f:
             content = f.read()
         return len(content.strip()) > 0
-    
+
     @_file_access(2)
     def _copy_file(self, filename: str, dst: str):
         os.makedirs(os.path.dirname(dst), exist_ok=True)

@@ -59,6 +59,6 @@ class CopySample(SampleJob):
         data_subdir = self._env.config.data_subdir.rstrip("/") + "/"
         super()._init(f"Copy {sample} to {data_subdir}", sample)
 
-    
+
     def _run(self):
         self._copy_file(self.sample, self._data(os.path.basename(self.sample)))

@@ -7,7 +7,7 @@ from pisek.jobs.parts.task_job import TaskJob
 def randword(length: int):
    letters = string.ascii_lowercase
    return ''.join(random.choice(letters) for _ in range(length))
- 
+
 
 NUMER_MODIFIERS = [
     lambda x: int(x)+1,
@@ -72,7 +72,7 @@ class ChaosMonkey(Invalidate):
             modifiers += NUMER_MODIFIERS
         except ValueError:
             pass
- 
+
         lines[line][token] = str(random.choice(modifiers)(lines[line][token]))
 
         with self._open_file(self.to_file, "w") as f:

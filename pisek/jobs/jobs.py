@@ -177,7 +177,7 @@ class JobManager(PipelineItem):
     def _job_states(self) -> tuple[State, ...]:
         """States of this manager's jobs."""
         return tuple(map(lambda j: j.state, self.jobs))
-    
+
     def _jobs_with_state(self, state: State) -> list[Job]:
         return list(filter(lambda j: j.state == state, self.jobs))
 
@@ -192,7 +192,7 @@ class JobManager(PipelineItem):
             self.state = State.failed
         else:
             self.state = State.running
- 
+
         return self._get_status()
 
     @abstractmethod

@@ -27,7 +27,7 @@ class CheckData(TaskJob):
     def _init(self, name: str, data_file: str) -> None:
         self.data = self._data(data_file)
         super()._init(name)
-    
+
 class InputSmall(CheckData):
     """Checks that input is small enough to download."""
     def _init(self, input_file: str) -> None:

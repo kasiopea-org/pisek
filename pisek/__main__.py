@@ -131,7 +131,7 @@ def main(argv):
             action="store_true",
             help="clean directory beforehand",
         )
-    
+
     def add_argument_plain(parser):
         parser.add_argument(
             "--plain",
@@ -165,7 +165,7 @@ def main(argv):
             type=str,
             help="Mód zobrazování.\n slowest: Nejpomalejší vstup\n all: všechny vstupy",
         )
-    
+
     def add_argument_no_subtasks(parser):
         parser.add_argument(
             "--no-subtasks",
@@ -173,7 +173,7 @@ def main(argv):
             action="store_true",
             help="Zobrazit všechny vstupy dohromady (ne po subtascích).",
         )
-    
+
     def add_argument_solutions(parser):
         parser.add_argument(
             "--solutions",
@@ -192,7 +192,7 @@ def main(argv):
             type=str,
             help="Jméno jsonu, ze kterého načítat data.",
         )
-    
+
     def add_argument_measured_stat(parser):
         parser.add_argument(
             "--measured-stat",
@@ -201,7 +201,7 @@ def main(argv):
             type=str,
             help="Podle čeho visualizovat programy. Zatím implementováno pouze time.",
         )
-    
+
     def add_argument_limit(parser):
         parser.add_argument(
             "--limit",
@@ -210,7 +210,7 @@ def main(argv):
             type=float,
             help="Limit measured_stat na řešení.",
         )
-    
+
     def add_argument_segments(parser):
         parser.add_argument(
             "--segments",
@@ -257,7 +257,7 @@ def main(argv):
     add_argument_clean(parser_test)
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
-    
+
     parser_visualize = subparsers.add_parser("visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu.")
     add_argument_mode(parser_visualize)
     add_argument_no_subtasks(parser_visualize)

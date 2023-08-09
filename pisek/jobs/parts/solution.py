@@ -60,10 +60,10 @@ class SolutionManager(TaskJobManager):
                             self._env
                         )
                     )
- 
+
                     run_judge.add_prerequisite(run_solution, name="run_solution")
                     testcases[inp] = run_judge
-                    
+
                     used_inp.add(inp)
                     self.subtasks[-1].new_jobs.append(testcases[inp])
                 else:
@@ -160,7 +160,7 @@ class SubtaskJobGroup:
             if res is None:
                 raise RuntimeError(f"Job {job.name} has not finished yet.")
             return res.points
- 
+
         prev_points = list(map(to_points, self.previous_jobs))
         new_points = list(map(to_points, self.new_jobs))
 
@@ -176,7 +176,7 @@ class SubtaskJobGroup:
         elif len(new_points) == 0:
             return (min(prev_points), ""), result_msg
 
-        if fail_mode == "all" and self.num > 0:  # Don't check this on samples 
+        if fail_mode == "all" and self.num > 0:  # Don't check this on samples
             if max(new_points) != min(new_points):
                 return (None, "Only some inputs were incorrect"), result_msg
             if len(prev_points) > 0 and min(new_points) > min(prev_points):

@@ -15,7 +15,7 @@ def update(path) -> Optional[str]:
         return f"Config {config_path} does not exist."
 
     shutil.copy(config_path, os.path.join(path, f"original_{CONFIG_FILENAME}"))
-    
+
     config = configparser.ConfigParser()
     read_files = config.read(config_path)
 
@@ -60,20 +60,20 @@ def update(path) -> Optional[str]:
 
     with open(config_path, "w") as f:
         config.write(f, space_around_delimiters=False)
-    
+
     return None
 
 def get_subtask_mask(points, subtasks):
     all_valid = [0]*len(subtasks)
 
-    valid = 0 
+    valid = 0
     for comb in product([0, 1], repeat=len(subtasks)):
         p = sum([comb[i] * subtasks[i] for i in range(len(subtasks))])
         if p == points:
             valid += 1
             for i in range(len(subtasks)):
                 all_valid[i] += comb[i]
-    
+
     if valid == 0:
         return 'X'*len(subtasks)
 

@@ -64,7 +64,7 @@ class JobPipeline(ABC):
                 self._print_tmp(ongoing_msg, env)
                 self.job_managers.appendleft(job_man)
                 break
-        
+
         if len(self.pipeline):
             self._print_tmp(f"Active job: {self.pipeline[0].name}", env)
         return True
@@ -74,7 +74,7 @@ class JobPipeline(ABC):
         if not env.plain:
             self._tmp_lines += msg.count('\n') + 1
             print(str(msg), *args, **kwargs)
-    
+
     def _print(self, msg, env: Env, *args, **kwargs):
         """Prints a text."""
         self._tmp_lines += 0

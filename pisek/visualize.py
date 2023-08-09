@@ -111,7 +111,7 @@ def visualize(
 
     # TODO: Implement here for other values of measured_stat
     if measured_stat != 'time':
-        raise NotImplementedError()    
+        raise NotImplementedError()
 
     if limit is None:
         if measured_stat == 'time':
@@ -133,7 +133,7 @@ def visualize(
             segments
         ):
             unexpected_solutions.append(solution_name)
-    
+
     if len(unexpected_solutions):
         print(
             red(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů."),
@@ -150,14 +150,14 @@ def visualize_solution(
         measured_stat : str,
         limit : int,
         segments : int
-):  
+):
     results = data['results']
 
     # First extract desired stats
-    results_extracted = [] 
+    results_extracted = []
     for result in results:
         final_verdict = VERDICTS[result['result']]
-        points = result['points'] 
+        points = result['points']
 
         # We are testing at higher limits in cms
         # TODO: Implement here for other values
@@ -187,14 +187,14 @@ def visualize_solution(
     # Lastly print
     exp_score = util.get_expected_score(solution_name, config)
     score = evaluate_solution(results_evalute, config)
-    as_expected = (exp_score is None) or (exp_score == score) 
+    as_expected = (exp_score is None) or (exp_score == score)
     print(f"{solution_name}: ({score}b)")
     if not as_expected:
         print(
             red(f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."),
             file=sys.stderr
         ),
-    
+
 
     segment_length = limit / segments
 
@@ -205,9 +205,9 @@ def visualize_solution(
 
     for subtask_num in sorted(results_filtered.keys()):
         if by_subtask:
-            subtask_score = evaluate_subtask(results_evalute[subtask_num], config.subtasks[subtask_num].score) 
+            subtask_score = evaluate_subtask(results_evalute[subtask_num], config.subtasks[subtask_num].score)
             print(f"{config.subtasks[subtask_num].name} ({subtask_score}b)")
-        
+
         if isinstance(results_filtered[subtask_num], str):
             print("  " + results_filtered[subtask_num])
             continue
@@ -215,7 +215,7 @@ def visualize_solution(
         for result in results_filtered[subtask_num]:
             in_segments = in_time_segments(result.value, limit, segment_length)
             overflow_segments = overflowed_segments(result.value, limit, segment_length)
-            
+
             print(
                 f"  {result.name} ({result.verdict}): "
                 f"|{'·'*in_segments}{' '*(segments-in_segments)}"
