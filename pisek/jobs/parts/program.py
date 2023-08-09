@@ -130,17 +130,16 @@ class ProgramJob(TaskJob):
         minibox_args.append(f"--mem={mem}")
         minibox_args.append(f"--processes={processes}")
 
-        minibox_args.append(f"--stdin={stdin if stdin else '/dev/null'}")
-        minibox_args.append(f"--stdout={stdout if stdout else '/dev/null'}")
+        minibox_args.append(f"--stdin={os.path.abspath(stdin) if stdin else '/dev/null'}")
+        minibox_args.append(f"--stdout={os.path.abspath(stdout) if stdout else '/dev/null'}")
         if stderr:
-            minibox_args.append(f"--stderr={stderr}")
+            minibox_args.append(f"--stderr={os.path.abspath(stderr)}")
 
         for key, val in env.items():
             minibox_args.append(f"--env={key}={val}")
 
         minibox_args.append(f"--silent")
         minibox_args.append(f"--meta=-")
-        minibox_args.append(f"--chdir={self._resolve_path('.')}")
 
         process = subprocess.Popen(
             [self._executable("minibox")] + minibox_args + ["--run", "--"] + args,

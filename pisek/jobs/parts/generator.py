@@ -141,7 +141,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             if inp not in samples:
                 os.remove(self._data(inp))
 
-        data_dir = self._env.config.get_data_dir()
+        data_dir = self._data(".")
         result = self._run_program([data_dir])
 
         if result is None:
