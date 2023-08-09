@@ -39,11 +39,11 @@ def update(path) -> Optional[str]:
         if match := re.fullmatch(r'(.*?)_([0-9]{1,3}|X)b', solution):
             points = None if match[2] == 'X' else int(match[2])
             if len(glob.glob(os.path.join(path, config["task"].get("solutions_subdir", ""), f"{solution}.*"))):
-                name = solution
+                source = solution
             else:
-                name = match[1]
+                source = match[1]
         else:
-            name = solution
+            source = solution
             points = sum(subtask_points)
 
         if points is None:
@@ -55,6 +55,7 @@ def update(path) -> Optional[str]:
         config.add_section(solution)
         if i == 0:
             config[solution]["primary"] = "yes"
+        config[solution]["source"] = source
         config[solution]["points"] = 'X' if points is None else str(points)
         config[solution]["subtasks"] = subtasks
 
