@@ -6,7 +6,8 @@ from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.jobs.status import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
-from pisek.jobs.parts.program import RunResult, ProgramJob, Compile
+from pisek.jobs.parts.program import RunResult, ProgramJob
+from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.judge import SolutionResult, judge_job, RunJudge
 
 class SolutionManager(TaskJobManager):

@@ -23,7 +23,6 @@ import shutil
 from typing import Optional, Iterator, List, Tuple
 
 from pisek.jobs.cache import CACHE_FILENAME
-from .compile import supported_extensions
 from .task_config import TaskConfig
 
 DEFAULT_TIMEOUT = 360
@@ -35,30 +34,6 @@ def rm_f(fn):
         os.unlink(fn)
     except FileNotFoundError:
         pass
-
-
-def resolve_extension(path: str, name: str) -> Optional[str]:
-    """
-    Given a directory and `name`, finds a file named `name`.[ext],
-    where [ext] is a file extension for one of the supported languages.
-
-    If a name with a valid extension is given, it is returned unchanged
-    """
-    extensions = supported_extensions()
-    candidates = []
-    for ext in extensions:
-        if os.path.isfile(os.path.join(path, name + ext)):
-            candidates.append(name + ext)
-        if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
-            # Extension already present in `name`
-            candidates.append(name)
-
-    if len(candidates) > 1:
-        raise RuntimeError(
-            f"Existuje více řešení se stejným názvem: {', '.join(candidates)}"
-        )
-
-    return candidates[0] if candidates else None
 
 
 def get_build_dir(task_dir: str) -> str:

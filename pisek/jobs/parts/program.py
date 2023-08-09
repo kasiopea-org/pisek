@@ -14,7 +14,6 @@ from pisek.jobs.status import tab
 from pisek.jobs.parts.task_job import TaskJob
 
 import pisek.util as util
-import pisek.compile as compile
 
 class RunResultKind(Enum):
     OK = 0
@@ -43,6 +42,7 @@ class RunResult():
             if lines <= 0 or len(res) >= chars:
                 break
         return tab(res)
+
     def raw_stdout(self):
         if self.stdout_file:
             return open(self.stdout_file).read()
@@ -104,28 +104,6 @@ class ProgramJob(TaskJob):
         self.executable : Optional[str] = None
         super()._init(name)
 
-    def _compile(self, compiler_args : Optional[Dict] = None):
-        """Compiles program."""
-        program = self._resolve_extension(self.program)
-        if program is None:
-            return False
-
-        result = compile.compile(
-            program,
-            build_dir=self._executable("."),
-            compiler_args=compiler_args,
-        )
-        if result is not None:
-            self._fail(f"Program {self.program} could not be compiled: {tab(result)}")
-            return False
-        if not self._load_compiled():
-            return False
-
-        self._access_file(program)
-        self._access_file(self.executable)
-
-        return True
-
     def _load_compiled(self) -> bool:
         """Loads name of compiled program."""
         self.executable = self._executable(os.path.basename(self.program))
@@ -136,7 +114,6 @@ class ProgramJob(TaskJob):
             )
             return False
         return True
-
 
     def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, mem: int = 0,
                  processes: int = 4, stdin: Optional[str] = None,
@@ -196,34 +173,6 @@ class ProgramJob(TaskJob):
         """Get a name of a compiled program."""
         return self._executable(os.path.basename(self.program))
 
-    def _resolve_extension(self, name: str) -> Optional[str]:
-        """
-        Given `name`, finds a file named `name`.[ext],
-        where [ext] is a file extension for one of the supported languages.
-
-        If a name with a valid extension is given, it is returned unchanged
-        """
-        extensions = compile.supported_extensions()
-        candidates = []
-        for ext in extensions:
-            if os.path.isfile(name + ext):
-                candidates.append(name + ext)
-            if name.endswith(ext) and os.path.isfile(name):
-                # Extension already present in `name`
-                candidates.append(name)
-
-        if len(candidates) == 0:
-            self._fail(
-                f"No file with given name exists: {name}"
-            )
-            return None
-        if len(candidates) > 1:
-            self._fail(
-                f"Multiple files with same name exist: {', '.join(candidates)}"
-            )
-            return None
-        return candidates[0]
-
     def _program_fail(self, msg: str, res: RunResult):
         """Fail that nicely formats RunResult"""
         self._fail(f"{msg}\n{tab(self._quote_program(res))}")
@@ -234,12 +183,3 @@ class ProgramJob(TaskJob):
         for std in ('stdout', 'stderr'):
             program_msg += f"{std}{getattr(res, std)()}\n"
         return program_msg[:-1]
-
-class Compile(ProgramJob):
-    """Job that compiles a program."""
-    def _init(self, program: str, compile_args: Dict = {}) -> None:
-        self._compile_args = compile_args
-        super()._init(f"Compile {os.path.basename(program)}", program)
-
-    def _run(self):
-        return self._compile(self._compile_args)
