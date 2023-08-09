@@ -91,7 +91,7 @@ class Compile(ProgramJob):
         self._access_file(self.executable)
 
     def _compile_cpp(self, program: str):
-        cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow"]
+        cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         if self.manager is not None:  # Interactive task
             cpp_flags += self.manager_flags(".cpp")
@@ -102,7 +102,7 @@ class Compile(ProgramJob):
         )
     
     def _compile_c(self, program: str):
-        c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow"]
+        c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         if self.manager is not None:  # Interactive task
             c_flags += self.manager_flags(".c")
@@ -112,6 +112,12 @@ class Compile(ProgramJob):
             program
         )
 
+    def _c_colors(self):
+        if not self._env.get_without_log('plain'):
+            return "-fdiagnostics-color=always"
+        else:
+            return "-fdiagnostics-color=never"
+    
     def _compile_pas(self, program: str):
         pas_flags = ["-gl", "-O3", "-Sg", "-FE" + build_dir]
         return self._run_compilation(
