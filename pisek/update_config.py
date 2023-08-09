@@ -19,7 +19,7 @@ def update(path) -> Optional[str]:
     config = configparser.ConfigParser()
     read_files = config.read(config_path)
 
-    config["task"]["version"] = "2"
+    config["task"]["version"] = "v2"
 
     subtask_points = []
     for section in sorted(config.sections()):

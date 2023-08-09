@@ -9,7 +9,7 @@ tests=1
 contest_type=cms
 
 solutions_subdir=solutions/
-version=2
+version=v2
 
 [tests]
 in_mode=build

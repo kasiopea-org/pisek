@@ -6,7 +6,7 @@ name=vyberko-soucet
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
-version=2
+version=v2
 
 [tests]
 # generator source file

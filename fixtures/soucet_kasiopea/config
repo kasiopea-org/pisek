@@ -7,7 +7,7 @@
 name=2019-doma-H
 tests=2
 
-version=2
+version=v2
 
 [tests]
 in_mode=online

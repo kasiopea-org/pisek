@@ -83,14 +83,17 @@ class TaskConfig(BaseEnv):
 
         if "version" not in config["task"]:
             return f"Config is of former version. Upgrade it with `pisek update`"
+        raw_version = config["task"]["version"]
+        if raw_version[0] != "v":
+            return f"Invalid version: {raw_version} (version must begin with v)"
         try:
-            version = int(config["task"]["version"])
+            version = int(raw_version[1:])
         except ValueError:
-            return f"Invalid version: {config['task']['version']}"
+            return f"Invalid version: {raw_version}"
         if version < 2:
             return f"Config is of former version. Upgrade it with `pisek update`"
         elif version > 2:
-            return f"Unknown config version: {config['task']['version']}"
+            return f"Unknown config version: {raw_version}"
 
         self._set("task_name", config.get("task", "name"))
 
