@@ -180,14 +180,17 @@ class RunCMSJudge(RunJudge):
         self._access_file(self.input_name)
         self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
+        points_file = self.output_name.replace(".out", ".judge")
+        self._access_file(points_file)
         result = self._run_program(
-            [self.input_name, self.correct_output_name, self.output_name]
+            [self.input_name, self.correct_output_name, self.output_name],
+            stdout=points_file
         )
         if result is None:
             return None
         if result.returncode == 0:
-            points_str = result.stdout.split('\n')[0]
-            msg = result.stderr.split('\n')[0]
+            points_str = result.raw_stdout().split('\n')[0]
+            msg = result.raw_stderr().split('\n')[0]
             try:
                 points = float(points_str)
             except ValueError:

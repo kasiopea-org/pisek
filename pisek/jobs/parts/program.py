@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import os
 import re
+import sys
 from typing import Dict, Optional
 import subprocess
 import yaml
@@ -20,24 +21,68 @@ class RunResultKind(Enum):
     RUNTIME_ERROR = 1
     TIMEOUT = 2
 
-@dataclass
 class RunResult():
     """Represents the way the program execution ended. Specially, a program
     that finished successfully, but got Wrong Answer, still gets the OK
-    RunResul."""
-    kind: RunResultKind
-    returncode: int
-    stdout: str = ""
-    stderr: str = ""
+    RunResult."""
+    def __init__(self, kind: RunResultKind, returncode: int,
+                 stdout_file=None, stderr_file=None, stderr_text=None):
+        self.kind = kind
+        self.returncode = returncode
+        self.stdout_file = stdout_file
+        self.stderr_file = stderr_file
+        self.stderr_text = stderr_text
+
+    @staticmethod
+    def _format(text, chars=1500, lines=20):
+        res = ""
+        i = 0
+        for char in text:
+            res += char
+            lines -= (char == '\n')
+            if lines <= 0 or len(res) >= chars:
+                break
+        return tab(res)
+    def raw_stdout(self):
+        if self.stdout_file:
+            return open(self.stdout_file).read()
+        else:
+            return None
+
+    def raw_stderr(self):
+        if self.stderr_file:
+            return open(self.stderr_file).read()
+        else:
+            return self.stderr_text
+
+    def stdout(self):
+        if self.stdout_file:
+            return f" in file {self.stdout_file}:\n" + self._format(self.raw_stdout())
+        else:
+            return " has been discarded"
+
+    def stderr(self):
+        text = tab(self._format(self.raw_stderr()))
+        if self.stderr_text:
+            return f":\n{text}"
+        else:
+            return f" in file {self.stderr_file}:\n{text}"
+
 
 def run_result_representer(dumper, run_result: RunResult):
     return dumper.represent_sequence(
-        u'!RunResult', [run_result.kind.name, run_result.returncode, run_result.stdout, run_result.stderr]
+        u'!RunResult', [
+            run_result.kind.name,
+            run_result.returncode,
+            run_result.stdout_file,
+            run_result.stderr_file,
+            run_result.stderr_text
+        ]
     )
 
 def run_result_constructor(loader, value):
-    kind, returncode, stdout, stderr = loader.construct_sequence(value)
-    return RunResult(RunResultKind[kind], returncode, stdout, stderr)
+    kind, returncode, out_f, err_f, err_t = loader.construct_sequence(value)
+    return RunResult(RunResultKind[kind], returncode, out_f, err_f, err_t)
 
 yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor(u'!RunResult', run_result_constructor)
@@ -91,31 +136,55 @@ class ProgramJob(TaskJob):
             )
             return False
         return True
-        
 
-    def _run_raw(self, args, timeout: Optional[float] = None, **kwargs) -> RunResult:
+
+    def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, mem: int = 0,
+                 processes: int = 4, stdin: Optional[str] = None,
+                 stdout: Optional[str] = None, stderr: Optional[str] = None,
+                 env={}) -> RunResult:
         """Runs args as a command."""
-        if timeout is None:
-            timeout = DEFAULT_TIMEOUT
-
         executable = args[0]
         self._access_file(executable)
-        opened = []
-        for std, mode in [('stdin', 'r'), ('stdout', 'w'), ('stderr', 'w')]:
-            if std in kwargs and isinstance(kwargs[std], str):
-                kwargs[std] = self._open_file(kwargs[std], mode)
-                opened.append(kwargs[std])
-            else:
-                kwargs[std] = subprocess.PIPE
+
+        minibox_args = []
         
-        try:
-            result = subprocess.run(args, timeout=timeout, **kwargs)
-        except subprocess.TimeoutExpired:
-            return RunResult(RunResultKind.TIMEOUT, -1, f"Timeout after {timeout}s")
-        finally:
-            for stream in opened:
-                stream.close()
-        return completed_process_to_run_result(result)
+        minibox_args.append(f"--time={timeout}")
+        minibox_args.append(f"--wall-time={timeout}")
+        minibox_args.append(f"--mem={mem}")
+        minibox_args.append(f"--processes={processes}")
+
+        minibox_args.append(f"--stdin={stdin if stdin else '/dev/null'}")
+        minibox_args.append(f"--stdout={stdout if stdout else '/dev/null'}")
+        if stderr:
+            minibox_args.append(f"--stderr={stderr}")
+
+        for key, val in env.items():
+            minibox_args.append(f"--env={key}={val}")
+
+        minibox_args.append(f"--silent")
+        minibox_args.append(f"--meta=-")
+
+        process = subprocess.Popen(
+            [self._executable("minibox")] + minibox_args + ["--run", "--"] + args,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        process.wait()
+        
+        meta_raw = process.stdout.read().decode().strip().split('\n')
+        meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
+
+        stderr_raw =  process.stderr.read().decode()
+        stderr_text = None if stderr else stderr_raw
+        if process.returncode == 0:
+            return RunResult(RunResultKind.OK, 0, stdout, stderr, stderr_text)
+        elif process.returncode == 1:
+            if meta['status'] in ('RE', 'SG'):
+                rc = int(re.search('\d+', meta['message'])[0])
+                return RunResult(RunResultKind.RUNTIME_ERROR, rc, stdout, stderr, stderr_text)
+            elif meta['status'] == 'TO':
+                return RunResult(RunResultKind.TIMEOUT, -1, stdout, stderr, f"[Timeout after {timeout}s]")
+        else:
+            self._fail(f"Minibox error:\n{tab(stderr_raw)}")
 
     def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
         """Runs program."""
@@ -157,19 +226,13 @@ class ProgramJob(TaskJob):
 
     def _program_fail(self, msg: str, res: RunResult):
         """Fail that nicely formats RunResult"""
-        self._fail(f"{msg}\n{self._quote_program(res)}")
+        self._fail(f"{msg}\n{tab(self._quote_program(res))}")
  
     def _quote_program(self, res: RunResult):
         """Quotes program's stdout and stderr."""
         program_msg = ""
         for std in ('stdout', 'stderr'):
-            program_msg += f"{std}:"
-            text = getattr(res, std)
-            if text:
-                program_msg += "\n" + util.quote_output(text)
-            else:
-                program_msg += " (none)"
-            program_msg += "\n"
+            program_msg += f"{std}{getattr(res, std)()}\n"
         return program_msg[:-1]
 
 class Compile(ProgramJob):
