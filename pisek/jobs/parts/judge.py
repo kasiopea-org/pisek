@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import random
 from typing import Optional, Union, Callable
 import yaml
+import subprocess
 
 import pisek.util as util
 from pisek.env import Env
@@ -46,21 +47,8 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs : list[Job] = []
-        if self._env.config.judge_type == "diff":
-            jobs = []
-
-            build : BuildDiffJudge
-            if self._env.config.contest_type == "cms":
-                jobs.append(build := BuildCMSDiff(self._env).init())
-            else:
-                jobs.append(build := BuildKasiopeaDiff(self._env).init())
-            
-            jobs.append(comp := Compile(self._env).init(self._executable(DIFF_NAME))) 
-            comp.add_prerequisite(build)
-        else:
-            jobs = [
-                comp := Compile(self._env).init(self._resolve_path(self._env.config.judge)) 
-            ]
+        if self._env.config.judge_type != "diff":
+            jobs.append(comp := Compile(self._env).init(self._resolve_path(self._env.config.judge)))
 
         samples = self._get_samples()
         if samples is None:
@@ -68,7 +56,8 @@ class JudgeManager(TaskJobManager):
 
         for inp, out in samples:
             jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env))
-            judge.add_prerequisite(comp)
+            if self._env.config.judge_type != "diff":
+                judge.add_prerequisite(comp)
             for job, times in [(Incomplete, 2), (ChaosMonkey, 20)]:
                 random.seed(4)  # Reproducibility!
                 seeds = random.sample(range(0, 16**4), times)
@@ -79,36 +68,11 @@ class JudgeManager(TaskJobManager):
                         run_judge := judge_job(self._env.config.judge, inp, inv_out, out,
                                                0, lambda: "0", None, self._env)
                     ]
-                    run_judge.add_prerequisite(comp)
+                    if self._env.config.judge_type != "diff":
+                        run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
 
-
-class BuildDiffJudge(TaskJob):
-    def _init(self) -> None:
-        super()._init("Build WhiteDiffJudge")
-
-class BuildKasiopeaDiff(BuildDiffJudge):
-    def _run(self):
-        with self._open_file(self._executable(DIFF_NAME), "w") as f:
-            f.write(
-                '#!/bin/bash\n'
-                'if [ "$(diff -Bbq "$TEST_OUTPUT" -)" ]; then\n'
-                '   exit 1\n'
-                'fi\n'
-            )
-
-class BuildCMSDiff(BuildDiffJudge):
-    def _run(self):
-        with self._open_file(self._executable(DIFF_NAME), "w") as f:
-            f.write(
-                '#!/bin/bash\n'
-                'if [ "$(diff -Bbq "$2" "$3")" ]; then\n'
-                '   echo 0\n'
-                'else\n'
-                '   echo 1\n'
-                'fi\n'
-            )
 
 class RunJudge(ProgramJob):
     """Runs judge on single input. (Abstract class)"""
@@ -121,7 +85,7 @@ class RunJudge(ProgramJob):
         super()._init(f"Judge {output_name}", judge)
 
     @abstractmethod
-    def _judge(self):
+    def _judge(self) -> Optional[SolutionResult]:
         pass
 
     def _run(self) -> Optional[SolutionResult]:
@@ -145,6 +109,24 @@ class RunJudge(ProgramJob):
             return None
         return result
 
+
+class RunDiffJudge(RunJudge):
+    def _init(self, judge: str, input_name: str, output_name: str,
+              correct_output: str, expected_points: Optional[float]) -> None:
+        super()._init(judge, input_name, output_name, correct_output, expected_points)
+
+    def _judge(self) -> Optional[SolutionResult]:
+        diff = subprocess.run(
+            ["diff", "-Bpq", self.output_name, self.correct_output_name],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        rr = RunResult(RunResultKind.OK, diff.returncode, stderr_text=diff.stderr)
+        if diff.returncode == 0:
+            return SolutionResult(Verdict.ok, 1.0, self._quote_program(rr))
+        elif diff.returncode == 1:
+            return SolutionResult(Verdict.wrong_answer, 0.0, self._quote_program(rr))
+        else:
+            return self._fail(f"Diff failed:\n{tab(diff.stderr)}")
 
 class RunKasiopeaJudge(RunJudge):
     def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
@@ -212,7 +194,15 @@ class RunCMSJudge(RunJudge):
 def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
               expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
     """Returns JudgeJob according to contest type."""
-    if env.config.contest_type == "cms":
+    if env.config.judge_type == "diff":
+        return RunDiffJudge(env).init(
+            judge,
+            input_name,
+            output_name,
+            correct_ouput,
+            expected_points
+        )
+    elif env.config.contest_type == "cms":
         return RunCMSJudge(env).init(
             judge,
             input_name,
