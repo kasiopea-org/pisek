@@ -63,10 +63,10 @@ class RunResult():
 
     def stderr(self):
         text = tab(self._format(self.raw_stderr()))
-        if self.stderr_text:
-            return f":\n{text}"
-        else:
+        if self.stderr_file:
             return f" in file {self.stderr_file}:\n{text}"
+        else:
+            return f":\n{text}"
 
 
 def run_result_representer(dumper, run_result: RunResult):
