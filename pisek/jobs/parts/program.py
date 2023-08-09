@@ -118,7 +118,7 @@ class ProgramJob(TaskJob):
     def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, mem: int = 0,
                  processes: int = 4, stdin: Optional[str] = None,
                  stdout: Optional[str] = None, stderr: Optional[str] = None,
-                 env={}) -> RunResult:
+                 env={}, print_stderr: bool = False) -> RunResult:
         """Runs args as a command."""
         executable = args[0]
         self._access_file(executable)
@@ -145,12 +145,23 @@ class ProgramJob(TaskJob):
             [self._executable("minibox")] + minibox_args + ["--run", "--"] + args,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+        if print_stderr:
+            stderr_raw = ""
+            while True:
+                line = process.stderr.read().decode()
+                if not line:
+                    break
+                stderr_raw += line
+                print(line, end="", file=sys.stderr)
+                self.dirty = True
+
         process.wait()
 
         meta_raw = process.stdout.read().decode().strip().split('\n')
         meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
 
-        stderr_raw =  process.stderr.read().decode()
+        if not print_stderr:
+            stderr_raw =  process.stderr.read().decode()
         stderr_text = None if stderr else stderr_raw
         if process.returncode == 0:
             return RunResult(RunResultKind.OK, 0, stdout, stderr, stderr_text)

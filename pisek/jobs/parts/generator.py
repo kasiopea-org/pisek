@@ -72,7 +72,7 @@ class OnlineGeneratorJob(ProgramJob):
 
         result = self._run_program(
             [difficulty, hexa_seed],
-            stdout=input_file,
+            stdout=input_file, print_stderr=True
         )
         if result is None:
             return None
@@ -142,7 +142,7 @@ class OfflineGeneratorGenerate(ProgramJob):
                 os.remove(self._data(inp))
 
         data_dir = self._data(".")
-        result = self._run_program([data_dir])
+        result = self._run_program([data_dir], print_stderr=True)
 
         if result is None:
             return None
