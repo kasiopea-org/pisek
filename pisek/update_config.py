@@ -59,6 +59,57 @@ def update(path) -> Optional[str]:
         config[solution]["points"] = 'X' if points is None else str(points)
         config[solution]["subtasks"] = subtasks
 
+    subtask_inputs = {}
+    for section in config.sections():
+        if not (mat := re.fullmatch(r'test([0-9]{2})', section)):
+            continue
+
+        num = int(mat[1])
+        if 'in_globs' not in config[section]:
+            if num == 0:
+                subtask_inputs[num] = {'sample*.in'}
+            else:
+                subtask_inputs[num] = {f'{i:02}*.in' for i in range(1, num+1)}
+        else:
+            subtask_inputs[num] = set(map(
+                lambda x: x.replace("_*", "*"),
+                config[section]['in_globs'].split()
+            ))
+
+    last_subtask = max(subtask_inputs.keys())
+    for subtask, inputs in subtask_inputs.items():
+        if "0*.in" in inputs or "*.in" in inputs:
+            subtask_inputs[subtask] = {f'{i:02}*.in' for i in range(1, last_subtask+1)}
+
+    # Now we construct ordering of subtask difficulty but without redundant edges
+    
+    # First construct edges    
+    subtask_includes = {i:set([]) for i in subtask_inputs}
+    for succ_subtask in subtask_inputs:
+        for pred_subtask in subtask_inputs:
+            if succ_subtask == pred_subtask:
+                continue
+            if subtask_inputs[succ_subtask] >= subtask_inputs[pred_subtask]:
+                subtask_includes[succ_subtask].add(pred_subtask)
+
+    # Then remove redundant edges
+    for succ_subtask in subtask_includes:
+        for pred_subtask in subtask_includes:
+            if succ_subtask == pred_subtask:
+                continue
+            if pred_subtask in subtask_includes[succ_subtask]:
+                subtask_includes[succ_subtask] -= subtask_includes[pred_subtask]
+    
+    for subtask in subtask_includes:
+        section = config[f"test{subtask:02}"]
+        section['predecessors'] = " ".join(map(str, subtask_includes[subtask]))
+
+        in_globs = subtask_inputs[subtask]
+        for pred in subtask_includes[subtask]:
+            in_globs -= subtask_inputs[pred]
+        section['in_globs'] = " ".join(sorted(in_globs))
+
+
     with open(config_path, "w") as f:
         config.write(f, space_around_delimiters=False)
 
