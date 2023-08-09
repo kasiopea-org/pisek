@@ -92,8 +92,7 @@ class Compile(ProgramJob):
     def _compile_cpp(self, program: str):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow"]
 
-        manager = self._env.config.solution_manager
-        if manager is not None:  # Interactive task
+        if self.manager is not None:  # Interactive task
             cpp_flags += self.manager_flags(".cpp")
 
         return self._run_compilation(
@@ -104,8 +103,7 @@ class Compile(ProgramJob):
     def _compile_c(self, program: str):
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow"]
 
-        manager = self._env.config.solution_manager
-        if manager is not None:  # Interactive task
+        if self.manager is not None:  # Interactive task
             c_flags += self.manager_flags(".c")
 
         return self._run_compilation(

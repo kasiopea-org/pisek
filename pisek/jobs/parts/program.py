@@ -140,6 +140,7 @@ class ProgramJob(TaskJob):
 
         minibox_args.append(f"--silent")
         minibox_args.append(f"--meta=-")
+        minibox_args.append(f"--chdir={self._resolve_path('.')}")
 
         process = subprocess.Popen(
             [self._executable("minibox")] + minibox_args + ["--run", "--"] + args,
