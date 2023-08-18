@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from collections import deque
 import sys
+import ansi.cursor as cur
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
 from pisek.jobs.status import StatusJobManager
 from pisek.jobs.cache import Cache
-
-CLCU = "\x1b[1A\x1b[2K"  # clear line cursor up
 
 class JobPipeline(ABC):
     """Runs given Jobs and JobManagers according to their prerequisites."""
@@ -45,7 +44,7 @@ class JobPipeline(ABC):
     def _status_update(self, env: Env) -> bool:
         """Display current progress. Return true if there were no failures."""
         for _ in range(self._tmp_lines):
-            print(CLCU, end="")
+            print(f"{cur.erase_line()}{cur.up()}", end="")
         self._tmp_lines = 0
 
         while len(self.job_managers):
