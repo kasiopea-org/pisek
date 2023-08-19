@@ -3,6 +3,7 @@ import os
 from ansi import cursor
 from ansi.color import fg, fx
 
+from pisek.terminal import tab, pad, colored, MSG_LEN
 from pisek.env import Env
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
@@ -11,22 +12,8 @@ try:
 except OSError:
     terminal_width, terminal_height = 100, inf
 
-MSG_LEN = 25
 MAX_BAR_LEN = 60
 line_sepatator = '⎯'*terminal_width + '\n'
-
-def pad(text: str, lenght: int, pad_char: str = " "):
-    return text + (lenght - len(text))*pad_char
-
-def tab(text: str, tab_str: str="  "):
-    return tab_str + text.replace('\n', f"\n{tab_str}")
-
-def colored(msg: str, color: str, env: Env) -> str:
-    if env.plain:
-        return msg
-    else:
-        return f"{getattr(fg, color)}{msg}{fx.reset}"
-
 
 class StatusJobManager(JobManager):
     """JobManager that implements useful methods for terminal interaction."""
@@ -42,13 +29,13 @@ class StatusJobManager(JobManager):
         else:
             filled = bar_len * part // full
 
-        return f"{msg}{colored(filled*'━', color, self._env)}{colored((bar_len-filled)*'━', 'grey', self._env)}{progress_msg}"
+        return f"{msg}{colored(filled*'━', self._env, color)}{colored((bar_len-filled)*'━', self._env, 'grey')}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
         if self.state == State.canceled:
-            return f"{pad(msg, MSG_LEN)}{colored('canceled', 'yellow', self._env)}"
+            return f"{pad(msg, MSG_LEN)}{colored('canceled', self._env, 'yellow')}"
         elif self.state == State.succeeded:
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():
@@ -74,4 +61,4 @@ class StatusJobManager(JobManager):
             fails.append(self._fail_message(self))
 
         msg = line_sepatator + line_sepatator.join(fails) + line_sepatator
-        return colored(msg, "red", self._env)
+        return colored(msg, self._env, "red")

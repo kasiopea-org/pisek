@@ -10,7 +10,7 @@ import yaml
 from pisek.task_config import DEFAULT_TIMEOUT
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
-from pisek.jobs.status import tab
+from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJob
 
 import pisek.util as util
@@ -33,7 +33,7 @@ class RunResult():
         self.stderr_text = stderr_text
 
     @staticmethod
-    def _format(text, chars=1500, lines=20):
+    def _format(text: str, env: Env, chars: int = 1500, lines: int = 20):
         res = ""
         i = 0
         for char in text:
@@ -41,7 +41,10 @@ class RunResult():
             lines -= (char == '\n')
             if lines <= 0 or len(res) >= chars:
                 break
-        return tab(res)
+        res = tab(res)
+        if colored:
+            res = colored(res, env, 'yellow')
+        return res
 
     def raw_stdout(self):
         if self.stdout_file:
@@ -55,14 +58,14 @@ class RunResult():
         else:
             return self.stderr_text
 
-    def stdout(self):
+    def stdout(self, env: Env):
         if self.stdout_file:
-            return f" in file {self.stdout_file}:\n" + self._format(self.raw_stdout())
+            return f" in file {self.stdout_file}:\n" + self._format(self.raw_stdout(), env)
         else:
             return " has been discarded"
 
-    def stderr(self):
-        text = tab(self._format(self.raw_stderr()))
+    def stderr(self, env: Env):
+        text = self._format(self.raw_stderr(), env)
         if self.stderr_file:
             return f" in file {self.stderr_file}:\n{text}"
         else:
@@ -152,7 +155,7 @@ class ProgramJob(TaskJob):
                 if not line:
                     break
                 stderr_raw += line
-                print(line, end="", file=sys.stderr)
+                print(colored(line, self._env, 'yellow'), end="", file=sys.stderr)
                 self.dirty = True
 
         process.wait()
@@ -192,5 +195,5 @@ class ProgramJob(TaskJob):
         """Quotes program's stdout and stderr."""
         program_msg = ""
         for std in ('stdout', 'stderr'):
-            program_msg += f"{std}{getattr(res, std)()}\n"
+            program_msg += f"{std}{getattr(res, std)(self._env)}\n"
         return program_msg[:-1]

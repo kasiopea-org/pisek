@@ -4,7 +4,7 @@ from typing import Any, Optional
 import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
-from pisek.jobs.status import pad, tab, MSG_LEN
+from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob
 from pisek.jobs.parts.compile import Compile

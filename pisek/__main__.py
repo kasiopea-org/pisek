@@ -23,7 +23,7 @@ from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.env import Env
 from pisek.jobs.cache import Cache
-from pisek.jobs.status import tab
+from pisek.terminal import tab
 
 from pisek import util
 from pisek.license import license, license_gnu

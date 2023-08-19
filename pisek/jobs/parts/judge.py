@@ -8,7 +8,7 @@ import subprocess
 import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
-from pisek.jobs.status import tab
+from pisek.terminal import tab
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
