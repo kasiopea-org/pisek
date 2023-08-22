@@ -24,7 +24,7 @@ data_subdir=tests/
 # Directory for automatically generated files (inputs, outputs, ...)
 # Default: data/
 
-tests = ??? (ignorováno)
+tests = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
 
@@ -51,10 +51,10 @@ solution_manager=src/manager
 # Link each solution with given program (without suffix)
 # Used commonly for interactive tasks
 
-in_mode = ??? (ignorováno)
-out_mode = ??? (ignorováno)
-out_format = ??? (ignorováno)
-online_validity = ??? (ignorováno)
+in_mode = ??? (ignored)
+out_mode = ??? (ignored)
+out_format = ??? (ignored)
+online_validity = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
 
@@ -72,7 +72,7 @@ in_globs=01*.in
 # Supports expansion of * and ? as in shell
 # Defaults to {subtask_number:02}*.in
 
-file_name = ??? (ignorováno)
+file_name = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
 predeccessors =
