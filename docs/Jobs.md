@@ -104,4 +104,13 @@ class ExampleManager(TaskJobManager):  # We inherit from TaskJobManager again fo
 ```
 
 ## JobPipeline
-TODO
+`JobPipeline` holds all `PipelineItems` and executes them in correct order.
+
+The pipeline has list of `JobManager`s and `Job`s to execute.
+Pipeline does the following in each step:
+ - If at the top of the pipeline is `JobManager`:
+   - Create jobs with it and add them **to the top** of the pipeline.
+   - Add this `JobManager` to active ones.
+ - If at the top of the pipeline is a `Job`:
+    - Run it, or if it's cached use the result
+After each step update active `JobManager`s and write current status to console.
