@@ -70,4 +70,38 @@ Job(Env).init(*args, **kwargs)
 2. `_init` parameters are given to `init` to be logged
 
 ## JobManager
+Jobs are managed by a `JobManager` in this way:
+1. First `JobManager` creates all jobs in `JobManager._get_jobs`.
+2. Then repeatedly reports current state of jobs with `JobManager._get_status`.
+3. After all jobs have finished, it can check for cross-job failures using `JobManager._evaluate`.
+
+### Writing JobManagers
+```py
+class ExampleManager(TaskJobManager):  # We inherit from TaskJobManager again for more methods
+    def __init__(self):
+        super().__init__("Doing something")
+
+    def _get_jobs(self) -> list[Job]:
+        # Create list of jobs to run
+        jobs : list[Job] = [
+            job1 := ExampleJob(self._env).init("1"),
+            job2 := ExampleJob(self._env).init("2"),
+        ]
+        # Add prerequisites accordingly 
+        job2.add_prerequisite(job1)
+
+        return jobs
+    
+    # We don't need to override _get_status as we have a better one already
+    # but as an example:
+    def _get_status(self) -> str:
+        return f"{self.name} {len(self._jobs_with_state(State.succeeded))}/{len(self.jobs)}"
+
+    # Finally we check for cross-job failures
+    def _evaluate(self) -> Any:
+        if self.jobs[0].result != self.jobs[1].result:
+            return self._fail("Both jobs have to have the same result.")
+```
+
+## JobPipeline
 TODO
