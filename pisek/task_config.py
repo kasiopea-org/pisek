@@ -62,10 +62,10 @@ class TaskConfig(BaseEnv):
     @BaseEnv.log_off
     def load(self, task_dir: str) -> Optional[str]:
         config = CheckedConfigParser()
-        config_path = os.path.join(task_dir, CONFIG_FILENAME)
-        read_files = config.read(config_path)
+        self._config_path = os.path.join(task_dir, CONFIG_FILENAME)
+        read_files = config.read(self._config_path)
         if not read_files:
-            return f"No configuration file {config_path}. Is this task folder?"
+            return f"No configuration file {self._config_path}. Is this task folder?"
 
         self._set("task_dir", task_dir)
 
@@ -207,6 +207,15 @@ class TaskConfig(BaseEnv):
         return (self.timeout_other_solutions if is_secondary_solution else None) or \
                self.timeout_model_solution or \
                DEFAULT_TIMEOUT
+
+    def check_todos(self) -> bool:
+        """Check whether config contains TODO in comments."""
+        with open(self._config_path) as config:
+            for line in config:
+                if "#" in line and "TODO" in line.split("#")[1]:
+                    return True
+        
+        return False
 
     @BaseEnv.log_off
     def check_unused_keys(self, config: CheckedConfigParser) -> Optional[str]:

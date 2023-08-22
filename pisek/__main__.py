@@ -23,7 +23,7 @@ from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.env import Env
 from pisek.jobs.cache import Cache
-from pisek.terminal import tab
+from pisek.terminal import tab, colored
 
 from pisek import util
 from pisek.license import license, license_gnu
@@ -55,6 +55,13 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
         solutions=solutions,
         **env_args
     )
+
+    if config.check_todos():
+        if env.strict:
+            eprint(colored("Unsolved TODOs in config.", env, 'red'))
+            return 1
+        else:
+            eprint(colored("Warning: Unsolved TODOs in config", env, 'yellow'))
 
     pipeline = TaskPipeline(env.fork())
     return pipeline.run_jobs(Cache(env), env)
