@@ -42,6 +42,7 @@ class Incomplete(Invalidate):
         with self._open_file(self.from_file) as f:
             lines = f.readlines()
 
+        random.seed(self.seed)
         lines = lines[:random.randint(0, len(lines))]
 
         with self._open_file(self.to_file, "w") as f:
