@@ -87,7 +87,7 @@ class Job(PipelineItem):
         for i, arg in enumerate(self._args):
             sign.update(f"{i}={arg}".encode())
         for key, val in self._kwargs.items():
-            sign.update(f"{kay}={val}".encode())
+            sign.update(f"{key}={val}".encode())
         for variable in sorted(envs):
             if variable not in self._env:
                 return (None, "Env nonexistent")
