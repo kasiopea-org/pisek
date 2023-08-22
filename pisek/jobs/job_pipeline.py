@@ -44,7 +44,7 @@ class JobPipeline(ABC):
     def _status_update(self, env: Env) -> bool:
         """Display current progress. Return true if there were no failures."""
         for _ in range(self._tmp_lines):
-            print(f"{cur.erase_line()}{cur.up()}", end="")
+            print(f"{cur.up()}{cur.erase_line()}", end="")
         self._tmp_lines = 0
 
         while len(self.job_managers):
