@@ -60,6 +60,7 @@ def update(path) -> Optional[str]:
         config[solution]["subtasks"] = subtasks
 
     subtask_inputs = {}
+    in_globs_used = False
     for section in config.sections():
         if not (mat := re.fullmatch(r'test([0-9]{2})', section)):
             continue
@@ -71,6 +72,7 @@ def update(path) -> Optional[str]:
             else:
                 subtask_inputs[num] = {f'{i:02}*.in' for i in range(1, num+1)}
         else:
+            in_globs_used = True
             subtask_inputs[num] = set(map(
                 lambda x: x.replace("_*", "*"),
                 config[section]['in_globs'].split()
@@ -99,15 +101,16 @@ def update(path) -> Optional[str]:
                 continue
             if pred_subtask in subtask_includes[succ_subtask]:
                 subtask_includes[succ_subtask] -= subtask_includes[pred_subtask]
-    
-    for subtask in subtask_includes:
-        section = config[f"test{subtask:02}"]
-        section['predecessors'] = " ".join(map(str, subtask_includes[subtask]))
 
-        in_globs = subtask_inputs[subtask]
-        for pred in subtask_includes[subtask]:
-            in_globs -= subtask_inputs[pred]
-        section['in_globs'] = " ".join(sorted(in_globs))
+    if in_globs_used:    
+        for subtask in subtask_includes:
+            section = config[f"test{subtask:02}"]
+            section['predecessors'] = " ".join(map(str, subtask_includes[subtask]))
+
+            in_globs = subtask_inputs[subtask]
+            for pred in subtask_includes[subtask]:
+                in_globs -= subtask_inputs[pred]
+            section['in_globs'] = " ".join(sorted(in_globs))
 
 
     with open(config_path, "w") as f:
