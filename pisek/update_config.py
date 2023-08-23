@@ -1,4 +1,5 @@
 import configparser
+from copy import copy
 import glob
 from itertools import product
 import os
@@ -107,7 +108,7 @@ def update(path) -> Optional[str]:
             section = config[f"test{subtask:02}"]
             section['predecessors'] = " ".join(map(str, subtask_includes[subtask]))
 
-            in_globs = subtask_inputs[subtask]
+            in_globs = copy(subtask_inputs[subtask])
             for pred in subtask_includes[subtask]:
                 in_globs -= subtask_inputs[pred]
             section['in_globs'] = " ".join(sorted(in_globs))
