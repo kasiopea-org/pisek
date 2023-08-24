@@ -135,9 +135,12 @@ class ProgramJob(TaskJob):
         minibox_args.append(f"--mem={mem}")
         minibox_args.append(f"--processes={processes}")
 
+        if stdin:  self._access_file(stdin)
+        if stdout: self._access_file(stdout)
         minibox_args.append(f"--stdin={os.path.abspath(stdin) if stdin else '/dev/null'}")
         minibox_args.append(f"--stdout={os.path.abspath(stdout) if stdout else '/dev/null'}")
         if stderr:
+            self._access_file(stderr)
             minibox_args.append(f"--stderr={os.path.abspath(stderr)}")
 
         for key, val in env.items():
