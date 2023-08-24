@@ -198,7 +198,7 @@ class SubtaskJobGroup:
         elif res.verdict == Verdict.partial:
             head = f"Judge partially accepted {out}"
         elif res.verdict == Verdict.error:
-            head = f"Solution ended with errors on input {inp}"
+            head = f"Solution {res.err_msg.lower()} on input {inp}"
         elif res.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {inp}"
 

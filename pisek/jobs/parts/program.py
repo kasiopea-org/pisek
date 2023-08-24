@@ -25,12 +25,13 @@ class RunResult():
     that finished successfully, but got Wrong Answer, still gets the OK
     RunResult."""
     def __init__(self, kind: RunResultKind, returncode: int,
-                 stdout_file=None, stderr_file=None, stderr_text=None):
+                 stdout_file=None, stderr_file=None, stderr_text=None, err_msg=""):
         self.kind = kind
         self.returncode = returncode
         self.stdout_file = stdout_file
         self.stderr_file = stderr_file
         self.stderr_text = stderr_text
+        self.err_msg = err_msg
 
     @staticmethod
     def _format(text: str, env: Env, chars: int = 1500, lines: int = 20):
@@ -79,13 +80,14 @@ def run_result_representer(dumper, run_result: RunResult):
             run_result.returncode,
             run_result.stdout_file,
             run_result.stderr_file,
-            run_result.stderr_text
+            run_result.stderr_text,
+            run_result.err_msg
         ]
     )
 
 def run_result_constructor(loader, value):
-    kind, returncode, out_f, err_f, err_t = loader.construct_sequence(value)
-    return RunResult(RunResultKind[kind], returncode, out_f, err_f, err_t)
+    kind, returncode, out_f, err_f, err_t, err_msg = loader.construct_sequence(value)
+    return RunResult(RunResultKind[kind], returncode, out_f, err_f, err_t, err_msg)
 
 yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor(u'!RunResult', run_result_constructor)
@@ -171,7 +173,7 @@ class ProgramJob(TaskJob):
         elif process.returncode == 1:
             if meta['status'] in ('RE', 'SG'):
                 rc = int(re.search('\d+', meta['message'])[0])
-                return RunResult(RunResultKind.RUNTIME_ERROR, rc, stdout, stderr, stderr_text)
+                return RunResult(RunResultKind.RUNTIME_ERROR, rc, stdout, stderr, stderr_text, meta['message'])
             elif meta['status'] == 'TO':
                 return RunResult(RunResultKind.TIMEOUT, -1, stdout, stderr, f"[Timeout after {timeout}s]")
         else:

@@ -22,6 +22,7 @@ class SolutionResult():
     verdict: Verdict
     points: float
     message: str = ""
+    err_msg: str = ""
 
     def __str__(self):
         if self.verdict == Verdict.partial:
@@ -31,12 +32,12 @@ class SolutionResult():
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
     return dumper.represent_sequence(
-        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.message]
+        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.message, sol_result.err_msg]
     )
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, message = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, message)
+    verdict, points, message, err_msg = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, message, err_msg)
 
 yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor(u'!SolutionResult', sol_result_constructor)
@@ -95,7 +96,7 @@ class RunJudge(ProgramJob):
             if solution_res.kind == RunResultKind.OK:
                 result = self._judge()
             elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-                result = SolutionResult(Verdict.error, 0.0, self._quote_program(solution_res))
+                result = SolutionResult(Verdict.error, 0.0, self._quote_program(solution_res), solution_res.err_msg)
             elif solution_res.kind == RunResultKind.TIMEOUT:
                 result = SolutionResult(Verdict.timeout, 0.0, self._quote_program(solution_res))
         else:
