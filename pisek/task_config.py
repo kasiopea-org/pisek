@@ -175,7 +175,7 @@ class TaskConfig(BaseEnv):
             err = solutions[solution].load(solution, total_points, len(subtasks), config[section_name])
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
-            if solutions[solution].primary == "yes":
+            if solutions[solution].primary:
                 if primary is None:
                     primary = solution
                 else:
@@ -322,7 +322,10 @@ class SolutionConfig(BaseEnv):
     def load(self, solution_name: str, full_points: int, total_subtasks: int,
                                     config_section: configparser.SectionProxy) -> Optional[str]:
         self._set("source", config_section.get("source", solution_name))
-        self._set("primary", config_section.get("primary", "no"))
+        primary = config_section.get("primary", "no").lower()
+        if primary not in ("yes", "no"):
+            return f"Key 'primary' should be one of (yes, no): {primary}"
+        self._set("primary", primary == "yes")
 
         points = config_section.get("points")
 
