@@ -112,7 +112,6 @@ class WhiteDiffJudge(Judge):
             if util.files_are_equal(output_file, correct_output):
                 return 1.0, RunResult(RunResultKind.OK)
             else:
-
                 return 0.0, RunResult(
                     RunResultKind.OK,
                     self.create_wrong_answer_message(
