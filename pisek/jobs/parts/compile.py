@@ -126,6 +126,12 @@ class Compile(ProgramJob):
             ["fpc"] + pas_flags + [program],
             program
         )
+    
+    def _compile_rust(self, program: str):
+        return self._run_compilation(
+            ["rustc", "-O", "-o", self.target, program],
+            program
+        )
 
     def _run_compilation(self, args, program, **kwargs):
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
@@ -203,8 +209,8 @@ COMPILE_RULES = {
     '.cc': Compile._compile_cpp,
     '.cpp': Compile._compile_cpp,
     '.pas': Compile._compile_pas,
+    '.rs': Compile._compile_rust,
 }
-
 
 
 def supported_extensions() -> List[str]:
