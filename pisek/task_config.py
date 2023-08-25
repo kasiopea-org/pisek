@@ -154,6 +154,9 @@ class TaskConfig(BaseEnv):
             subtasks["0"].load(0, configparser.SectionProxy(config, "test00"))  # This shouldn't fail for default values
 
         total_points = sum(map(lambda s: s.score, subtasks.values()))
+ 
+        # subtask should be ordered by number
+        subtasks = {key: val for key, val in sorted(subtasks.items())} 
 
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)

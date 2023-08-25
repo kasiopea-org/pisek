@@ -71,7 +71,7 @@ class BaseEnv:
         Logs each variable.
         """
         self._accessed |= self._vars.keys()
-        return list(sorted(self._vars.keys()))
+        return list(self._vars.keys())
 
     def items(self) -> list[tuple[str,Any]]:
         """
@@ -79,7 +79,7 @@ class BaseEnv:
         Logs each variable.
         """
         self._accessed |= self._vars.keys()
-        return list(sorted(self._vars.items()))
+        return list(self._vars.items())
 
     def _set(self, name: str, value: Any):
         """Sets variable to value. Use only in __init__ and for other cases use fork."""
