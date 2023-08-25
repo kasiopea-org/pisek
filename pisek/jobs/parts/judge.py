@@ -60,10 +60,16 @@ class JudgeManager(TaskJobManager):
             jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env))
             if self._env.config.judge_type != "diff":
                 judge.add_prerequisite(comp)
-            for job, times in [(Incomplete, 2), (ChaosMonkey, 20)]:
-                random.seed(4)  # Reproducibility!
-                seeds = random.sample(range(0, 16**4), times)
-                for seed in seeds:
+            
+            JOBS = [(Incomplete, 5), (ChaosMonkey, 20)]
+
+            total = sum(map(lambda x: x[1], JOBS))
+            random.seed(4)  # Reproducibility!
+            seeds = random.sample(range(0, 16**4), total)
+
+            for job, times in JOBS:
+                for i in range(times):
+                    seed = seeds.pop()
                     inv_out = out.replace(".out", f".{seed:x}.invalid")
                     jobs += [
                         invalidate := job(self._env).init(out, inv_out, seed),
