@@ -52,7 +52,7 @@ def run_tests(args, full=False, all_tests=False):
         timeout=args.timeout,
         strict=args.strict,
         no_checker=args.no_checker,
-        all_tests=all_tests
+        all_tests=all_tests,
     )
 
     runner = unittest.TextTestRunner(
@@ -160,7 +160,7 @@ def main(argv):
             action="store_true",
             help="pro závěrečnou kontrolu: vynutit, že checker existuje",
         )
-    
+
     def add_argument_no_checker(parser):
         parser.add_argument(
             "--no-checker",
@@ -207,7 +207,7 @@ def main(argv):
             type=str,
             help="Mód zobrazování.\n slowest: Nejpomalejší vstup\n all: všechny vstupy",
         )
-    
+
     def add_argument_no_subtasks(parser):
         parser.add_argument(
             "--no-subtasks",
@@ -215,12 +215,12 @@ def main(argv):
             action="store_true",
             help="Zobrazit všechny vstupy dohromady (ne po subtascích).",
         )
-    
+
     def add_argument_solutions(parser):
         parser.add_argument(
             "--solutions",
             "-s",
-            default='all',
+            default="all",
             type=str,
             nargs="*",
             help="Řešení, která se mají vizualizovat.",
@@ -234,7 +234,7 @@ def main(argv):
             type=str,
             help="Jméno jsonu, ze kterého načítat data.",
         )
-    
+
     def add_argument_measured_stat(parser):
         parser.add_argument(
             "--measured-stat",
@@ -243,7 +243,7 @@ def main(argv):
             type=str,
             help="Podle čeho visualizovat programy. Zatím implementováno pouze time.",
         )
-    
+
     def add_argument_limit(parser):
         parser.add_argument(
             "--limit",
@@ -252,7 +252,7 @@ def main(argv):
             type=float,
             help="Limit measured_stat na řešení.",
         )
-    
+
     def add_argument_segments(parser):
         parser.add_argument(
             "--segments",
@@ -308,8 +308,10 @@ def main(argv):
     add_argument_clean(parser_test)
 
     _parser_clean = subparsers.add_parser("clean", help="vyčisti")
-    
-    parser_visualize = subparsers.add_parser("visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu.")
+
+    parser_visualize = subparsers.add_parser(
+        "visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu."
+    )
     add_argument_mode(parser_visualize)
     add_argument_no_subtasks(parser_visualize)
     add_argument_solutions(parser_visualize)
@@ -323,17 +325,23 @@ def main(argv):
         "--print", action="store_true", help="Vypiš celou licenci"
     )
 
-    parser_cms = subparsers.add_parser("cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka")
+    parser_cms = subparsers.add_parser(
+        "cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka"
+    )
     subparsers_cms = parser_cms.add_subparsers(help="podpříkazy", dest="cms_subcommand")
     parser_cms_check = subparsers_cms.add_parser("check", help="do a preflight check")
     parser_cms_pack = subparsers_cms.add_parser("pack", help="check and pack")
     parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
     add_argument_cms_contest(parser_cms_submit)
     add_argument_cms_user(parser_cms_submit)
-    parser_cms_analyze = subparsers_cms.add_parser("analyze", help="analyze submitted solutions")
+    parser_cms_analyze = subparsers_cms.add_parser(
+        "analyze", help="analyze submitted solutions"
+    )
     add_argument_cms_contest(parser_cms_analyze)
     add_argument_cms_user(parser_cms_analyze)
-    parser_cms_dump = subparsers_cms.add_parser("dump", help="save json with run logs from submitted solutions")
+    parser_cms_dump = subparsers_cms.add_parser(
+        "dump", help="save json with run logs from submitted solutions"
+    )
     add_argument_cms_contest(parser_cms_dump)
     add_argument_cms_user(parser_cms_dump)
     parser_cms_dump.add_argument(
@@ -342,8 +350,12 @@ def main(argv):
         type=str,
     )
 
-    parser_cms_info = subparsers_cms.add_parser("info", help="print task info without testing")
-    parser_cms_samples = subparsers_cms.add_parser("samples", help="pack samples into .zip")
+    parser_cms_info = subparsers_cms.add_parser(
+        "info", help="print task info without testing"
+    )
+    parser_cms_samples = subparsers_cms.add_parser(
+        "samples", help="pack samples into .zip"
+    )
     CHECK_NONE = "none"
     CHECK_INSTANT = "instant"
     CHECK_SANE = "sane"
@@ -355,7 +367,6 @@ def main(argv):
         default=None,
         help="Úroveň kontrol, které se mají provést",
     )
-
 
     args = parser.parse_args(argv)
 
@@ -392,7 +403,7 @@ def main(argv):
             CHECK_THOROUGH: cms.check.thorough,
         }
         check_mode, action = actions[args.cms_subcommand]
-        if args.check_mode is not None: # allow overriding
+        if args.check_mode is not None:  # allow overriding
             check_mode = args.check_mode
         checks[check_mode](args)
         return action(args)

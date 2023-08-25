@@ -55,7 +55,6 @@ class OnlineGenerator(Program):
             return True
         else:
             with open(output_file, "w") as outp:
-
                 difficulty = str(subtask)
                 hexa_seed = f"{seed:x}"
 
