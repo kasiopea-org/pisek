@@ -71,6 +71,11 @@ class RunResult():
             return f" in file {self.stderr_file}:\n{text}"
         else:
             return f":\n{text}"
+ 
+    def __str__(self):
+        return f"<RunResult {self.kind.name}, exitcode: {self.returncode}>"
+
+    __repr__ = __str__
 
 
 def run_result_representer(dumper, run_result: RunResult):
