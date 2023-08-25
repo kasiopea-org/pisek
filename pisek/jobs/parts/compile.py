@@ -119,7 +119,9 @@ class Compile(ProgramJob):
             return "-fdiagnostics-color=never"
     
     def _compile_pas(self, program: str):
-        pas_flags = ["-gl", "-O3", "-Sg", "-FE" + build_dir]
+        dir = self._get_build_dir()
+        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target, "-FE" + dir]
+
         return self._run_compilation(
             ["fpc"] + pas_flags + [program],
             program
