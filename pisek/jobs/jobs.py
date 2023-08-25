@@ -3,6 +3,7 @@ import hashlib
 from enum import Enum
 from typing import Optional, AbstractSet, MutableSet, Callable, Any
 import sys
+import yaml
 
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
@@ -99,7 +100,7 @@ class Job(PipelineItem):
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
         for name, result in sorted(results.items()):
-            sign.update(f"{name}={result}".encode())
+            sign.update(f"{name}={yaml.dump(result)}".encode())
         return (sign.hexdigest(), None)
 
     def _same_signature(self, cache_entry: CacheEntry) -> bool:
