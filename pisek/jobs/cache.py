@@ -33,7 +33,10 @@ class Cache:
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
-        self.cache[cache_entry.name] = cache_entry
+        if cache_entry.name not in self.cache:
+            self.cache[cache_entry.name] = []
+        self.cache[cache_entry.name].append(cache_entry)
+
         with open(self.cache_path, 'a', encoding='utf-8') as f:
             f.write(cache_entry.yaml_export())
 
@@ -54,12 +57,23 @@ class Cache:
             if entries is None:
                 return {}
             for entry in entries:
-                cache[entry.name] = entry
+                if entry.name not in cache:
+                    cache[entry.name] = []
+                cache[entry.name].append(entry)
 
         return cache
+
+    def move_to_top(self, entry: CacheEntry):
+        """Move given entry to most recent position."""
+        if entry in self.cache[entry.name]:
+            self.cache[entry.name].remove(entry)
+        else:
+            raise ValueError(f"Cannot move to top entry which is not in Cache:\n{entry}")
+        self.add(entry)
 
     def export(self) -> None:
         """Export cache into a file."""
         with open(self.cache_path, 'w', encoding='utf-8') as f:
-            for cache_entry in self.cache.values():
-                f.write(cache_entry.yaml_export())
+            for job, entries in self.cache.items():
+                for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
+                    f.write(cache_entry.yaml_export())

@@ -103,10 +103,13 @@ class Job(PipelineItem):
             sign.update(f"{name}={yaml.dump(result)}".encode())
         return (sign.hexdigest(), None)
 
-    def _same_signature(self, cache_entry: CacheEntry) -> bool:
-        """Checks whether this job has a same signature as a corresponding CacheEntry."""
-        sign, err = self._signature(set(cache_entry.envs), set(cache_entry.files), self.prerequisites_results)
-        return cache_entry.signature == sign
+    def _find_entry(self, cache_entries: list[CacheEntry]) -> Optional[CacheEntry]:
+        """Finds a corresponding CacheEntry for this Job."""
+        for cache_entry in cache_entries:
+            sign, err = self._signature(set(cache_entry.envs), set(cache_entry.files), self.prerequisites_results)
+            if cache_entry.signature == sign:
+                return cache_entry
+        return None
 
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
@@ -139,9 +142,9 @@ class Job(PipelineItem):
         self.state = State.running
 
         cached = False
-        if self.name in cache and self._same_signature(cache[self.name]):
+        if self.name in cache and (entry := self._find_entry(cache[self.name])):
             cached = True
-            self.result = cache[self.name].result
+            self.result = entry.result
         else:
             self.result = self._run()
 
