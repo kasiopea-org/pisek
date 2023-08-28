@@ -100,26 +100,26 @@ def main(argv):
         parser.add_argument(
             "--timeout",
             type=float,
-            help="after how many seconds kill running solution",
+            help="After how many seconds kill running solution",
         )
 
     def add_argument_full(parser):
         parser.add_argument(
-            "--full", action="store_true", help="don't stop on first failure"
+            "--full", action="store_true", help="Don't stop on first failure"
         )
 
     def add_argument_strict(parser):
         parser.add_argument(
             "--strict",
             action="store_true",
-            help="for final check: force that checker exists",
+            help="For final check: warnings are interpreted as failures",
         )
 
     def add_argument_no_checker(parser):
         parser.add_argument(
             "--no-checker",
             action="store_true",
-            help="don't run checker",
+            help="Don't run checker",
         )
 
     def add_argument_ninputs(parser):
@@ -128,7 +128,7 @@ def main(argv):
             "-n",
             type=int,
             default=5,
-            help="number of test (only for kasiopea)",
+            help="Number of test (only for kasiopea)",
         )
 
     def add_argument_clean(parser):
@@ -136,7 +136,7 @@ def main(argv):
             "--clean",
             "-c",
             action="store_true",
-            help="clean directory beforehand",
+            help="Clean directory beforehand",
         )
 
     def add_argument_plain(parser):
@@ -150,7 +150,7 @@ def main(argv):
         parser.add_argument(
             "--contest-id",
             "-c",
-            help="Id contestu, kam submitovat",
+            help="Contest id, where to submit",
             type=int,
             required=True,
         )
@@ -159,7 +159,7 @@ def main(argv):
         parser.add_argument(
             "--username",
             "-u",
-            help="Username uživatele, za kterého submitovat.",
+            help="Username, to submit with.",
             type=str,
             required=True,
         )
@@ -170,7 +170,7 @@ def main(argv):
             "-m",
             default="slowest",
             type=str,
-            help="Mód zobrazování.\n slowest: Nejpomalejší vstup\n all: všechny vstupy",
+            help="Visualization mode.\n slowest: Slowest input\n all: all inputs",
         )
 
     def add_argument_no_subtasks(parser):
@@ -178,7 +178,7 @@ def main(argv):
             "--no-subtasks",
             "-n",
             action="store_true",
-            help="Zobrazit všechny vstupy dohromady (ne po subtascích).",
+            help="Group all inputs together (not by subtask).",
         )
 
     def add_argument_solutions(parser):
@@ -188,7 +188,7 @@ def main(argv):
             default='all',
             type=str,
             nargs="*",
-            help="Řešení, která se mají vizualizovat.",
+            help="Solutions to visualize.",
         )
 
     def add_argument_filename(parser):
@@ -197,7 +197,7 @@ def main(argv):
             "-f",
             default="testing_log.json",
             type=str,
-            help="Jméno jsonu, ze kterého načítat data.",
+            help="Name of json, from which to load data.",
         )
 
     def add_argument_measured_stat(parser):
@@ -206,7 +206,7 @@ def main(argv):
             "-M",
             default="time",
             type=str,
-            help="Podle čeho visualizovat programy. Zatím implementováno pouze time.",
+            help="Stat to visualize. Only 'time' implemented so far.",
         )
 
     def add_argument_limit(parser):
@@ -215,7 +215,7 @@ def main(argv):
             "-l",
             default=None,
             type=float,
-            help="Limit measured_stat na řešení.",
+            help="Limit measured_stat for solution.",
         )
 
     def add_argument_segments(parser):
@@ -224,7 +224,7 @@ def main(argv):
             "-S",
             default=5,
             type=int,
-            help="Počet segmentů do limitu.",
+            help="Number of  segments until limit.",
         )
 
     add_argument_timeout(parser)
@@ -235,15 +235,15 @@ def main(argv):
     add_argument_clean(parser)
     add_argument_plain(parser)
 
-    subparsers = parser.add_subparsers(help="podpříkazy", dest="subcommand")
+    subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
 
-    parser_run = subparsers.add_parser("run", help="spusť řešení")
-    parser_run.add_argument("solution", type=str, help="název řešení ke spuštění")
+    parser_run = subparsers.add_parser("run", help="run solution")
+    parser_run.add_argument("solution", type=str, help="name of solution to run")
     parser_run.add_argument(
         "command_args",
         type=str,
         nargs="*",
-        help="Argumenty předané spuštěnému programu",
+        help="Arguments given to program to run",
     )
     add_argument_clean(parser_run)
 
@@ -251,10 +251,10 @@ def main(argv):
     parser_test.add_argument(
         "target",
         choices=["solution", "generator"],
-        help="volba řešení/generátor",
+        help="choice between 'solution' ot 'generator'",
     )
     parser_test.add_argument(
-        "solution", type=str, help="název řešení ke spuštění", nargs="?"
+        "solution", type=str, help="name of the solution to run", nargs="?"
     )
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
@@ -276,9 +276,9 @@ def main(argv):
 
     parser_update = subparsers.add_parser("update", help="Update config to newer version")
 
-    parser_license = subparsers.add_parser("license", help="vypiš licenci písku")
+    parser_license = subparsers.add_parser("license", help="Print licence")
     parser_license.add_argument(
-        "--print", action="store_true", help="Vypiš celou licenci"
+        "--print", action="store_true", help="Print entire licence"
     )
 
     parser_cms = subparsers.add_parser("cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka")
