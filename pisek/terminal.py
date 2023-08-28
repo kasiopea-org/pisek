@@ -12,7 +12,7 @@ def tab(text: str, tab_str: str="  "):
 
 def plain_variant(f: Callable) -> Callable:
     def g(msg: str, env : Env, *args, **kwargs):
-        if env.get_without_log('plain'):
+        if env.plain:
             return msg
         else:
             return f(msg, *args, **kwargs)
