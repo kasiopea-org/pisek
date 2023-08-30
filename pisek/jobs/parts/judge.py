@@ -144,7 +144,8 @@ class RunDiffJudge(RunJudge):
             ["diff", "-Bpq", self.output_name, self.correct_output_name],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        rr = RunResult(RunResultKind.OK, diff.returncode, stderr_text=diff.stderr)
+        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
+        rr = RunResult(RunResultKind.OK, diff.returncode, 0, 0, stderr_text=diff.stderr)
         if diff.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, self._quote_program(rr))
         elif diff.returncode == 1:

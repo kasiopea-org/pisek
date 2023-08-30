@@ -40,7 +40,7 @@ class RunResult():
     """Represents the way the program execution ended. Specially, a program
     that finished successfully, but got Wrong Answer, still gets the OK
     RunResult."""
-    def __init__(self, kind: RunResultKind, returncode: int,
+    def __init__(self, kind: RunResultKind, returncode: int, time: int, wall_time: int,
                  stdout_file=None, stderr_file=None, stderr_text=None, err_msg=""):
         self.kind = kind
         self.returncode = returncode
@@ -48,6 +48,8 @@ class RunResult():
         self.stderr_file = stderr_file
         self.stderr_text = stderr_text
         self.err_msg = err_msg
+        self.time = time
+        self.wall_time = wall_time 
 
     @staticmethod
     def _format(text: str, env: Env, chars: int = 1500, lines: int = 20):
@@ -99,6 +101,8 @@ def run_result_representer(dumper, run_result: RunResult):
         u'!RunResult', [
             run_result.kind.name,
             run_result.returncode,
+            run_result.time,
+            run_result.wall_time,
             run_result.stdout_file,
             run_result.stderr_file,
             run_result.stderr_text,
@@ -107,8 +111,8 @@ def run_result_representer(dumper, run_result: RunResult):
     )
 
 def run_result_constructor(loader, value):
-    kind, returncode, out_f, err_f, err_t, err_msg = loader.construct_sequence(value)
-    return RunResult(RunResultKind[kind], returncode, out_f, err_f, err_t, err_msg)
+    kind, returncode, time, wall_time, out_f, err_f, err_t, err_msg = loader.construct_sequence(value)
+    return RunResult(RunResultKind[kind], returncode, time, wall_time, out_f, err_f, err_t, err_msg)
 
 yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor(u'!RunResult', run_result_constructor)
@@ -192,14 +196,15 @@ class ProgramJob(TaskJob):
         if not print_stderr:
             stderr_raw =  process.stderr.read().decode()
         stderr_text = None if stderr else stderr_raw
+        t, wt = meta['time'], meta['time-wall']
         if process.returncode == 0:
-            return RunResult(RunResultKind.OK, 0, stdout, stderr, stderr_text)
+            return RunResult(RunResultKind.OK, 0, t, wt, stdout, stderr, stderr_text)
         elif process.returncode == 1:
             if meta['status'] in ('RE', 'SG'):
                 rc = int(re.search('\d+', meta['message'])[0])
-                return RunResult(RunResultKind.RUNTIME_ERROR, rc, stdout, stderr, stderr_text, meta['message'])
+                return RunResult(RunResultKind.RUNTIME_ERROR, rc, t, wt, stdout, stderr, stderr_text, meta['message'])
             elif meta['status'] == 'TO':
-                return RunResult(RunResultKind.TIMEOUT, -1, stdout, stderr, f"[Timeout after {timeout}s]")
+                return RunResult(RunResultKind.TIMEOUT, -1, t, wt, stdout, stderr, f"[Timeout after {timeout}s]")
         else:
             self._fail(f"Minibox error:\n{tab(stderr_raw)}")
 
