@@ -59,8 +59,14 @@ class Cache:
     def __contains__(self, name: str) -> bool:
         return name in self.cache
 
-    def __getitem__(self, name: str) -> CacheEntry:
+    def __getitem__(self, name: str) -> list[CacheEntry]:
         return self.cache[name]
+
+    def entry_names(self) -> list[str]:
+        return list(self.cache.keys())
+
+    def last_entry(self, name: str) -> CacheEntry:
+        return self[name][-1]
 
     def _load(self) -> dict[str, CacheEntry]:
         """Load cache file."""

@@ -98,6 +98,7 @@ class JudgeManager(TaskJobManager):
         return jobs
 
 
+JUDGE_JOB_NAME = r'Judge (\w+)'
 class RunJudge(ProgramJob):
     """Runs judge on single input. (Abstract class)"""
     def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
@@ -106,7 +107,7 @@ class RunJudge(ProgramJob):
         self.output_name = self._data(output_name)
         self.correct_output_name = self._data(correct_output)
         self.expected_points = expected_points
-        super()._init(f"Judge {output_name}", judge)
+        super()._init(JUDGE_JOB_NAME.replace(r'(\w+)', output_name, 1), judge)
 
     @abstractmethod
     def _judge(self) -> Optional[SolutionResult]:

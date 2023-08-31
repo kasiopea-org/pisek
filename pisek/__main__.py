@@ -31,16 +31,44 @@ from pisek.license import license, license_gnu
 import pisek.cms as cms
 from pisek.update_config import update
 from pisek.visualize import visualize_command
+from pisek.extract import extract
+
+PATH = '.'
 
 def eprint(msg, *args, **kwargs):
     print(msg, *args, file=sys.stderr, **kwargs)
 
 
 def test_task(args, **kwargs):
-    path = '.'
-    return (test_task_path(path, **vars(args), **kwargs))
+    return (test_task_path(PATH, **vars(args), **kwargs))
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
+    env = load_env(path, solutions, **env_args)
+    pipeline = TaskPipeline(env.fork())
+    return pipeline.run_jobs(Cache(env), env)
+
+
+def test_solution(args):
+    if args.solution is None:
+        eprint(f"Enter solution name to test")
+        eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
+        return 1
+
+    eprint(f"Testing solution: {args.solution}")
+    return test_task(args, solutions=[args.solution])
+
+
+def test_generator(args):
+    eprint(f"Testing generator")
+    return test_task(args, solutions=[])
+
+
+def extract_task(args, **kwargs):
+    env = load_env(PATH, **vars(args), **kwargs)
+    return extract(env)
+
+
+def load_env(path, solutions: Optional[list[str]] = None, **env_args):
     config = TaskConfig()
     err = config.load(path)
     if err:
@@ -64,24 +92,7 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
         else:
             eprint(colored("Warning: Unsolved TODOs in config", env, 'yellow'))
 
-    pipeline = TaskPipeline(env.fork())
-    return pipeline.run_jobs(Cache(env), env)
-
-
-def test_solution(args):
-    if args.solution is None:
-        eprint(f"Enter solution name to test")
-        eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
-        return 1
-
-    eprint(f"Testing solution: {args.solution}")
-    return test_task(args, solutions=[args.solution])
-
-
-def test_generator(args):
-    eprint(f"Testing generator")
-    return test_task(args, solutions=[])
-
+    return env
 
 def clean_directory(args):
     task_dir = os.getcwd()
@@ -276,6 +287,7 @@ def main(argv):
     add_argument_segments(parser_visualize)
 
     parser_update = subparsers.add_parser("update", help="Update config to newer version")
+    parser_extract = subparsers.add_parser("extract", help="Extract solution data from .pisek_cache")
 
     parser_license = subparsers.add_parser("license", help="Print licence")
     parser_license.add_argument(
@@ -365,9 +377,11 @@ def main(argv):
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
     elif args.subcommand == "update":
-        result = update(os.getcwd())
+        result = update(PATH)
         if result:
             eprint(result)
+    elif args.subcommand == "extract":
+        extract_task(args)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 

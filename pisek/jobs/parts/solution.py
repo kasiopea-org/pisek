@@ -220,12 +220,15 @@ class SubtaskJobGroup:
 
         return f"{head}:\n{tab(res.message)}"
 
+
+RUN_JOB_NAME = r'Run (\w+) on input (\w+)'
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
     def _init(self, solution: str, input_name: str, timeout: Optional[float]) -> None:
         self.input_name = self._data(input_name)
         self.timeout = timeout
-        super()._init(f"Run {solution} on input {input_name}", solution)
+        name = RUN_JOB_NAME.replace(r'(\w+)', solution, 1).replace(r'(\w+)', input_name, 1)
+        super()._init(name, solution)
 
     def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(
