@@ -46,8 +46,8 @@ def extract(env) -> None:
                 continue
             res = cache.last_entry(judge).result
             data[solution]["results"].append({
-                "time": run.time,
-                "wall_clock_time": run.wall_time,
+                "time": float(run.time),
+                "wall_clock_time": float(run.wall_time),
                 "test": inp.replace(".in", ""),
                 "points": res.points,
                 "result": res.verdict.name
