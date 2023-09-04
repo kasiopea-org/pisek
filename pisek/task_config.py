@@ -162,7 +162,7 @@ class TaskConfig(BaseEnv):
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
 
-        self.solution_section_names = set()
+        self._solution_section_names = set()
         solutions = {}
         primary = None
         for section_name in config.sections():
@@ -171,7 +171,7 @@ class TaskConfig(BaseEnv):
             if not m:
                 # One of the other sections ([task], [tests]...)
                 continue
-            self.solution_section_names.add(m[0])
+            self._solution_section_names.add(m[0])
             solution = m[1]
 
             solutions[solution] = SolutionConfig()
@@ -225,7 +225,7 @@ class TaskConfig(BaseEnv):
     def check_unused_keys(self, config: CheckedConfigParser) -> Optional[str]:
         """Verify that there are no unused keys in the config, raise otherwise."""
 
-        accepted_section_names = self.subtask_section_names | self.solution_section_names | \
+        accepted_section_names = self.subtask_section_names | self._solution_section_names | \
         {
             "task",
             "tests",
@@ -250,7 +250,7 @@ class TaskConfig(BaseEnv):
 
             if section_name in self.subtask_section_names:
                 section_ignored_keys = ignored_keys["subtask"]
-            elif section_name in self.solution_section_names:
+            elif section_name in self._solution_section_names:
                 section_ignored_keys = ignored_keys["solution"]
             else:
                 section_ignored_keys = ignored_keys[section_name]
