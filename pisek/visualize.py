@@ -104,11 +104,15 @@ def visualize(
     by_subtask : bool = True,
     solutions : Union[List[str], str] = 'all',
     filename : str = 'testing_log.json',
-    measured_stat : str = 'time',
+    measured_stat : str = 'wall_clock_time',
     limit : Optional[int] = None,
     segments : int = 10,
 ):
-    config = TaskConfig(TASK_DIR)
+    config = TaskConfig()
+    err = config.load(TASK_DIR)
+    if err:
+        print(err, file=sys.stderr)
+        exit(1)
     with open(os.path.join(TASK_DIR, filename)) as f:
         testing_log = json.load(f)
 
@@ -118,7 +122,7 @@ def visualize(
     mode = MODES_ALIASES[mode]
 
     if solutions == 'all':
-        solutions = list(testing_log.keys())
+        solutions = list(set(testing_log.keys()) - {'source'})
     else:
         for solution_name in solutions:
             if solution_name not in testing_log:
@@ -126,15 +130,15 @@ def visualize(
                 exit(1)
 
     # TODO: Implement here for other values of measured_stat
-    if measured_stat != 'time':
+    if measured_stat != 'wall_clock_time':
         raise NotImplementedError()
 
     if limit is None:
-        if measured_stat == 'time':
+        if measured_stat == 'wall_clock_time':
             limit = config.get_timeout(True)
 
     # Kind of slow, but we will not have hundreds of solutions
-    solutions.sort(key=lambda x: config.solutions.index(x))
+    solutions.sort(key=lambda x: config.solutions.keys().index(x))
 
     unexpected_solutions = []
     for solution_name in solutions:
@@ -178,7 +182,7 @@ def visualize_solution(
         # We are testing at higher limits in cms
         # TODO: Implement here for other values
         if final_verdict == VERDICTS['ok']:
-            if result['time'] > limit:
+            if result['wall_clock_time'] > limit:
                 final_verdict = VERDICTS['timeout_limited']
                 points = 0.0
 

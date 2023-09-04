@@ -220,9 +220,9 @@ def main(argv):
         parser.add_argument(
             "--measured-stat",
             "-M",
-            default="time",
+            default="wall_clock_time",
             type=str,
-            help="Stat to visualize. Only 'time' implemented so far.",
+            help="Stat to visualize. Only 'wall_clock_time' implemented so far.",
         )
 
     def add_argument_limit(parser):
