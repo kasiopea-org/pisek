@@ -54,7 +54,7 @@ class JobPipeline(ABC):
             if self.failed and not env.full:
                 break
 
-        cache.export()  # Remove duplicate cache entries
+        cache.seal(not self.failed)  # Remove duplicate cache entries and seal
         return self.failed
 
     def _status_update(self, env: Env) -> bool:

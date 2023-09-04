@@ -41,11 +41,25 @@ class CacheEntry(yaml.YAMLObject):
     def yaml_export(self) -> str:
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
+class CacheSeal(yaml.YAMLObject):
+    """Seal is stored after last entry containing data about run."""
+    yaml_tag = u'!Seal'
+    def __init__(self, success: bool, msg: str = ""):
+        self.success = success
+        self.msg = msg
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(success={self.success}, msg={self.msg})"
+    
+    def yaml_export(self) -> str:
+        return yaml.dump([self], allow_unicode=True, sort_keys=False)
+
 class Cache:
     """Object representing all cached jobs."""
     def __init__(self, env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
-        self.cache = self._load()
+        self.broken_seal = None
+        self._load()
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
@@ -68,22 +82,25 @@ class Cache:
     def last_entry(self, name: str) -> CacheEntry:
         return self[name][-1]
 
-    def _load(self) -> dict[str, CacheEntry]:
+    def _load(self) -> None:
         """Load cache file."""
+        self.cache = {}
         if not os.path.exists(self.cache_path):
-            return {}
+            return
 
-        cache = {}
         with open(self.cache_path, encoding='utf-8') as f:
             entries = yaml.full_load(f)
             if entries is None:
-                return {}
+                return
             for entry in entries:
-                if entry.name not in cache:
-                    cache[entry.name] = []
-                cache[entry.name].append(entry)
+                if isinstance(entry, CacheSeal):
+                    self.broken_seal = entry
+                    break
+                if entry.name not in self.cache:
+                    self.cache[entry.name] = []
+                self.cache[entry.name].append(entry)
 
-        return cache
+        self.export()  # Break the CacheSeal
 
     def move_to_top(self, entry: CacheEntry):
         """Move given entry to most recent position."""
@@ -94,8 +111,13 @@ class Cache:
         self.add(entry)
 
     def export(self) -> None:
-        """Export cache into a file."""
+        """Export cache into a file. Remove unnecessary entries and add seal."""
         with open(self.cache_path, 'w', encoding='utf-8') as f:
             for job, entries in self.cache.items():
                 for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
                     f.write(cache_entry.yaml_export())
+
+    def seal(self, success):
+        self.export()
+        with open(self.cache_path, 'a', encoding='utf-8') as f:
+            f.write(CacheSeal(success).yaml_export())
