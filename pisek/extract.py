@@ -16,10 +16,12 @@
 
 import json
 import os
+import sys
 import re
 import yaml
 
 from pisek.util import get_output_name
+from pisek.terminal import colored
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.jobs.parts.solution import RUN_JOB_NAME
 from pisek.jobs.parts.judge import JUDGE_JOB_NAME
@@ -29,6 +31,8 @@ FILE_NAME = "testing_log.json"
 def extract(env) -> None:
     # Extracts testing_log.json from .pisek_cache
     cache = Cache(env)
+    if cache.broken_seal is None or not cache.broken_seal.success:
+        print(colored("This task has not been successfully tested. Data might be incomplete.", env, 'red'), file=sys.stderr)
     data = {"source": "pisek"}
     for name in cache.entry_names():
         if (m := re.match(RUN_JOB_NAME, name)):
