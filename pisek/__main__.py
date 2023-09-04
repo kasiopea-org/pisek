@@ -44,6 +44,8 @@ def test_task(args, **kwargs):
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
     env = load_env(path, solutions, **env_args)
+    if env is None:
+        return 1
     pipeline = TaskPipeline(env.fork())
     return pipeline.run_jobs(Cache(env), env)
 
@@ -65,6 +67,8 @@ def test_generator(args):
 
 def extract_task(args, **kwargs):
     env = load_env(PATH, **vars(args), **kwargs)
+    if env is None:
+        return 1
     return extract(env)
 
 
@@ -73,7 +77,7 @@ def load_env(path, solutions: Optional[list[str]] = None, **env_args):
     err = config.load(path)
     if err:
         eprint(f"Error when loading config:\n{tab(err)}")
-        return 1
+        return None
 
     if solutions is None:
         solutions = config.solutions.keys()
@@ -88,7 +92,7 @@ def load_env(path, solutions: Optional[list[str]] = None, **env_args):
     if config.check_todos():
         if env.strict:
             eprint(colored("Unsolved TODOs in config.", env, 'red'))
-            return 1
+            return None
         else:
             eprint(colored("Warning: Unsolved TODOs in config", env, 'yellow'))
 
