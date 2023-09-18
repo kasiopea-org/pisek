@@ -47,8 +47,8 @@ class PipelineItem(ABC):
 
     def cancel(self) -> None:
         """Cancels job and all that require it."""
-        if self.state == State.canceled:
-            return  # Canceled already
+        if self.state in (State.succeeded, State.canceled):
+            return  # No need to cancel
         self.state = State.canceled
         for item, _ in self.required_by:
             item.cancel()
@@ -202,8 +202,12 @@ class JobManager(PipelineItem):
     def _jobs_with_state(self, state: State) -> list[Job]:
         return list(filter(lambda j: j.state == state, self.jobs))
 
+    def _update(self) -> None:
+        pass
+
     def update(self) -> str:
         """Update this manager's state according to its jobs and return status."""
+        self._update()
         states = self._job_states()
         if self.state in (State.failed, State.canceled):
             pass
@@ -226,7 +230,8 @@ class JobManager(PipelineItem):
         Returns whether manager is ready for evaluation.
         (i.e. All of it's jobs have finished)
         """
-        return self.state == State.running and len(self._jobs_with_state(State.succeeded)) == len(self.jobs)
+        return self.state == State.running and \
+            len(self._jobs_with_state(State.succeeded) + self._jobs_with_state(State.canceled)) == len(self.jobs)
 
     def any_failed(self) -> bool:
         """Returns whether this manager or its jobs had any failures so far."""

@@ -72,8 +72,9 @@ Job(Env).init(*args, **kwargs)
 ## JobManager
 Jobs are managed by a `JobManager` in this way:
 1. First `JobManager` creates all jobs in `JobManager._get_jobs`.
-2. Then repeatedly reports current state of jobs with `JobManager._get_status`.
-3. After all jobs have finished, it can check for cross-job failures using `JobManager._evaluate`.
+2. After every managed `Job` state change, you can update `JobManager` in `JobManager._update`. 
+3. Then repeatedly reports current state of jobs with `JobManager._get_status`.
+4. After all jobs have finished, it can check for cross-job failures using `JobManager._evaluate`.
 
 ### Writing JobManagers
 ```py

@@ -79,14 +79,20 @@ class SolutionManager(TaskJobManager):
                     )
 
                     run_judge.add_prerequisite(run_solution, name="run_solution")
-                    testcases[inp] = run_judge
+                    testcases[inp] = (run_solution, run_judge)
 
                     used_inp.add(inp)
-                    self.subtasks[-1].new_jobs.append(testcases[inp])
+                    self.subtasks[-1].new_jobs.append(testcases[inp][1])
                 else:
-                    self.subtasks[-1].previous_jobs.append(testcases[inp])
+                    self.subtasks[-1].previous_jobs.append(testcases[inp][1])
+                self.subtasks[-1].run_jobs.append(testcases[inp][0])
 
         return jobs
+
+    def _update(self):
+        for subtask in self.subtasks:
+            if subtask.definitive(self._env.config.fail_mode):
+                subtask.cancel()
 
     def _get_status(self) -> str:
         msg = f"Testing {self.solution} "
@@ -138,6 +144,7 @@ class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
     def __init__(self, num) -> None:
         self.num = int(num)
+        self.run_jobs : list[RunSolution] = []
         self.previous_jobs : list[RunJudge] = []
         self.new_jobs : list[RunJudge] = []
 
@@ -158,28 +165,53 @@ class SubtaskJobGroup:
         if s == "() ":
             s = ""
 
-        for result in self._job_results(self.new_jobs):
-            if result is None:
+        for job, result in zip(self.new_jobs, self._job_results(self.new_jobs)):
+            if job.state == State.canceled:
+                s += '-'
+            elif result is None:
                 s += ' '
             else:
                 s += str(result)
 
         return s
 
-    def result(self, fail_mode) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
+    @staticmethod
+    def _to_points(job: RunJudge) -> float:
+        res = job.result
+        if res is None:
+            raise RuntimeError(f"Job {job.name} has not finished yet.")
+        return res.points
+
+    @staticmethod
+    def _finished(jobs: list[Job]) -> list[Job]:
+        return filter(lambda j: j.state == State.succeeded, jobs)
+
+    @staticmethod
+    def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
+        return list(map(SubtaskJobGroup._to_points, SubtaskJobGroup._finished(jobs)))
+
+    def definitive(self, fail_mode: str) -> bool:
+        """
+        Checks whether subtask jobs have resulted in outcome that cannot be changed. 
+        """
+        old_points = self._convert_to_points(self.previous_jobs)
+        new_points = self._convert_to_points(self.new_jobs)
+        all_points = old_points + new_points
+        if fail_mode == "all":
+            if len(new_points) and min(new_points) != max(new_points):
+                return True
+        else:
+            if len(all_points) and min(all_points) == 0:
+                return True
+        return False
+
+    def result(self, fail_mode: str) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
         """
         Checks whether subtask jobs have resulted as expected and computes points.
         Returns (points, error msg), (best program output, worst program output)
         """
-
-        def to_points(job: RunJudge) -> float:
-            res = job.result
-            if res is None:
-                raise RuntimeError(f"Job {job.name} has not finished yet.")
-            return res.points
-
-        prev_points = list(map(to_points, self.previous_jobs))
-        new_points = list(map(to_points, self.new_jobs))
+        prev_points = self._convert_to_points(self.previous_jobs)
+        new_points = self._convert_to_points(self.new_jobs)
 
         all_jobs = self.previous_jobs + self.new_jobs
         all_points = prev_points + new_points
@@ -200,6 +232,10 @@ class SubtaskJobGroup:
                 return (None, "Previous subtask failed but this did not"), result_msg
 
         return (min(prev_points + new_points), ""), result_msg
+
+    def cancel(self):
+        for job in self.run_jobs:
+            job.cancel()
 
     def _job_msg(self, job: RunJudge) -> str:
         res = job.result
