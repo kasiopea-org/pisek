@@ -253,16 +253,6 @@ def main(argv):
 
     subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
 
-    parser_run = subparsers.add_parser("run", help="run solution")
-    parser_run.add_argument("solution", type=str, help="name of solution to run")
-    parser_run.add_argument(
-        "command_args",
-        type=str,
-        nargs="*",
-        help="Arguments given to program to run",
-    )
-    add_argument_clean(parser_run)
-
     parser_test = subparsers.add_parser("test", help="otestuj")
     parser_test.add_argument(
         "target",
@@ -339,9 +329,7 @@ def main(argv):
     if args.clean:
         clean_directory(args)
 
-    if args.subcommand == "run":
-        raise NotImplementedError()
-    elif args.subcommand == "test":
+    if args.subcommand == "test":
         if args.target == "solution":
             result = test_solution(args)
         elif args.target == "generator":

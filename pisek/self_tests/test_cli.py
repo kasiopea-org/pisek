@@ -49,11 +49,6 @@ class TestCLITestGenerator(TestCLI):
         return ["test", "generator"]
 
 
-class TestCLIRun(TestCLI):
-    def args(self):
-        return ["run", "gen", "data"]
-
-
 class TestCLIClean(TestCLI):
     def args(self):
         return ["clean"]
