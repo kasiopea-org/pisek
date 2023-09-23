@@ -137,7 +137,7 @@ class SolutionManager(TaskJobManager):
         elif above is not None and total_points < above:
             return self._fail(f"Solution {self.solution} should have gotten at least {above} but got {total_points} points.")
         elif below is not None and total_points > below:
-            return self._fail(f"Solution {self.solution} should have gotten at most {above} but got {total_points} points.")
+            return self._fail(f"Solution {self.solution} should have gotten at most {below} but got {total_points} points.")
 
 
 class SubtaskJobGroup:
