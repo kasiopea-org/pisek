@@ -135,6 +135,11 @@ class Compile(ProgramJob):
         )
 
     def _run_compilation(self, args, program, **kwargs):
+        try:
+            subprocess.run(args[0], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except FileNotFoundError:
+            return self._fail(f"Missing tool: {args[0]}")
+
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
         while True:
             line = comp.stderr.readline().decode()
