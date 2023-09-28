@@ -58,7 +58,8 @@ class GeneratorManager(TaskJobManager):
                         rs.add_prerequisite(gen)
                     last_gen = gen
         else:
-            jobs.append(OfflineGeneratorGenerate(self._env).init(generator))
+            jobs.append(gen := OfflineGeneratorGenerate(self._env).init(generator))
+            gen.add_prerequisite(compile)
 
         return jobs
 
