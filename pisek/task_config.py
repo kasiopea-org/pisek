@@ -120,8 +120,8 @@ class TaskConfig(BaseEnv):
             config.get("limits", "sec_solve_time_limit", fallback=None), float
         ))
         if self.contest_type == "kasiopea":
-            self._set("input_max_size", config.get("limits", "input_max_size", fallback=50))  # MB
-            self._set("output_max_size", config.get("limits", "output_max_size", fallback=10))  # MB
+            self._set("input_max_size", int(config.get("limits", "input_max_size", fallback=50)))  # MB
+            self._set("output_max_size", int(config.get("limits", "output_max_size", fallback=10)))  # MB
 
         # Support for different directory structures
         self._set("samples_subdir", config["task"].get("samples_subdir", "."))
