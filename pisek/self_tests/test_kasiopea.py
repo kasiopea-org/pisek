@@ -201,6 +201,25 @@ class TestStrictChecker(TestSoucetKasiopea):
     def modify_task(self):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
+class TestBigInput(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["limits"]["input_max_size"] = "0"
+
+        modify_config(self.task_dir, modification_fn)
+
+class TestBigOutput(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["limits"]["output_max_size"] = "0"
+
+        modify_config(self.task_dir, modification_fn)
 
 class TestExtraConfigKeys(TestSoucetKasiopea):
     def expecting_success(self):
