@@ -253,7 +253,7 @@ def main(argv):
 
     subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
 
-    parser_test = subparsers.add_parser("test", help="otestuj")
+    parser_test = subparsers.add_parser("test", help="test")
     parser_test.add_argument(
         "target",
         choices=["solution", "generator"],
@@ -269,9 +269,9 @@ def main(argv):
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
 
-    _parser_clean = subparsers.add_parser("clean", help="vyčisti")
+    _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
-    parser_visualize = subparsers.add_parser("visualize", help="Zobraz statistiky řešení a jak blízko jsou limitu.")
+    parser_visualize = subparsers.add_parser("visualize", help="Show solutions statistics and closeness to limit.")
     add_argument_mode(parser_visualize)
     add_argument_no_subtasks(parser_visualize)
     add_argument_solutions(parser_visualize)
