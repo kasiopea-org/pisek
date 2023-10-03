@@ -148,7 +148,7 @@ class Job(PipelineItem):
             list(self.prerequisites_results)
         )
 
-    def run_job(self, cache: Optional[Cache] = None) -> Optional[str]:
+    def run_job(self, cache: Cache) -> Optional[str]:
         """Run this job. If result is already in cache use it instead."""
         if not self._initialized:
             raise RuntimeError("Job must be initialized before running it. (call Job.init)")
@@ -158,14 +158,14 @@ class Job(PipelineItem):
         self.state = State.running
 
         cached = False
-        if cache and self.name in cache and (entry := self._find_entry(cache[self.name])):
+        if self.name in cache and (entry := self._find_entry(cache[self.name])):
             cached = True
             self.result = entry.result
         else:
             self.result = self._run()
 
         if self.state != State.failed:
-            if cache and not cached:
+            if not cached:
                 cache.add(self._export(self.result))
             self.state = State.succeeded
 

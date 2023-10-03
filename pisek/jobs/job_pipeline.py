@@ -28,7 +28,6 @@ class JobPipeline(ABC):
     """Runs given Jobs and JobManagers according to their prerequisites."""
     @abstractmethod
     def __init__(self):
-        self._caching_enabled = True
         self.failed = False
         self._tmp_lines = 0
 
@@ -41,7 +40,7 @@ class JobPipeline(ABC):
                 self.job_managers.append(p_item)
                 self.pipeline.extendleft(reversed(p_item.create_jobs(env)))
             elif isinstance(p_item, Job):
-                p_item.run_job(cache if self._caching_enabled else None)
+                p_item.run_job(cache)
                 p_item.finish()
             else:
                 raise TypeError(f"Objects in {self.__class__.__name__} should be either Job or JobManager.")
@@ -55,9 +54,7 @@ class JobPipeline(ABC):
             if self.failed and not env.full:
                 break
 
-        if self._caching_enabled:
-            cache.seal(not self.failed)  # Remove duplicate cache entries and seal
-
+        cache.seal(not self.failed)  # Remove duplicate cache entries and seal
         return self.failed
 
     def _status_update(self, env: Env) -> bool:
