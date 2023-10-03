@@ -51,7 +51,7 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(self._env).init(solution, inp, timeout))
+                    jobs.append(run_solution := RunSolution(self._env).init(solution, inp, timeout=timeout))
                     run_solution.add_prerequisite(compile)
 
                     if sub_num == "0":
@@ -258,14 +258,11 @@ class RunPrimarySolutionMan(TaskJobManager):
         super().__init__("Running primary solution")
 
     def _get_jobs(self) -> list[Job]:
-        if self._output is None:
-            self._output = util.get_output_name(self._input, self._env.config.primary_solution)
-
         solution = self._solution(self._env.config.solutions[self._env.config.primary_solution].source)
         
         jobs : list[Job] = [
             compile := Compile(self._env).init(solution, True, self._compile_args()),
-            run_solution := RunSolution(self._env).init(solution, self._input, self._get_timeout("solve"))
+            run_solution := RunSolution(self._env).init(solution, self._input, self._output, self._get_timeout("solve"))
         ]
         run_solution.add_prerequisite(compile)
 
@@ -275,8 +272,9 @@ class RunPrimarySolutionMan(TaskJobManager):
 RUN_JOB_NAME = r'Run (\w+) on input (\w+)'
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
-    def _init(self, solution: str, input_name: str, timeout: Optional[float]) -> None:
+    def _init(self, solution: str, input_name: str, output_name: Optional[str] = None, timeout: Optional[float] = None) -> None:
         self.input_name = self._data(input_name)
+        self.output_name = self._data(output_name) if output_name else self._output(self.input_name, solution)
         self.timeout = timeout
         name = RUN_JOB_NAME.replace(r'(\w+)', solution, 1).replace(r'(\w+)', input_name, 1)
         super()._init(name, solution)
@@ -285,7 +283,7 @@ class RunSolution(ProgramJob):
         return self._run_program(
             [],
             stdin=self.input_name,
-            stdout=self._output(self.input_name, self.program),
+            stdout=self.output_name,
             timeout=self.timeout
         )
 
