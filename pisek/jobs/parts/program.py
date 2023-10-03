@@ -196,10 +196,11 @@ class ProgramJob(TaskJob):
         if not print_stderr:
             stderr_raw =  process.stderr.read().decode()
         stderr_text = None if stderr else stderr_raw
-        t, wt = meta['time'], meta['time-wall']
         if process.returncode == 0:
+            t, wt = meta['time'], meta['time-wall']
             return RunResult(RunResultKind.OK, 0, t, wt, stdout, stderr, stderr_text)
         elif process.returncode == 1:
+            t, wt = meta['time'], meta['time-wall']
             if meta['status'] in ('RE', 'SG'):
                 rc = int(re.search('\d+', meta['message'])[0])
                 return RunResult(RunResultKind.RUNTIME_ERROR, rc, t, wt, stdout, stderr, stderr_text, meta['message'])
