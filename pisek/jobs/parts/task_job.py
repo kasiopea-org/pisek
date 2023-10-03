@@ -129,7 +129,22 @@ class TaskHelper:
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
-    pass
+    def _get_timeout(self, target: str) -> float:
+        if self._env.timeout is not None:
+            return self._env.timeout
+
+        if target == "sec_solve" and self._env.config.timeout_other_solutions:
+            return self._env.config.timeout_other_solutions
+        elif target == "solve" or target == "sec_solve":
+            return self._env.config.timeout_model_solution
+        else:
+            raise ValueError(f"Unknown timeout for: {target}.")
+
+    def _compile_args(self) -> dict[str, str]:
+        compile_args = {}
+        if self._env.config.solution_manager:
+            compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
+        return compile_args
 
 
 class TaskJob(Job, TaskHelper):

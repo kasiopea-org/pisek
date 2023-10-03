@@ -38,18 +38,12 @@ class SolutionManager(TaskJobManager):
 
         jobs : list[Job] = []
 
-        compile_args = {}
-        if self._env.config.solution_manager:
-            compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
-        jobs.append(compile := Compile(self._env).init(solution, True, compile_args))
+        jobs.append(compile := Compile(self._env).init(solution, True, self._compile_args()))
 
-        timeout = None
-        if self._env.timeout is not None:
-            timeout = self._env.timeout
-        elif not self._env.config.solutions[self.solution].primary and self._env.config.timeout_other_solutions:
-            timeout = self._env.config.timeout_other_solutions
-        elif self._env.config.timeout_model_solution:
-            timeout = self._env.config.timeout_model_solution
+        if self._env.config.solutions[self.solution].primary:
+            timeout = self._get_timeout("solve")
+        else:
+            timeout = self._get_timeout("sec_solve")
 
         testcases = {}
         used_inp = set()
@@ -255,6 +249,27 @@ class SubtaskJobGroup:
             head = f"Solution did timeout on input {inp}"
 
         return f"{head}:\n{tab(res.message)}"
+
+
+class RunPrimarySolution(TaskJobManager):
+    def __init__(self, input_: str, output: Optional[str]):
+        self._input = input_
+        self._output = output 
+        super().__init__("Running primary solution")
+
+    def _get_jobs(self) -> list[Job]:
+        if self._output is None:
+            self._output = util.get_output_name(self._input, self._env.config.primary_solution)
+
+        solution = self._solution(self._env.config.solutions[self._env.config.primary_solution].source)
+        
+        jobs : list[Job] = [
+            compile := Compile(self._env).init(solution, True, self._compile_args()),
+            run_solution := RunSolution(self._env).init(solution, self._input, self._get_timeout("solve"))
+        ]
+        run_solution.add_prerequisite(compile)
+
+        return jobs
 
 
 RUN_JOB_NAME = r'Run (\w+) on input (\w+)'

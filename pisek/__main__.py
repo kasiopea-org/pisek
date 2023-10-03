@@ -23,7 +23,7 @@ import sys
 
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.jobs.run_pipelines import RunGen
+from pisek.jobs.run_pipelines import RunGen, RunSol
 from pisek.env import Env
 from pisek.jobs.cache import Cache
 from pisek.terminal import tab, colored
@@ -64,6 +64,8 @@ def run(args, **kwargs):
     d = {'path': PATH, **vars(args), **kwargs}
     if args.target == "generator":
         return run_generator(**d)
+    if args.target == "solution":
+        return run_solution(**d)
     else:
         raise NotImplementedError()
 
@@ -71,6 +73,13 @@ def run_generator(path, subtask: int, seed: int, file: Optional[str] = None, **e
     return run_pipeline(
         path,
         partial(RunGen, subtask=subtask, seed=seed, file=file),
+        **env_args
+    )
+
+def run_solution(path, input: str, output: Optional[str] = None, **env_args):
+    return run_pipeline(
+        path,
+        partial(RunSol, input=input, output=output),
         **env_args
     )
 
@@ -293,6 +302,10 @@ def main(argv):
     p_run_gen.add_argument("subtask", type=int, help="number of subtask")
     p_run_gen.add_argument("seed", type=int, help="seed for generator")
     p_run_gen.add_argument("file", type=str, nargs='?', default=None, help="file for output")
+    
+    p_run_sol = subparsers_run.add_parser("solution", help="Run solution on given file.")
+    p_run_sol.add_argument("input", type=str, help="name of input file")
+    p_run_sol.add_argument("output", type=str, nargs='?', default=None, help="name of output file")
 
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
