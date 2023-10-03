@@ -22,8 +22,8 @@ from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.generator import RunOnlineGeneratorMan
 from pisek.jobs.parts.solution import RunPrimarySolutionMan
 
-class RunGen(JobPipeline):
-    """JobPipeline that checks whether task behaves as expected."""
+class ServerGenKasiopea(JobPipeline):
+    """Generate an input."""
     def __init__(self, env, subtask: int, seed: int, file: Optional[str] = None):
         super().__init__()
         if env.config.contest_type == "cms":
@@ -35,13 +35,13 @@ class RunGen(JobPipeline):
         ]
         generator.add_prerequisite(tools)
 
-class RunSol(JobPipeline):
-    """JobPipeline that checks whether task behaves as expected."""
+class ServerSolveKasiopea(JobPipeline):
+    """Run a primary solution."""
     def __init__(self, env, input: str, output: Optional[str] = None):
         super().__init__()
  
         self.pipeline = [
             tools := ToolsManager(),
-            solve := RunPrimarySolutionMan(input, output)
+            solve := RunPrimarySolutionMan(input, output),
         ]
         solve.add_prerequisite(tools)

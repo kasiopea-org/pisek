@@ -23,7 +23,7 @@ import sys
 
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.jobs.run_pipelines import RunGen, RunSol
+from pisek.jobs.server_pipelines import ServerGenKasiopea, ServerSolveKasiopea
 from pisek.env import Env
 from pisek.jobs.cache import Cache
 from pisek.terminal import tab, colored
@@ -60,26 +60,17 @@ def test_generator(args):
     eprint(f"Testing generator")
     return test_task(args, solutions=[])
 
-def run(args, **kwargs):
-    d = {'path': PATH, **vars(args), **kwargs}
-    if args.target == "generator":
-        return run_generator(**d)
-    if args.target == "solution":
-        return run_solution(**d)
-    else:
-        raise NotImplementedError()
-
-def run_generator(path, subtask: int, seed: int, file: Optional[str] = None, **env_args):
+def server_generate(path, subtask: int, seed: int, file: Optional[str] = None, **env_args):
     return run_pipeline(
         path,
-        partial(RunGen, subtask=subtask, seed=seed, file=file),
+        partial(ServerGenKasiopea, subtask=subtask, seed=seed, file=file),
         **env_args
     )
 
-def run_solution(path, input: str, output: Optional[str] = None, **env_args):
+def server_solve(path, input: str, output: Optional[str] = None, **env_args):
     return run_pipeline(
         path,
-        partial(RunSol, input=input, output=output),
+        partial(ServerSolveKasiopea, input=input, output=output),
         **env_args
     )
 
@@ -97,7 +88,20 @@ def run_pipeline(path, pipeline, **env_args):
     pipeline = pipeline(env.fork())
     return pipeline.run_jobs(Cache(env), env)
 
-def load_env(path, solutions: Optional[list[str]] = None, **env_args):
+def load_env(
+        path,
+        subcommand: Optional[str] = None,
+        target: Optional[str] = None,
+        solution: Optional[str] = None,
+        full: bool = False,
+        plain: bool = False,
+        strict: bool = False,
+        clean: bool = False,
+        no_checker: bool = False,
+        solutions: Optional[list[str]] = None,
+        timeout: Optional[float] = None,
+        inputs: int = 5,
+    ):
     config = TaskConfig()
     err = config.load(path)
     if err:
@@ -110,8 +114,13 @@ def load_env(path, solutions: Optional[list[str]] = None, **env_args):
     env = Env(
         task_dir=path,
         config=config,
+        full=full,
+        plain=plain,
+        strict=strict,
+        no_checker=no_checker,
         solutions=solutions,
-        **env_args
+        timeout=timeout,
+        inputs=inputs,
     )
 
     if config.check_todos():
@@ -297,15 +306,14 @@ def main(argv):
     parser_run = subparsers.add_parser("run", help="Run target in server mode.")
     add_argument_timeout(parser_run)
     
-    subparsers_run = parser_run.add_subparsers(dest="target", help="What to run?")
-    p_run_gen = subparsers_run.add_parser("generator", help="Run generator on given subtask and seed.")
-    p_run_gen.add_argument("subtask", type=int, help="number of subtask")
-    p_run_gen.add_argument("seed", type=int, help="seed for generator")
-    p_run_gen.add_argument("file", type=str, nargs='?', default=None, help="file for output")
-    
-    p_run_sol = subparsers_run.add_parser("solution", help="Run solution on given file.")
-    p_run_sol.add_argument("input", type=str, help="name of input file")
-    p_run_sol.add_argument("output", type=str, nargs='?', default=None, help="name of output file")
+    gen = subparsers.add_parser("gen", help="Run generator on given subtask and seed.")
+    gen.add_argument("subtask", type=int, help="number of subtask")
+    gen.add_argument("seed", type=int, help="seed for generator")
+    gen.add_argument("file", type=str, nargs='?', default=None, help="file for output")
+
+    solve = subparsers.add_parser("solve", help="Run primary solution on given file.")
+    solve.add_argument("input", type=str, help="name of input file")
+    solve.add_argument("output", type=str, nargs='?', default=None, help="name of output file")
 
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
@@ -375,8 +383,10 @@ def main(argv):
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
-    elif args.subcommand == "run":
-        result = run(args)
+    elif args.subcommand == "gen":
+        result = server_generate(PATH, **vars(args))
+    elif args.subcommand == "solve":
+        result = server_solve(PATH, **vars(args))
     elif args.subcommand is None:
         result = test_task(args, solutions=None)
     elif args.subcommand == "cms":
