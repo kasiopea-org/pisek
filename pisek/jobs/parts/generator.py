@@ -63,6 +63,24 @@ class GeneratorManager(TaskJobManager):
 
         return jobs
 
+class RunOnlineGenerator(TaskJobManager):
+    def __init__(self, subtask: int, seed: int, file: Optional[str]):
+        self._subtask = subtask
+        self._seed = seed
+        self._file = file if file else util.get_input_name(seed, subtask)
+        super().__init__("Running generator")
+
+    def _get_jobs(self) -> list[Job]:
+        generator = self._resolve_path(self._env.config.generator)
+
+        jobs : list[Job] = [
+            compile := Compile(self._env).init(generator),
+            gen := OnlineGeneratorGenerate(self._env).init(generator, self._file, self._subtask, self._seed)
+        ]
+        gen.add_prerequisite(compile)
+
+        return jobs
+
 
 class OnlineGeneratorJob(ProgramJob):
     """Abstract class for jobs with OnlineGenerator."""

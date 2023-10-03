@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
+from functools import partial
 import os
 from typing import Optional
 import unittest
@@ -22,6 +23,7 @@ import sys
 
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.jobs.run_pipelines import RunGen
 from pisek.env import Env
 from pisek.jobs.cache import Cache
 from pisek.terminal import tab, colored
@@ -43,12 +45,7 @@ def test_task(args, **kwargs):
     return (test_task_path(PATH, **vars(args), **kwargs))
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
-    env = load_env(path, solutions, **env_args)
-    if env is None:
-        return 1
-    pipeline = TaskPipeline(env.fork())
-    return pipeline.run_jobs(Cache(env), env)
-
+    return run_pipeline(path, TaskPipeline, solutions=solutions, **env_args)
 
 def test_solution(args):
     if args.solution is None:
@@ -59,11 +56,23 @@ def test_solution(args):
     eprint(f"Testing solution: {args.solution}")
     return test_task(args, solutions=[args.solution])
 
-
 def test_generator(args):
     eprint(f"Testing generator")
     return test_task(args, solutions=[])
 
+def run(args, **kwargs):
+    d = {'path': PATH, **vars(args), **kwargs}
+    if args.target == "generator":
+        return run_generator(**d)
+    else:
+        raise NotImplementedError()
+
+def run_generator(path, subtask: int, seed: int, file: Optional[str] = None, **env_args):
+    return run_pipeline(
+        path,
+        partial(RunGen, subtask=subtask, seed=seed, file=file),
+        **env_args
+    )
 
 def extract_task(args, **kwargs):
     env = load_env(PATH, **vars(args), **kwargs)
@@ -71,6 +80,13 @@ def extract_task(args, **kwargs):
         return 1
     return extract(env)
 
+
+def run_pipeline(path, pipeline, **env_args):
+    env = load_env(path, **env_args)
+    if env is None:
+        return 1
+    pipeline = pipeline(env.fork())
+    return pipeline.run_jobs(Cache(env), env)
 
 def load_env(path, solutions: Optional[list[str]] = None, **env_args):
     config = TaskConfig()
@@ -268,6 +284,15 @@ def main(argv):
     add_argument_no_checker(parser_test)
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
+    
+    parser_run = subparsers.add_parser("run", help="Run target in server mode.")
+    add_argument_timeout(parser_run)
+    
+    subparsers_run = parser_run.add_subparsers(dest="target", help="What to run?")
+    p_run_gen = subparsers_run.add_parser("generator", help="Run generator on given subtask and seed.")
+    p_run_gen.add_argument("subtask", type=int, help="number of subtask")
+    p_run_gen.add_argument("seed", type=int, help="seed for generator")
+    p_run_gen.add_argument("file", type=str, nargs='?', default=None, help="file for output")
 
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
@@ -337,6 +362,8 @@ def main(argv):
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
+    elif args.subcommand == "run":
+        result = run(args)
     elif args.subcommand is None:
         result = test_task(args, solutions=None)
     elif args.subcommand == "cms":
