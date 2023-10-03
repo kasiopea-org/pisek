@@ -63,7 +63,7 @@ class GeneratorManager(TaskJobManager):
 
         return jobs
 
-class RunOnlineGenerator(TaskJobManager):
+class RunOnlineGeneratorMan(TaskJobManager):
     def __init__(self, subtask: int, seed: int, file: Optional[str]):
         self._subtask = subtask
         self._seed = seed

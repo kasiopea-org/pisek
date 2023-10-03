@@ -251,7 +251,7 @@ class SubtaskJobGroup:
         return f"{head}:\n{tab(res.message)}"
 
 
-class RunPrimarySolution(TaskJobManager):
+class RunPrimarySolutionMan(TaskJobManager):
     def __init__(self, input_: str, output: Optional[str]):
         self._input = input_
         self._output = output 

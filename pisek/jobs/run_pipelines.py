@@ -19,8 +19,8 @@ from typing import Optional
 from pisek.jobs.job_pipeline import JobPipeline
 
 from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.generator import RunOnlineGenerator
-from pisek.jobs.parts.solution import RunPrimarySolution
+from pisek.jobs.parts.generator import RunOnlineGeneratorMan
+from pisek.jobs.parts.solution import RunPrimarySolutionMan
 
 class RunGen(JobPipeline):
     """JobPipeline that checks whether task behaves as expected."""
@@ -31,7 +31,7 @@ class RunGen(JobPipeline):
  
         self.pipeline = [
             tools := ToolsManager(),
-            generator := RunOnlineGenerator(subtask, seed, file)
+            generator := RunOnlineGeneratorMan(subtask, seed, file)
         ]
         generator.add_prerequisite(tools)
 
@@ -42,6 +42,6 @@ class RunSol(JobPipeline):
  
         self.pipeline = [
             tools := ToolsManager(),
-            solve := RunPrimarySolution(input, output)
+            solve := RunPrimarySolutionMan(input, output)
         ]
         solve.add_prerequisite(tools)
