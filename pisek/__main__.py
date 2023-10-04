@@ -57,20 +57,6 @@ def test_generator(args):
     eprint(f"Testing generator")
     return test_task(args, solutions=[])
 
-def server_generate(path, subtask: int, seed: int, file: Optional[str] = None, **env_args):
-    return run_pipeline(
-        path,
-        partial(ServerGenKasiopea, subtask=subtask, seed=seed, file=file),
-        **env_args
-    )
-
-def server_solve(path, input: str, output: Optional[str] = None, **env_args):
-    return run_pipeline(
-        path,
-        partial(ServerSolveKasiopea, input=input, output=output),
-        **env_args
-    )
-
 def extract_task(args, **kwargs):
     env = load_env(PATH, **vars(args), **kwargs)
     if env is None:

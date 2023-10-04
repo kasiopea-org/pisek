@@ -64,10 +64,10 @@ class GeneratorManager(TaskJobManager):
         return jobs
 
 class RunOnlineGeneratorMan(TaskJobManager):
-    def __init__(self, subtask: int, seed: int, file: Optional[str]):
+    def __init__(self, subtask: int, seed: int, file: str):
         self._subtask = subtask
         self._seed = seed
-        self._file = file if file else util.get_input_name(seed, subtask)
+        self._file = file
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
