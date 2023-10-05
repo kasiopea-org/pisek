@@ -18,6 +18,9 @@ out_check=judge
 # judge source file
 out_judge=judge
 
+judge_needs_in=1
+judge_needs_out=1
+
 [test01]
 name=Subtask A
 points=2

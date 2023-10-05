@@ -46,6 +46,11 @@ out_judge=judge
 # Only for out_check=judge
 # Source code of judge (without suffix)
 
+judge_needs_in=0
+judge_needs_out=0
+# Only for out_check=judge
+# Set to 1 if judge needs input/output
+
 solution_manager=src/manager
 # Only for C++ CMS tasks
 # Link each solution with given program (without suffix)
@@ -124,6 +129,10 @@ solve_time_limit=3
 sec_solve_time_limit=4
 # Time limit for other solutions
 # No value means solve_time_limit
+
+timeout_lowerbound=5
+# Lowerbound for timeout. Timeouting solutions must run at least thisamout.
+# Defaults to time limit of respective solution
 
 input_max_size=20
 # Maximal input size in MB

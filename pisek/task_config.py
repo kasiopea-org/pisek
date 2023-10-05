@@ -107,6 +107,12 @@ class TaskConfig(BaseEnv):
             self._set("judge", config["tests"]["out_judge"])
         else:
             self._set("judge", "diff")
+        if self.judge_type == "judge":
+            self._set("judge_needs_in", int(config["tests"].get("judge_needs_in", "1")))
+            self._set("judge_needs_out", int(config["tests"].get("judge_needs_out", "1")))
+        else:
+            self._set("judge_needs_in", 0)
+            self._set("judge_needs_out", 1)
 
         self._set("fail_mode", "all" if self.contest_type == "kasiopea" else "any")
         # Relevant for CMS interactive tasks. The file to be linked with
