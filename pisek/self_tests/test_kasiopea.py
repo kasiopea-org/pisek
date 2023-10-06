@@ -127,6 +127,32 @@ class TestJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
+class TestJudgeWithNoInput(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["judge_needs_in"] = "0"
+            raw_config["tests"]["out_check"] = "judge"
+            raw_config["tests"]["out_judge"] = "judge"
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestJudgeWithNoOutput(TestSoucetKasiopea):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["judge_needs_out"] = "0"
+            raw_config["tests"]["out_check"] = "judge"
+            raw_config["tests"]["out_judge"] = "judge"
+
+        modify_config(self.task_dir, modification_fn)
+
+
 class TestPythonJudge(TestSoucetKasiopea):
     def expecting_success(self):
         return True
