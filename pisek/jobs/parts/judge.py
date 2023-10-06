@@ -196,10 +196,17 @@ class RunKasiopeaJudge(RunJudge):
     def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)
         self._access_file(self.correct_output_name)
+
+        envs = {}
+        if self._env.config.judge_needs_in:
+            envs["TEST_INPUT"] = self.input_name
+        if self._env.config.judge_needs_out:
+            envs["TEST_OUTPUT"] = self.correct_output_name
+        
         result = self._run_program(
             [str(self.subtask), self.seed],
             stdin=self.output_name,
-            env={"TEST_INPUT": self.input_name, "TEST_OUTPUT": self.correct_output_name},
+            env=envs,
         )
         if result is None:
             return None
