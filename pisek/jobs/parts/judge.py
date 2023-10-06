@@ -98,10 +98,10 @@ class JudgeManager(TaskJobManager):
         return jobs
 
 class RunKasiopeaJudgeMan(TaskJobManager):
-    def __init__(self, subtask: int, seed: int, input: str, output: str, correct_output: str):
+    def __init__(self, subtask: int, seed: int, input_: str, output: str, correct_output: str):
         self._subtask = subtask
         self._seed = seed
-        self._input = input
+        self._input = input_
         self._output = output
         self._correct_output = correct_output
         super().__init__("Running judge")
@@ -110,7 +110,6 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         judge = self._resolve_path(self._env.config.judge)
 
         jobs : list[Job] = [
-            compile := Compile(self._env).init(judge),
             judge := judge_job(
                 judge,
                 self._input,
@@ -122,13 +121,14 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 self._env
             )
         ]
-        judge.add_prerequisite(compile)
+        if self._env.config.judge_type != "diff":
+            jobs.insert(0, compile := Compile(self._env).init(judge))
+            judge.add_prerequisite(compile)
+
         self._judge_job = judge
 
         return jobs
     
-    def judge_verdict(self) -> tuple[int, str]:
-        pass
 
 JUDGE_JOB_NAME = r'Judge (\w+)'
 class RunJudge(ProgramJob):
