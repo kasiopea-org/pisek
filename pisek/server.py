@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 from typing import Optional
 
 import pisek.util as util
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.pipeline_tools import run_pipeline
+from pisek.pipeline_tools import load_env, run_pipeline
+from pisek.task_config import DATA_SUBDIR
 
 from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.generator import RunOnlineGeneratorMan
@@ -26,17 +28,22 @@ from pisek.jobs.parts.solution import RunPrimarySolutionMan
 from pisek.jobs.parts.judge import judge_job
 
 class KasiopeaInputCase():
-    def __init__(self, subtask: int, seed: int):
+    def __init__(self, path: str, subtask: int, seed: int):
+        self.path = path
+
         self.subtask: int = subtask
         self.seed: int = seed
  
         self.input: Optional[str] = None
         self.correct_output: Optional[str] = None
 
-    def gen_input(self, input: str) -> None:
+    def gen_input(self, input: Optional[str] = None) -> None:
+        if input is None:
+            input = util.get_input_name(self.seed, self.subtask)
         self.input = input
+
         res = run_pipeline(
-            path,
+            self.path,
             partial(ServerGenKasiopea, self.subtask, self.seed, self.input),
             **env_args
         )
@@ -45,20 +52,33 @@ class KasiopeaInputCase():
 
     def gen_correct_output(self, input: Optional[str] = None, correct_output: Optional[str] = None) -> None:
         self.input = input or self.input
-        if self.input is None:
-            self.gen_input()
+        if self._needs_generating(self.input):
+            self.gen_input(self.input)
 
+        if correct_output is None:
+            correct_output = util.get_output_name(self.input, "")
         self.correct_output = correct_output
+ 
         res = run_pipeline(
-            path,
+            self.path,
             partial(ServerSolve, input=input, output=self.correct_output),
             **env_args
         )
-        if res != 0:
-            raise RuntimeError("Generating output failed.")
 
-    def judge(self):
-        pass
+        if res != 0:
+            raise RuntimeError("Generating correct output failed.")
+
+    def judge(self, output: str, input: Optional[str] = None, correct_ouput: Optional[str] = None):
+        env = load_env(self.path)
+
+        if env.config.judge_needs_in and self._needs_generating(self.input):
+            self.gen_input(self.input)
+
+        if env.config.judge_needs_out and self._needs_generating(self.correct_output):
+            self.gen_correct_output(self.correct_output)
+
+    def _needs_generating(put: Optional[str]):
+        return put is None or not os.path.exists(os.path.join(PATH, DATA_SUBDIR, put))
 
 
 class ServerGenKasiopea(JobPipeline):

@@ -58,10 +58,10 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     >>> get_output_name("sample.in", "solve_6b")
     'sample.solve_6b.out'
     """
-    return "{}.{}.out".format(
-        os.path.splitext(os.path.basename(input_file))[0],
-        os.path.basename(solution_name),
-    )
+    no_suffix = os.path.splitext(os.path.basename(input_file))[0]
+    if solution_name == "":
+        return f"{no_suffix}.out"
+    return f"{no_suffix}.{os.path.basename(solution_name)}.out"
 
 
 def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
