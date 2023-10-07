@@ -18,11 +18,10 @@ import json
 import os
 import sys
 import re
-import yaml
 
 from pisek.util import get_output_name
 from pisek.terminal import colored
-from pisek.jobs.cache import Cache, CacheEntry
+from pisek.jobs.cache import Cache
 from pisek.jobs.parts.solution import RUN_JOB_NAME
 from pisek.jobs.parts.judge import JUDGE_JOB_NAME
 

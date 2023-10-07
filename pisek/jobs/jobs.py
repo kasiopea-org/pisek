@@ -17,8 +17,7 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
-from typing import Optional, AbstractSet, MutableSet, Callable, Any
-import sys
+from typing import Optional, AbstractSet, MutableSet, Any
 import yaml
 
 import os.path

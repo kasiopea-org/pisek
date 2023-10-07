@@ -17,11 +17,8 @@
 import os
 import sys
 import re
-import difflib
-import subprocess
-from glob import glob
 import shutil
-from typing import Optional, Iterator, List, Tuple
+from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
 from .task_config import TaskConfig
@@ -64,7 +61,7 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     return f"{no_suffix}.{os.path.basename(solution_name)}.out"
 
 
-def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
+def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
     for subdir in subdirs:
         full = os.path.join(task_dir, subdir)
         try:

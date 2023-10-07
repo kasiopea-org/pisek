@@ -16,9 +16,7 @@
 
 import os
 
-import pisek.util as util
-from pisek.env import Env
-from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.jobs import Job
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 
 class SampleManager(TaskJobManager):

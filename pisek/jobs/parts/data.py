@@ -13,9 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from pisek.env import Env
-
 from pisek.jobs.jobs import Job
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
 

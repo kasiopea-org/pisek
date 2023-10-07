@@ -14,19 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
 import os
 import shutil
 import subprocess
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from pisek.jobs.jobs import State
 from pisek.jobs.parts.program import ProgramJob
 
 class Compile(ProgramJob):
     """Job that compiles a program."""
-    def _init(self, program: str, use_manager: bool = False, compile_args: Dict = {}) -> None:
+    def _init(self, program: str, use_manager: bool = False, compile_args: dict = {}) -> None:
         self.use_manager = use_manager
         self._compile_args = compile_args
         self.target = self._executable(os.path.basename(program))
@@ -219,5 +218,5 @@ COMPILE_RULES = {
 }
 
 
-def supported_extensions() -> List[str]:
+def supported_extensions() -> list[str]:
     return list(COMPILE_RULES)

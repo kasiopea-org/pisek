@@ -16,10 +16,9 @@
 
 from typing import Any, Optional
 
-from pisek.env import Env
-from pisek.jobs.jobs import State, Job, JobManager
-from pisek.terminal import tab, colored
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
+from pisek.jobs.jobs import State, Job
+from pisek.terminal import colored
+from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
 

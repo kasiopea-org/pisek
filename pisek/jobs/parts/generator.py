@@ -17,7 +17,7 @@
 import glob
 import random
 import os
-from typing import List, Optional
+from typing import Optional
 
 import pisek.util as util
 from pisek.env import Env
@@ -30,7 +30,7 @@ class GeneratorManager(TaskJobManager):
     def __init__(self):
         super().__init__("Running generator")
 
-    def _get_jobs(self) -> List[Job]:
+    def _get_jobs(self) -> list[Job]:
         generator = self._resolve_path(self._env.config.generator)
 
         jobs : list[Job] = [compile := Compile(self._env).init(generator)]

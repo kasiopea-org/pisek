@@ -21,7 +21,6 @@ import ansi.cursor as cur
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
-from pisek.jobs.status import StatusJobManager
 from pisek.jobs.cache import Cache
 
 class JobPipeline(ABC):

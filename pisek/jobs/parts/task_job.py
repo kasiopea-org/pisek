@@ -18,12 +18,12 @@ from enum import Enum
 import os
 import shutil
 import glob
-from typing import Optional, Any, Callable, TypeVar
+from typing import Optional, Any, Callable
 
 import pisek.util as util
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
-from pisek.jobs.jobs import Job, JobManager
+from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"

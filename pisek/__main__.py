@@ -15,18 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
-from functools import partial
 import os
 from typing import Optional
-import unittest
 import sys
 
-from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.server import ServerGenKasiopea, ServerSolve
-from pisek.env import Env
-from pisek.jobs.cache import Cache
-from pisek.terminal import tab, colored
 from pisek.pipeline_tools import run_pipeline, load_env
 
 from pisek.util import eprint, clean_task_dir

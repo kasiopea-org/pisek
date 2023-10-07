@@ -16,11 +16,8 @@
 
 from math import inf
 import os
-from ansi import cursor
-from ansi.color import fg, fx
 
 from pisek.terminal import tab, pad, colored, MSG_LEN
-from pisek.env import Env
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
 try:

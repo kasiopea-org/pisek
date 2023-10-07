@@ -16,7 +16,6 @@
 
 import random
 import string
-from pisek.env import Env
 
 from pisek.jobs.parts.task_job import TaskJob
 

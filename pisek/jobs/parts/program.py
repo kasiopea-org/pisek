@@ -19,7 +19,7 @@ from enum import Enum
 import os
 import re
 import sys
-from typing import Dict, Optional
+from typing import Optional
 import subprocess
 import yaml
 

@@ -24,11 +24,6 @@ from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
 from pisek.jobs.parts.data import DataManager
 
-import os
-from pisek.task_config import TaskConfig
-from pisek.env import Env
-from pisek.jobs.cache import Cache
-
 class TaskPipeline(JobPipeline):
     """JobPipeline that checks whether task behaves as expected."""
     def __init__(self, env):
