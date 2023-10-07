@@ -159,7 +159,7 @@ def main(argv):
         parser.add_argument(
             "--solutions",
             "-s",
-            default='all',
+            default="all",
             type=str,
             nargs="*",
             help="Solutions to visualize.",
@@ -178,7 +178,7 @@ def main(argv):
         parser.add_argument(
             "--measured-stat",
             "-M",
-            default="wall_clock_time",
+            default="time",
             type=str,
             help="Stat to visualize. Only 'wall_clock_time' implemented so far.",
         )
@@ -249,17 +249,23 @@ def main(argv):
         "--print", action="store_true", help="Print entire licence"
     )
 
-    parser_cms = subparsers.add_parser("cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka")
+    parser_cms = subparsers.add_parser(
+        "cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka"
+    )
     subparsers_cms = parser_cms.add_subparsers(help="podpříkazy", dest="cms_subcommand")
     parser_cms_check = subparsers_cms.add_parser("check", help="do a preflight check")
     parser_cms_pack = subparsers_cms.add_parser("pack", help="check and pack")
     parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
     add_argument_cms_contest(parser_cms_submit)
     add_argument_cms_user(parser_cms_submit)
-    parser_cms_analyze = subparsers_cms.add_parser("analyze", help="analyze submitted solutions")
+    parser_cms_analyze = subparsers_cms.add_parser(
+        "analyze", help="analyze submitted solutions"
+    )
     add_argument_cms_contest(parser_cms_analyze)
     add_argument_cms_user(parser_cms_analyze)
-    parser_cms_dump = subparsers_cms.add_parser("dump", help="save json with run logs from submitted solutions")
+    parser_cms_dump = subparsers_cms.add_parser(
+        "dump", help="save json with run logs from submitted solutions"
+    )
     add_argument_cms_contest(parser_cms_dump)
     add_argument_cms_user(parser_cms_dump)
     parser_cms_dump.add_argument(
@@ -268,8 +274,12 @@ def main(argv):
         type=str,
     )
 
-    parser_cms_info = subparsers_cms.add_parser("info", help="print task info without testing")
-    parser_cms_samples = subparsers_cms.add_parser("samples", help="pack samples into .zip")
+    parser_cms_info = subparsers_cms.add_parser(
+        "info", help="print task info without testing"
+    )
+    parser_cms_samples = subparsers_cms.add_parser(
+        "samples", help="pack samples into .zip"
+    )
     CHECK_NONE = "none"
     CHECK_INSTANT = "instant"
     CHECK_SANE = "sane"
@@ -281,7 +291,6 @@ def main(argv):
         default=None,
         help="Úroveň kontrol, které se mají provést",
     )
-
 
     args = parser.parse_args(argv)
 
@@ -319,7 +328,7 @@ def main(argv):
             CHECK_THOROUGH: cms.check.thorough,
         }
         check_mode, action = actions[args.cms_subcommand]
-        if args.check_mode is not None: # allow overriding
+        if args.check_mode is not None:  # allow overriding
             check_mode = args.check_mode
         checks[check_mode](args)
         return action(args)

@@ -94,6 +94,7 @@ def clean_task_dir(task_dir: str) -> None:
     # directory
 
     from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
+
     rm_f(SAMPLES_ZIP)
     rm_f(TESTS_ZIP)
     rm_f(CACHE_FILENAME)

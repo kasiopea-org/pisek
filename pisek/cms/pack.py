@@ -8,14 +8,15 @@ import zipfile
 TESTS_ZIP = "tests.zip"
 SAMPLES_ZIP = "sample_tests.zip"
 
+
 def zip_testdata(path, out, sample_tests=False):
     config = TaskConfig(".")
     try:
         os.remove(out)
     except OSError:
-        pass # does not exist
+        pass  # does not exist
 
-    zipf = zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED)
+    zipf = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
 
     for root, dirs, files in os.walk(path):
         for file in files:
@@ -25,17 +26,17 @@ def zip_testdata(path, out, sample_tests=False):
                     out_file = file[:-3] + ".out"
                 else:
                     out_file = util.get_output_name(file, config.solutions[0])
-                zipf.write(os.path.join(root, file),
-                           "input." + name)
-                zipf.write(os.path.join(root, out_file),
-                            "output." + name)
+                zipf.write(os.path.join(root, file), "input." + name)
+                zipf.write(os.path.join(root, out_file), "output." + name)
 
     zipf.close()
+
 
 def samples(args):
     config = TaskConfig(".")
     print(f"Vytvářím {SAMPLES_ZIP}.")
     zip_testdata(config.samples_subdir, SAMPLES_ZIP, sample_tests=True)
+
 
 def pack(args):
     config = TaskConfig(".")
