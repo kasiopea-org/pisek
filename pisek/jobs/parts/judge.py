@@ -36,7 +36,8 @@ class SolutionResult():
     """Class representing result of a solution on given input."""
     verdict: Verdict
     points: float
-    message: str = ""
+    judge_stderr: str
+    output: str = ""
     err_msg: str = ""
 
     def __str__(self):
@@ -47,12 +48,12 @@ class SolutionResult():
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
     return dumper.represent_sequence(
-        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.message, sol_result.err_msg]
+        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.judge_stderr, sol_result.output, sol_result.err_msg]
     )
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, message, err_msg = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, message, err_msg)
+    verdict, points, stderr, output, err_msg = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, stderr, output, err_msg)
 
 yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor(u'!SolutionResult', sol_result_constructor)
@@ -106,22 +107,22 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         super().__init__("Running judge")
 
     def _get_jobs(self) -> list[Job]:
-        judge = self._resolve_path(self._env.config.judge)
+        judge_program = self._resolve_path(self._env.config.judge)
 
         jobs : list[Job] = [
             judge := judge_job(
-                judge,
+                judge_program,
                 self._input,
                 self._output,
                 self._correct_output,
                 self._subtask,
-                lambda: self._seed,
+                lambda: f"{self._seed:x}",
                 None,
                 self._env
             )
         ]
         if self._env.config.judge_type != "diff":
-            jobs.insert(0, compile := Compile(self._env).init(judge))
+            jobs.insert(0, compile := Compile(self._env).init(judge_program))
             judge.add_prerequisite(compile)
 
         self._judge_job = judge
@@ -146,13 +147,13 @@ class RunJudge(ProgramJob):
 
     def _run(self) -> Optional[SolutionResult]:
         if "run_solution" in self.prerequisites_results:
-            solution_res = self.prerequisites_results["run_solution"]
+            solution_res: RunResult = self.prerequisites_results["run_solution"]
             if solution_res.kind == RunResultKind.OK:
                 result = self._judge()
             elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-                result = SolutionResult(Verdict.error, 0.0, self._quote_program(solution_res), solution_res.err_msg)
+                result = SolutionResult(Verdict.error, 0.0, "", self._quote_program(solution_res), solution_res.err_msg)
             elif solution_res.kind == RunResultKind.TIMEOUT:
-                result = SolutionResult(Verdict.timeout, 0.0, self._quote_program(solution_res))
+                result = SolutionResult(Verdict.timeout, 0.0, "", self._quote_program(solution_res))
         else:
             result = self._judge()
 
@@ -179,9 +180,9 @@ class RunDiffJudge(RunJudge):
         # XXX: Okay, it didn't finish in no time, but this is not meant to be used
         rr = RunResult(RunResultKind.OK, diff.returncode, 0, 0, stderr_text=diff.stderr)
         if diff.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0, self._quote_program(rr))
+            return SolutionResult(Verdict.ok, 1.0, "", self._quote_program(rr))
         elif diff.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0, self._quote_program(rr))
+            return SolutionResult(Verdict.wrong_answer, 0.0, "", self._quote_program(rr))
         else:
             return self._fail(f"Diff failed:\n{tab(diff.stderr)}")
 
@@ -210,9 +211,9 @@ class RunKasiopeaJudge(RunJudge):
         if result is None:
             return None
         if result.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0, self._quote_program(result))
+            return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result))
         elif result.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0, self._quote_program(result))
+            return SolutionResult(Verdict.wrong_answer, 0.0, result.raw_stderr(), self._quote_program(result))
         else:
             return self._program_fail(f"Judge failed on output {self.output_name}:", result)
 
@@ -246,11 +247,11 @@ class RunCMSJudge(RunJudge):
                 return self._program_fail("Judge must give between 0 and 1 points:", result)
 
             if points == 0:
-                return SolutionResult(Verdict.wrong_answer, 0.0, msg)
+                return SolutionResult(Verdict.wrong_answer, 0.0, result.raw_stderr(), msg)
             elif points == 1:
-                return SolutionResult(Verdict.ok, 1.0, msg)
+                return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), msg)
             else:
-                return SolutionResult(Verdict.partial, points, msg)
+                return SolutionResult(Verdict.partial, points, result.raw_stderr(), msg)
         else:
             return self._program_fail(f"Judge failed on output {self.output_name}:", result)
 

@@ -89,7 +89,7 @@ class KasiopeaInputCase():
             raise RuntimeError("Judging failed.")
 
         judging_res = cache.last_entry(JUDGE_JOB_NAME.replace(r'(\w+)', output)).result
-        return judging_res.points # TODO: Add judge verdict
+        return judging_res.points, judging_res.judge_stderr
 
     def _needs_generating(self, put: Optional[str]):
         return put is None or not os.path.exists(os.path.join(self.path, DATA_SUBDIR, put))
