@@ -236,15 +236,6 @@ def main(argv):
     
     parser_run = subparsers.add_parser("run", help="Run target in server mode.")
     add_argument_timeout(parser_run)
-    
-    gen = subparsers.add_parser("gen", help="Run generator on given subtask and seed.")
-    gen.add_argument("subtask", type=int, help="number of subtask")
-    gen.add_argument("seed", type=int, help="seed for generator")
-    gen.add_argument("file", type=str, nargs='?', default=None, help="file for output")
-
-    solve = subparsers.add_parser("solve", help="Run primary solution on given file.")
-    solve.add_argument("input", type=str, help="name of input file")
-    solve.add_argument("output", type=str, nargs='?', default=None, help="name of output file")
 
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
@@ -314,10 +305,6 @@ def main(argv):
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
-    elif args.subcommand == "gen":
-        result = server_generate(PATH, **vars(args))
-    elif args.subcommand == "solve":
-        result = server_solve(PATH, **vars(args))
     elif args.subcommand is None:
         result = test_task(args, solutions=None)
     elif args.subcommand == "cms":
