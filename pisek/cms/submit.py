@@ -10,7 +10,7 @@ from . import check
 def comment_line(text, lang):
     comment_starts = {
         "cpp": "//",
-        "c" : "//",
+        "c": "//",
         "java": "//",
         "py": "#",
     }
@@ -43,7 +43,17 @@ def submit_solution(solution, args, not_in_config=False):
     with tempfile.NamedTemporaryFile(suffix="." + lang, mode="w") as tmpf:
         tmpf.write(contents)
         tmpf.flush()
-        cmd = [ "cmsAddSubmission", "-c", str(args.contest_id), "-f", f"{task_name}.%l:{tmpf.name}", "-C", comment, args.username, task_name ]
+        cmd = [
+            "cmsAddSubmission",
+            "-c",
+            str(args.contest_id),
+            "-f",
+            f"{task_name}.%l:{tmpf.name}",
+            "-C",
+            comment,
+            args.username,
+            task_name,
+        ]
         print(cmd)
         subprocess.run(cmd).check_returncode()
 

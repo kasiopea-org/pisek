@@ -1,9 +1,11 @@
 from pisek.task_config import TaskConfig
 
+
 def subtask_formula(subtask):
     pts = subtask.score
     regex = subtask.globs_regex()
     return f'[{pts}, "{regex}"]'
+
 
 def scoring_formula(config: TaskConfig):
     fls = []
@@ -12,6 +14,7 @@ def scoring_formula(config: TaskConfig):
         fls.append(subtask_formula(subtask))
     return "[\n " + ",\n ".join(f for f in fls) + "\n]"
 
+
 def time_limits(config: TaskConfig):
     model = config.timeout_model_solution
     other = config.timeout_other_solutions
@@ -19,6 +22,7 @@ def time_limits(config: TaskConfig):
         return model, None
     else:
         return model, other
+
 
 def task_info(args=None):
     config = TaskConfig(".")
@@ -35,5 +39,6 @@ def task_info(args=None):
 
     def dash(text):
         return text if text is not None else "—"
+
     print(f"Manager: {dash(config.solution_manager)}")
     print(f"Judge: {dash(config.judge_name)}")
