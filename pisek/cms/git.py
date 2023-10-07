@@ -1,9 +1,7 @@
 from . import util
 
-
 def run(command):
     return util.run_and_capture(f"git {command}")
-
 
 def is_synchronized(allow_ahead=True):
     run("fetch origin")
@@ -16,11 +14,9 @@ def is_synchronized(allow_ahead=True):
         good |= upstream == base
     return good
 
-
 def no_local_changes():
     """TODO"""
     return True
-
 
 def repo_root():
     return run("rev-parse --show-toplevel")

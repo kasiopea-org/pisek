@@ -19,7 +19,7 @@ import os
 import re
 from typing import Union, Optional, TypeVar, Callable
 
-DEFAULT_TIMEOUT: float = 360
+DEFAULT_TIMEOUT : float = 360
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
@@ -213,12 +213,10 @@ class TaskConfig(BaseEnv):
     def get_samples_dir(self):
         return os.path.normpath(os.path.join(self.task_dir, self.samples_subdir))
 
-    def get_timeout(self, is_secondary_solution: bool) -> float:
-        return (
-            (self.timeout_other_solutions if is_secondary_solution else None)
-            or self.timeout_model_solution
-            or DEFAULT_TIMEOUT
-        )
+    def get_timeout(self, is_secondary_solution : bool) -> float:
+        return (self.timeout_other_solutions if is_secondary_solution else None) or \
+               self.timeout_model_solution or \
+               DEFAULT_TIMEOUT
 
     def check_todos(self) -> bool:
         """Check whether config contains TODO in comments."""
@@ -302,13 +300,11 @@ class SubtaskConfig(BaseEnv):
         pattern = glob.replace(".in", "").replace(".", "\\.").replace("*", ".*")
         pattern = pattern[:-2] if pattern.endswith(".*") else pattern + "$"
         if not pattern:
-            pattern = ".*"  # probably ok either way, but just to be sure
+            pattern = ".*" # probably ok either way, but just to be sure
         return pattern
 
     def globs_regex(self) -> str:
-        return (
-            "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
-        )
+        return "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
 
     @BaseEnv.log_off
     def construct_globs(self, subtasks) -> Union[str,list[str]]:
