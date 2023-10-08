@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 import sys
 import ansi.cursor as cur
+import time
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
@@ -84,7 +85,8 @@ class JobPipeline(ABC):
                 break
 
         if len(self.pipeline):
-            self._print_tmp(f"Active job: {self.pipeline[0].name}", env)
+            t = time.strftime("%H:%M:%S", time.localtime())
+            self._print_tmp(f"Active job: {self.pipeline[0].name} ({t})", env)
         return True
 
     def _print_tmp(self, msg, env: Env, *args, **kwargs):
