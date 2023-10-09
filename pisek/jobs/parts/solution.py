@@ -83,8 +83,10 @@ class SolutionManager(TaskJobManager):
         return jobs
 
     def _update(self):
+        expected = self._env.config.solutions[self.solution].subtasks
+
         for subtask in self.subtasks:
-            if subtask.definitive(self._env.config.fail_mode):
+            if subtask.definitive(self._env.config.fail_mode, expected[subtask.num]):
                 subtask.cancel()
 
     def _get_status(self) -> str:
@@ -183,7 +185,7 @@ class SubtaskJobGroup:
     def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
         return list(map(SubtaskJobGroup._to_points, SubtaskJobGroup._finished(jobs)))
 
-    def definitive(self, fail_mode: str) -> bool:
+    def definitive(self, fail_mode: str, expected_points: Optional[float]) -> bool:
         """
         Checks whether subtask jobs have resulted in outcome that cannot be changed. 
         """
@@ -191,8 +193,11 @@ class SubtaskJobGroup:
         new_points = self._convert_to_points(self.new_jobs)
         all_points = old_points + new_points
         if fail_mode == "all":
-            if len(new_points) and min(new_points) != max(new_points):
-                return True
+            if len(new_points) > 0:
+                if min(new_points) != max(new_points):
+                    return True
+                if expected_points is not None and min(new_points) != expected_points:
+                    return True
         else:
             if len(all_points) and min(all_points) == 0:
                 return True
