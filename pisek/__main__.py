@@ -73,13 +73,17 @@ def main(argv):
     def add_argument_timeout(parser):
         parser.add_argument(
             "--timeout",
+            "-t",
             type=float,
             help="After how many seconds kill running solution",
         )
 
     def add_argument_full(parser):
         parser.add_argument(
-            "--full", action="store_true", help="Don't stop on first failure"
+            "--full",
+            "-f",
+            action="store_true",
+            help="Don't stop on first failure"
         )
 
     def add_argument_strict(parser):
