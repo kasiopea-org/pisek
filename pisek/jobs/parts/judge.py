@@ -173,6 +173,8 @@ class RunDiffJudge(RunJudge):
         super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
+        self._access_file(self.output_name)
+        self._access_file(self.correct_output_name)
         diff = subprocess.run(
             ["diff", "-Bpq", self.output_name, self.correct_output_name],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -194,15 +196,14 @@ class RunKasiopeaJudge(RunJudge):
         super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
-        self._access_file(self.input_name)
-        self._access_file(self.correct_output_name)
-
         envs = {}
         if self._env.config.judge_needs_in:
             envs["TEST_INPUT"] = self.input_name
+            self._access_file(self.input_name)
         if self._env.config.judge_needs_out:
             envs["TEST_OUTPUT"] = self.correct_output_name
-        
+            self._access_file(self.correct_output_name)
+
         result = self._run_program(
             [str(self.subtask), self.seed],
             stdin=self.output_name,
