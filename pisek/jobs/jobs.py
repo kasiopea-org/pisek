@@ -159,6 +159,7 @@ class Job(PipelineItem):
         cached = False
         if self.name in cache and (entry := self._find_entry(cache[self.name])):
             cached = True
+            cache.move_to_top(entry)
             self.result = entry.result
         else:
             self.result = self._run()
