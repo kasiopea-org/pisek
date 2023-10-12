@@ -19,7 +19,7 @@ import os
 import re
 from typing import Union, Optional, TypeVar, Callable
 
-DEFAULT_TIMEOUT: float = 360
+DEFAULT_TIMEOUT: float = 360.0
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
@@ -119,12 +119,13 @@ class TaskConfig(BaseEnv):
         # the contestant's solution (primarily for C++)
         self._set("solution_manager", config["tests"].get("solution_manager"))
 
-        self._set("timeout_model_solution", apply_to_optional(
-                config.get("limits", "solve_time_limit", fallback=None), float
-            ))
-        self._set("timeout_other_solutions", apply_to_optional(
-            config.get("limits", "sec_solve_time_limit", fallback=None), float
+        self._set("timeout_model_solution", float(
+            config.get("limits", "solve_time_limit", fallback=DEFAULT_TIMEOUT)
         ))
+        self._set("timeout_other_solutions", float(
+            config.get("limits", "sec_solve_time_limit", fallback=self.timeout_model_solution)
+        ))
+
         if self.contest_type == "kasiopea":
             self._set("input_max_size", int(config.get("limits", "input_max_size", fallback=50)))  # MB
             self._set("output_max_size", int(config.get("limits", "output_max_size", fallback=10)))  # MB

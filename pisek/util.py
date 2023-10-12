@@ -23,7 +23,6 @@ from typing import Optional
 from pisek.jobs.cache import CACHE_FILENAME
 from .task_config import TaskConfig
 
-DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
 
 

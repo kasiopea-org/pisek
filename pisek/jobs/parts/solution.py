@@ -50,7 +50,7 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(self._env).init(solution, inp, timeout=timeout))
+                    jobs.append(run_solution := RunSolution(self._env).init(solution, timeout, inp))
                     run_solution.add_prerequisite(compile)
 
                     if sub_num == "0":
@@ -266,7 +266,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         
         jobs : list[Job] = [
             compile := Compile(self._env).init(solution, True, self._compile_args()),
-            run_solution := RunSolution(self._env).init(solution, self._input, self._output, self._get_timeout("solve"))
+            run_solution := RunSolution(self._env).init(solution, self._get_timeout("solve"), self._input, self._output)
         ]
         run_solution.add_prerequisite(compile)
 
@@ -276,7 +276,7 @@ class RunPrimarySolutionMan(TaskJobManager):
 RUN_JOB_NAME = r'Run (\w+) on input (\w+)'
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
-    def _init(self, solution: str, input_name: str, output_name: Optional[str] = None, timeout: Optional[float] = None) -> None:
+    def _init(self, solution: str, timeout: float, input_name: str, output_name: Optional[str] = None) -> None:
         self.input_name = self._data(input_name)
         self.output_name = self._data(output_name) if output_name else self._output(self.input_name, solution)
         self.timeout = timeout

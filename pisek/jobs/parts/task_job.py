@@ -133,10 +133,10 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         if self._env.timeout is not None:
             return self._env.timeout
 
-        if target == "sec_solve" and self._env.config.timeout_other_solutions:
-            return self._env.config.timeout_other_solutions
-        elif target == "solve" or target == "sec_solve":
+        if target == "solve":
             return self._env.config.timeout_model_solution
+        elif target == "sec_solve":
+            return self._env.config.timeout_other_solutions
         else:
             raise ValueError(f"Unknown timeout for: {target}.")
 
