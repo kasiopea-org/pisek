@@ -146,7 +146,7 @@ class ProgramJob(TaskJob):
         return True
 
     def _run_raw(self, args, timeout: float = DEFAULT_TIMEOUT, mem: int = 0,
-                 processes: int = 4, stdin: Optional[str] = None,
+                 processes: int = 1, stdin: Optional[str] = None,
                  stdout: Optional[str] = None, stderr: Optional[str] = None,
                  env={}, print_stderr: bool = False) -> RunResult:
         """Runs args as a command."""
