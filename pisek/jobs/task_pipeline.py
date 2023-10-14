@@ -56,7 +56,7 @@ class TaskPipeline(JobPipeline):
             solution.add_prerequisite(primary_solution)
             solutions.append(solution)
 
-        if env.config.contest_type == "kasiopea" and env.solutions:
+        if env.solutions:
             self.pipeline.append(data_check := DataManager())
             for solution in solutions:
                 data_check.add_prerequisite(solution)

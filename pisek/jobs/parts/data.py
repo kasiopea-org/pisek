@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pisek.jobs.jobs import Job
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
+from pisek.jobs.parts.tools import IsClean
 
 MB = 1024*1024
 
@@ -27,10 +28,15 @@ class DataManager(TaskJobManager):
 
         files = self._globs_to_files(["*"])
         for file in files:
-            if file.endswith(".in"):
-                jobs.append(InputSmall(self._env).init(file))
-            if file.endswith(".out"):
-                jobs.append(OutputSmall(self._env).init(file))
+            inp, out = file.endswith(".in"), file.endswith(".out")
+            if inp or out:
+                jobs.append(IsClean(self._env).init(file))
+            if inp:
+                if self._env.config.contest_type == "kasiopea":
+                    jobs.append(InputSmall(self._env).init(file))
+            if out:
+                if self._env.config.contest_type == "kasiopea":
+                    jobs.append(OutputSmall(self._env).init(file))
 
         return jobs
 
