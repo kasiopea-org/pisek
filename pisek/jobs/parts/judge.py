@@ -22,12 +22,13 @@ import yaml
 import subprocess
 
 from pisek.env import Env
-from pisek.jobs.jobs import Job
+from pisek.jobs.jobs import State, Job
 from pisek.terminal import tab
 from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
+from pisek.jobs.parts.tools import Sanitize
 
 DIFF_NAME = "diff.sh"
 
@@ -108,12 +109,14 @@ class RunKasiopeaJudgeMan(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         judge_program = self._resolve_path(self._env.config.judge)
+        clean_output = self._output + ".clean"
 
         jobs : list[Job] = [
+            sanitize := Sanitize(self._env).init(self._output, clean_output),
             judge := judge_job(
                 judge_program,
                 self._input,
-                self._output,
+                clean_output,
                 self._correct_output,
                 self._subtask,
                 lambda: f"{self._seed:x}",
@@ -121,6 +124,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 self._env
             )
         ]
+        judge.add_prerequisite(sanitize)
         if self._env.config.judge_type != "diff":
             jobs.insert(0, compile := Compile(self._env).init(judge_program))
             judge.add_prerequisite(compile)
@@ -128,6 +132,13 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         self._judge_job = judge
 
         return jobs
+
+    def judge_result(self) -> SolutionResult:
+        if self.state != State.succeeded:
+            raise RuntimeError(f"Judging hasn't successfully finished.")
+        elif not isinstance(self._judge_job.result, SolutionResult):
+            raise RuntimeError(f"Judging result invalid.")
+        return self._judge_job.result
     
 
 JUDGE_JOB_NAME = r'Judge (\w+)'

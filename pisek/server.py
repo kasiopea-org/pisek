@@ -27,7 +27,7 @@ from pisek.jobs.cache import Cache
 from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.generator import RunOnlineGeneratorMan
 from pisek.jobs.parts.solution import RunPrimarySolutionMan
-from pisek.jobs.parts.judge import RunKasiopeaJudgeMan, JUDGE_JOB_NAME
+from pisek.jobs.parts.judge import RunKasiopeaJudgeMan, SolutionResult
 
 class KasiopeaInputCase():
     def __init__(self, path: str, subtask: int, seed: int):
@@ -88,7 +88,7 @@ class KasiopeaInputCase():
         if res != 0:
             raise RuntimeError("Judging failed.")
 
-        judging_res = cache.last_entry(JUDGE_JOB_NAME.replace(r'(\w+)', output)).result
+        judging_res = pipeline.judge_result()
         return judging_res.points, judging_res.judge_stderr
 
     def _needs_generating(self, put: Optional[str]):
@@ -129,3 +129,7 @@ class ServerJudgeKasiopea(JobPipeline):
             judge := RunKasiopeaJudgeMan(subtask, seed, input_, output, correct_output),
         ]
         judge.add_prerequisite(tools)
+        self._judge_man = judge
+    
+    def judge_result(self) -> SolutionResult:
+        return self._judge_man.judge_result()
