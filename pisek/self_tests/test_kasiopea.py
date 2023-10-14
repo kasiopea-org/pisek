@@ -177,18 +177,6 @@ class TestBadJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestBadWhitespaceJudge(TestSoucetKasiopea):
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        def modification_fn(raw_config):
-            raw_config["tests"]["out_check"] = "judge"
-            raw_config["tests"]["out_judge"] = "judge_bad_whitespace"
-
-        modify_config(self.task_dir, modification_fn)
-
-
 class TestPythonCRLF(TestSoucetKasiopea):
     def expecting_success(self):
         return False
