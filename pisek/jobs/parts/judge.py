@@ -258,7 +258,7 @@ class RunCMSJudge(RunJudge):
 
 
 def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
-              expected_points : Optional[float], env: Env) -> Union[RunKasiopeaJudge, RunCMSJudge]:
+              expected_points : Optional[float], env: Env) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.judge_type == "diff":
         return RunDiffJudge(env).init(
