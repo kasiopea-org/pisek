@@ -225,6 +225,21 @@ class TestBigInput(TestSoucetKasiopea):
 
         modify_config(self.task_dir, modification_fn)
 
+class TestDirtySamle(TestSoucetKasiopea):
+    """Sample without newline at the end."""
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        sample = [
+            "3",
+            "1 2",
+            "-8 5",
+            "0 0"
+        ]
+        with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
+            f.write("\n".join(sample))
+
 class TestBigOutput(TestSoucetKasiopea):
     def expecting_success(self):
         return False
