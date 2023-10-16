@@ -28,7 +28,7 @@ typedef unsigned char byte;
 
 void bug(char *msg)
 {
-	fprintf(stderr, "Interní chyba: %s\n", msg);
+	fprintf(stderr, "Internal error: %s\n", msg);
 	exit(1);
 }
 
@@ -67,7 +67,7 @@ int rd_block(void)
 	while (rd_len < sizeof(rd_buf)) {
 		int n = read(0, rd_buf + rd_len, sizeof(rd_buf) - rd_len);
 		if (n < 0)
-			bug("Chyba při čtení");
+			bug("Error while reading");
 		if (!n)
 			break;
 		rd_len += n;
@@ -87,7 +87,7 @@ void wr_block(void)
 	while (i < wr_pos) {
 		int n = write(1, wr_buf + i, wr_pos - i);
 		if (n <= 0)
-			bug("Chyba při zápisu");
+			bug("Error while writing");
 		i += n;
 	}
 	wr_pos = 0;
@@ -117,12 +117,12 @@ void codepoint(int c, long long int pos)
 		else if (c == '\n' || c == '\t')
 			wr_byte(c);
 		else
-			error("Soubor obsahuje netisknutelný znak (kód %d na pozici %lld)", c, pos);
+			error("File contains non-printable character (code %d at position %lld)", c, pos);
 	} else if (c >= 0x7f) {
 		if (c == 0x7f)
-			error("Soubor obsahuje netisknutelný znak (kód %d na pozici %lld)", c, pos);
+			error("File contains non-printable character (code %d at position %lld)", c, pos);
 		else
-			error("Soubor obsahuje znak mimo ASCII (kód %d na pozici %lld)", c, pos);
+			error("File contains non-printable character (code %d at position %lld)", c, pos);
 	} else {
 		wr_byte(c);
 	}
@@ -148,7 +148,7 @@ void utf16(bool is_be)
 			return;
 		int c2 = rd_byte();
 		if (c2 < 0)
-			error("Soubor v UTF-16 obsahuje nekompletní znak (na pozici %lld)", pos);
+			error("File in UTF-16 contains incomplete character (at position %lld)", pos);
 		if (is_be)
 			codepoint((c1 << 8) | c2, pos);
 		else
