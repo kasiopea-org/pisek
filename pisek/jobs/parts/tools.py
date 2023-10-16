@@ -47,7 +47,7 @@ class PrepareMinibox(TaskJob):
         os.makedirs(self._executable("."), exist_ok=True)
         gcc = subprocess.run([
             "gcc", source, "-o", executable,
-            "-std=gnu11", "-D_GNU_SOURCE", "-O2", "-Wall", "-Wextra", "-Wno-parentheses", "-Wno-sign-compare"
+            "-std=gnu11", "-D_GNU_SOURCE", "-O2", "-Wall", "-Wextra", "-Wno-parentheses", "-Wno-sign-compare", "-Wno-unused-result"
         ])
         if gcc.returncode != 0:
             self._fail("Minibox compilation failed.")
