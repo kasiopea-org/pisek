@@ -4,6 +4,7 @@
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 # Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 # Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 license = """
-pisek  - Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž Kasiopea.
+pisek  - Tool for developing programming task for competetive programming.
 
 Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

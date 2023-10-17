@@ -33,15 +33,10 @@ class TestCLI(TestFixture):
             with mock.patch("sys.stderr", new=StringIO()) as std_err:
                 result = main(self.args())
 
-                if result is not None:
-                    self.assertFalse(
-                        result.errors,
-                        f"Vyskytly se chyby: {quote_test_suite_output(result.errors)}",
-                    )
-                    self.assertFalse(
-                        result.failures,
-                        f"Některé testy neseběhly:\n{quote_test_suite_output(result.failures)}",
-                    )
+                self.assertFalse(
+                    result,
+                    f"Command failed: {' '.join(self.args())}",
+                )
 
 
 class TestCLITestSolution(TestCLI):
@@ -52,11 +47,6 @@ class TestCLITestSolution(TestCLI):
 class TestCLITestGenerator(TestCLI):
     def args(self):
         return ["test", "generator"]
-
-
-class TestCLIRun(TestCLI):
-    def args(self):
-        return ["run", "gen", "data"]
 
 
 class TestCLIClean(TestCLI):

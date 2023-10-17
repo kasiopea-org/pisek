@@ -4,6 +4,7 @@
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 # Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 # Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,12 +17,13 @@
 import configparser
 import os
 import re
-from typing import List, Dict, Optional, TypeVar, Callable
+from typing import Union, Optional, TypeVar, Callable
 
-DEFAULT_TIMEOUT: float = 360
+DEFAULT_TIMEOUT: float = 360.0
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
 
+from pisek.env import BaseEnv
 
 class CheckedConfigParser(configparser.RawConfigParser):
     """
@@ -29,7 +31,7 @@ class CheckedConfigParser(configparser.RawConfigParser):
     Like ConfigParser, but allows checking whether there are unused keys.
     """
 
-    used_vars: Dict[str, set] = {}
+    used_vars: dict[str, set] = {}
 
     def get_unused_keys(self, section):
         all_options = self.options(section)
@@ -57,87 +59,160 @@ class CheckedConfigParser(configparser.RawConfigParser):
         return super()._get(section, conv, option, **kwargs)
 
 
-class TaskConfig:
-    def __init__(self, task_dir: str) -> None:
+class TaskConfig(BaseEnv):
+    @BaseEnv.log_off
+    def load(self, task_dir: str) -> Optional[str]:
         config = CheckedConfigParser()
-        config_path = os.path.join(task_dir, CONFIG_FILENAME)
-        read_files = config.read(config_path)
-        self.task_dir = task_dir
-
+        self._config_path = os.path.join(task_dir, CONFIG_FILENAME)
+        read_files = config.read(self._config_path)
         if not read_files:
-            raise FileNotFoundError(
-                f"Chybí konfigurační soubor {config_path}, je toto složka s úlohou?"
-            )
+            return f"No configuration file {self._config_path}. Is this task folder?"
 
+        self._set("task_dir", task_dir)
+
+        needed_sections = ["task", "tests"]
+        for section in needed_sections:
+            if section not in config:
+                return f"Missing section [{section}]"
+
+        needed_keys = [("tests", "in_gen")]
+        if config["tests"].get("out_check") == "judge":
+            needed_keys.append(("tests", "out_judge"))
+        for section, key in needed_keys:
+            if config.get(section, key) is None:
+                return f"Missing key '{key}' in section [{section}]"
+
+        if "version" not in config["task"]:
+            return f"Config is of former version. Upgrade it with `pisek update`"
+        raw_version = config["task"]["version"]
+        if raw_version[0] != "v":
+            return f"Invalid version: {raw_version} (version must begin with v)"
         try:
-            self.task_name: List[str] = config.get("task", "name")
-            self.solutions: List[str] = config.get("task", "solutions").split()
-            self.contest_type = config["task"].get("contest_type", "kasiopea")
-            self.generator: str = config["tests"]["in_gen"]
-            self.checker: Optional[str] = config["tests"].get("checker")
-            self.judge_type: str = config["tests"].get("out_check", "diff")
-            self.judge_name: Optional[str] = None
-            if self.judge_type == "judge":
-                self.judge_name = config["tests"]["out_judge"]
+            version = int(raw_version[1:])
+        except ValueError:
+            return f"Invalid version: {raw_version}"
+        if version < 2:
+            return f"Config is of former version. Upgrade it with `pisek update`"
+        elif version > 2:
+            return f"Unknown config version: {raw_version}"
 
-            # Relevant for CMS interactive tasks. The file to be linked with
-            # the contestant's solution (primarily for C++)
-            self.solution_manager: str = config["tests"].get("solution_manager")
-            if self.solution_manager:
-                self.solution_manager = os.path.join(
-                    self.task_dir, self.solution_manager
-                )
+        self._set("task_name", config.get("task", "name"))
 
-            if self.contest_type == "cms":
-                # Warning: these timeouts are currently ignored in Kasiopea!
-                self.timeout_model_solution: Optional[float] = apply_to_optional(
-                    config.get("limits", "solve_time_limit", fallback=None), float
-                )
-                self.timeout_other_solutions: Optional[float] = apply_to_optional(
-                    config.get("limits", "sec_solve_time_limit", fallback=None), float
-                )
+        self._set("contest_type", config["task"].get("contest_type", "kasiopea"))
 
-            # Support for different directory structures
-            self.samples_subdir: str = config["task"].get("samples_subdir", ".")
-            self.data_subdir: str = config["task"].get("data_subdir", DATA_SUBDIR)
+        self._set("generator", config["tests"]["in_gen"])
+        self._set("checker", config["tests"].get("checker"))
+        self._set("judge_type", config["tests"].get("out_check", "diff"))
+        if self.judge_type == "judge":
+            self._set("judge", config["tests"]["out_judge"])
+        else:
+            self._set("judge", "diff")
+        if self.judge_type == "judge":
+            self._set("judge_needs_in", int(config["tests"].get("judge_needs_in", "1")))
+            self._set("judge_needs_out", int(config["tests"].get("judge_needs_out", "1")))
+        else:
+            self._set("judge_needs_in", 0)
+            self._set("judge_needs_out", 1)
 
-            if "solutions_subdir" in config["task"]:
-                # Prefix each solution name with solutions_subdir/
-                subdir = config["task"].get("solutions_subdir", ".")
-                self.solutions = [os.path.join(subdir, sol) for sol in self.solutions]
+        self._set("fail_mode", "all" if self.contest_type == "kasiopea" else "any")
+        # Relevant for CMS interactive tasks. The file to be linked with
+        # the contestant's solution (primarily for C++)
+        self._set("solution_manager", config["tests"].get("solution_manager"))
 
-            self.subtasks: Dict[int, SubtaskConfig] = {}
-            self.subtask_section_names = set()
+        self._set("timeout_model_solution", float(
+            config.get("limits", "solve_time_limit", fallback=DEFAULT_TIMEOUT)
+        ))
+        self._set("timeout_other_solutions", float(
+            config.get("limits", "sec_solve_time_limit", fallback=self.timeout_model_solution)
+        ))
 
-            for section_name in config.sections():
-                m = re.match(r"test([0-9]{2})", section_name)
+        if self.contest_type == "kasiopea":
+            self._set("input_max_size", int(config.get("limits", "input_max_size", fallback=50)))  # MB
+            self._set("output_max_size", int(config.get("limits", "output_max_size", fallback=10)))  # MB
 
-                if not m:
-                    # One of the other sections ([task], [tests]...)
-                    continue
+        # Support for different directory structures
+        self._set("samples_subdir", config["task"].get("samples_subdir", "."))
+        self._set("data_subdir", config["task"].get("data_subdir", DATA_SUBDIR))
+        self._set("solutions_subdir", config["task"].get("solutions_subdir", "."))
 
-                self.subtask_section_names.add(section_name)
+        subtasks: dict[str, SubtaskConfig] = {}
+        subtask_section_names = set()
 
-                n = int(m.groups()[0])
-                if n in self.subtasks:
-                    raise ValueError("Duplicate subtask number {}".format(n))
+        for section_name in config.sections():
+            m = re.match(r"test([0-9]{2})", section_name)
 
-                self.subtasks[n] = SubtaskConfig(
-                    self.contest_type, config[section_name]
-                )
-        except Exception as e:
-            raise RuntimeError("Chyba při načítání configu") from e
+            if not m:
+                # One of the other sections ([task], [tests]...)
+                continue
 
-        self.check_unused_keys(config)
+            subtask_section_names.add(section_name)
+
+            subtask_number = int(m.groups()[0])
+            if subtask_number in subtasks:
+                return f"Duplicate subtask number {subtask_number}"
+
+            subtask_config = SubtaskConfig()
+            subtasks[str(subtask_number)] = subtask_config
+            err = subtask_config.load(subtask_number, config[section_name])
+            if err:
+                return f"Error while loading subtask {m}:\n  {err}"
+
+        if "0" not in subtasks:  # Add samples
+            subtasks["0"] = SubtaskConfig()
+            subtasks["0"].load(0, configparser.SectionProxy(config, "test00"))  # This shouldn't fail for default values
+
+        total_points = sum(map(lambda s: s.score, subtasks.values()))
+ 
+        # subtask should be ordered by number
+        subtasks = {key: val for key, val in sorted(subtasks.items())} 
+
+        self._set("subtasks", BaseEnv(**subtasks))
+        self._set("subtask_section_names", subtask_section_names)
+
+        self._solution_section_names = set()
+        solutions = {}
+        primary = None
+        for section_name in config.sections():
+            m = re.match(r"solution_(.*)", section_name)
+
+            if not m:
+                # One of the other sections ([task], [tests]...)
+                continue
+            self._solution_section_names.add(m[0])
+            solution = m[1]
+
+            solutions[solution] = SolutionConfig()
+
+            err = solutions[solution].load(solution, total_points, len(subtasks), config[section_name])
+            if err:
+                return f"Error while loading solution {solution}:\n  {err}"
+            if solutions[solution].primary:
+                if primary is None:
+                    primary = solution
+                else:
+                    return f"Multiple primary solutions: {primary} and {solution}"
+
+        if len(solutions) and primary is None:
+            return "No primary solution set."
+
+        self._set("solutions", BaseEnv(**solutions))
+        self._set("primary_solution", primary)
+
+        for subtask in subtasks.values():
+            err = subtask.construct_globs(subtasks)
+            if isinstance(err, str):
+                return err
+
+        return self.check_unused_keys(config)
 
     def get_maximum_score(self) -> int:
-        return sum([subtask.score for subtask in self.subtasks.values()])
+        return sum([subtask.score for _, subtask in self.subtasks.items()])
 
     def get_data_dir(self):
-        return os.path.join(self.task_dir, self.data_subdir)
+        return os.path.normpath(os.path.join(self.task_dir, self.data_subdir))
 
     def get_samples_dir(self):
-        return os.path.join(self.task_dir, self.samples_subdir)
+        return os.path.normpath(os.path.join(self.task_dir, self.samples_subdir))
 
     def get_timeout(self, is_secondary_solution: bool) -> float:
         return (
@@ -146,19 +221,21 @@ class TaskConfig:
             or DEFAULT_TIMEOUT
         )
 
-    def __repr__(self):
-        return "<TaskConfig %s>" % ", ".join(
-            f"{k} = {getattr(self, k)}"
-            for k in filter(
-                lambda k: not k.startswith("_") and not callable(getattr(self, k)),
-                dir(self),
-            )
-        )
+    def check_todos(self) -> bool:
+        """Check whether config contains TODO in comments."""
+        with open(self._config_path) as config:
+            for line in config:
+                if "#" in line and "TODO" in line.split("#")[1]:
+                    return True
+        
+        return False
 
-    def check_unused_keys(self, config: CheckedConfigParser):
+    @BaseEnv.log_off
+    def check_unused_keys(self, config: CheckedConfigParser) -> Optional[str]:
         """Verify that there are no unused keys in the config, raise otherwise."""
 
-        accepted_section_names = self.subtask_section_names | {
+        accepted_section_names = self.subtask_section_names | self._solution_section_names | \
+        {
             "task",
             "tests",
             "limits",
@@ -172,34 +249,54 @@ class TaskConfig:
             "limits": {},
             # Any subtask section like "test01", "test02"...
             "subtask": {"file_name"},
+            # Any solution section like solution_solve, solution_slow, ...
+            "solution": {},
         }
 
         for section_name in config.sections():
-            assert (
-                section_name in accepted_section_names
-            ), f"Neočekávaná sekce configu: [{section_name}]"
+            if not section_name in accepted_section_names:
+                return f"Unexpected section [{section_name}] in config"
 
             if section_name in self.subtask_section_names:
                 section_ignored_keys = ignored_keys["subtask"]
+            elif section_name in self._solution_section_names:
+                section_ignored_keys = ignored_keys["solution"]
             else:
                 section_ignored_keys = ignored_keys[section_name]
 
             for key in config.get_unused_keys(section_name):
                 if key not in section_ignored_keys:
-                    raise ValueError(
-                        f"Neočekávaný klíč '{key}' v sekci [{section_name}] configu."
-                    )
+                    return f"Unexpected key '{key}' in section [{section_name}] of config."
+
+        return None
 
 
-class SubtaskConfig:
-    def __init__(
-        self, contest_type: str, config_section: configparser.SectionProxy
-    ) -> None:
-        self.name: Optional[str] = config_section.get("name", None)
-        self.score: int = int(config_section["points"])
+class SubtaskConfig(BaseEnv):
+    @BaseEnv.log_off
+    def load(self, subtask_number: int, config_section: configparser.SectionProxy) -> Optional[str]:
+        if subtask_number == 0:  # samples
+            self._set("name", config_section.get("name", "Samples"))
+            self._set("score", int(config_section.get("points", 0)))
+            self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
+            self._set("predecessors", config_section.get("predecessors", "").split())
+        else:
+            self._set("name", config_section.get("name", None))
 
-        if contest_type == "cms":
-            self.in_globs: List[str] = config_section["in_globs"].split()
+            if "points" not in config_section:
+                return "Missing key 'points'"
+            try:
+                self._set("score", int(config_section["points"]))
+            except ValueError:
+                return "'points' must be number"
+
+            self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
+            prev = "" if subtask_number == 1 else str(subtask_number-1)
+            self._set("predecessors",config_section.get("predecessors", prev).split())
+        self._constructing = False
+        return None
+
+    def _glob_i(self, i: int):
+        return f"{i:02}*.in"
 
     def _glob_to_regex(self, glob):
         """Does not return an 'anchored' regex, i.e., a* -> a.*, not ^a.*$"""
@@ -214,15 +311,76 @@ class SubtaskConfig:
             "^(" + "|".join(self._glob_to_regex(glob) for glob in self.in_globs) + ")"
         )
 
-    def __repr__(self):
-        return "<SubTaskConfig %s>" % ", ".join(
-            f"{k} = {getattr(self, k)}"
-            for k in filter(
-                lambda k: not k.startswith("_") and not callable(getattr(self, k)),
-                dir(self),
-            )
-        )
+    @BaseEnv.log_off
+    def construct_globs(self, subtasks) -> Union[str,list[str]]:
+        if self._constructing:
+            return "Cyclic predecessors subtasks."
+        self._constructing = True
+        if "all_globs" not in self._vars:
+            all_globs = set(self.in_globs)
+            for prev in self.predecessors:
+                if str(prev) not in subtasks:
+                    return f"No predecessor subtask with number {prev}"
+                prev_globs = subtasks[str(prev)].construct_globs(subtasks)
+                if isinstance(prev_globs, str):
+                    return prev_globs
+                for glob in prev_globs:
+                    all_globs.add(glob)
+            self._set("all_globs", list(sorted(all_globs)))
 
+        self._constructing = False
+        return self.all_globs
+
+
+class SolutionConfig(BaseEnv):
+    @BaseEnv.log_off
+    def load(self, solution_name: str, full_points: int, total_subtasks: int,
+                                    config_section: configparser.SectionProxy) -> Optional[str]:
+        self._set("source", config_section.get("source", solution_name))
+        primary = config_section.get("primary", "no").lower()
+        if primary not in ("yes", "no"):
+            return f"Key 'primary' should be one of (yes, no): {primary}"
+        self._set("primary", primary == "yes")
+
+        points = config_section.get("points")
+
+        for points_limit in ["points_above", "points_below"]:
+            if points is not None and points_limit in config_section:
+                return f"Both 'points' and '{points_limit}' are present in section [{solution_name}]."
+
+        points_above = config_section.get("points_above", points)
+        points_below = config_section.get("points_below", points)
+
+        for name, value in [("points", points), ("points_above", points_above), ("points_below", points_below)]:
+            if value is None or value == "X":
+                self._set(name, None)
+            else:
+                try:
+                    value = float(value)
+                except ValueError:
+                    return f"{name} is not a number: {value}"
+                self._set(name, value)
+
+        subtasks = config_section.get("subtasks")
+        if subtasks is None:
+            subtasks = [None]*total_subtasks
+        else:
+            subtasks_str = subtasks.strip()
+            if len(subtasks_str) != total_subtasks:
+                return f"There are {total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
+            subtasks = []
+            for char in subtasks_str:
+                if char == '1':
+                    subtasks.append(1)
+                elif char == '0':
+                    subtasks.append(0)
+                elif char == 'X':
+                    subtasks.append(None)
+                else:
+                    return f"Unallowed char in subtask string: {char}"
+
+        self._set("subtasks", subtasks)
+        return None
 
 T = TypeVar("T")
 U = TypeVar("U")

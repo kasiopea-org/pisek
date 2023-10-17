@@ -43,7 +43,8 @@ class TestOldInputsDeleted(TestSoucetCMS):
         return False
 
     def modify_task(self):
-        task_config = TaskConfig(self.task_dir)
+        task_config = TaskConfig()
+        task_config.load(self.task_dir)
         self.data_dir = task_config.get_data_dir()
 
         # We only care about the generation part, so remove solve.py to stop the tests
@@ -104,6 +105,21 @@ class TestStrictChecker(TestSoucetCMS):
 
     def modify_task(self):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
+
+class TestDirtySamle(TestSoucetCMS):
+    """Sample without newline at the end."""
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        sample = [
+            "3",
+            "1 2",
+            "-8 5",
+            "0 0"
+        ]
+        with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
+            f.write("\n".join(sample))
 
 
 class TestGuess(TestFixtureVariant):

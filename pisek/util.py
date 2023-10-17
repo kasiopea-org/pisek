@@ -4,6 +4,7 @@
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 # Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 # Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
 import re
-import difflib
-import subprocess
-from glob import glob
 import shutil
-from typing import Optional, Iterator, List, Tuple
+from typing import Optional
 
-import termcolor
-
-from .compile import supported_extensions
+from pisek.jobs.cache import CACHE_FILENAME
 from .task_config import TaskConfig
 
-DEFAULT_TIMEOUT = 360
 BUILD_DIR = "build/"
+
+
+def eprint(msg, *args, **kwargs):
+    print(msg, *args, file=sys.stderr, **kwargs)
 
 
 def rm_f(fn):
@@ -37,114 +37,16 @@ def rm_f(fn):
         pass
 
 
-def files_are_equal(file_a: str, file_b: str) -> bool:
-    """
-    Checks if the contents of `file_a` and `file_b` are equal,
-    ignoring leading and trailing whitespace.
-
-    If one or both files don't exist, False is returned.
-    """
-
-    try:
-        with open(file_a, "r") as fa:
-            with open(file_b, "r") as fb:
-                while True:
-                    la = fa.readline()
-                    lb = fb.readline()
-                    if not la and not lb:
-                        # We have reached the end of both files
-                        return True
-                    # ignore leading/trailing whitespace
-                    la = la.strip()
-                    lb = lb.strip()
-                    if la != lb:
-                        return False
-    except FileNotFoundError:
-        return False
-
-
-def diff_files(
-    file_a: str,
-    file_b: str,
-    file_a_name: Optional[str] = None,
-    file_b_name: Optional[str] = None,
-) -> Iterator[str]:
-    """
-    Produces a human-friendly diff of `file_a` and `file_b`
-    as a string iterator.
-
-    Uses `file_a_name` and `file_b_name` for specifying
-    a human-friendly name for the files.
-    """
-    if file_a_name is None:
-        file_a_name = file_a
-    if file_b_name is None:
-        file_b_name = file_b
-
-    try:
-        with open(file_a, "r") as fa:
-            lines_a = [line.strip() + "\n" for line in fa.readlines()]
-    except FileNotFoundError:
-        lines_a = [f"({file_a_name} neexistuje)"]
-
-    try:
-        with open(file_b, "r") as fb:
-            lines_b = [line.strip() + "\n" for line in fb.readlines()]
-    except FileNotFoundError:
-        lines_b = [f"({file_b_name} neexistuje)"]
-
-    diff = difflib.unified_diff(
-        lines_a, lines_b, fromfile=file_a_name, tofile=file_b_name, n=2
-    )
-
-    return diff
-
-
-def resolve_extension(path: str, name: str) -> Optional[str]:
-    """
-    Given a directory and `name`, finds a file named `name`.[ext],
-    where [ext] is a file extension for one of the supported languages.
-
-    If a name with a valid extension is given, it is returned unchanged
-    """
-    extensions = supported_extensions()
-    candidates = []
-    for name in [name, get_name_without_expected_score(name)]:
-        for ext in extensions:
-            if os.path.isfile(os.path.join(path, name + ext)):
-                candidates.append(name + ext)
-            if name.endswith(ext) and os.path.isfile(os.path.join(path, name)):
-                # Extension already present in `name`
-                candidates.append(name)
-        if len(candidates):
-            break
-
-    if len(candidates) > 1:
-        raise RuntimeError(
-            f"Existuje více řešení se stejným názvem: {', '.join(candidates)}"
-        )
-
-    return candidates[0] if candidates else None
-
-
 def get_build_dir(task_dir: str) -> str:
-    return os.path.join(task_dir, BUILD_DIR)
+    return os.path.normpath(os.path.join(task_dir, BUILD_DIR))
 
 
-def get_samples(task_dir: str) -> List[Tuple[str, str]]:
-    """Returns the list [(sample1.in, sample1.out), …] in the given directory."""
-    ins = glob(os.path.join(task_dir, "sample*.in"))
-    outs = []
-    for i in ins:
-        out = os.path.splitext(i)[0] + ".out"
-        if not os.path.isfile(out):
-            raise RuntimeError(f"Ke vzorovému vstupu {i} neexistuje výstup {out}")
-        outs.append(out)
-    return list(zip(ins, outs))
+def pad_num(what: int, length=2):
+    return f"{'0'*(length-len(str(what)))}{what}"
 
 
 def get_input_name(seed: int, subtask: int) -> str:
-    return f"{seed:x}_{subtask}.in"
+    return f"{pad_num(subtask)}_{seed:x}.in"
 
 
 def get_output_name(input_file: str, solution_name: str) -> str:
@@ -152,16 +54,13 @@ def get_output_name(input_file: str, solution_name: str) -> str:
     >>> get_output_name("sample.in", "solve_6b")
     'sample.solve_6b.out'
     """
-    return "{}.{}.out".format(
-        os.path.splitext(os.path.basename(input_file))[0],
-        os.path.basename(solution_name),
-    )
+    no_suffix = os.path.splitext(os.path.basename(input_file))[0]
+    if solution_name == "":
+        return f"{no_suffix}.out"
+    return f"{no_suffix}.{os.path.basename(solution_name)}.out"
 
 
-def _clean_subdirs(task_dir: str, subdirs: List[str]) -> None:
-    config = TaskConfig(task_dir)
-    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
-    # directory
+def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
     for subdir in subdirs:
         full = os.path.join(task_dir, subdir)
         try:
@@ -185,13 +84,19 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
 
 
 def clean_task_dir(task_dir: str) -> None:
-    config = TaskConfig(task_dir)
+    config = TaskConfig()
+    err = config.load(task_dir)
+    if err:
+        print(err, file=sys.stderr)
+        exit(1)
+    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
+    # directory
 
     from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
 
     rm_f(SAMPLES_ZIP)
     rm_f(TESTS_ZIP)
-
+    rm_f(CACHE_FILENAME)
     return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
 
 
@@ -212,15 +117,7 @@ def get_expected_score(solution_name: str, config: TaskConfig) -> Optional[int]:
         return config.get_maximum_score()
 
 
-def get_name_without_expected_score(solution_name: str) -> str:
-    match = re.search(r"_([0-9]{1,3}|X)b$", solution_name)
-
-    if match:
-        return solution_name[: match.span()[0]]
-    return solution_name
-
-
-def quote_output(s, color="yellow", max_length=1500, max_lines=20):
+def quote_output(s, max_length=1500, max_lines=20):
     """
     Indicates that a string is a quote of another program's output by adding
     indentation and color.
@@ -242,43 +139,9 @@ def quote_output(s, color="yellow", max_length=1500, max_lines=20):
         lines = lines[:max_lines]
         add_ellipsis = True
 
-    s = "\n".join(("  " + termcolor.colored(l, color)) for l in lines)
+    s = "\n".join(("  " + l) for l in lines)
 
     if add_ellipsis:
         s += "\n  [...]"
 
     return s
-
-
-def quote_process_output(
-    proc: subprocess.CompletedProcess, include_stdout=True, include_stderr=True
-):
-    res = []
-    if include_stdout:
-        cur = "stdout:"
-        if proc.stdout:
-            cur += "\n" + quote_output(proc.stdout)
-        else:
-            cur += " (žádný)"
-        res.append(cur)
-
-    if include_stderr:
-        cur = "stderr:"
-        if proc.stderr:
-            cur += "\n" + quote_output(proc.stderr)
-        else:
-            cur += " (žádný)"
-        res.append(cur)
-
-    return "\n".join(res)
-
-
-def file_is_newer(file_a: str, file_b: str) -> Optional[bool]:
-    """
-    Returns True if file in `path_a` is newer (more recently modified) than `path_b`.
-    Returns None if either of the files does not exist.
-    """
-    try:
-        return os.path.getmtime(file_a) > os.path.getmtime(file_b)
-    except FileNotFoundError:
-        return None

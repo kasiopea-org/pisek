@@ -1,10 +1,27 @@
+# pisek  - Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž Kasiopea.
+#
+# Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
+# Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
+# Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
+# Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from collections import namedtuple
 import json
 from math import ceil
 import os
 import re
 import sys
-import termcolor
+from ansi.color import fg
+from ansi.color.fx import reset
 from typing import List, Dict, Optional, Union, Iterable
 
 from pisek import util
@@ -24,11 +41,13 @@ VERDICTS_ORDER = ["·", "t", "T", "W", "!"]
 # subtask section
 TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "points"))
 
+def red(msg: str) -> str:
+    return f"{fg.red}{msg}{reset}"
 
 def group_by_subtask(
-    results: List[TestCaseResult], config: TaskConfig
+        results : List[TestCaseResult], config : TaskConfig
 ) -> List[List[TestCaseResult]]:
-    subtasks = {num: [] for num in config.subtasks.keys()}
+    subtasks = {num:[] for num in config.subtasks.keys()}
     for result in results:
         for i, subtask in config.subtasks.items():
             if in_subtask(result.name, subtask):
@@ -100,7 +119,11 @@ def visualize(
     limit: Optional[int] = None,
     segments: int = 10,
 ):
-    config = TaskConfig(TASK_DIR)
+    config = TaskConfig()
+    err = config.load(TASK_DIR)
+    if err:
+        print(err, file=sys.stderr)
+        exit(1)
     with open(os.path.join(TASK_DIR, filename)) as f:
         testing_log = json.load(f)
 
@@ -112,7 +135,7 @@ def visualize(
     mode = MODES_ALIASES[mode]
 
     if solutions == "all":
-        solutions = list(testing_log.keys())
+        solutions = list(testing_log.keys() - {'source'})
     else:
         for solution_name in solutions:
             if solution_name not in testing_log:
@@ -128,7 +151,7 @@ def visualize(
             limit = config.get_timeout(True)
 
     # Kind of slow, but we will not have hundreds of solutions
-    solutions.sort(key=lambda x: config.solutions.index(x))
+    solutions.sort(key=lambda x: config.solutions.keys().index(x))
 
     unexpected_solutions = []
     for solution_name in solutions:
@@ -146,11 +169,8 @@ def visualize(
 
     if len(unexpected_solutions):
         print(
-            termcolor.colored(
-                f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů.",
-                color="red",
-            ),
-            file=sys.stderr,
+            red(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů."),
+            file=sys.stderr
         ),
 
 
@@ -206,12 +226,10 @@ def visualize_solution(
     print(f"{solution_name}: ({score}b)")
     if not as_expected:
         print(
-            termcolor.colored(
-                f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b.",
-                color="red",
-            ),
-            file=sys.stderr,
+            red(f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."),
+            file=sys.stderr
         ),
+
 
     segment_length = limit / segments
 
