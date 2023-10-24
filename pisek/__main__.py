@@ -65,7 +65,7 @@ def clean_directory(args):
 def main(argv):
     parser = argparse.ArgumentParser(
         description=(
-            "Tool for developing tasks for programming competitions."
+            "Tool for developing tasks for programming competitions. "
             "Full documentation is at https://github.com/kasiopea-org/pisek"
         )
     )
@@ -248,9 +248,9 @@ def main(argv):
     parser_update = subparsers.add_parser("update", help="Update config to newer version")
     parser_extract = subparsers.add_parser("extract", help="Extract solution data from .pisek_cache")
 
-    parser_license = subparsers.add_parser("license", help="Print licence")
+    parser_license = subparsers.add_parser("license", help="Print license")
     parser_license.add_argument(
-        "--print", action="store_true", help="Print entire licence"
+        "--print", action="store_true", help="Print entire license"
     )
 
     parser_cms = subparsers.add_parser(
