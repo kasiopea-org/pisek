@@ -63,7 +63,7 @@ class TaskHelper:
         return self._data(util.get_output_name(input_name, solution))
 
     def _solution(self, name: str) -> str:
-        """Path to ssolution with given basename."""
+        """Path to solution with given basename."""
         return self._resolve_path(self._env.config.solutions_subdir, name)
 
     def _get_seed(self, input_name: str):
