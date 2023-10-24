@@ -26,10 +26,12 @@ except OSError:
     terminal_width, terminal_height = 100, inf
 
 MAX_BAR_LEN = 60
-line_sepatator = '⎯'*terminal_width + '\n'
+line_sepatator = "⎯" * terminal_width + "\n"
+
 
 class StatusJobManager(JobManager):
     """JobManager that implements useful methods for terminal interaction."""
+
     def _bar(self, msg: str, part: int, full: int, color: str = "cyan") -> str:
         """Return progress bar with given parameters."""
         msg = pad(msg, MSG_LEN)
@@ -54,7 +56,12 @@ class StatusJobManager(JobManager):
         elif self.state == State.failed or State.failed in self._job_states():
             color = "red"
 
-        return self._bar(msg, len(self._jobs_with_state(State.succeeded)), len(self.jobs), color=color)
+        return self._bar(
+            msg,
+            len(self._jobs_with_state(State.succeeded)),
+            len(self.jobs),
+            color=color,
+        )
 
     def _get_status(self) -> str:
         return self._job_bar(self.name)

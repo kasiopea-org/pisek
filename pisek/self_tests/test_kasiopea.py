@@ -215,6 +215,7 @@ class TestStrictChecker(TestSoucetKasiopea):
     def modify_task(self):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
+
 class TestBigInput(TestSoucetKasiopea):
     def expecting_success(self):
         return False
@@ -225,20 +226,18 @@ class TestBigInput(TestSoucetKasiopea):
 
         modify_config(self.task_dir, modification_fn)
 
+
 class TestDirtySamle(TestSoucetKasiopea):
     """Sample without newline at the end."""
+
     def expecting_success(self):
         return False
 
     def modify_task(self):
-        sample = [
-            "3",
-            "1 2",
-            "-8 5",
-            "0 0"
-        ]
+        sample = ["3", "1 2", "-8 5", "0 0"]
         with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
             f.write("\n".join(sample))
+
 
 class TestBigOutput(TestSoucetKasiopea):
     def expecting_success(self):
@@ -249,6 +248,7 @@ class TestBigOutput(TestSoucetKasiopea):
             raw_config["limits"]["output_max_size"] = "0"
 
         modify_config(self.task_dir, modification_fn)
+
 
 class TestExtraConfigKeys(TestSoucetKasiopea):
     def expecting_success(self):

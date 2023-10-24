@@ -29,13 +29,14 @@ from pisek.jobs.parts.generator import RunOnlineGeneratorMan
 from pisek.jobs.parts.solution import RunPrimarySolutionMan
 from pisek.jobs.parts.judge import RunKasiopeaJudgeMan, SolutionResult
 
-class KasiopeaInputCase():
+
+class KasiopeaInputCase:
     def __init__(self, path: str, subtask: int, seed: int):
         self.path = path
 
         self.subtask: int = subtask
         self.seed: int = seed
- 
+
         self.input: Optional[str] = None
         self.correct_output: Optional[str] = None
 
@@ -46,12 +47,16 @@ class KasiopeaInputCase():
 
         res = run_pipeline(
             self.path,
-            partial(ServerGenKasiopea, subtask=self.subtask, seed=self.seed, file=self.input)
+            partial(
+                ServerGenKasiopea, subtask=self.subtask, seed=self.seed, file=self.input
+            ),
         )
         if res != 0:
             raise RuntimeError("Generating input failed.")
 
-    def gen_correct_output(self, input_: Optional[str] = None, correct_output: Optional[str] = None) -> None:
+    def gen_correct_output(
+        self, input_: Optional[str] = None, correct_output: Optional[str] = None
+    ) -> None:
         self.input = input_ or self.input
         if self._needs_generating(self.input):
             self.gen_input(self.input)
@@ -59,16 +64,21 @@ class KasiopeaInputCase():
         if correct_output is None:
             correct_output = util.get_output_name(self.input, "")
         self.correct_output = correct_output
- 
+
         res = run_pipeline(
             self.path,
-            partial(ServerSolve, input_=self.input, output=self.correct_output)
+            partial(ServerSolve, input_=self.input, output=self.correct_output),
         )
 
         if res != 0:
             raise RuntimeError("Generating correct output failed.")
 
-    def judge(self, output: str, input_: Optional[str] = None, correct_output: Optional[str] = None):
+    def judge(
+        self,
+        output: str,
+        input_: Optional[str] = None,
+        correct_output: Optional[str] = None,
+    ):
         env = load_env(self.path)
 
         self.input = input_ or self.input
@@ -82,7 +92,14 @@ class KasiopeaInputCase():
         env = load_env(self.path)
         if env is None:
             return 1
-        pipeline = ServerJudgeKasiopea(env.fork(), subtask=self.subtask, seed=self.seed, input_=self.input, output=output, correct_output=self.correct_output)
+        pipeline = ServerJudgeKasiopea(
+            env.fork(),
+            subtask=self.subtask,
+            seed=self.seed,
+            input_=self.input,
+            output=output,
+            correct_output=self.correct_output,
+        )
         res = pipeline.run_jobs(cache := Cache(env), env)
 
         if res != 0:
@@ -92,44 +109,59 @@ class KasiopeaInputCase():
         return judging_res.points, judging_res.judge_stderr
 
     def _needs_generating(self, put: Optional[str]):
-        return put is None or not os.path.exists(os.path.join(self.path, DATA_SUBDIR, put))
+        return put is None or not os.path.exists(
+            os.path.join(self.path, DATA_SUBDIR, put)
+        )
 
 
 class ServerGenKasiopea(JobPipeline):
     """Generate an input."""
+
     def __init__(self, env, subtask: int, seed: int, file: str):
         super().__init__()
         if env.config.contest_type == "cms":
             raise NotImplementedError("RunGen for cms is not implemented.")
- 
+
         self.pipeline = [
             tools := ToolsManager(),
-            generator := RunOnlineGeneratorMan(subtask, seed, file)
+            generator := RunOnlineGeneratorMan(subtask, seed, file),
         ]
         generator.add_prerequisite(tools)
 
+
 class ServerSolve(JobPipeline):
     """Run a primary solution."""
+
     def __init__(self, env, input_: str, output: Optional[str]):
         super().__init__()
- 
+
         self.pipeline = [
             tools := ToolsManager(),
             solve := RunPrimarySolutionMan(input_, output),
         ]
         solve.add_prerequisite(tools)
 
+
 class ServerJudgeKasiopea(JobPipeline):
     """Run a primary solution."""
-    def __init__(self, env, subtask: int, seed: int, input_: str, output: str, correct_output: str):
+
+    def __init__(
+        self,
+        env,
+        subtask: int,
+        seed: int,
+        input_: str,
+        output: str,
+        correct_output: str,
+    ):
         super().__init__()
- 
+
         self.pipeline = [
             tools := ToolsManager(),
             judge := RunKasiopeaJudgeMan(subtask, seed, input_, output, correct_output),
         ]
         judge.add_prerequisite(tools)
         self._judge_man = judge
-    
+
     def judge_result(self) -> SolutionResult:
         return self._judge_man.judge_result()

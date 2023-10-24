@@ -32,9 +32,11 @@ from pisek.jobs.parts.tools import Sanitize
 
 DIFF_NAME = "diff.sh"
 
+
 @dataclass
-class SolutionResult():
+class SolutionResult:
     """Class representing result of a solution on given input."""
+
     verdict: Verdict
     points: float
     judge_stderr: str
@@ -47,17 +49,27 @@ class SolutionResult():
         else:
             return RESULT_MARK[self.verdict]
 
+
 def sol_result_representer(dumper, sol_result: SolutionResult):
     return dumper.represent_sequence(
-        u'!SolutionResult', [sol_result.verdict.name, sol_result.points, sol_result.judge_stderr, sol_result.output, sol_result.err_msg]
+        "!SolutionResult",
+        [
+            sol_result.verdict.name,
+            sol_result.points,
+            sol_result.judge_stderr,
+            sol_result.output,
+            sol_result.err_msg,
+        ],
     )
+
 
 def sol_result_constructor(loader, value) -> SolutionResult:
     verdict, points, stderr, output, err_msg = loader.construct_sequence(value)
     return SolutionResult(Verdict[verdict], points, stderr, output, err_msg)
 
+
 yaml.add_representer(SolutionResult, sol_result_representer)
-yaml.add_constructor(u'!SolutionResult', sol_result_constructor)
+yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
 class JudgeManager(TaskJobManager):
@@ -65,19 +77,34 @@ class JudgeManager(TaskJobManager):
         super().__init__("Preparing judge")
 
     def _get_jobs(self) -> list[Job]:
-        jobs : list[Job] = []
+        jobs: list[Job] = []
         if self._env.config.judge_type != "diff":
-            jobs.append(comp := Compile(self._env).init(self._resolve_path(self._env.config.judge)))
+            jobs.append(
+                comp := Compile(self._env).init(
+                    self._resolve_path(self._env.config.judge)
+                )
+            )
 
         samples = self._get_samples()
         if samples is None:
             return []
 
         for inp, out in samples:
-            jobs.append(judge := judge_job(self._env.config.judge, inp, out, out, 0, lambda: "0", 1.0, self._env))
+            jobs.append(
+                judge := judge_job(
+                    self._env.config.judge,
+                    inp,
+                    out,
+                    out,
+                    0,
+                    lambda: "0",
+                    1.0,
+                    self._env,
+                )
+            )
             if self._env.config.judge_type != "diff":
                 judge.add_prerequisite(comp)
-            
+
             JOBS = [(Incomplete, 5), (ChaosMonkey, 20)]
 
             total = sum(map(lambda x: x[1], JOBS))
@@ -90,16 +117,27 @@ class JudgeManager(TaskJobManager):
                     inv_out = out.replace(".out", f".{seed:x}.invalid")
                     jobs += [
                         invalidate := job(self._env).init(out, inv_out, seed),
-                        run_judge := judge_job(self._env.config.judge, inp, inv_out, out,
-                                               0, lambda: "0", None, self._env)
+                        run_judge := judge_job(
+                            self._env.config.judge,
+                            inp,
+                            inv_out,
+                            out,
+                            0,
+                            lambda: "0",
+                            None,
+                            self._env,
+                        ),
                     ]
                     if self._env.config.judge_type != "diff":
                         run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
 
+
 class RunKasiopeaJudgeMan(TaskJobManager):
-    def __init__(self, subtask: int, seed: int, input_: str, output: str, correct_output: str):
+    def __init__(
+        self, subtask: int, seed: int, input_: str, output: str, correct_output: str
+    ):
         self._subtask = subtask
         self._seed = seed
         self._input = input_
@@ -111,7 +149,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         judge_program = self._resolve_path(self._env.config.judge)
         clean_output = self._output + ".clean"
 
-        jobs : list[Job] = [
+        jobs: list[Job] = [
             sanitize := Sanitize(self._env).init(self._output, clean_output),
             judge := judge_job(
                 judge_program,
@@ -121,8 +159,8 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 self._subtask,
                 lambda: f"{self._seed:x}",
                 None,
-                self._env
-            )
+                self._env,
+            ),
         ]
         judge.add_prerequisite(sanitize)
         if self._env.config.judge_type != "diff":
@@ -139,18 +177,27 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         elif not isinstance(self._judge_job.result, SolutionResult):
             raise RuntimeError(f"Judging result invalid.")
         return self._judge_job.result
-    
 
-JUDGE_JOB_NAME = r'Judge (\w+)'
+
+JUDGE_JOB_NAME = r"Judge (\w+)"
+
+
 class RunJudge(ProgramJob):
     """Runs judge on single input. (Abstract class)"""
-    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
-                 expected_points: Optional[float]) -> None:
+
+    def _init(
+        self,
+        judge: str,
+        input_name: str,
+        output_name: str,
+        correct_output: str,
+        expected_points: Optional[float],
+    ) -> None:
         self.input_name = self._data(input_name)
         self.output_name = self._data(output_name)
         self.correct_output_name = self._data(correct_output)
         self.expected_points = expected_points
-        super()._init(JUDGE_JOB_NAME.replace(r'(\w+)', output_name, 1), judge)
+        super()._init(JUDGE_JOB_NAME.replace(r"(\w+)", output_name, 1), judge)
 
     @abstractmethod
     def _judge(self) -> Optional[SolutionResult]:
@@ -162,14 +209,25 @@ class RunJudge(ProgramJob):
             if solution_res.kind == RunResultKind.OK:
                 result = self._judge()
             elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-                result = SolutionResult(Verdict.error, 0.0, "", self._quote_program(solution_res), solution_res.err_msg)
+                result = SolutionResult(
+                    Verdict.error,
+                    0.0,
+                    "",
+                    self._quote_program(solution_res),
+                    solution_res.err_msg,
+                )
             elif solution_res.kind == RunResultKind.TIMEOUT:
-                result = SolutionResult(Verdict.timeout, 0.0, "", self._quote_program(solution_res))
+                result = SolutionResult(
+                    Verdict.timeout, 0.0, "", self._quote_program(solution_res)
+                )
         else:
             result = self._judge()
 
-        if self.expected_points is not None and result is not None and \
-                result.points != self.expected_points:
+        if (
+            self.expected_points is not None
+            and result is not None
+            and result.points != self.expected_points
+        ):
             self._fail(
                 f"Output {self.output_name} for input {self.input_name} "
                 f"should have got {self.expected_points} points but got {result.points} points."
@@ -179,8 +237,14 @@ class RunJudge(ProgramJob):
 
 
 class RunDiffJudge(RunJudge):
-    def _init(self, judge: str, input_name: str, output_name: str,
-              correct_output: str, expected_points: Optional[float]) -> None:
+    def _init(
+        self,
+        judge: str,
+        input_name: str,
+        output_name: str,
+        correct_output: str,
+        expected_points: Optional[float],
+    ) -> None:
         super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
@@ -188,20 +252,32 @@ class RunDiffJudge(RunJudge):
         self._access_file(self.correct_output_name)
         diff = subprocess.run(
             ["diff", "-Bpq", self.output_name, self.correct_output_name],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         # XXX: Okay, it didn't finish in no time, but this is not meant to be used
         rr = RunResult(RunResultKind.OK, diff.returncode, 0, 0, stderr_text=diff.stderr)
         if diff.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, "", self._quote_program(rr))
         elif diff.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0, "", self._quote_program(rr))
+            return SolutionResult(
+                Verdict.wrong_answer, 0.0, "", self._quote_program(rr)
+            )
         else:
             return self._fail(f"Diff failed:\n{tab(diff.stderr)}")
 
+
 class RunKasiopeaJudge(RunJudge):
-    def _init(self, judge: str, input_name: str, output_name: str, correct_output: str,
-                 subtask: int, seed: str, expected_points: Optional[float]) -> None:
+    def _init(
+        self,
+        judge: str,
+        input_name: str,
+        output_name: str,
+        correct_output: str,
+        subtask: int,
+        seed: str,
+        expected_points: Optional[float],
+    ) -> None:
         self.subtask = subtask
         self.seed = seed
         super()._init(judge, input_name, output_name, correct_output, expected_points)
@@ -223,16 +299,31 @@ class RunKasiopeaJudge(RunJudge):
         if result is None:
             return None
         if result.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result))
+            return SolutionResult(
+                Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
+            )
         elif result.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0, result.raw_stderr(), self._quote_program(result))
+            return SolutionResult(
+                Verdict.wrong_answer,
+                0.0,
+                result.raw_stderr(),
+                self._quote_program(result),
+            )
         else:
-            return self._program_fail(f"Judge failed on output {self.output_name}:", result)
+            return self._program_fail(
+                f"Judge failed on output {self.output_name}:", result
+            )
 
 
 class RunCMSJudge(RunJudge):
-    def _init(self, judge: str, input_name: str, output_name: str,
-              correct_output: str, expected_points: Optional[float]) -> None:
+    def _init(
+        self,
+        judge: str,
+        input_name: str,
+        output_name: str,
+        correct_output: str,
+        expected_points: Optional[float],
+    ) -> None:
         super()._init(judge, input_name, output_name, correct_output, expected_points)
 
     def _judge(self) -> Optional[SolutionResult]:
@@ -243,49 +334,57 @@ class RunCMSJudge(RunJudge):
         self._access_file(points_file)
         result = self._run_program(
             [self.input_name, self.correct_output_name, self.output_name],
-            stdout=points_file
+            stdout=points_file,
         )
         if result is None:
             return None
         if result.returncode == 0:
-            points_str = result.raw_stdout().split('\n')[0]
-            msg = result.raw_stderr().split('\n')[0]
+            points_str = result.raw_stdout().split("\n")[0]
+            msg = result.raw_stderr().split("\n")[0]
             try:
                 points = float(points_str)
             except ValueError:
-                return self._program_fail("Judge wrote didn't write points on stdout:", result)
+                return self._program_fail(
+                    "Judge wrote didn't write points on stdout:", result
+                )
 
             if not 0 <= points <= 1:
-                return self._program_fail("Judge must give between 0 and 1 points:", result)
+                return self._program_fail(
+                    "Judge must give between 0 and 1 points:", result
+                )
 
             if points == 0:
-                return SolutionResult(Verdict.wrong_answer, 0.0, result.raw_stderr(), msg)
+                return SolutionResult(
+                    Verdict.wrong_answer, 0.0, result.raw_stderr(), msg
+                )
             elif points == 1:
                 return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), msg)
             else:
                 return SolutionResult(Verdict.partial, points, result.raw_stderr(), msg)
         else:
-            return self._program_fail(f"Judge failed on output {self.output_name}:", result)
+            return self._program_fail(
+                f"Judge failed on output {self.output_name}:", result
+            )
 
 
-def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str, subtask: int, get_seed: Callable[[], str],
-              expected_points : Optional[float], env: Env) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSJudge]:
+def judge_job(
+    judge: str,
+    input_name: str,
+    output_name: str,
+    correct_ouput: str,
+    subtask: int,
+    get_seed: Callable[[], str],
+    expected_points: Optional[float],
+    env: Env,
+) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.judge_type == "diff":
         return RunDiffJudge(env).init(
-            judge,
-            input_name,
-            output_name,
-            correct_ouput,
-            expected_points
+            judge, input_name, output_name, correct_ouput, expected_points
         )
     elif env.config.contest_type == "cms":
         return RunCMSJudge(env).init(
-            judge,
-            input_name,
-            output_name,
-            correct_ouput,
-            expected_points
+            judge, input_name, output_name, correct_ouput, expected_points
         )
     else:
         return RunKasiopeaJudge(env).init(
@@ -295,5 +394,5 @@ def judge_job(judge: str, input_name: str, output_name: str, correct_ouput: str,
             correct_ouput,
             subtask,
             get_seed(),
-            expected_points
+            expected_points,
         )

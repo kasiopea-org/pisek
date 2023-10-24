@@ -21,10 +21,21 @@ import yaml
 CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
+
 class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
-    yaml_tag = u'!Entry'
-    def __init__(self, name: str, signature: str, result: Any, envs: list[str], files: list[str], results: list[Any]) -> None:
+
+    yaml_tag = "!Entry"
+
+    def __init__(
+        self,
+        name: str,
+        signature: str,
+        result: Any,
+        envs: list[str],
+        files: list[str],
+        results: list[Any],
+    ) -> None:
         self.name = name
         self.signature = signature
         self.result = result
@@ -33,28 +44,35 @@ class CacheEntry(yaml.YAMLObject):
         self.files = list(sorted(files))
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, " \
-               f"result={self.result}, prerequisites_results={self.prerequisites_results}, " \
-               f"envs={self.envs}, files={self.files})"
+        return (
+            f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, "
+            f"result={self.result}, prerequisites_results={self.prerequisites_results}, "
+            f"envs={self.envs}, files={self.files})"
+        )
 
     def yaml_export(self) -> str:
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
+
 class CacheSeal(yaml.YAMLObject):
     """Seal is stored after last entry containing data about run."""
-    yaml_tag = u'!Seal'
+
+    yaml_tag = "!Seal"
+
     def __init__(self, success: bool, msg: str = ""):
         self.success = success
         self.msg = msg
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(success={self.success}, msg={self.msg})"
-    
+
     def yaml_export(self) -> str:
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
+
 class Cache:
     """Object representing all cached jobs."""
+
     def __init__(self, env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
         self.broken_seal = None
@@ -66,7 +84,7 @@ class Cache:
             self.cache[cache_entry.name] = []
         self.cache[cache_entry.name].append(cache_entry)
 
-        with open(self.cache_path, 'a', encoding='utf-8') as f:
+        with open(self.cache_path, "a", encoding="utf-8") as f:
             f.write(cache_entry.yaml_export())
 
     def __contains__(self, name: str) -> bool:
@@ -87,7 +105,7 @@ class Cache:
         if not os.path.exists(self.cache_path):
             return
 
-        with open(self.cache_path, encoding='utf-8') as f:
+        with open(self.cache_path, encoding="utf-8") as f:
             entries = yaml.full_load(f)
             if entries is None:
                 return
@@ -106,17 +124,19 @@ class Cache:
         if entry in self.cache[entry.name]:
             self.cache[entry.name].remove(entry)
         else:
-            raise ValueError(f"Cannot move to top entry which is not in Cache:\n{entry}")
+            raise ValueError(
+                f"Cannot move to top entry which is not in Cache:\n{entry}"
+            )
         self.add(entry)
 
     def export(self) -> None:
         """Export cache into a file. Remove unnecessary entries and add seal."""
-        with open(self.cache_path, 'w', encoding='utf-8') as f:
+        with open(self.cache_path, "w", encoding="utf-8") as f:
             for job, entries in self.cache.items():
                 for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
                     f.write(cache_entry.yaml_export())
 
     def seal(self, success):
         self.export()
-        with open(self.cache_path, 'a', encoding='utf-8') as f:
+        with open(self.cache_path, "a", encoding="utf-8") as f:
             f.write(CacheSeal(success).yaml_export())

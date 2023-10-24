@@ -24,10 +24,13 @@ import os.path
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env import Env
 
-State = Enum('State', ['in_queue', 'running', 'succeeded', 'failed', 'canceled'])
+State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
+
+
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
-    def __init__(self, name : str) -> None:
+
+    def __init__(self, name: str) -> None:
         self.name = name
         self.state = State.in_queue
         self.result = None
@@ -35,10 +38,10 @@ class PipelineItem(ABC):
         self.dirty = False  # Prints something to console?
 
         self.prerequisites = 0
-        self.required_by : list[tuple['PipelineItem', Optional[str]]] = []
-        self.prerequisites_results : dict[str, Any] = {}
+        self.required_by: list[tuple["PipelineItem", Optional[str]]] = []
+        self.prerequisites_results: dict[str, Any] = {}
 
-    def _fail(self, message : str) -> None:
+    def _fail(self, message: str) -> None:
         if self.fail_msg != "":
             raise RuntimeError("PipelineItem cannot fail twice.")
         self.state = State.failed
@@ -55,9 +58,13 @@ class PipelineItem(ABC):
     def _check_prerequisites(self) -> None:
         """Checks if all prerequisites are finished raises error otherwise."""
         if self.prerequisites > 0:
-            raise RuntimeError(f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining).")
+            raise RuntimeError(
+                f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining)."
+            )
 
-    def add_prerequisite(self, item: 'PipelineItem', name: Optional[str] = None) -> None:
+    def add_prerequisite(
+        self, item: "PipelineItem", name: Optional[str] = None
+    ) -> None:
         """Adds given PipelineItem as a prerequisite to this job."""
         self.prerequisites += 1
         item.required_by.append((self, name))
@@ -74,15 +81,17 @@ class PipelineItem(ABC):
             for item, _ in self.required_by:
                 item.cancel()
 
+
 class Job(PipelineItem):
     """One simple cacheable task in pipeline."""
+
     def __init__(self, env: Env) -> None:
         self._initialized = False
         self._env = env.fork().lock()
-        self._accessed_files : MutableSet[str] = set([])
+        self._accessed_files: MutableSet[str] = set([])
         super().__init__("Unnamed job")
 
-    def init(self, *args, **kwargs) -> 'Job':
+    def init(self, *args, **kwargs) -> "Job":
         self._args = args
         self._kwargs = kwargs
         self._init(*args, **kwargs)
@@ -92,13 +101,15 @@ class Job(PipelineItem):
     def _init(self, name: str) -> None:
         self.name = name
 
-    def _access_file(self, filename : str) -> None:
+    def _access_file(self, filename: str) -> None:
         """Add file this job depends on."""
         filename = os.path.normpath(filename)
         self._accessed_files.add(filename)
 
-    def _signature(self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]) -> tuple[Optional[str], Optional[str]]:
-        """Compute a signature (i.e. hash) of given envs, files and prerequisites results. """
+    def _signature(
+        self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
         for i, arg in enumerate(self._args):
             sign.update(f"{i}={arg}".encode())
@@ -111,7 +122,7 @@ class Job(PipelineItem):
         for file in sorted(files):
             if not os.path.exists(file):
                 return (None, "File nonexistent")
-            with open(file, 'rb') as f:
+            with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
         for name, result in sorted(results.items()):
@@ -121,14 +132,20 @@ class Job(PipelineItem):
     def _find_entry(self, cache_entries: list[CacheEntry]) -> Optional[CacheEntry]:
         """Finds a corresponding CacheEntry for this Job."""
         for cache_entry in cache_entries:
-            sign, err = self._signature(set(cache_entry.envs), set(cache_entry.files), self.prerequisites_results)
+            sign, err = self._signature(
+                set(cache_entry.envs),
+                set(cache_entry.files),
+                self.prerequisites_results,
+            )
             if cache_entry.signature == sign:
                 return cache_entry
         return None
 
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
-        sign, err = self._signature(self._env.get_accessed(), self._accessed_files, self.prerequisites_results)
+        sign, err = self._signature(
+            self._env.get_accessed(), self._accessed_files, self.prerequisites_results
+        )
         if err == "File nonexistent":
             raise RuntimeError(
                 f"Cannot compute signature of job {self.name}. "
@@ -144,13 +161,15 @@ class Job(PipelineItem):
             result,
             self._env.get_accessed(),
             list(self._accessed_files),
-            list(self.prerequisites_results)
+            list(self.prerequisites_results),
         )
 
     def run_job(self, cache: Cache) -> Optional[str]:
         """Run this job. If result is already in cache use it instead."""
         if not self._initialized:
-            raise RuntimeError("Job must be initialized before running it. (call Job.init)")
+            raise RuntimeError(
+                "Job must be initialized before running it. (call Job.init)"
+            )
         if self.state == State.canceled:
             return None
         self._check_prerequisites()
@@ -179,6 +198,7 @@ class Job(PipelineItem):
 
 class JobManager(PipelineItem):
     """Object that can create jobs and compute depending on their results."""
+
     def create_jobs(self, env: Env) -> list[Job]:
         """Crates this JobManager's jobs."""
         self._env = env
@@ -230,21 +250,25 @@ class JobManager(PipelineItem):
         Returns whether manager is ready for evaluation.
         (i.e. All of it's jobs have finished)
         """
-        return self.state == State.running and \
-            len(self._jobs_with_state(State.succeeded) + self._jobs_with_state(State.canceled)) == len(self.jobs)
+        return self.state == State.running and len(
+            self._jobs_with_state(State.succeeded)
+            + self._jobs_with_state(State.canceled)
+        ) == len(self.jobs)
 
     def any_failed(self) -> bool:
         """Returns whether this manager or its jobs had any failures so far."""
-        return self.state == State.failed or len(self._jobs_with_state(State.failed)) > 0
+        return (
+            self.state == State.failed or len(self._jobs_with_state(State.failed)) > 0
+        )
 
     def failures(self) -> str:
-        """Returns """
+        """Returns"""
         failed = self._jobs_with_state(State.failed)
         if len(failed):
             failed_msg = "\n".join([f'"{job.name}": {job.fail_msg}' for job in failed])
             return f"{len(failed)} jobs failed:\n{failed_msg}"
         else:
-            return f'{self.name} failed:\n{self.fail_msg}'
+            return f"{self.name} failed:\n{self.fail_msg}"
 
     def finalize(self) -> str:
         """Finalizes this JobManager - Does final evaluation and returns final status."""

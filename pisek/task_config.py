@@ -25,6 +25,7 @@ DATA_SUBDIR = "data/"
 
 from pisek.env import BaseEnv
 
+
 class CheckedConfigParser(configparser.RawConfigParser):
     """
     https://stackoverflow.com/questions/57305229/python-configparser-get-list-of-unused-entries
@@ -109,7 +110,9 @@ class TaskConfig(BaseEnv):
             self._set("judge", "diff")
         if self.judge_type == "judge":
             self._set("judge_needs_in", int(config["tests"].get("judge_needs_in", "1")))
-            self._set("judge_needs_out", int(config["tests"].get("judge_needs_out", "1")))
+            self._set(
+                "judge_needs_out", int(config["tests"].get("judge_needs_out", "1"))
+            )
         else:
             self._set("judge_needs_in", 0)
             self._set("judge_needs_out", 1)
@@ -119,16 +122,30 @@ class TaskConfig(BaseEnv):
         # the contestant's solution (primarily for C++)
         self._set("solution_manager", config["tests"].get("solution_manager"))
 
-        self._set("timeout_model_solution", float(
-            config.get("limits", "solve_time_limit", fallback=DEFAULT_TIMEOUT)
-        ))
-        self._set("timeout_other_solutions", float(
-            config.get("limits", "sec_solve_time_limit", fallback=self.timeout_model_solution)
-        ))
+        self._set(
+            "timeout_model_solution",
+            float(config.get("limits", "solve_time_limit", fallback=DEFAULT_TIMEOUT)),
+        )
+        self._set(
+            "timeout_other_solutions",
+            float(
+                config.get(
+                    "limits",
+                    "sec_solve_time_limit",
+                    fallback=self.timeout_model_solution,
+                )
+            ),
+        )
 
         if self.contest_type == "kasiopea":
-            self._set("input_max_size", int(config.get("limits", "input_max_size", fallback=50)))  # MB
-            self._set("output_max_size", int(config.get("limits", "output_max_size", fallback=10)))  # MB
+            self._set(
+                "input_max_size",
+                int(config.get("limits", "input_max_size", fallback=50)),
+            )  # MB
+            self._set(
+                "output_max_size",
+                int(config.get("limits", "output_max_size", fallback=10)),
+            )  # MB
 
         # Support for different directory structures
         self._set("samples_subdir", config["task"].get("samples_subdir", "."))
@@ -159,12 +176,14 @@ class TaskConfig(BaseEnv):
 
         if "0" not in subtasks:  # Add samples
             subtasks["0"] = SubtaskConfig()
-            subtasks["0"].load(0, configparser.SectionProxy(config, "test00"))  # This shouldn't fail for default values
+            subtasks["0"].load(
+                0, configparser.SectionProxy(config, "test00")
+            )  # This shouldn't fail for default values
 
         total_points = sum(map(lambda s: s.score, subtasks.values()))
- 
+
         # subtask should be ordered by number
-        subtasks = {key: val for key, val in sorted(subtasks.items())} 
+        subtasks = {key: val for key, val in sorted(subtasks.items())}
 
         self._set("subtasks", BaseEnv(**subtasks))
         self._set("subtask_section_names", subtask_section_names)
@@ -183,7 +202,9 @@ class TaskConfig(BaseEnv):
 
             solutions[solution] = SolutionConfig()
 
-            err = solutions[solution].load(solution, total_points, len(subtasks), config[section_name])
+            err = solutions[solution].load(
+                solution, total_points, len(subtasks), config[section_name]
+            )
             if err:
                 return f"Error while loading solution {solution}:\n  {err}"
             if solutions[solution].primary:
@@ -227,19 +248,22 @@ class TaskConfig(BaseEnv):
             for line in config:
                 if "#" in line and "TODO" in line.split("#")[1]:
                     return True
-        
+
         return False
 
     @BaseEnv.log_off
     def check_unused_keys(self, config: CheckedConfigParser) -> Optional[str]:
         """Verify that there are no unused keys in the config, raise otherwise."""
 
-        accepted_section_names = self.subtask_section_names | self._solution_section_names | \
-        {
-            "task",
-            "tests",
-            "limits",
-        }
+        accepted_section_names = (
+            self.subtask_section_names
+            | self._solution_section_names
+            | {
+                "task",
+                "tests",
+                "limits",
+            }
+        )
 
         # These keys are accepted for backwards compatibility reasons because the config
         # format is based on KSP's opendata tool.
@@ -266,14 +290,18 @@ class TaskConfig(BaseEnv):
 
             for key in config.get_unused_keys(section_name):
                 if key not in section_ignored_keys:
-                    return f"Unexpected key '{key}' in section [{section_name}] of config."
+                    return (
+                        f"Unexpected key '{key}' in section [{section_name}] of config."
+                    )
 
         return None
 
 
 class SubtaskConfig(BaseEnv):
     @BaseEnv.log_off
-    def load(self, subtask_number: int, config_section: configparser.SectionProxy) -> Optional[str]:
+    def load(
+        self, subtask_number: int, config_section: configparser.SectionProxy
+    ) -> Optional[str]:
         if subtask_number == 0:  # samples
             self._set("name", config_section.get("name", "Samples"))
             self._set("score", int(config_section.get("points", 0)))
@@ -289,9 +317,12 @@ class SubtaskConfig(BaseEnv):
             except ValueError:
                 return "'points' must be number"
 
-            self._set("in_globs", config_section.get("in_globs", self._glob_i(subtask_number)).split())
-            prev = "" if subtask_number == 1 else str(subtask_number-1)
-            self._set("predecessors",config_section.get("predecessors", prev).split())
+            self._set(
+                "in_globs",
+                config_section.get("in_globs", self._glob_i(subtask_number)).split(),
+            )
+            prev = "" if subtask_number == 1 else str(subtask_number - 1)
+            self._set("predecessors", config_section.get("predecessors", prev).split())
         self._constructing = False
         return None
 
@@ -312,7 +343,7 @@ class SubtaskConfig(BaseEnv):
         )
 
     @BaseEnv.log_off
-    def construct_globs(self, subtasks) -> Union[str,list[str]]:
+    def construct_globs(self, subtasks) -> Union[str, list[str]]:
         if self._constructing:
             return "Cyclic predecessors subtasks."
         self._constructing = True
@@ -334,8 +365,13 @@ class SubtaskConfig(BaseEnv):
 
 class SolutionConfig(BaseEnv):
     @BaseEnv.log_off
-    def load(self, solution_name: str, full_points: int, total_subtasks: int,
-                                    config_section: configparser.SectionProxy) -> Optional[str]:
+    def load(
+        self,
+        solution_name: str,
+        full_points: int,
+        total_subtasks: int,
+        config_section: configparser.SectionProxy,
+    ) -> Optional[str]:
         self._set("source", config_section.get("source", solution_name))
         primary = config_section.get("primary", "no").lower()
         if primary not in ("yes", "no"):
@@ -351,7 +387,11 @@ class SolutionConfig(BaseEnv):
         points_above = config_section.get("points_above", points)
         points_below = config_section.get("points_below", points)
 
-        for name, value in [("points", points), ("points_above", points_above), ("points_below", points_below)]:
+        for name, value in [
+            ("points", points),
+            ("points_above", points_above),
+            ("points_below", points_below),
+        ]:
             if value is None or value == "X":
                 self._set(name, None)
             else:
@@ -363,24 +403,25 @@ class SolutionConfig(BaseEnv):
 
         subtasks = config_section.get("subtasks")
         if subtasks is None:
-            subtasks = [None]*total_subtasks
+            subtasks = [None] * total_subtasks
         else:
             subtasks_str = subtasks.strip()
             if len(subtasks_str) != total_subtasks:
                 return f"There are {total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
             subtasks = []
             for char in subtasks_str:
-                if char == '1':
+                if char == "1":
                     subtasks.append(1)
-                elif char == '0':
+                elif char == "0":
                     subtasks.append(0)
-                elif char == 'X':
+                elif char == "X":
                     subtasks.append(None)
                 else:
                     return f"Unallowed char in subtask string: {char}"
 
         self._set("subtasks", subtasks)
         return None
+
 
 T = TypeVar("T")
 U = TypeVar("U")

@@ -17,6 +17,7 @@
 from copy import copy, deepcopy
 from typing import Iterator, Callable, MutableSet, Any
 
+
 class BaseEnv:
     """
     Collection of enviroment variables witch logs whether each variable was accessed.
@@ -28,6 +29,7 @@ class BaseEnv:
     Unset variables cannot be accessed. (That raises an error.)
     Set them to default value instead.
     """
+
     def __init__(self, **vars) -> None:
         self._vars = vars
         self._log_off = 0
@@ -44,7 +46,9 @@ class BaseEnv:
             return self
 
         first = name.split(".", 1)[0]
-        if self._log_off <= 0 and first in self._vars:  # I don't know how __iter__ can get in here, but apparently
+        if (
+            self._log_off <= 0 and first in self._vars
+        ):  # I don't know how __iter__ can get in here, but apparently
             self._accessed.add(first)
 
         if "." in name:
@@ -70,7 +74,7 @@ class BaseEnv:
             first, rest = name.split(".", 1)
             if first not in self._vars:
                 return False
-            return (rest in self._vars[first])
+            return rest in self._vars[first]
         else:
             return name in self._vars
 
@@ -89,7 +93,7 @@ class BaseEnv:
         self._accessed |= self._vars.keys()
         return list(self._vars.keys())
 
-    def items(self) -> list[tuple[str,Any]]:
+    def items(self) -> list[tuple[str, Any]]:
         """
         Return (name, value) for each variable stored.
         Logs each variable.
@@ -113,13 +117,15 @@ class BaseEnv:
                 self._vars[var]._set_log(val)
 
     @staticmethod
-    def log_off(f : Callable[...,Any]) -> Callable[...,Any]:
+    def log_off(f: Callable[..., Any]) -> Callable[..., Any]:
         """Disables logging for a method."""
+
         def g(self, *args, **kwargs):
             self._set_log(False)
             result = f(self, *args, **kwargs)
             self._set_log(True)
             return result
+
         return g
 
     @log_off
@@ -139,7 +145,7 @@ class BaseEnv:
             raise RuntimeError("Locked BaseEnv cannot be forked.")
         return self.__class__(**{**deepcopy(self._vars), **kwargs})
 
-    def lock(self) -> 'BaseEnv':
+    def lock(self) -> "BaseEnv":
         """Lock this BaseEnv so it cannot be forked."""
         self._locked = True
         return self
@@ -150,10 +156,9 @@ class BaseEnv:
         accessed = []
         for name in self._accessed:
             if isinstance(self._vars[name], BaseEnv):
-                accessed += list(map(
-                    lambda x: f"{name}.{x}",
-                    self._vars[name].get_accessed()
-                ))
+                accessed += list(
+                    map(lambda x: f"{name}.{x}", self._vars[name].get_accessed())
+                )
             else:
                 accessed.append(name)
         return accessed
@@ -164,13 +169,23 @@ class BaseEnv:
         return copy
 
     def __repr__(self):
-        return (f"<{self.__class__.__name__} " +
-            ", ".join([f"{name}=<{var.__class__.__name__}>" if isinstance(var, BaseEnv) else f"{name}={var}"
-                for name, var in self._vars.items()]) +
-        ">")
+        return (
+            f"<{self.__class__.__name__} "
+            + ", ".join(
+                [
+                    f"{name}=<{var.__class__.__name__}>"
+                    if isinstance(var, BaseEnv)
+                    else f"{name}={var}"
+                    for name, var in self._vars.items()
+                ]
+            )
+            + ">"
+        )
 
     __str__ = __repr__
 
+
 class Env(BaseEnv):
     """Top level BaseEnv"""
+
     pass

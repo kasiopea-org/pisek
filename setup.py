@@ -24,7 +24,5 @@ setuptools.setup(
     extras_require={"dev": ["black", "mypy"]},
     entry_points={"console_scripts": ["pisek=pisek.__main__:main_wrapped"]},
     include_package_data=True,
-    data_files=[
-        ('tools', ['pisek/tools/minibox.c', 'pisek/tools/text-preproc.c'])
-    ],
+    data_files=[("tools", ["pisek/tools/minibox.c", "pisek/tools/text-preproc.c"])],
 )

@@ -106,18 +106,15 @@ class TestStrictChecker(TestSoucetCMS):
     def modify_task(self):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
+
 class TestDirtySamle(TestSoucetCMS):
     """Sample without newline at the end."""
+
     def expecting_success(self):
         return False
 
     def modify_task(self):
-        sample = [
-            "3",
-            "1 2",
-            "-8 5",
-            "0 0"
-        ]
+        sample = ["3", "1 2", "-8 5", "0 0"]
         with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
             f.write("\n".join(sample))
 

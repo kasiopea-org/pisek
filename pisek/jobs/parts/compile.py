@@ -23,9 +23,13 @@ from typing import Optional
 from pisek.jobs.jobs import State
 from pisek.jobs.parts.program import ProgramJob
 
+
 class Compile(ProgramJob):
     """Job that compiles a program."""
-    def _init(self, program: str, use_manager: bool = False, compile_args: dict = {}) -> None:
+
+    def _init(
+        self, program: str, use_manager: bool = False, compile_args: dict = {}
+    ) -> None:
         self.use_manager = use_manager
         self._compile_args = compile_args
         self.target = self._executable(os.path.basename(program))
@@ -55,14 +59,10 @@ class Compile(ProgramJob):
                 candidates.append(name)
 
         if len(candidates) == 0:
-            self._fail(
-                f"No file with given name exists: {name}"
-            )
+            self._fail(f"No file with given name exists: {name}")
             return None
         if len(candidates) > 1:
-            self._fail(
-                f"Multiple files with same name exist: {', '.join(candidates)}"
-            )
+            self._fail(f"Multiple files with same name exist: {', '.join(candidates)}")
             return None
         return candidates[0]
 
@@ -70,12 +70,12 @@ class Compile(ProgramJob):
         """Compiles program."""
         program = self._resolve_extension(self.program)
         if program is None:
-            return None 
+            return None
 
         os.makedirs(self._executable("."), exist_ok=True)
 
         _, ext = os.path.splitext(program)
-        
+
         if ext in COMPILE_RULES:
             COMPILE_RULES[ext](self, program)
         else:
@@ -97,10 +97,9 @@ class Compile(ProgramJob):
             cpp_flags += self.manager_flags(".cpp")
 
         return self._run_compilation(
-            ["g++", program, "-o", self.target] + cpp_flags,
-            program
+            ["g++", program, "-o", self.target] + cpp_flags, program
         )
-    
+
     def _compile_c(self, program: str):
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
@@ -108,29 +107,24 @@ class Compile(ProgramJob):
             c_flags += self.manager_flags(".c")
 
         return self._run_compilation(
-            ["gcc", program, "-o", self.target] + c_flags,
-            program
+            ["gcc", program, "-o", self.target] + c_flags, program
         )
 
     def _c_colors(self):
-        if not self._env.get_without_log('plain'):
+        if not self._env.get_without_log("plain"):
             return "-fdiagnostics-color=always"
         else:
             return "-fdiagnostics-color=never"
-    
+
     def _compile_pas(self, program: str):
         dir = self._get_build_dir()
         pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target, "-FE" + dir]
 
-        return self._run_compilation(
-            ["fpc"] + pas_flags + [program],
-            program
-        )
-    
+        return self._run_compilation(["fpc"] + pas_flags + [program], program)
+
     def _compile_rust(self, program: str):
         return self._run_compilation(
-            ["rustc", "-O", "-o", self.target, program],
-            program
+            ["rustc", "-O", "-o", self.target, program], program
         )
 
     def _run_compilation(self, args, program, **kwargs):
@@ -150,7 +144,7 @@ class Compile(ProgramJob):
         comp.wait()
         if comp.returncode != 0:
             return self._fail(f"Compilation of {program} failed.")
-    
+
     def _compile_script(self, program: str):
         if not self.valid_shebang(program):
             return self._fail(
@@ -158,11 +152,11 @@ class Compile(ProgramJob):
                 "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
                 "Check also that you are using linux eol."
             )
-        
+
         shutil.copyfile(program, self.target)
         self._chmod_exec(self.target)
         return None
- 
+
     @staticmethod
     def valid_shebang(filepath: str) -> bool:
         """Check if file has shebang and if the shebang is valid"""
@@ -197,9 +191,9 @@ class Compile(ProgramJob):
         if os.path.dirname(self.manager):
             res.append(f"-I{os.path.dirname(self.manager)}")
         res.append(self.manager + extension)
-        
+
         self._access_file(self.manager + extension)
-        
+
         return res
 
 
@@ -208,13 +202,13 @@ class Compile(ProgramJob):
 VALID_PYTHON_INTERPRETERS = ["python3", "pypy3"]
 
 COMPILE_RULES = {
-    '.py': Compile._compile_script,
-    '.sh': Compile._compile_script,
-    '.c': Compile._compile_c,
-    '.cc': Compile._compile_cpp,
-    '.cpp': Compile._compile_cpp,
-    '.pas': Compile._compile_pas,
-    '.rs': Compile._compile_rust,
+    ".py": Compile._compile_script,
+    ".sh": Compile._compile_script,
+    ".c": Compile._compile_c,
+    ".cc": Compile._compile_cpp,
+    ".cpp": Compile._compile_cpp,
+    ".pas": Compile._compile_pas,
+    ".rs": Compile._compile_rust,
 }
 
 

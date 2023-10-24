@@ -29,14 +29,15 @@ from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
 
-Verdict = Enum('Verdict', ['ok', 'partial', 'wrong_answer', 'error', 'timeout'])
+Verdict = Enum("Verdict", ["ok", "partial", "wrong_answer", "error", "timeout"])
 RESULT_MARK = {
-    Verdict.ok: '·',
-    Verdict.partial: 'P',
-    Verdict.error: '!',
-    Verdict.timeout: 'T',
-    Verdict.wrong_answer: 'W'
+    Verdict.ok: "·",
+    Verdict.partial: "P",
+    Verdict.error: "!",
+    Verdict.timeout: "T",
+    Verdict.wrong_answer: "W",
 }
+
 
 class TaskHelper:
     def _get_build_dir(self) -> str:
@@ -76,7 +77,9 @@ class TaskHelper:
 
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._globs_to_files(self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir)
+        ins = self._globs_to_files(
+            self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir
+        )
         outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
 
         def basename(s: str):
@@ -86,10 +89,13 @@ class TaskHelper:
 
     def _all_inputs(self) -> list[str]:
         """Get all input files"""
-        all_inputs : list[str] = sum([
-            self._subtask_inputs(subtask)
-            for _, subtask in sorted(self._env.config.subtasks.items())
-        ], start=[])
+        all_inputs: list[str] = sum(
+            [
+                self._subtask_inputs(subtask)
+                for _, subtask in sorted(self._env.config.subtasks.items())
+            ],
+            start=[],
+        )
         seen = set()
         unique_all = []
         for inp in all_inputs:
@@ -105,14 +111,14 @@ class TaskHelper:
         else:
             inputs = set([])
             for glob in subtask.all_globs:
-                inputs |= set(self._globs_to_files([glob])[:self._env.inputs])
+                inputs |= set(self._globs_to_files([glob])[: self._env.inputs])
             return list(sorted(inputs))
 
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get new inputs of given subtask."""
         inputs = self._globs_to_files(subtask.in_globs)
         if self._env.config.contest_type == "kasiopea":
-            inputs = inputs[:self._env.inputs]
+            inputs = inputs[: self._env.inputs]
         return inputs
 
     def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
@@ -128,8 +134,10 @@ class TaskHelper:
         input_filenames.sort()
         return input_filenames
 
+
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
+
     def _get_timeout(self, target: str) -> float:
         if self._env.timeout is not None:
             return self._env.timeout
@@ -144,26 +152,32 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     def _compile_args(self) -> dict[str, str]:
         compile_args = {}
         if self._env.config.solution_manager:
-            compile_args["manager"] = self._resolve_path(self._env.config.solution_manager)
+            compile_args["manager"] = self._resolve_path(
+                self._env.config.solution_manager
+            )
         return compile_args
 
 
 class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
+
     @staticmethod
     def _file_access(files: int):
         """Adds first i args as accessed files."""
-        def dec(f: Callable[...,Any]) -> Callable[...,Any]:
+
+        def dec(f: Callable[..., Any]) -> Callable[..., Any]:
             def g(self, *args, **kwargs):
                 for i in range(files):
                     self._access_file(args[i])
                 return f(self, *args, **kwargs)
+
             return g
+
         return dec
 
     @_file_access(1)
-    def _open_file(self, filename: str, mode='r', **kwargs):
-        if 'w' in mode:
+    def _open_file(self, filename: str, mode="r", **kwargs):
+        if "w" in mode:
             os.makedirs(os.path.dirname(filename), exist_ok=True)
         return open(filename, mode, **kwargs)
 

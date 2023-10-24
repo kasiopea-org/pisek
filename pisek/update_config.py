@@ -40,22 +40,30 @@ def update(path) -> Optional[str]:
 
     subtask_points = []
     for section in sorted(config.sections()):
-        if re.fullmatch(r'test[0-9]{2}', section):
-            if 'points' not in config[section]:
+        if re.fullmatch(r"test[0-9]{2}", section):
+            if "points" not in config[section]:
                 return f"Missing key 'points' in section [{section}]"
-            subtask_points.append(int(config[section]['points']))
+            subtask_points.append(int(config[section]["points"]))
     if "test00" not in config.sections():
         subtask_points = [0] + subtask_points
 
-    if 'solutions' not in config["task"]:
+    if "solutions" not in config["task"]:
         return f"Missing key 'solutions' in section [task]"
     solutions = config["task"]["solutions"].split()
     del config["task"]["solutions"]
 
     for i, solution in enumerate(solutions):
-        if match := re.fullmatch(r'(.*?)_([0-9]{1,3}|X)b', solution):
-            points = None if match[2] == 'X' else int(match[2])
-            if len(glob.glob(os.path.join(path, config["task"].get("solutions_subdir", ""), f"{solution}.*"))):
+        if match := re.fullmatch(r"(.*?)_([0-9]{1,3}|X)b", solution):
+            points = None if match[2] == "X" else int(match[2])
+            if len(
+                glob.glob(
+                    os.path.join(
+                        path,
+                        config["task"].get("solutions_subdir", ""),
+                        f"{solution}.*",
+                    )
+                )
+            ):
                 source = solution
             else:
                 source = match[1]
@@ -64,7 +72,7 @@ def update(path) -> Optional[str]:
             points = sum(subtask_points)
 
         if points is None:
-            subtasks = 'X'*len(subtask_points)
+            subtasks = "X" * len(subtask_points)
         else:
             subtasks = get_subtask_mask(points, subtask_points)
 
@@ -73,37 +81,38 @@ def update(path) -> Optional[str]:
         if i == 0:
             config[solution]["primary"] = "yes"
         config[solution]["source"] = source
-        config[solution]["points"] = 'X' if points is None else str(points)
+        config[solution]["points"] = "X" if points is None else str(points)
         config[solution]["subtasks"] = subtasks
 
     subtask_inputs = {}
     in_globs_used = False
     for section in config.sections():
-        if not (mat := re.fullmatch(r'test([0-9]{2})', section)):
+        if not (mat := re.fullmatch(r"test([0-9]{2})", section)):
             continue
 
         num = int(mat[1])
-        if 'in_globs' not in config[section]:
+        if "in_globs" not in config[section]:
             if num == 0:
-                subtask_inputs[num] = {'sample*.in'}
+                subtask_inputs[num] = {"sample*.in"}
             else:
-                subtask_inputs[num] = {f'{i:02}*.in' for i in range(1, num+1)}
+                subtask_inputs[num] = {f"{i:02}*.in" for i in range(1, num + 1)}
         else:
             in_globs_used = True
-            subtask_inputs[num] = set(map(
-                lambda x: x.replace("_*", "*"),
-                config[section]['in_globs'].split()
-            ))
+            subtask_inputs[num] = set(
+                map(lambda x: x.replace("_*", "*"), config[section]["in_globs"].split())
+            )
 
     last_subtask = max(subtask_inputs.keys())
     for subtask, inputs in subtask_inputs.items():
         if "0*.in" in inputs or "*.in" in inputs:
-            subtask_inputs[subtask] = {f'{i:02}*.in' for i in range(1, last_subtask+1)}
+            subtask_inputs[subtask] = {
+                f"{i:02}*.in" for i in range(1, last_subtask + 1)
+            }
 
     # Now we construct ordering of subtask difficulty but without redundant edges
-    
-    # First construct edges    
-    subtask_includes = {i:set([]) for i in subtask_inputs}
+
+    # First construct edges
+    subtask_includes = {i: set([]) for i in subtask_inputs}
     for succ_subtask in subtask_inputs:
         for pred_subtask in subtask_inputs:
             if succ_subtask == pred_subtask:
@@ -119,24 +128,24 @@ def update(path) -> Optional[str]:
             if pred_subtask in subtask_includes[succ_subtask]:
                 subtask_includes[succ_subtask] -= subtask_includes[pred_subtask]
 
-    if in_globs_used:    
+    if in_globs_used:
         for subtask in subtask_includes:
             section = config[f"test{subtask:02}"]
-            section['predecessors'] = " ".join(map(str, subtask_includes[subtask]))
+            section["predecessors"] = " ".join(map(str, subtask_includes[subtask]))
 
             in_globs = copy(subtask_inputs[subtask])
             for pred in subtask_includes[subtask]:
                 in_globs -= subtask_inputs[pred]
-            section['in_globs'] = " ".join(sorted(in_globs))
-
+            section["in_globs"] = " ".join(sorted(in_globs))
 
     with open(config_path, "w") as f:
         config.write(f, space_around_delimiters=False)
 
     return None
 
+
 def get_subtask_mask(points, subtasks):
-    all_valid = [0]*len(subtasks)
+    all_valid = [0] * len(subtasks)
 
     valid = 0
     for comb in product([0, 1], repeat=len(subtasks)):
@@ -147,14 +156,14 @@ def get_subtask_mask(points, subtasks):
                 all_valid[i] += comb[i]
 
     if valid == 0:
-        return 'X'*len(subtasks)
+        return "X" * len(subtasks)
 
     sub_mask = ""
     for x in all_valid:
         if x == valid:
-            sub_mask += '1'
+            sub_mask += "1"
         elif x == 0:
-            sub_mask += '0'
+            sub_mask += "0"
         else:
-            sub_mask += 'X'
+            sub_mask += "X"
     return sub_mask

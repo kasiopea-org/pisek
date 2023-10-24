@@ -29,13 +29,16 @@ from pisek.update_config import update
 from pisek.visualize import visualize_command
 from pisek.extract import extract
 
-PATH = '.'
+PATH = "."
+
 
 def test_task(args, **kwargs):
-    return (test_task_path(PATH, **vars(args), **kwargs))
+    return test_task_path(PATH, **vars(args), **kwargs)
+
 
 def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
     return run_pipeline(path, TaskPipeline, solutions=solutions, **env_args)
+
 
 def test_solution(args):
     if args.solution is None:
@@ -46,15 +49,18 @@ def test_solution(args):
     eprint(f"Testing solution: {args.solution}")
     return test_task(args, solutions=[args.solution])
 
+
 def test_generator(args):
     eprint(f"Testing generator")
     return test_task(args, solutions=[])
+
 
 def extract_task(args, **kwargs):
     env = load_env(PATH, **vars(args), **kwargs)
     if env is None:
         return 1
     return extract(env)
+
 
 def clean_directory(args):
     task_dir = os.getcwd()
@@ -80,10 +86,7 @@ def main(argv):
 
     def add_argument_full(parser):
         parser.add_argument(
-            "--full",
-            "-f",
-            action="store_true",
-            help="Don't stop on first failure"
+            "--full", "-f", action="store_true", help="Don't stop on first failure"
         )
 
     def add_argument_strict(parser):
@@ -230,13 +233,15 @@ def main(argv):
     add_argument_no_checker(parser_test)
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
-    
+
     parser_run = subparsers.add_parser("run", help="Run target in server mode.")
     add_argument_timeout(parser_run)
 
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
-    parser_visualize = subparsers.add_parser("visualize", help="Show solutions statistics and closeness to limit.")
+    parser_visualize = subparsers.add_parser(
+        "visualize", help="Show solutions statistics and closeness to limit."
+    )
     add_argument_mode(parser_visualize)
     add_argument_no_subtasks(parser_visualize)
     add_argument_solutions(parser_visualize)
@@ -245,8 +250,12 @@ def main(argv):
     add_argument_limit(parser_visualize)
     add_argument_segments(parser_visualize)
 
-    parser_update = subparsers.add_parser("update", help="Update config to newer version")
-    parser_extract = subparsers.add_parser("extract", help="Extract solution data from .pisek_cache")
+    parser_update = subparsers.add_parser(
+        "update", help="Update config to newer version"
+    )
+    parser_extract = subparsers.add_parser(
+        "extract", help="Extract solution data from .pisek_cache"
+    )
 
     parser_license = subparsers.add_parser("license", help="Print license")
     parser_license.add_argument(

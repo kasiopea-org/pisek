@@ -24,8 +24,10 @@ from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
 from pisek.jobs.parts.data import DataManager
 
+
 class TaskPipeline(JobPipeline):
     """JobPipeline that checks whether task behaves as expected."""
+
     def __init__(self, env):
         super().__init__()
         self.pipeline = [
@@ -43,8 +45,10 @@ class TaskPipeline(JobPipeline):
         if env.solutions:
             self.pipeline.append(judge := JudgeManager())
             judge.add_prerequisite(samples)
-            
-            self.pipeline.append(primary_solution := SolutionManager(env.config.primary_solution))
+
+            self.pipeline.append(
+                primary_solution := SolutionManager(env.config.primary_solution)
+            )
             primary_solution.add_prerequisite(generator)
             primary_solution.add_prerequisite(judge)
             solutions.append(primary_solution)

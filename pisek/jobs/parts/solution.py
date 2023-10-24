@@ -25,19 +25,22 @@ from pisek.jobs.parts.program import RunResult, ProgramJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.judge import SolutionResult, judge_job, RunJudge
 
+
 class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
         self.solution = solution
-        self.subtasks : list[SubtaskJobGroup] = []
+        self.subtasks: list[SubtaskJobGroup] = []
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> list[Job]:
         solution = self._solution(self._env.config.solutions[self.solution].source)
         judge = self._executable(self._env.config.judge)
 
-        jobs : list[Job] = []
+        jobs: list[Job] = []
 
-        jobs.append(compile := Compile(self._env).init(solution, True, self._compile_args()))
+        jobs.append(
+            compile := Compile(self._env).init(solution, True, self._compile_args())
+        )
 
         if self._env.config.solutions[self.solution].primary:
             timeout = self._get_timeout("solve")
@@ -50,13 +53,19 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
-                    jobs.append(run_solution := RunSolution(self._env).init(solution, timeout, inp))
+                    jobs.append(
+                        run_solution := RunSolution(self._env).init(
+                            solution, timeout, inp
+                        )
+                    )
                     run_solution.add_prerequisite(compile)
 
                     if sub_num == "0":
                         c_out = inp.replace(".in", ".out")
                     else:
-                        primary_sol = self._env.config.solutions[self._env.config.primary_solution].source
+                        primary_sol = self._env.config.solutions[
+                            self._env.config.primary_solution
+                        ].source
                         c_out = util.get_output_name(inp, primary_sol)
                     jobs.append(
                         run_judge := judge_job(
@@ -67,7 +76,7 @@ class SolutionManager(TaskJobManager):
                             sub_num,
                             lambda: self._get_seed(inp),
                             None,
-                            self._env
+                            self._env,
                         )
                     )
 
@@ -106,19 +115,19 @@ class SolutionManager(TaskJobManager):
             (points, err), results = sub_job.result(self._env.config.fail_mode)
             if points is None:
                 return self._fail(
-                    f"Scoring on subtask {sub_job.num} failed:\n" +
-                    tab(f"{err}:\n{tab(results[0 if exp_sub is None else exp_sub])}")
+                    f"Scoring on subtask {sub_job.num} failed:\n"
+                    + tab(f"{err}:\n{tab(results[0 if exp_sub is None else exp_sub])}")
                 )
 
             if exp_sub == 1 and points != 1:
                 return self._fail(
-                    f"Solution {self.solution} should have succeeded on subtask {sub_job.num}:\n" +
-                    tab(results[1])
+                    f"Solution {self.solution} should have succeeded on subtask {sub_job.num}:\n"
+                    + tab(results[1])
                 )
             elif exp_sub == 0 and points != 0:
                 return self._fail(
-                    f"Solution {self.solution} should have failed on subtask {sub_job.num}:\n" +
-                    tab(results[0])
+                    f"Solution {self.solution} should have failed on subtask {sub_job.num}:\n"
+                    + tab(results[0])
                 )
 
             total_points += subtask.score * points
@@ -128,30 +137,39 @@ class SolutionManager(TaskJobManager):
         below = solution_conf.points_below
 
         if points is not None and total_points != points:
-            return self._fail(f"Solution {self.solution} should have gotten {points} but got {total_points} points.")
+            return self._fail(
+                f"Solution {self.solution} should have gotten {points} but got {total_points} points."
+            )
         elif above is not None and total_points < above:
-            return self._fail(f"Solution {self.solution} should have gotten at least {above} but got {total_points} points.")
+            return self._fail(
+                f"Solution {self.solution} should have gotten at least {above} but got {total_points} points."
+            )
         elif below is not None and total_points > below:
-            return self._fail(f"Solution {self.solution} should have gotten at most {below} but got {total_points} points.")
+            return self._fail(
+                f"Solution {self.solution} should have gotten at most {below} but got {total_points} points."
+            )
 
 
 class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
+
     def __init__(self, num) -> None:
         self.num = int(num)
-        self.run_jobs : list[RunSolution] = []
-        self.previous_jobs : list[RunJudge] = []
-        self.new_jobs : list[RunJudge] = []
+        self.run_jobs: list[RunSolution] = []
+        self.previous_jobs: list[RunJudge] = []
+        self.new_jobs: list[RunJudge] = []
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
 
     def __str__(self) -> str:
         s = "("
-        previous = list(map(
-            lambda x: x.verdict if x else None,
-            self._job_results(self.previous_jobs)
-        ))
+        previous = list(
+            map(
+                lambda x: x.verdict if x else None,
+                self._job_results(self.previous_jobs),
+            )
+        )
         for verdict in Verdict:
             count = previous.count(verdict)
             if count > 0:
@@ -162,9 +180,9 @@ class SubtaskJobGroup:
 
         for job, result in zip(self.new_jobs, self._job_results(self.new_jobs)):
             if job.state == State.canceled:
-                s += '-'
+                s += "-"
             elif result is None:
-                s += ' '
+                s += " "
             else:
                 s += str(result)
 
@@ -187,7 +205,7 @@ class SubtaskJobGroup:
 
     def definitive(self, fail_mode: str, expected_points: Optional[float]) -> bool:
         """
-        Checks whether subtask jobs have resulted in outcome that cannot be changed. 
+        Checks whether subtask jobs have resulted in outcome that cannot be changed.
         """
         old_points = self._convert_to_points(self.previous_jobs)
         new_points = self._convert_to_points(self.new_jobs)
@@ -203,7 +221,9 @@ class SubtaskJobGroup:
                 return True
         return False
 
-    def result(self, fail_mode: str) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
+    def result(
+        self, fail_mode: str
+    ) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
         """
         Checks whether subtask jobs have resulted as expected and computes points.
         Returns (points, error msg), (best program output, worst program output)
@@ -215,7 +235,7 @@ class SubtaskJobGroup:
         all_points = prev_points + new_points
         result_msg = (
             self._job_msg(all_jobs[all_points.index(max(all_points))]),
-            self._job_msg(all_jobs[all_points.index(min(all_points))])
+            self._job_msg(all_jobs[all_points.index(min(all_points))]),
         )
 
         if len(new_points) == 0 and len(prev_points) == 0:
@@ -258,37 +278,53 @@ class SubtaskJobGroup:
 class RunPrimarySolutionMan(TaskJobManager):
     def __init__(self, input_: str, output: Optional[str]):
         self._input = input_
-        self._output = output 
+        self._output = output
         super().__init__("Running primary solution")
 
     def _get_jobs(self) -> list[Job]:
-        solution = self._solution(self._env.config.solutions[self._env.config.primary_solution].source)
-        
-        jobs : list[Job] = [
+        solution = self._solution(
+            self._env.config.solutions[self._env.config.primary_solution].source
+        )
+
+        jobs: list[Job] = [
             compile := Compile(self._env).init(solution, True, self._compile_args()),
-            run_solution := RunSolution(self._env).init(solution, self._get_timeout("solve"), self._input, self._output)
+            run_solution := RunSolution(self._env).init(
+                solution, self._get_timeout("solve"), self._input, self._output
+            ),
         ]
         run_solution.add_prerequisite(compile)
 
         return jobs
 
 
-RUN_JOB_NAME = r'Run (\w+) on input (\w+)'
+RUN_JOB_NAME = r"Run (\w+) on input (\w+)"
+
+
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
-    def _init(self, solution: str, timeout: float, input_name: str, output_name: Optional[str] = None) -> None:
+
+    def _init(
+        self,
+        solution: str,
+        timeout: float,
+        input_name: str,
+        output_name: Optional[str] = None,
+    ) -> None:
         self.input_name = self._data(input_name)
-        self.output_name = self._data(output_name) if output_name else self._output(self.input_name, solution)
+        self.output_name = (
+            self._data(output_name)
+            if output_name
+            else self._output(self.input_name, solution)
+        )
         self.timeout = timeout
-        name = RUN_JOB_NAME.replace(r'(\w+)', solution, 1).replace(r'(\w+)', input_name, 1)
+        name = RUN_JOB_NAME.replace(r"(\w+)", solution, 1).replace(
+            r"(\w+)", input_name, 1
+        )
         super()._init(name, solution)
 
     def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(
-            [],
-            stdin=self.input_name,
-            stdout=self.output_name,
-            timeout=self.timeout
+            [], stdin=self.input_name, stdout=self.output_name, timeout=self.timeout
         )
 
     def _run(self) -> Optional[RunResult]:

@@ -41,13 +41,15 @@ VERDICTS_ORDER = ["·", "t", "T", "W", "!"]
 # subtask section
 TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "points"))
 
+
 def red(msg: str) -> str:
     return f"{fg.red}{msg}{reset}"
 
+
 def group_by_subtask(
-        results : List[TestCaseResult], config : TaskConfig
+    results: List[TestCaseResult], config: TaskConfig
 ) -> List[List[TestCaseResult]]:
-    subtasks = {num:[] for num in config.subtasks.keys()}
+    subtasks = {num: [] for num in config.subtasks.keys()}
     for result in results:
         for i, subtask in config.subtasks.items():
             if in_subtask(result.name, subtask):
@@ -135,7 +137,7 @@ def visualize(
     mode = MODES_ALIASES[mode]
 
     if solutions == "all":
-        solutions = list(testing_log.keys() - {'source'})
+        solutions = list(testing_log.keys() - {"source"})
     else:
         for solution_name in solutions:
             if solution_name not in testing_log:
@@ -170,7 +172,7 @@ def visualize(
     if len(unexpected_solutions):
         print(
             red(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů."),
-            file=sys.stderr
+            file=sys.stderr,
         ),
 
 
@@ -226,10 +228,11 @@ def visualize_solution(
     print(f"{solution_name}: ({score}b)")
     if not as_expected:
         print(
-            red(f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."),
-            file=sys.stderr
+            red(
+                f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."
+            ),
+            file=sys.stderr,
         ),
-
 
     segment_length = limit / segments
 

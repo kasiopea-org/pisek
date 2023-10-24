@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from pisek import task_config
-from pisek.__main__ import test_task_path 
+from pisek.__main__ import test_task_path
 from pisek.util import quote_output, clean_task_dir
 
 
@@ -62,9 +62,10 @@ class TestFixture(unittest.TestCase):
             directories = ["build", "data"]
             files = [".pisek_cache"]
             self.assertTrue(
-                file in self.original_files or file in (directories + files) or
-                any(file.startswith(directory) for directory in directories),
-                f"Pisek generated new file {file}."
+                file in self.original_files
+                or file in (directories + files)
+                or any(file.startswith(directory) for directory in directories),
+                f"Pisek generated new file {file}.",
             )
 
 
@@ -93,8 +94,8 @@ class TestFixtureVariant(TestFixture):
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
         # and we want to consider it a timeout
-        @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
-        @unittest.mock.patch('sys.stderr', new_callable=io.StringIO)
+        @unittest.mock.patch("sys.stdout", new_callable=io.StringIO)
+        @unittest.mock.patch("sys.stderr", new_callable=io.StringIO)
         def run(*args):
             return test_task_path(
                 self.task_dir,
@@ -103,7 +104,7 @@ class TestFixtureVariant(TestFixture):
                 no_checker=False,
                 full=False,
                 timeout=1,
-                plain=False
+                plain=False,
             )
 
         runner = unittest.TextTestRunner(failfast=True)

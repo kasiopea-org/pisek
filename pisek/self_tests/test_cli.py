@@ -42,6 +42,7 @@ class TestCLI(TestFixture):
 
         self.check_files()
 
+
 class TestCLITestSolution(TestCLI):
     def args(self):
         return ["test", "solution", "solve"]

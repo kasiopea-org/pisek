@@ -20,19 +20,25 @@ from typing import Callable
 from pisek.env import Env
 
 MSG_LEN = 25
-def pad(text: str, length: int, pad_char: str = " "):
-    return text + (length - len(text))*pad_char
 
-def tab(text: str, tab_str: str="  "):
-    return tab_str + text.replace('\n', f"\n{tab_str}")
+
+def pad(text: str, length: int, pad_char: str = " "):
+    return text + (length - len(text)) * pad_char
+
+
+def tab(text: str, tab_str: str = "  "):
+    return tab_str + text.replace("\n", f"\n{tab_str}")
+
 
 def plain_variant(f: Callable) -> Callable:
-    def g(msg: str, env : Env, *args, **kwargs):
+    def g(msg: str, env: Env, *args, **kwargs):
         if env.plain:
             return msg
         else:
             return f(msg, *args, **kwargs)
+
     return g
+
 
 @plain_variant
 def colored(msg: str, color: str) -> str:
