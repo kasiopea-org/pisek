@@ -1,4 +1,5 @@
 import configparser
+import glob
 import io
 import os
 import shutil
@@ -47,6 +48,25 @@ class TestFixture(unittest.TestCase):
         assert self.task_dir.startswith("/tmp") or self.task_dir.startswith("/var")
         shutil.rmtree(self.task_dir)
 
+    def log_files(self):
+        """Log all files for checking whether new ones have been created."""
+        self.original_files = set(glob.glob("*", root_dir=self.task_dir))
+
+    def check_files(self):
+        """
+        Check whether there are no new unexpected files.
+        Ignored:
+            .pisek_cache data/* build/*
+        """
+        for file in glob.glob("*", root_dir=self.task_dir):
+            directories = ["build", "data"]
+            files = [".pisek_cache"]
+            self.assertTrue(
+                file in self.original_files or file in (directories + files) or
+                any(file.startswith(directory) for directory in directories),
+                f"Pisek generated new file {file}."
+            )
+
 
 class TestFixtureVariant(TestFixture):
     def expecting_success(self):
@@ -68,6 +88,7 @@ class TestFixtureVariant(TestFixture):
             return
 
         self.modify_task()
+        self.log_files()
 
         # We lower the timeout to make the self-tests run faster. The solutions
         # run instantly, with the exception of `solve_slow_4b`, which takes 10 seconds
@@ -90,6 +111,7 @@ class TestFixtureVariant(TestFixture):
         self.assertEqual(run(), not self.expecting_success())
 
         self.check_end_state()
+        self.check_files()
 
     def check_end_state(self):
         # Here we can verify whether some conditions hold when Pisek finishes,

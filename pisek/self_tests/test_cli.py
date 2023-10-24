@@ -29,6 +29,8 @@ class TestCLI(TestFixture):
         if not self.fixture_path():
             return
 
+        self.log_files()
+
         with mock.patch("sys.stdout", new=StringIO()) as std_out:
             with mock.patch("sys.stderr", new=StringIO()) as std_err:
                 result = main(self.args())
@@ -38,6 +40,7 @@ class TestCLI(TestFixture):
                     f"Command failed: {' '.join(self.args())}",
                 )
 
+        self.check_files()
 
 class TestCLITestSolution(TestCLI):
     def args(self):
