@@ -17,8 +17,8 @@
 import random
 import string
 
+from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob
-
 
 def randword(length: int):
     letters = string.ascii_lowercase
@@ -44,8 +44,8 @@ ANY_MODIFIERS = [
 class Invalidate(TaskJob):
     """Abstract Job for Invalidating an output."""
 
-    def _init(self, name: str, from_file: str, to_file: str, seed: int) -> None:
-        super()._init(name)
+    def __init__(self, env: Env, name: str, from_file: str, to_file: str, seed: int) -> None:
+        super().__init__(env, name)
         self.seed = seed
         self.from_file = self._data(from_file)
         self.to_file = self._data(to_file)
@@ -54,8 +54,9 @@ class Invalidate(TaskJob):
 class Incomplete(Invalidate):
     """Makes an incomplete output."""
 
-    def _init(self, from_file: str, to_file: str, seed: int) -> None:
-        super()._init(
+    def __init__(self, env: Env, from_file: str, to_file: str, seed: int) -> None:
+        super().__init__(
+            env,
             f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
             from_file,
             to_file,
@@ -76,8 +77,9 @@ class Incomplete(Invalidate):
 class ChaosMonkey(Invalidate):
     """Tries to break judge by generating nasty output."""
 
-    def _init(self, from_file: str, to_file: str, seed: int) -> None:
-        super()._init(
+    def __init__(self, env, from_file: str, to_file: str, seed: int) -> None:
+        super().__init__(
+            env,
             f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",
             from_file,
             to_file,

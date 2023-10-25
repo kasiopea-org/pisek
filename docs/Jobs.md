@@ -31,7 +31,7 @@ Additionally each prerequisite must be inserted into the pipeline before the giv
 
 To decrease run time `Job`'s inputs are monitored, and after `Job` has successfully finished,
 it's result is cached. These are all inputs that `Job` can access:
- - `Job._init` parameters
+ - `Job.__init__` parameters
  - `Job._env` variables
  - accessed files - **These are not logged automatically. Every file must passed to `Job._access_file` or accessed by pre-made functions!** Even files we write to must be logged as we need to run the job again if they are deleted.
  - other job's results - Must be added as named prerequisites. 
@@ -45,10 +45,11 @@ A job can look like this (notice things in comments):
 ```py
 class CopyFile(TaskJob): # We inherit from TaskJob, because it provides useful methods
     """Copies a file."""
-    def _init(self, source: str, dest: str) -> None:
+    def __init__(self, env: Env, source: str, dest: str) -> None:
+        # Note that second parameter of __init__ must be env, and all subsequent are cached
         self.source = source
         self.dest = dest
-        super()._init(f"Copy {source} to {dest}") # Here we give name of the job
+        super().__init__(env, f"Copy {source} to {dest}") # Here we give name of the job
 
     def _run(self):
         if self._env.verbose:  # Accessing a global variable
@@ -64,10 +65,10 @@ class CopyFile(TaskJob): # We inherit from TaskJob, because it provides useful m
 
 Jobs are created this way:
 ```py
-Job(Env).init(*args, **kwargs)
+Job(Env, *args, **kwargs)
 ```
-1. Env containing global variables is handled separately.
-2. `_init` parameters are given to `init` to be logged
+Env must be second argument of every `__init__` (after `self`).
+`*args` and `**kwargs` are cached.
 
 ## JobManager
 Jobs are managed by a `JobManager` in this way:
@@ -85,8 +86,8 @@ class ExampleManager(TaskJobManager):  # We inherit from TaskJobManager again fo
     def _get_jobs(self) -> list[Job]:
         # Create list of jobs to run
         jobs : list[Job] = [
-            job1 := ExampleJob(self._env).init("1"),
-            job2 := ExampleJob(self._env).init("2"),
+            job1 := ExampleJob(self._env, "1"),
+            job2 := ExampleJob(self._env, "2"),
         ]
         # Add prerequisites accordingly 
         job2.add_prerequisite(job1)

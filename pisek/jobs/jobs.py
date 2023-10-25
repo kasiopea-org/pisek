@@ -17,6 +17,7 @@
 from abc import ABC, abstractmethod
 import hashlib
 from enum import Enum
+from functools import wraps
 from typing import Optional, AbstractSet, MutableSet, Any
 import yaml
 
@@ -26,6 +27,23 @@ from pisek.env import Env
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
 
+
+class CaptureInitParams:
+    _initialized = False
+
+    def __init_subclass__(cls):
+        real_init = cls.__init__
+
+        @wraps(real_init)
+        def wrapped_init(self, env: Env, *args, **kwargs):
+            if not self._initialized:
+                self._args = args
+                self._kwargs = kwargs
+                self._initialized = True
+                env = env.fork().lock()
+            real_init(self, env, *args, **kwargs)
+
+        cls.__init__ = wrapped_init
 
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
@@ -82,24 +100,14 @@ class PipelineItem(ABC):
                 item.cancel()
 
 
-class Job(PipelineItem):
+class Job(PipelineItem, CaptureInitParams):
     """One simple cacheable task in pipeline."""
 
-    def __init__(self, env: Env) -> None:
-        self._initialized = False
-        self._env = env.fork().lock()
+    def __init__(self, env: Env, name: str) -> None:
+        self._env = env
         self._accessed_files: MutableSet[str] = set([])
-        super().__init__("Unnamed job")
-
-    def init(self, *args, **kwargs) -> "Job":
-        self._args = args
-        self._kwargs = kwargs
-        self._init(*args, **kwargs)
-        self._initialized = True
-        return self
-
-    def _init(self, name: str) -> None:
         self.name = name
+        super().__init__(name)
 
     def _access_file(self, filename: str) -> None:
         """Add file this job depends on."""

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pisek.jobs.jobs import Job
+from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
 from pisek.jobs.parts.tools import IsClean
 
@@ -31,13 +32,13 @@ class DataManager(TaskJobManager):
         for file in files:
             inp, out = file.endswith(".in"), file.endswith(".out")
             if inp or out:
-                jobs.append(IsClean(self._env).init(file))
+                jobs.append(IsClean(self._env, file))
             if inp:
                 if self._env.config.contest_type == "kasiopea":
-                    jobs.append(InputSmall(self._env).init(file))
+                    jobs.append(InputSmall(self._env, file))
             if out:
                 if self._env.config.contest_type == "kasiopea":
-                    jobs.append(OutputSmall(self._env).init(file))
+                    jobs.append(OutputSmall(self._env, file))
 
         return jobs
 
@@ -45,17 +46,18 @@ class DataManager(TaskJobManager):
 class CheckData(TaskJob):
     """Abstract class for checking input and output files."""
 
-    def _init(self, name: str, data_file: str) -> None:
+    def __init__(self, env: Env, name: str, data_file: str) -> None:
+        super().__init__(env, name)
         self.data = self._data(data_file)
-        super()._init(name)
 
 
 class InputSmall(CheckData):
     """Checks that input is small enough to download."""
 
-    def _init(self, input_file: str) -> None:
-        super()._init(
-            f"Input {input_file} is smaller than {self._env.config.input_max_size}MB",
+    def __init__(self, env: Env, input_file: str) -> None:
+        super().__init__(
+            env,
+            f"Input {input_file} is smaller than {env.config.input_max_size}MB",
             input_file,
         )
 
@@ -67,9 +69,10 @@ class InputSmall(CheckData):
 class OutputSmall(CheckData):
     """Checks that output is small enough to upload."""
 
-    def _init(self, output_file: str) -> None:
-        super()._init(
-            f"Output {output_file} is smaller than {self._env.config.output_max_size}MB",
+    def __init__(self, env: Env, output_file: str) -> None:
+        super().__init__(
+            env,
+            f"Output {output_file} is smaller than {env.config.output_max_size}MB",
             output_file,
         )
 

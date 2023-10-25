@@ -19,6 +19,7 @@ from typing import Any, Optional
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job
+from pisek.env import Env
 from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, ProgramJob
@@ -39,7 +40,7 @@ class SolutionManager(TaskJobManager):
         jobs: list[Job] = []
 
         jobs.append(
-            compile := Compile(self._env).init(solution, True, self._compile_args())
+            compile := Compile(self._env, solution, True, self._compile_args())
         )
 
         if self._env.config.solutions[self.solution].primary:
@@ -54,8 +55,8 @@ class SolutionManager(TaskJobManager):
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
                     jobs.append(
-                        run_solution := RunSolution(self._env).init(
-                            solution, timeout, inp
+                        run_solution := RunSolution(
+                            self._env, solution, timeout, inp
                         )
                     )
                     run_solution.add_prerequisite(compile)
@@ -287,9 +288,9 @@ class RunPrimarySolutionMan(TaskJobManager):
         )
 
         jobs: list[Job] = [
-            compile := Compile(self._env).init(solution, True, self._compile_args()),
-            run_solution := RunSolution(self._env).init(
-                solution, self._get_timeout("solve"), self._input, self._output
+            compile := Compile(self._env, solution, True, self._compile_args()),
+            run_solution := RunSolution(
+                self._env, solution, self._get_timeout("solve"), self._input, self._output
             ),
         ]
         run_solution.add_prerequisite(compile)
@@ -303,13 +304,18 @@ RUN_JOB_NAME = r"Run (\w+) on input (\w+)"
 class RunSolution(ProgramJob):
     """Runs solution on given input."""
 
-    def _init(
+    def __init__(
         self,
+        env: Env,
         solution: str,
         timeout: float,
         input_name: str,
         output_name: Optional[str] = None,
     ) -> None:
+        name = RUN_JOB_NAME.replace(r"(\w+)", solution, 1).replace(
+            r"(\w+)", input_name, 1
+        )
+        super().__init__(env, name, solution)
         self.input_name = self._data(input_name)
         self.output_name = (
             self._data(output_name)
@@ -317,10 +323,6 @@ class RunSolution(ProgramJob):
             else self._output(self.input_name, solution)
         )
         self.timeout = timeout
-        name = RUN_JOB_NAME.replace(r"(\w+)", solution, 1).replace(
-            r"(\w+)", input_name, 1
-        )
-        super()._init(name, solution)
 
     def _run_solution(self) -> Optional[RunResult]:
         return self._run_program(

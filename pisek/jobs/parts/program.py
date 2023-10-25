@@ -158,10 +158,10 @@ def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunR
 class ProgramJob(TaskJob):
     """Job that deals with a program."""
 
-    def _init(self, name: str, program: str) -> None:
+    def __init__(self, env: Env, name: str, program: str) -> None:
+        super().__init__(env, name)
         self.program = program
         self.executable: Optional[str] = None
-        super()._init(name)
 
     def _load_compiled(self) -> bool:
         """Loads name of compiled program."""

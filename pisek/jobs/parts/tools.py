@@ -20,6 +20,7 @@ from typing import Optional
 
 import subprocess
 from pisek.jobs.jobs import State, Job
+from pisek.env import Env 
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramJob
 
@@ -30,8 +31,8 @@ class ToolsManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs = [
-            PrepareMinibox(self._env).init(),
-            PrepareTextPreprocessor(self._env).init(),
+            PrepareMinibox(self._env),
+            PrepareTextPreprocessor(self._env),
         ]
         return jobs
 
@@ -39,8 +40,8 @@ class ToolsManager(TaskJobManager):
 class PrepareMinibox(TaskJob):
     """Compiles minibox."""
 
-    def _init(self) -> None:
-        super()._init("Prepare Minibox")
+    def __init__(self, env: Env) -> None:
+        super().__init__(env, "Prepare Minibox")
 
     def _run(self):
         source = files("pisek").joinpath("tools/minibox.c")
@@ -70,8 +71,8 @@ class PrepareMinibox(TaskJob):
 class PrepareTextPreprocessor(TaskJob):
     """Copies Text Preprocessor."""
 
-    def _init(self) -> None:
-        super()._init("Prepare text preprocessor")
+    def __init__(self, env: Env) -> None:
+        super().__init__(env, "Prepare text preprocessor")
 
     def _run(self):
         source = files("pisek").joinpath("tools/text-preproc.c")
@@ -112,10 +113,10 @@ class SanitizeAbstract(ProgramJob):
 class Sanitize(SanitizeAbstract):
     """Sanitize text file using Text Preprocessor."""
 
-    def _init(self, input_: str, output: Optional[str] = None) -> None:
+    def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
+        super().__init__(env, f"Sanitize {input_} -> {output}", "text-preproc")
         self.input = self._data(input_)
         self.output = self._data(output if output is not None else input_ + ".clean")
-        return super()._init(f"Sanitize {input_} -> {output}", "text-preproc")
 
     def _run(self):
         return self._sanitize(self.input, self.output)
@@ -124,10 +125,10 @@ class Sanitize(SanitizeAbstract):
 class IsClean(SanitizeAbstract):
     """Check that file is same after using Text Preprocessor."""
 
-    def _init(self, input_: str, output: Optional[str] = None) -> None:
+    def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
+        super().__init__(env, f"{input_} is clean", "text-preproc")
         self.input = self._data(input_)
         self.output = self._data(output if output is not None else input_ + ".clean")
-        return super()._init(f"{input_} is clean", "text-preproc")
 
     def _run(self):
         self._sanitize(self.input, self.output)

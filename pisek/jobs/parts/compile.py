@@ -21,15 +21,17 @@ import sys
 from typing import Optional
 
 from pisek.jobs.jobs import State
+from pisek.env import Env
 from pisek.jobs.parts.program import ProgramJob
 
 
 class Compile(ProgramJob):
     """Job that compiles a program."""
 
-    def _init(
-        self, program: str, use_manager: bool = False, compile_args: dict = {}
+    def __init__(
+        self, env: Env, program: str, use_manager: bool = False, compile_args: dict = {}
     ) -> None:
+        super().__init__(env, f"Compile {os.path.basename(program)}", program)
         self.use_manager = use_manager
         self._compile_args = compile_args
         self.target = self._executable(os.path.basename(program))
@@ -40,7 +42,6 @@ class Compile(ProgramJob):
             if manager:
                 self.manager = self._resolve_path(manager)
 
-        super()._init(f"Compile {os.path.basename(program)}", program)
 
     def _resolve_extension(self, name: str) -> Optional[str]:
         """
