@@ -23,7 +23,7 @@ from pisek.jobs.jobs import State, PipelineItem, JobManager
 try:
     terminal_width, terminal_height = os.get_terminal_size()
 except OSError:
-    terminal_width, terminal_height = 100, inf
+    terminal_width, terminal_height = 100, 24
 
 MAX_BAR_LEN = 60
 line_sepatator = "⎯" * terminal_width + "\n"

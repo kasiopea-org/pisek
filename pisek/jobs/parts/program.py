@@ -73,7 +73,7 @@ class RunResult:
             if lines <= 0 or len(res) >= chars:
                 break
         res = tab(res)
-        if colored:
+        if not env.plain:
             res = colored(res, env, "yellow")
         return res
 

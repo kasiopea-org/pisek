@@ -34,7 +34,7 @@ class BaseEnv:
         self._vars = vars
         self._log_off = 0
         self._locked = False
-        self._accessed = set([])
+        self._accessed: set[str] = set([])
 
     def _get(self, name: str) -> Any:
         """

@@ -112,7 +112,7 @@ def update(path) -> Optional[str]:
     # Now we construct ordering of subtask difficulty but without redundant edges
 
     # First construct edges
-    subtask_includes = {i: set([]) for i in subtask_inputs}
+    subtask_includes: dict[int, set[int]] = {i: set([]) for i in subtask_inputs}
     for succ_subtask in subtask_inputs:
         for pred_subtask in subtask_inputs:
             if succ_subtask == pred_subtask:
@@ -130,13 +130,13 @@ def update(path) -> Optional[str]:
 
     if in_globs_used:
         for subtask in subtask_includes:
-            section = config[f"test{subtask:02}"]
-            section["predecessors"] = " ".join(map(str, subtask_includes[subtask]))
+            subtask_section = config[f"test{subtask:02}"]
+            subtask_section["predecessors"] = " ".join(map(str, subtask_includes[subtask]))
 
             in_globs = copy(subtask_inputs[subtask])
             for pred in subtask_includes[subtask]:
                 in_globs -= subtask_inputs[pred]
-            section["in_globs"] = " ".join(sorted(in_globs))
+            subtask_section["in_globs"] = " ".join(sorted(in_globs))
 
     with open(config_path, "w") as f:
         config.write(f, space_around_delimiters=False)

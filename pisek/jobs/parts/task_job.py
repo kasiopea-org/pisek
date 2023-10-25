@@ -40,6 +40,8 @@ RESULT_MARK = {
 
 
 class TaskHelper:
+    _env: Env
+
     def _get_build_dir(self) -> str:
         return BUILD_DIR
 

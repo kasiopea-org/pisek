@@ -16,6 +16,7 @@
 
 from typing import Any
 import os
+from typing import Optional
 import yaml
 
 CACHE_FILENAME = ".pisek_cache"
@@ -75,7 +76,7 @@ class Cache:
 
     def __init__(self, env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
-        self.broken_seal = None
+        self.broken_seal: Optional[CacheSeal] = None
         self._load()
 
     def add(self, cache_entry: CacheEntry):
@@ -101,7 +102,7 @@ class Cache:
 
     def _load(self) -> None:
         """Load cache file."""
-        self.cache = {}
+        self.cache: dict[str, list[CacheEntry]] = {}
         if not os.path.exists(self.cache_path):
             return
 
@@ -113,9 +114,12 @@ class Cache:
                 if isinstance(entry, CacheSeal):
                     self.broken_seal = entry
                     break
-                if entry.name not in self.cache:
-                    self.cache[entry.name] = []
-                self.cache[entry.name].append(entry)
+                elif isinstance(entry, CacheEntry):
+                    if entry.name not in self.cache:
+                        self.cache[entry.name] = []
+                    self.cache[entry.name].append(entry)
+                else:
+                    raise RuntimeError(f"Unknown object in cache {entry}")
 
         self.export()  # Break the CacheSeal
 

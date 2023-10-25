@@ -304,7 +304,7 @@ class SubtaskConfig(BaseEnv):
     ) -> Optional[str]:
         if subtask_number == 0:  # samples
             self._set("name", config_section.get("name", "Samples"))
-            self._set("score", int(config_section.get("points", 0)))
+            self._set("score", int(config_section.get("points", "0")))
             self._set("in_globs", config_section.get("in_globs", "sample*.in").split())
             self._set("predecessors", config_section.get("predecessors", "").split())
         else:
