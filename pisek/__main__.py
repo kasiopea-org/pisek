@@ -63,7 +63,7 @@ def extract_task(args, **kwargs):
 
 
 def clean_directory(args):
-    task_dir = os.getcwd()
+    task_dir = PATH
     eprint(f"Cleaning repository: {task_dir}")
     clean_task_dir(task_dir)
 
@@ -166,7 +166,7 @@ def main(argv):
         parser.add_argument(
             "--solutions",
             "-s",
-            default="all",
+            default=[],
             type=str,
             nargs="*",
             help="Solutions to visualize.",
@@ -348,7 +348,7 @@ def main(argv):
     elif args.subcommand == "clean":
         clean_directory(args)
     elif args.subcommand == "visualize":
-        visualize_command(args)
+        visualize_command(PATH, args)
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
     elif args.subcommand == "update":
