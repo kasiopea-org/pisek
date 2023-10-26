@@ -20,14 +20,11 @@ from math import ceil
 import os
 import re
 import sys
-from ansi.color import fg
-from ansi.color.fx import reset
-from typing import List, Dict, Optional, Union, Iterable
+from ansi.color import fg, fx
+from typing import Optional, Union, Iterable, Callable
 
 from pisek import util
 from .task_config import TaskConfig, SubtaskConfig
-
-TASK_DIR = "."
 
 VERDICTS = {
     "ok": "·",
@@ -43,13 +40,13 @@ TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "poin
 
 
 def red(msg: str) -> str:
-    return f"{fg.red}{msg}{reset}"
+    return f"{fg.red}{msg}{fx.reset}"
 
 
 def group_by_subtask(
-    results: List[TestCaseResult], config: TaskConfig
-) -> List[List[TestCaseResult]]:
-    subtasks = {num: [] for num in config.subtasks.keys()}
+    results: list[TestCaseResult], config: TaskConfig
+) -> dict[str, list[TestCaseResult]]:
+    subtasks: dict[str, list[TestCaseResult]] = {num: [] for num in config.subtasks.keys()}
     for result in results:
         for i, subtask in config.subtasks.items():
             if in_subtask(result.name, subtask):
@@ -62,7 +59,7 @@ def in_subtask(name: str, subtask: SubtaskConfig):
 
 
 def evaluate_solution(
-    results: Dict[int, List[TestCaseResult]], config: TaskConfig
+    results: dict[str, list[TestCaseResult]], config: TaskConfig
 ) -> float:
     points = 0.0
     for subtask_id, sub_results in results.items():
@@ -70,7 +67,7 @@ def evaluate_solution(
     return points
 
 
-def evaluate_subtask(subtask_results: List[TestCaseResult], max_points):
+def evaluate_subtask(subtask_results: list[TestCaseResult], max_points):
     subtask_success = 1
     for result in subtask_results:
         subtask_success = min(subtask_success, result.points)
@@ -78,7 +75,7 @@ def evaluate_subtask(subtask_results: List[TestCaseResult], max_points):
 
 
 # mode section
-def slowest(results: List[TestCaseResult]) -> Union[str, List[TestCaseResult]]:
+def slowest(results: list[TestCaseResult]) -> Union[str, list[TestCaseResult]]:
     wa = filter_by_verdict(results, VERDICTS["wrong_answer"])
     err = filter_by_verdict(results, VERDICTS["error"])
     if len(wa) != 0 or len(err) != 0:
@@ -87,7 +84,7 @@ def slowest(results: List[TestCaseResult]) -> Union[str, List[TestCaseResult]]:
     return [slowest]
 
 
-def identity(results: List[TestCaseResult]) -> List[TestCaseResult]:
+def identity(results: list[TestCaseResult]) -> list[TestCaseResult]:
     return results
 
 
@@ -100,8 +97,9 @@ MODES_ALIASES = {
 
 
 # visualization section
-def visualize_command(args):
+def visualize_command(path, args):
     visualize(
+        path,
         args.mode,
         not args.no_subtasks,
         args.solutions,
@@ -113,30 +111,31 @@ def visualize_command(args):
 
 
 def visualize(
+    path: str = ".",
     mode: str = "slowest",
     by_subtask: bool = True,
-    solutions: Union[List[str], str] = "all",
+    solutions: list[str] = [],
     filename: str = "testing_log.json",
     measured_stat: str = "time",
-    limit: Optional[int] = None,
+    limit: Optional[float] = None,
     segments: int = 10,
 ):
     config = TaskConfig()
-    err = config.load(TASK_DIR)
+    err = config.load(path)
     if err:
         print(err, file=sys.stderr)
         exit(1)
-    with open(os.path.join(TASK_DIR, filename)) as f:
+    with open(os.path.join(path, filename)) as f:
         testing_log = json.load(f)
 
     if mode not in MODES_ALIASES:
         print(
-            f"Neznámý mód {mode}. Známé mody jsou: {', '.join(set(MODES_ALIASES.values()))}"
+            f"Neznámý mód {mode}. Známé mody jsou: {', '.join(set(MODES_ALIASES.keys()))}"
         )
         exit(1)
-    mode = MODES_ALIASES[mode]
+    mode_func = MODES_ALIASES[mode]
 
-    if solutions == "all":
+    if solutions == []:
         solutions = list(testing_log.keys() - {"source"})
     else:
         for solution_name in solutions:
@@ -151,6 +150,8 @@ def visualize(
     if limit is None:
         if measured_stat == "time":
             limit = config.get_timeout(True)
+        else: # TODO: Fix when implementing additional stats
+            limit = 1
 
     # Kind of slow, but we will not have hundreds of solutions
     solutions.sort(key=lambda x: config.solutions.keys().index(x))
@@ -161,7 +162,7 @@ def visualize(
             solution_name,
             testing_log[solution_name],
             config,
-            mode,
+            mode_func,
             by_subtask,
             measured_stat,
             limit,
@@ -180,10 +181,10 @@ def visualize_solution(
     solution_name: str,
     data,
     config: TaskConfig,
-    mode: str,
+    mode_func: Callable[[list[TestCaseResult]], Union[list[TestCaseResult], str]],
     by_subtask: bool,
     measured_stat: str,
-    limit: int,
+    limit: float,
     segments: int,
 ):
     results = data["results"]
@@ -212,18 +213,18 @@ def visualize_solution(
     results_extracted.sort(key=lambda x: VERDICTS_ORDER.index(x.verdict))
     results_extracted.sort(key=lambda x: get_subtask(x.name))
 
-    results_evalute = group_by_subtask(results_extracted, config)
+    results_evaluate = group_by_subtask(results_extracted, config)
 
     if by_subtask:
-        results_filtered = group_by_subtask(results_extracted, config)
-        for key in results_filtered:
-            results_filtered[key] = mode(results_filtered[key])
+        results_filtered: dict[str, Union[str, list[TestCaseResult]]] = {}
+        for key in results_evaluate:
+            results_filtered[key] = mode_func(results_evaluate[key])
     else:
-        results_filtered = {"all": mode(results_extracted)}
+        results_filtered = {"all": mode_func(results_extracted)}
 
     # Lastly print
     exp_score = util.get_expected_score(solution_name, config)
-    score = evaluate_solution(results_evalute, config)
+    score = evaluate_solution(results_evaluate, config)
     as_expected = (exp_score is None) or (exp_score == score)
     print(f"{solution_name}: ({score}b)")
     if not as_expected:
@@ -236,9 +237,11 @@ def visualize_solution(
 
     segment_length = limit / segments
 
-    results_groups = list(
-        filter(lambda x: isinstance(x, list), results_filtered.values())
-    )
+    results_groups: list[list[TestCaseResult]] = []
+    for group in results_filtered.values():
+        if isinstance(group, list):
+            results_groups.append(group)
+    
     if len(results_groups):
         max_overflower = max(sum(results_groups, start=[]), key=lambda x: x.value)
         max_overflowed_segments = overflowed_segments(
@@ -248,15 +251,16 @@ def visualize_solution(
     for subtask_num in sorted(results_filtered.keys()):
         if by_subtask:
             subtask_score = evaluate_subtask(
-                results_evalute[subtask_num], config.subtasks[subtask_num].score
+                results_evaluate[subtask_num], config.subtasks[subtask_num].score
             )
             print(f"{config.subtasks[subtask_num].name} ({subtask_score}b)")
 
-        if isinstance(results_filtered[subtask_num], str):
-            print("  " + results_filtered[subtask_num])
+        subtask_results = results_filtered[subtask_num]
+        if isinstance(subtask_results, str):
+            print("  " + subtask_results)
             continue
 
-        for result in results_filtered[subtask_num]:
+        for result in subtask_results:
             in_segments = in_time_segments(result.value, limit, segment_length)
             overflow_segments = overflowed_segments(result.value, limit, segment_length)
 
@@ -279,8 +283,8 @@ def strip_suffix(name):
 
 
 def filter_by_verdict(
-    results: List[TestCaseResult], verdicts: Union[str, Iterable[str]]
-) -> List[TestCaseResult]:
+    results: list[TestCaseResult], verdicts: Union[str, Iterable[str]]
+) -> list[TestCaseResult]:
     if isinstance(verdicts, str):
         verdicts = (verdicts,)
     return list(filter(lambda x: x.verdict.upper() in verdicts, results))
