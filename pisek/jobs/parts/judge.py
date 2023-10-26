@@ -80,9 +80,7 @@ class JudgeManager(TaskJobManager):
         jobs: list[Job] = []
         if self._env.config.judge_type != "diff":
             jobs.append(
-                comp := Compile(
-                    self._env, self._resolve_path(self._env.config.judge)
-                )
+                comp := Compile(self._env, self._resolve_path(self._env.config.judge))
             )
 
         samples = self._get_samples()
@@ -247,7 +245,9 @@ class RunDiffJudge(RunJudge):
         correct_output: str,
         expected_points: Optional[float],
     ) -> None:
-        super().__init__(env, judge, input_name, output_name, correct_output, expected_points)
+        super().__init__(
+            env, judge, input_name, output_name, correct_output, expected_points
+        )
 
     def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.output_name)
@@ -282,7 +282,9 @@ class RunKasiopeaJudge(RunJudge):
         seed: str,
         expected_points: Optional[float],
     ) -> None:
-        super().__init__(env, judge, input_name, output_name, correct_output, expected_points)
+        super().__init__(
+            env, judge, input_name, output_name, correct_output, expected_points
+        )
         self.subtask = subtask
         self.seed = seed
 
@@ -329,7 +331,9 @@ class RunCMSJudge(RunJudge):
         correct_output: str,
         expected_points: Optional[float],
     ) -> None:
-        super().__init__(env, judge, input_name, output_name, correct_output, expected_points)
+        super().__init__(
+            env, judge, input_name, output_name, correct_output, expected_points
+        )
 
     def _judge(self) -> Optional[SolutionResult]:
         self._access_file(self.input_name)

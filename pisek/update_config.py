@@ -131,7 +131,9 @@ def update(path) -> Optional[str]:
     if in_globs_used:
         for subtask in subtask_includes:
             subtask_section = config[f"test{subtask:02}"]
-            subtask_section["predecessors"] = " ".join(map(str, subtask_includes[subtask]))
+            subtask_section["predecessors"] = " ".join(
+                map(str, subtask_includes[subtask])
+            )
 
             in_globs = copy(subtask_inputs[subtask])
             for pred in subtask_includes[subtask]:

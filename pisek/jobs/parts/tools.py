@@ -20,7 +20,7 @@ from typing import Optional
 
 import subprocess
 from pisek.jobs.jobs import State, Job
-from pisek.env import Env 
+from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramJob
 
@@ -30,7 +30,7 @@ class ToolsManager(TaskJobManager):
         super().__init__("Preparing tools")
 
     def _get_jobs(self) -> list[Job]:
-        jobs : list[Job] = [
+        jobs: list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
         ]

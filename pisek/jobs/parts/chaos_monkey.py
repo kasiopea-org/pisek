@@ -20,6 +20,7 @@ import string
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob
 
+
 def randword(length: int):
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for _ in range(length))
@@ -44,7 +45,9 @@ ANY_MODIFIERS = [
 class Invalidate(TaskJob):
     """Abstract Job for Invalidating an output."""
 
-    def __init__(self, env: Env, name: str, from_file: str, to_file: str, seed: int) -> None:
+    def __init__(
+        self, env: Env, name: str, from_file: str, to_file: str, seed: int
+    ) -> None:
         super().__init__(env, name)
         self.seed = seed
         self.from_file = self._data(from_file)

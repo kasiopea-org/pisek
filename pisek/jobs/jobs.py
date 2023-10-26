@@ -45,6 +45,7 @@ class CaptureInitParams:
 
         cls.__init__ = wrapped_init
 
+
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
 

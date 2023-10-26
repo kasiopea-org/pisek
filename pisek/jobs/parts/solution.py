@@ -39,9 +39,7 @@ class SolutionManager(TaskJobManager):
 
         jobs: list[Job] = []
 
-        jobs.append(
-            compile := Compile(self._env, solution, True, self._compile_args())
-        )
+        jobs.append(compile := Compile(self._env, solution, True, self._compile_args()))
 
         if self._env.config.solutions[self.solution].primary:
             timeout = self._get_timeout("solve")
@@ -55,9 +53,7 @@ class SolutionManager(TaskJobManager):
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
                     jobs.append(
-                        run_solution := RunSolution(
-                            self._env, solution, timeout, inp
-                        )
+                        run_solution := RunSolution(self._env, solution, timeout, inp)
                     )
                     run_solution.add_prerequisite(compile)
 
@@ -290,7 +286,11 @@ class RunPrimarySolutionMan(TaskJobManager):
         jobs: list[Job] = [
             compile := Compile(self._env, solution, True, self._compile_args()),
             run_solution := RunSolution(
-                self._env, solution, self._get_timeout("solve"), self._input_file, self._output_file
+                self._env,
+                solution,
+                self._get_timeout("solve"),
+                self._input_file,
+                self._output_file,
             ),
         ]
         run_solution.add_prerequisite(compile)

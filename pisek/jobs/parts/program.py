@@ -253,7 +253,9 @@ class ProgramJob(TaskJob):
             t, wt = float(meta["time"]), float(meta["time-wall"])
             if meta["status"] in ("RE", "SG"):
                 if (rc := re.search("\d+", meta["message"])) is None:
-                    raise RuntimeError(f"No error status in minibox message: {meta['message']}")
+                    raise RuntimeError(
+                        f"No error status in minibox message: {meta['message']}"
+                    )
                 return_code = int(rc[0])
                 return RunResult(
                     RunResultKind.RUNTIME_ERROR,

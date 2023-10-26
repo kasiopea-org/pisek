@@ -28,6 +28,7 @@ from pisek.jobs.parts.judge import JUDGE_JOB_NAME
 
 FILE_NAME = "testing_log.json"
 
+
 def extract(env) -> None:
     # Extracts testing_log.json from .pisek_cache
     cache = Cache(env)

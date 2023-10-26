@@ -42,7 +42,6 @@ class Compile(ProgramJob):
             if manager:
                 self.manager = self._resolve_path(manager)
 
-
     def _resolve_extension(self, name: str) -> Optional[str]:
         """
         Given `name`, finds a file named `name`.[ext],

@@ -42,7 +42,7 @@ class GeneratorManager(TaskJobManager):
             for sub_num in self._env.config.subtasks.keys():
                 if sub_num == "0":
                     continue  # skip samples
-                last_gen : OnlineGeneratorGenerate
+                last_gen: OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
                     data_dir = self._env.config.get_data_dir()
                     input_name = util.get_input_name(seed, sub_num)
@@ -106,7 +106,13 @@ class OnlineGeneratorJob(ProgramJob):
     """Abstract class for jobs with OnlineGenerator."""
 
     def __init__(
-        self, env: Env, name: str, generator: str, input_file: str, subtask: int, seed: int
+        self,
+        env: Env,
+        name: str,
+        generator: str,
+        input_file: str,
+        subtask: int,
+        seed: int,
     ) -> None:
         super().__init__(env, name, generator)
         self.subtask = subtask
@@ -143,8 +149,12 @@ class OnlineGeneratorJob(ProgramJob):
 class OnlineGeneratorGenerate(OnlineGeneratorJob):
     """Generates single input using OnlineGenerator."""
 
-    def __init__(self, env: Env, generator: str, input_file: str, subtask: int, seed: int) -> None:
-        super().__init__(env, f"Generate {input_file}", generator, input_file, subtask, seed)
+    def __init__(
+        self, env: Env, generator: str, input_file: str, subtask: int, seed: int
+    ) -> None:
+        super().__init__(
+            env, f"Generate {input_file}", generator, input_file, subtask, seed
+        )
 
     def _run(self) -> Optional[RunResult]:
         return self._gen(self.input_file, self.seed, self.subtask)
@@ -153,7 +163,9 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
 class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     """Test whether generating given input again has same result."""
 
-    def __init__(self, env: Env, generator: str, input_file: str, subtask: int, seed: int) -> None:
+    def __init__(
+        self, env: Env, generator: str, input_file: str, subtask: int, seed: int
+    ) -> None:
         super().__init__(
             env,
             f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
@@ -187,7 +199,8 @@ class OnlineGeneratorRespectsSeed(TaskJob):
         self.subtask = subtask
         self.seed1, self.seed2 = seed1, seed2
         super().__init__(
-            env, f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)"
+            env,
+            f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)",
         )
 
     def _run(self) -> None:

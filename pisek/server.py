@@ -132,10 +132,12 @@ class ServerGenKasiopea(JobPipeline):
         if env.config.contest_type == "cms":
             raise NotImplementedError("RunGen for cms is not implemented.")
 
-        self.pipeline = deque([
-            tools := ToolsManager(),
-            generator := RunOnlineGeneratorMan(subtask, seed, file),
-        ])
+        self.pipeline = deque(
+            [
+                tools := ToolsManager(),
+                generator := RunOnlineGeneratorMan(subtask, seed, file),
+            ]
+        )
         generator.add_prerequisite(tools)
 
 
@@ -145,10 +147,12 @@ class ServerSolve(JobPipeline):
     def __init__(self, env, input_: str, output: Optional[str]):
         super().__init__()
 
-        self.pipeline = deque([
-            tools := ToolsManager(),
-            solve := RunPrimarySolutionMan(input_, output),
-        ])
+        self.pipeline = deque(
+            [
+                tools := ToolsManager(),
+                solve := RunPrimarySolutionMan(input_, output),
+            ]
+        )
         solve.add_prerequisite(tools)
 
 
@@ -166,10 +170,14 @@ class ServerJudgeKasiopea(JobPipeline):
     ):
         super().__init__()
 
-        self.pipeline = deque([
-            tools := ToolsManager(),
-            judge := RunKasiopeaJudgeMan(subtask, seed, input_, output, correct_output),
-        ])
+        self.pipeline = deque(
+            [
+                tools := ToolsManager(),
+                judge := RunKasiopeaJudgeMan(
+                    subtask, seed, input_, output, correct_output
+                ),
+            ]
+        )
         judge.add_prerequisite(tools)
         self._judge_man = judge
 

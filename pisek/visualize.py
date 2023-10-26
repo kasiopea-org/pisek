@@ -46,7 +46,9 @@ def red(msg: str) -> str:
 def group_by_subtask(
     results: list[TestCaseResult], config: TaskConfig
 ) -> dict[str, list[TestCaseResult]]:
-    subtasks: dict[str, list[TestCaseResult]] = {num: [] for num in config.subtasks.keys()}
+    subtasks: dict[str, list[TestCaseResult]] = {
+        num: [] for num in config.subtasks.keys()
+    }
     for result in results:
         for i, subtask in config.subtasks.items():
             if in_subtask(result.name, subtask):
@@ -150,7 +152,7 @@ def visualize(
     if limit is None:
         if measured_stat == "time":
             limit = config.get_timeout(True)
-        else: # TODO: Fix when implementing additional stats
+        else:  # TODO: Fix when implementing additional stats
             limit = 1
 
     # Kind of slow, but we will not have hundreds of solutions
@@ -241,7 +243,7 @@ def visualize_solution(
     for group in results_filtered.values():
         if isinstance(group, list):
             results_groups.append(group)
-    
+
     if len(results_groups):
         max_overflower = max(sum(results_groups, start=[]), key=lambda x: x.value)
         max_overflowed_segments = overflowed_segments(

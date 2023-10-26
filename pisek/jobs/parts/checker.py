@@ -68,9 +68,7 @@ class CheckerManager(TaskJobManager):
                     self.loose_subtasks[-1].jobs[pred] = []
                     for inp in self._subtask_new_inputs(sub):
                         jobs.append(
-                            check := CheckerJob(
-                                self._env, checker, inp, pred, None
-                            )
+                            check := CheckerJob(self._env, checker, inp, pred, None)
                         )
                         self.loose_subtasks[-1].jobs[pred].append(check)
                         check.add_prerequisite(compile)
