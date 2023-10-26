@@ -103,6 +103,9 @@ class PipelineItem(ABC):
 class Job(PipelineItem, CaptureInitParams):
     """One simple cacheable task in pipeline."""
 
+    _args: list[Any]
+    _kwargs: dict[str, Any]
+
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
         self._accessed_files: MutableSet[str] = set([])

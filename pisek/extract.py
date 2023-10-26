@@ -18,6 +18,7 @@ import json
 import os
 import sys
 import re
+from typing import Any
 
 from pisek.util import get_output_name
 from pisek.terminal import colored
@@ -26,7 +27,6 @@ from pisek.jobs.parts.solution import RUN_JOB_NAME
 from pisek.jobs.parts.judge import JUDGE_JOB_NAME
 
 FILE_NAME = "testing_log.json"
-
 
 def extract(env) -> None:
     # Extracts testing_log.json from .pisek_cache
@@ -40,7 +40,7 @@ def extract(env) -> None:
             ),
             file=sys.stderr,
         )
-    data = {"source": "pisek"}
+    data: dict[str, Any] = {"source": "pisek"}
     for name in cache.entry_names():
         if m := re.match(RUN_JOB_NAME, name):
             solution, inp = m[1], m[2]

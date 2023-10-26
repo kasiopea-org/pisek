@@ -197,8 +197,8 @@ class SubtaskJobGroup:
         return res.points
 
     @staticmethod
-    def _finished(jobs: list[Job]) -> list[Job]:
-        return filter(lambda j: j.state == State.succeeded, jobs)
+    def _finished(jobs: list[RunJudge]) -> list[RunJudge]:
+        return list(filter(lambda j: j.state == State.succeeded, jobs))
 
     @staticmethod
     def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
@@ -278,8 +278,8 @@ class SubtaskJobGroup:
 
 class RunPrimarySolutionMan(TaskJobManager):
     def __init__(self, input_: str, output: Optional[str]):
-        self._input = input_
-        self._output = output
+        self._input_file = input_
+        self._output_file = output
         super().__init__("Running primary solution")
 
     def _get_jobs(self) -> list[Job]:
@@ -290,7 +290,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         jobs: list[Job] = [
             compile := Compile(self._env, solution, True, self._compile_args()),
             run_solution := RunSolution(
-                self._env, solution, self._get_timeout("solve"), self._input, self._output
+                self._env, solution, self._get_timeout("solve"), self._input_file, self._output_file
             ),
         ]
         run_solution.add_prerequisite(compile)

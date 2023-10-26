@@ -140,20 +140,20 @@ class RunKasiopeaJudgeMan(TaskJobManager):
     ):
         self._subtask = subtask
         self._seed = seed
-        self._input = input_
-        self._output = output
+        self._input_file = input_
+        self._output_file = output
         self._correct_output = correct_output
         super().__init__("Running judge")
 
     def _get_jobs(self) -> list[Job]:
         judge_program = self._resolve_path(self._env.config.judge)
-        clean_output = self._output + ".clean"
+        clean_output = self._output_file + ".clean"
 
         jobs: list[Job] = [
-            sanitize := Sanitize(self._env, self._output, clean_output),
+            sanitize := Sanitize(self._env, self._output_file, clean_output),
             judge := judge_job(
                 judge_program,
-                self._input,
+                self._input_file,
                 clean_output,
                 self._correct_output,
                 self._subtask,
@@ -266,7 +266,8 @@ class RunDiffJudge(RunJudge):
                 Verdict.wrong_answer, 0.0, "", self._quote_program(rr)
             )
         else:
-            return self._fail(f"Diff failed:\n{tab(diff.stderr)}")
+            self._fail(f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}")
+            return None
 
 
 class RunKasiopeaJudge(RunJudge):

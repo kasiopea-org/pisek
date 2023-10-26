@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import deque
 import os
 from typing import Optional
 from functools import partial
@@ -40,10 +41,10 @@ class KasiopeaInputCase:
         self.input: Optional[str] = None
         self.correct_output: Optional[str] = None
 
-    def gen_input(self, input: Optional[str] = None) -> None:
-        if input is None:
-            input = util.get_input_name(self.seed, self.subtask)
-        self.input = input
+    def gen_input(self, input_: Optional[str] = None) -> None:
+        if input_ is None:
+            input_ = util.get_input_name(self.seed, self.subtask)
+        self.input = input_
 
         res = run_pipeline(
             self.path,
@@ -60,6 +61,7 @@ class KasiopeaInputCase:
         self.input = input_ or self.input
         if self._needs_generating(self.input):
             self.gen_input(self.input)
+        assert self.input is not None
 
         if correct_output is None:
             correct_output = util.get_output_name(self.input, "")
@@ -82,12 +84,20 @@ class KasiopeaInputCase:
         env = load_env(self.path)
 
         self.input = input_ or self.input
-        if env.config.judge_needs_in and self._needs_generating(self.input):
-            self.gen_input(self.input)
+        if env.config.judge_needs_in:
+            if self._needs_generating(self.input):
+                self.gen_input(self.input)
+            assert self.input is not None
+        else:
+            self.input = "/dev/null"
 
         self.correct_output = correct_output or self.correct_output
-        if env.config.judge_needs_out and self._needs_generating(self.correct_output):
-            self.gen_correct_output(self.correct_output)
+        if env.config.judge_needs_out:
+            if self._needs_generating(self.correct_output):
+                self.gen_correct_output(self.correct_output)
+            assert self.correct_output is not None
+        else:
+            self.correct_output = "/dev/null"
 
         env = load_env(self.path)
         if env is None:
@@ -122,10 +132,10 @@ class ServerGenKasiopea(JobPipeline):
         if env.config.contest_type == "cms":
             raise NotImplementedError("RunGen for cms is not implemented.")
 
-        self.pipeline = [
+        self.pipeline = deque([
             tools := ToolsManager(),
             generator := RunOnlineGeneratorMan(subtask, seed, file),
-        ]
+        ])
         generator.add_prerequisite(tools)
 
 
@@ -135,10 +145,10 @@ class ServerSolve(JobPipeline):
     def __init__(self, env, input_: str, output: Optional[str]):
         super().__init__()
 
-        self.pipeline = [
+        self.pipeline = deque([
             tools := ToolsManager(),
             solve := RunPrimarySolutionMan(input_, output),
-        ]
+        ])
         solve.add_prerequisite(tools)
 
 
@@ -156,10 +166,10 @@ class ServerJudgeKasiopea(JobPipeline):
     ):
         super().__init__()
 
-        self.pipeline = [
+        self.pipeline = deque([
             tools := ToolsManager(),
             judge := RunKasiopeaJudgeMan(subtask, seed, input_, output, correct_output),
-        ]
+        ])
         judge.add_prerequisite(tools)
         self._judge_man = judge
 

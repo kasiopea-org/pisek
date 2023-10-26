@@ -30,7 +30,7 @@ class ToolsManager(TaskJobManager):
         super().__init__("Preparing tools")
 
     def _get_jobs(self) -> list[Job]:
-        jobs = [
+        jobs : list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
         ]
@@ -106,7 +106,7 @@ class SanitizeAbstract(ProgramJob):
             return None
         elif result.returncode == 43:
             return self._program_fail(
-                f"Text preprocessor failed on file: {self.input}", result
+                f"Text preprocessor failed on file: {input_}", result
             )
 
 

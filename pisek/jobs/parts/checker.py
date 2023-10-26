@@ -30,7 +30,8 @@ class CheckerManager(TaskJobManager):
         super().__init__("Running checker")
 
     def _get_jobs(self) -> list[Job]:
-        if self._env.config.checker is None:
+        checker = self._env.config.checker
+        if checker is None:
             if self._env.strict:
                 self._fail("No checker specified in config.")
                 return []
@@ -46,7 +47,7 @@ class CheckerManager(TaskJobManager):
         if self.skipped_checker != "":
             return []
 
-        checker = self._resolve_path(self._env.config.checker)
+        checker = self._resolve_path(checker)
 
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 

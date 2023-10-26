@@ -42,7 +42,7 @@ class GeneratorManager(TaskJobManager):
             for sub_num in self._env.config.subtasks.keys():
                 if sub_num == "0":
                     continue  # skip samples
-                last_gen = None
+                last_gen : OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
                     data_dir = self._env.config.get_data_dir()
                     input_name = util.get_input_name(seed, sub_num)
@@ -75,8 +75,8 @@ class GeneratorManager(TaskJobManager):
                         rs.add_prerequisite(gen)
                     last_gen = gen
         else:
-            jobs.append(gen := OfflineGeneratorGenerate(self._env, generator))
-            gen.add_prerequisite(compile)
+            jobs.append(gen2 := OfflineGeneratorGenerate(self._env, generator))
+            gen2.add_prerequisite(compile)
 
         return jobs
 

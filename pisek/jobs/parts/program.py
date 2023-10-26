@@ -47,8 +47,8 @@ class RunResult:
         self,
         kind: RunResultKind,
         returncode: int,
-        time: int,
-        wall_time: int,
+        time: float,
+        wall_time: float,
         stdout_file=None,
         stderr_file=None,
         stderr_text=None,
@@ -185,7 +185,7 @@ class ProgramJob(TaskJob):
         stderr: Optional[str] = None,
         env={},
         print_stderr: bool = False,
-    ) -> RunResult:
+    ) -> Optional[RunResult]:
         """Runs args as a command."""
         executable = args[0]
         self._access_file(executable)
@@ -222,6 +222,13 @@ class ProgramJob(TaskJob):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
+        # Mypy
+        if process.stdout is None:
+            raise RuntimeError(f"Captured stdout of {process} should not be None")
+        if process.stderr is None:
+            raise RuntimeError(f"Captured stderr of {process} should not be None")
+
         if print_stderr:
             stderr_raw = ""
             while True:
@@ -236,20 +243,21 @@ class ProgramJob(TaskJob):
 
         meta_raw = process.stdout.read().decode().strip().split("\n")
         meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
-
         if not print_stderr:
             stderr_raw = process.stderr.read().decode()
         stderr_text = None if stderr else stderr_raw
         if process.returncode == 0:
-            t, wt = meta["time"], meta["time-wall"]
+            t, wt = float(meta["time"]), float(meta["time-wall"])
             return RunResult(RunResultKind.OK, 0, t, wt, stdout, stderr, stderr_text)
         elif process.returncode == 1:
-            t, wt = meta["time"], meta["time-wall"]
+            t, wt = float(meta["time"]), float(meta["time-wall"])
             if meta["status"] in ("RE", "SG"):
-                rc = int(re.search("\d+", meta["message"])[0])
+                if (rc := re.search("\d+", meta["message"])) is None:
+                    raise RuntimeError(f"No error status in minibox message: {meta['message']}")
+                return_code = int(rc[0])
                 return RunResult(
                     RunResultKind.RUNTIME_ERROR,
-                    rc,
+                    return_code,
                     t,
                     wt,
                     stdout,
@@ -267,8 +275,11 @@ class ProgramJob(TaskJob):
                     stderr,
                     f"[Timeout after {timeout}s]",
                 )
+            else:
+                raise RuntimeError(f"Unknown minibox status {meta['message']}.")
         else:
             self._fail(f"Minibox error:\n{tab(stderr_raw)}")
+            return None
 
     def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
         """Runs program."""
