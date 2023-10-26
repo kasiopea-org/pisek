@@ -32,4 +32,5 @@ jobs:
     - name: Check typing
       run: |
         pip install mypy
+        pip install types-PyYAML
         mypy pisek/
