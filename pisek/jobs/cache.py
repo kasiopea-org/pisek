@@ -19,6 +19,9 @@ import os
 from typing import Optional
 import yaml
 
+from pisek.terminal import eprint, colored
+from pisek.env import Env
+
 CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
@@ -74,10 +77,10 @@ class CacheSeal(yaml.YAMLObject):
 class Cache:
     """Object representing all cached jobs."""
 
-    def __init__(self, env) -> None:
+    def __init__(self, env: Env) -> None:
         self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
         self.broken_seal: Optional[CacheSeal] = None
-        self._load()
+        self._load(env)
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
@@ -100,14 +103,19 @@ class Cache:
     def last_entry(self, name: str) -> CacheEntry:
         return self[name][-1]
 
-    def _load(self) -> None:
+    def _load(self, env: Env) -> None:
         """Load cache file."""
         self.cache: dict[str, list[CacheEntry]] = {}
         if not os.path.exists(self.cache_path):
             return
 
         with open(self.cache_path, encoding="utf-8") as f:
-            entries = yaml.full_load(f)
+            try:
+                entries = yaml.full_load(f)
+            except ValueError:
+                eprint(colored("Invalid .pisek_cache file. Starting from scratch...", env, "yellow"))
+                entries = {}
+
             if entries is None:
                 return
             for entry in entries:
