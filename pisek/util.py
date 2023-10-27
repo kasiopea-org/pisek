@@ -26,10 +26,6 @@ from .task_config import TaskConfig
 BUILD_DIR = "build/"
 
 
-def eprint(msg, *args, **kwargs):
-    print(msg, *args, file=sys.stderr, **kwargs)
-
-
 def rm_f(fn):
     try:
         os.unlink(fn)

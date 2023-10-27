@@ -22,7 +22,8 @@ import sys
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.pipeline_tools import run_pipeline, load_env
 
-from pisek.util import eprint, clean_task_dir
+from pisek.util import clean_task_dir
+from pisek.terminal import eprint
 from pisek.license import license, license_gnu
 import pisek.cms as cms
 from pisek.update_config import update

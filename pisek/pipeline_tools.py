@@ -1,7 +1,6 @@
 from typing import Optional
 
-from pisek.util import eprint
-from pisek.terminal import tab, colored
+from pisek.terminal import eprint, tab, colored
 from pisek.task_config import TaskConfig
 from pisek.env import Env
 from pisek.jobs.cache import Cache

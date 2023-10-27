@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import sys
 
 from ansi.color import fg, fx
 from typing import Callable
@@ -20,6 +21,10 @@ from typing import Callable
 from pisek.env import Env
 
 MSG_LEN = 25
+
+
+def eprint(msg, *args, **kwargs):
+    print(msg, *args, file=sys.stderr, **kwargs)
 
 
 def pad(text: str, length: int, pad_char: str = " "):
