@@ -113,7 +113,13 @@ class Cache:
             try:
                 entries = yaml.full_load(f)
             except ValueError:
-                eprint(colored("Invalid .pisek_cache file. Starting from scratch...", env, "yellow"))
+                eprint(
+                    colored(
+                        "Invalid .pisek_cache file. Starting from scratch...",
+                        env,
+                        "yellow",
+                    )
+                )
                 entries = {}
 
             if entries is None:

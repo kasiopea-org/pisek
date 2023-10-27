@@ -33,9 +33,11 @@ from pisek.extract import extract
 
 PATH = "."
 
+
 def sigint_handler(sig, frame):
-    eprint('\rStopping...')
+    eprint("\rStopping...")
     sys.exit(0)
+
 
 def test_task(args, **kwargs):
     return test_task_path(PATH, **vars(args), **kwargs)
