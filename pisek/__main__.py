@@ -64,7 +64,7 @@ def extract_task(args, **kwargs):
 
 def clean_directory(args):
     task_dir = PATH
-    eprint(f"Cleaning repository: {task_dir}")
+    eprint(f"Cleaning repository: {os.path.abspath(task_dir)}")
     clean_task_dir(task_dir)
 
 
