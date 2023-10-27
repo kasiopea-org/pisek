@@ -18,6 +18,7 @@ import argparse
 import os
 from typing import Optional
 import sys
+import signal
 
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.pipeline_tools import run_pipeline, load_env
@@ -32,6 +33,9 @@ from pisek.extract import extract
 
 PATH = "."
 
+def sigint_handler(sig, frame):
+    eprint('\rStopping...')
+    sys.exit(0)
 
 def test_task(args, **kwargs):
     return test_task_path(PATH, **vars(args), **kwargs)
@@ -365,6 +369,7 @@ def main(argv):
 
 
 def main_wrapped():
+    signal.signal(signal.SIGINT, sigint_handler)
     result = main(sys.argv[1:])
     if result:
         exit(1)
