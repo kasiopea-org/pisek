@@ -34,17 +34,13 @@ class CheckerManager(TaskJobManager):
         if checker is None:
             if self._env.strict:
                 self._fail("No checker specified in config.")
-                return []
-            self.skipped_checker = colored(
-                "Warning: No checker specified in config.\n"
-                "It is recommended to set `checker` is section [tests]",
-                self._env,
-                "yellow",
-            )
-        if self._env.no_checker:
-            self.skipped_checker = colored("Skipping checking", self._env, "yellow")
-
-        if self.skipped_checker != "":
+            else:
+                self.skipped_checker = colored(
+                    "Warning: No checker specified in config.\n"
+                    "It is recommended to set `checker` is section [tests]",
+                    self._env,
+                    "yellow",
+                )
             return []
 
         checker = self._resolve_path(checker)

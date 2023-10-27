@@ -102,7 +102,6 @@ class TestFixtureVariant(TestFixture):
                 self.task_dir,
                 inputs=1,
                 strict=False,
-                no_checker=False,
                 full=False,
                 timeout=1,
                 plain=False,

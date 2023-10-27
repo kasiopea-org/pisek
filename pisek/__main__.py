@@ -103,13 +103,6 @@ def main(argv):
             help="For final check: warnings are interpreted as failures",
         )
 
-    def add_argument_no_checker(parser):
-        parser.add_argument(
-            "--no-checker",
-            action="store_true",
-            help="Don't run checker",
-        )
-
     def add_argument_ninputs(parser):
         parser.add_argument(
             "--inputs",
@@ -218,7 +211,6 @@ def main(argv):
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
-    add_argument_no_checker(parser)
     add_argument_ninputs(parser)
     add_argument_clean(parser)
     add_argument_plain(parser)
@@ -237,7 +229,6 @@ def main(argv):
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
     add_argument_strict(parser_test)
-    add_argument_no_checker(parser_test)
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
 
