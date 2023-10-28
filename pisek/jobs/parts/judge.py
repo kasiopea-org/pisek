@@ -23,7 +23,7 @@ import subprocess
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job
-from pisek.terminal import tab
+from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
@@ -42,6 +42,7 @@ class SolutionResult:
     judge_stderr: str
     output: str = ""
     err_msg: str = ""
+    diff: str = ""
 
     def __str__(self):
         if self.verdict == Verdict.partial:
@@ -59,13 +60,14 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
             sol_result.judge_stderr,
             sol_result.output,
             sol_result.err_msg,
+            sol_result.diff,
         ],
     )
 
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, stderr, output, err_msg = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, stderr, output, err_msg)
+    verdict, points, stderr, output, err_msg, diff = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, stderr, output, err_msg, diff)
 
 
 yaml.add_representer(SolutionResult, sol_result_representer)
@@ -234,6 +236,13 @@ class RunJudge(ProgramJob):
             return None
         return result
 
+    def _nice_diff(self) -> str:
+        """Create a nice diff between output and correct output."""
+        diff = self._short_text(
+            self._diff_files(self.correct_output_name, self.output_name)
+        )
+        return colored(diff, self._env, "yellow")
+
 
 class RunDiffJudge(RunJudge):
     def __init__(
@@ -263,7 +272,12 @@ class RunDiffJudge(RunJudge):
             return SolutionResult(Verdict.ok, 1.0, "", self._quote_program(rr))
         elif diff.returncode == 1:
             return SolutionResult(
-                Verdict.wrong_answer, 0.0, "", self._quote_program(rr)
+                Verdict.wrong_answer,
+                0.0,
+                "",
+                self._quote_program(rr),
+                "",
+                self._nice_diff(),
             )
         else:
             self._fail(f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}")
@@ -314,6 +328,8 @@ class RunKasiopeaJudge(RunJudge):
                 0.0,
                 result.raw_stderr(),
                 self._quote_program(result),
+                "",
+                self._nice_diff(),
             )
         else:
             return self._program_fail(
@@ -364,12 +380,24 @@ class RunCMSJudge(RunJudge):
 
             if points == 0:
                 return SolutionResult(
-                    Verdict.wrong_answer, 0.0, result.raw_stderr(), msg
+                    Verdict.wrong_answer,
+                    0.0,
+                    result.raw_stderr(),
+                    msg,
+                    "",
+                    self._nice_diff(),
                 )
             elif points == 1:
                 return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), msg)
             else:
-                return SolutionResult(Verdict.partial, points, result.raw_stderr(), msg)
+                return SolutionResult(
+                    Verdict.partial,
+                    points,
+                    result.raw_stderr(),
+                    msg,
+                    "",
+                    self._nice_diff(),
+                )
         else:
             return self._program_fail(
                 f"Judge failed on output {self.output_name}:", result

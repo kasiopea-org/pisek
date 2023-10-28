@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import difflib
 from enum import Enum
 import filecmp
 import os
@@ -136,6 +137,19 @@ class TaskHelper:
         input_filenames.sort()
         return input_filenames
 
+    def _short_text(self, text: str, max_lines: int = 10, max_chars: int = 100) -> str:
+        short_text = []
+        for i, line in enumerate(text.split("\n", max_lines)):
+            if i < max_lines:
+                if len(line) > max_chars:
+                    line = f"{line[:max_chars-3]}..."
+                short_text.append(line)
+            else:
+                short_text[-1] = "[...]\n"
+                break
+
+        return "\n".join(short_text)
+
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
@@ -205,3 +219,24 @@ class TaskJob(Job, TaskHelper):
     @_file_access(2)
     def _files_equal(self, file_a: str, file_b: str) -> bool:
         return filecmp.cmp(file_a, file_b)
+
+    @_file_access(2)
+    def _diff_files(self, file_a: str, file_b: str) -> str:
+        def nonempty_lines(file):
+            with self._open_file(file) as f:
+                lines = f.readlines()
+            return list(filter(lambda x: x != "", map(str.strip, lines)))
+
+        diff = difflib.unified_diff(
+            nonempty_lines(file_a),
+            nonempty_lines(file_b),
+            fromfile=file_a,
+            tofile=file_b,
+            n=2,
+        )
+        result = ""
+        for line in diff:
+            if line[-1] != "\n":
+                line += "\n"
+            result += line
+        return result

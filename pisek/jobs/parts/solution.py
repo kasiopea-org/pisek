@@ -269,7 +269,10 @@ class SubtaskJobGroup:
         elif res.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {inp}"
 
-        return f"{head}:\n{tab(res.output)}"
+        text = f"{head}:\n{tab(res.output)}"
+        if res.diff != "":
+            text += "\n" + tab(f"diff:\n{tab(res.diff)}")
+        return text
 
 
 class RunPrimarySolutionMan(TaskJobManager):
