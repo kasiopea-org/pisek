@@ -228,8 +228,9 @@ class SubtaskJobGroup:
         prev_points = self._convert_to_points(self.previous_jobs)
         new_points = self._convert_to_points(self.new_jobs)
 
-        all_jobs = self.previous_jobs + self.new_jobs
-        all_points = prev_points + new_points
+        # We need new first because we return first occurrence
+        all_jobs = SubtaskJobGroup._finished(self.new_jobs + self.previous_jobs)
+        all_points = new_points + prev_points
         result_msg = (
             self._job_msg(all_jobs[all_points.index(max(all_points))]),
             self._job_msg(all_jobs[all_points.index(min(all_points))]),
