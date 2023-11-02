@@ -9,12 +9,12 @@ Currently used by:
 
 Pisek requires Python ≥ 3.11. Install with pip:
 ```bash
-pip install --user git+https://github.com/kasiopea-org/pisek
+pip install git+https://github.com/kasiopea-org/pisek
 ```
 
 For upgrading add `--upgrade`:
 ```bash
-pip install --user git+https://github.com/kasiopea-org/pisek --upgrade
+pip install git+https://github.com/kasiopea-org/pisek --upgrade
 ```
 ## Testing tasks
 
