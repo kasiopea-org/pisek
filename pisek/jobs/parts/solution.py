@@ -207,15 +207,18 @@ class SubtaskJobGroup:
         old_points = self._convert_to_points(self.previous_jobs)
         new_points = self._convert_to_points(self.new_jobs)
         all_points = old_points + new_points
+        if len(all_points) == 0:
+            return False
+
         if fail_mode == "all":
-            if len(new_points) > 0:
-                if min(new_points) != max(new_points):
-                    return True
-                if expected_points is not None and min(new_points) != expected_points:
-                    return True
-        else:
-            if len(all_points) and min(all_points) == 0:
+            if min(all_points) != max(all_points):
                 return True
+            if expected_points is not None and min(all_points) != expected_points:
+                return True
+        else:
+            if min(all_points) == 0:
+                return True
+
         return False
 
     def result(
