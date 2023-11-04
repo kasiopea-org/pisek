@@ -242,18 +242,16 @@ class SubtaskJobGroup:
             self._job_msg(all_jobs[all_points.index(min(all_points))]),
         )
 
-        if len(new_points) == 0 and len(prev_points) == 0:
+        if len(all_points) == 0:
             return (1.0, ""), result_msg
-        elif len(new_points) == 0:
-            return (min(prev_points), ""), result_msg
 
         if fail_mode == "all" and self.num > 0:  # Don't check this on samples
-            if max(new_points) != min(new_points):
+            if max(new_points, default=1) != min(new_points, default=1):
                 return (None, "Only some inputs were incorrect"), result_msg
-            if len(prev_points) > 0 and min(new_points) > min(prev_points):
+            if min(new_points, default=1) > min(prev_points, default=1):
                 return (None, "Previous subtask failed but this did not"), result_msg
 
-        return (min(prev_points + new_points), ""), result_msg
+        return (min(all_points), ""), result_msg
 
     def cancel(self):
         for job in self.run_jobs:
