@@ -211,10 +211,13 @@ class SubtaskJobGroup:
             return False
 
         if fail_mode == "all":
-            if min(all_points) != max(all_points):
-                return True
-            if expected_points is not None and min(all_points) != expected_points:
-                return True
+            if min(new_points, default=1) != max(new_points, default=1):
+                return True  # Inconsistent on this subtasks
+            if expected_points is not None:
+                if min(all_points) < expected_points:
+                    return True  # Points too low
+                if min(new_points, default=expected_points) != expected_points:
+                    return True  # Subtask cannot be as expected
         else:
             if min(all_points) == 0:
                 return True
