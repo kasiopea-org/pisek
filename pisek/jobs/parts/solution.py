@@ -92,7 +92,7 @@ class SolutionManager(TaskJobManager):
         expected = self._env.config.solutions[self.solution].subtasks
 
         for subtask in self.subtasks:
-            if subtask.definitive(self._env.config.fail_mode, expected[subtask.num]):
+            if subtask.definitive(self._env, expected[subtask.num]):
                 subtask.cancel()
 
     def _get_status(self) -> str:
@@ -159,6 +159,11 @@ class SubtaskJobGroup:
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
 
+    def _judge_verdicts(self, jobs: list[RunJudge]) -> list[Optional[Verdict]]:
+        return list(
+            map(lambda r: r.verdict if r is not None else None, self._job_results(jobs))
+        )
+
     def __str__(self) -> str:
         s = "("
         previous = list(
@@ -200,7 +205,7 @@ class SubtaskJobGroup:
     def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
         return list(map(SubtaskJobGroup._to_points, SubtaskJobGroup._finished(jobs)))
 
-    def definitive(self, fail_mode: str, expected_points: Optional[float]) -> bool:
+    def definitive(self, env: Env, expected_points: Optional[float]) -> bool:
         """
         Checks whether subtask jobs have resulted in outcome that cannot be changed.
         """
@@ -210,7 +215,7 @@ class SubtaskJobGroup:
         if len(all_points) == 0:
             return False
 
-        if fail_mode == "all":
+        if env.config.fail_mode == "all":
             if min(new_points, default=1) != max(new_points, default=1):
                 return True  # Inconsistent on this subtasks
             if expected_points is not None:
@@ -218,6 +223,10 @@ class SubtaskJobGroup:
                     return True  # Points too low
                 if min(new_points, default=expected_points) != expected_points:
                     return True  # Subtask cannot be as expected
+                if env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
+                    self.new_jobs
+                ):
+                    return True
         else:
             if min(all_points) == 0:
                 return True
