@@ -262,7 +262,7 @@ class RunDiffJudge(RunJudge):
         self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
         diff = subprocess.run(
-            ["diff", "-Bpq", self.output_name, self.correct_output_name],
+            ["diff", "-Bq", self.output_name, self.correct_output_name],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

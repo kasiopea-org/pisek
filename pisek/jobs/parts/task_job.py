@@ -23,6 +23,7 @@ import glob
 from typing import Optional, Any, Callable
 
 import pisek.util as util
+import subprocess
 from pisek.env import Env
 from pisek.task_config import SubtaskConfig
 from pisek.jobs.jobs import Job
@@ -137,7 +138,7 @@ class TaskHelper:
         input_filenames.sort()
         return input_filenames
 
-    def _short_text(self, text: str, max_lines: int = 10, max_chars: int = 100) -> str:
+    def _short_text(self, text: str, max_lines: int = 15, max_chars: int = 100) -> str:
         short_text = []
         for i, line in enumerate(text.split("\n", max_lines)):
             if i < max_lines:
@@ -222,21 +223,7 @@ class TaskJob(Job, TaskHelper):
 
     @_file_access(2)
     def _diff_files(self, file_a: str, file_b: str) -> str:
-        def nonempty_lines(file):
-            with self._open_file(file) as f:
-                lines = f.readlines()
-            return list(filter(lambda x: x != "", map(str.strip, lines)))
-
-        diff = difflib.unified_diff(
-            nonempty_lines(file_a),
-            nonempty_lines(file_b),
-            fromfile=file_a,
-            tofile=file_b,
-            n=2,
+        diff = subprocess.run(
+            ["diff", file_a, file_b, "-B", "-u2"], stdout=subprocess.PIPE
         )
-        result = ""
-        for line in diff:
-            if line[-1] != "\n":
-                line += "\n"
-            result += line
-        return result
+        return diff.stdout.decode("utf-8")
