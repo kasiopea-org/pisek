@@ -138,7 +138,8 @@ class TaskHelper:
         input_filenames.sort()
         return input_filenames
 
-    def _short_text(self, text: str, max_lines: int = 15, max_chars: int = 100) -> str:
+    @staticmethod
+    def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
         short_text = []
         for i, line in enumerate(text.split("\n", max_lines)):
             if i < max_lines:

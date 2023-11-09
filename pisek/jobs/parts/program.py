@@ -27,7 +27,7 @@ from pisek.task_config import DEFAULT_TIMEOUT
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, JobManager
 from pisek.terminal import tab, colored
-from pisek.jobs.parts.task_job import TaskJob
+from pisek.jobs.parts.task_job import TaskHelper, TaskJob
 
 import pisek.util as util
 
@@ -49,9 +49,9 @@ class RunResult:
         returncode: int,
         time: float,
         wall_time: float,
-        stdout_file=None,
-        stderr_file=None,
-        stderr_text=None,
+        stdout_file: Optional[str] = None,
+        stderr_file: Optional[str] = None,
+        stderr_text: Optional[str] = None,
         err_msg="",
     ):
         self.kind = kind
@@ -64,15 +64,8 @@ class RunResult:
         self.wall_time = wall_time
 
     @staticmethod
-    def _format(text: str, env: Env, chars: int = 1500, lines: int = 20):
-        res = ""
-        i = 0
-        for char in text:
-            res += char
-            lines -= char == "\n"
-            if lines <= 0 or len(res) >= chars:
-                break
-        res = tab(res)
+    def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
+        res = tab(TaskHelper._short_text(text, max_lines, max_chars))
         if not env.plain:
             res = colored(res, env, "yellow")
         return res
