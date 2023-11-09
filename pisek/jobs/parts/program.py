@@ -52,14 +52,14 @@ class RunResult:
         stdout_file: Optional[str] = None,
         stderr_file: Optional[str] = None,
         stderr_text: Optional[str] = None,
-        err_msg="",
+        status: str = "",
     ):
         self.kind = kind
         self.returncode = returncode
         self.stdout_file = stdout_file
         self.stderr_file = stderr_file
         self.stderr_text = stderr_text
-        self.err_msg = err_msg
+        self.status = status
         self.time = time
         self.wall_time = wall_time
 
@@ -114,7 +114,7 @@ def run_result_representer(dumper, run_result: RunResult):
             run_result.stdout_file,
             run_result.stderr_file,
             run_result.stderr_text,
-            run_result.err_msg,
+            run_result.status,
         ],
     )
 
@@ -128,10 +128,10 @@ def run_result_constructor(loader, value):
         out_f,
         err_f,
         err_t,
-        err_msg,
+        status,
     ) = loader.construct_sequence(value)
     return RunResult(
-        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, err_t, err_msg
+        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, err_t, status
     )
 
 
@@ -292,7 +292,7 @@ class ProgramJob(TaskJob):
 
     def _quote_program(self, res: RunResult):
         """Quotes program's stdout and stderr."""
-        program_msg = ""
+        program_msg = f"status: {res.status}\n"
         for std in ("stdout", "stderr"):
             program_msg += f"{std}{getattr(res, std)(self._env)}\n"
         return program_msg[:-1]

@@ -41,7 +41,6 @@ class SolutionResult:
     points: float
     judge_stderr: str
     output: str = ""
-    err_msg: str = ""
     diff: str = ""
 
     def __str__(self):
@@ -59,15 +58,14 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
             sol_result.points,
             sol_result.judge_stderr,
             sol_result.output,
-            sol_result.err_msg,
             sol_result.diff,
         ],
     )
 
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, stderr, output, err_msg, diff = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, stderr, output, err_msg, diff)
+    verdict, points, stderr, output, diff = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, stderr, output, diff)
 
 
 yaml.add_representer(SolutionResult, sol_result_representer)
@@ -215,7 +213,7 @@ class RunJudge(ProgramJob):
                     0.0,
                     "",
                     self._quote_program(solution_res),
-                    solution_res.err_msg,
+                    solution_res.status,
                 )
             elif solution_res.kind == RunResultKind.TIMEOUT:
                 result = SolutionResult(
@@ -282,7 +280,6 @@ class RunDiffJudge(RunJudge):
                 0.0,
                 "",
                 self._quote_program(rr),
-                "",
                 self._nice_diff(),
             )
         else:
@@ -334,7 +331,6 @@ class RunKasiopeaJudge(RunJudge):
                 0.0,
                 result.raw_stderr(),
                 self._quote_program(result),
-                "",
                 self._nice_diff(),
             )
         else:
@@ -390,7 +386,6 @@ class RunCMSJudge(RunJudge):
                     0.0,
                     result.raw_stderr(),
                     msg,
-                    "",
                     self._nice_diff(),
                 )
             elif points == 1:
@@ -401,7 +396,6 @@ class RunCMSJudge(RunJudge):
                     points,
                     result.raw_stderr(),
                     msg,
-                    "",
                     self._nice_diff(),
                 )
         else:
