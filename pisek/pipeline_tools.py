@@ -36,6 +36,14 @@ def load_env(
 
     if solutions is None:
         solutions = config.solutions.keys()
+    else:
+        for solution in solutions:
+            if solution not in config.solutions:
+                solutions_list = "\n".join(config.solutions.keys())
+                eprint(
+                    f"Unknown solution '{solution}'. Known solutions are:\n{tab(solutions_list)}"
+                )
+                return None
 
     env = Env(
         task_dir=path,

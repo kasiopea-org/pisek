@@ -232,7 +232,7 @@ def main(argv):
         help="choice between 'solution' ot 'generator'",
     )
     parser_test.add_argument(
-        "solution", type=str, help="name of the solution to run", nargs="?"
+        "solution", type=str, help="name of solution section", nargs="?"
     )
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
