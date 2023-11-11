@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import deque
+
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env import Env
 
@@ -31,12 +33,14 @@ class TaskPipeline(JobPipeline):
 
     def __init__(self, env: Env):
         super().__init__()
-        self.pipeline = [
-            tools := ToolsManager(),
-            samples := SampleManager(),
-            generator := GeneratorManager(),
-            checker := CheckerManager(),
-        ]
+        self.pipeline = deque(
+            [
+                tools := ToolsManager(),
+                samples := SampleManager(),
+                generator := GeneratorManager(),
+                checker := CheckerManager(),
+            ]
+        )
         generator.add_prerequisite(tools)
 
         checker.add_prerequisite(samples)
