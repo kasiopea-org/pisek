@@ -59,10 +59,12 @@ class Compile(ProgramJob):
                 candidates.append(name)
 
         if len(candidates) == 0:
-            self._fail(f"No file with given name exists: {name}")
+            self._fail(f"No program with given name exists: {name}")
             return None
         if len(candidates) > 1:
-            self._fail(f"Multiple files with same name exist: {', '.join(candidates)}")
+            self._fail(
+                f"Multiple programs with same name exist: {', '.join(candidates)}"
+            )
             return None
         return candidates[0]
 
