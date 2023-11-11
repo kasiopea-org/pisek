@@ -1,130 +1,103 @@
 # Písek ⌛
 
-Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž
-[Kasiopea](https://kasiopea.matfyz.cz/).
+Tool for developing tasks for programming competitions.
+Currently used by:
+ - [Kasiopea](https://kasiopea.matfyz.cz/)
+ - [Czech Informatics Olympiad](https://mo.mff.cuni.cz/p/)
 
-## Instalace
+## Install
 
-Napřed nainstaluj Python 3.6+ a nástroj `pip`.
-Pak otevři terminál (příkazovou řádku).
-Na Windows můžeš terminál otevřít [takto](https://soubory.info/info/jak-otevrit-prikazovy-radek-windows-10-8-7-atd/).
-Na Linuxu a Macu vyhledej program "Terminal".
-
-Napiš následují příkaz do terminálu a zmáčkni Enter:
-```
-pip3 install --user git+https://github.com/kasiopea-org/pisek
+Pisek requires Python ≥ 3.11. Install with pip:
+```bash
+pip install git+https://github.com/kasiopea-org/pisek
 ```
 
-Pokud dostaneš na Windows chybovou hlášku typu `'pip3' is not recognized as an internal or external command`,
-mohlo by fungovat místo toho napsat
+For upgrading add `--upgrade`:
+```bash
+pip install git+https://github.com/kasiopea-org/pisek --upgrade
 ```
-py -3 -m pip install --user git+https://github.com/kasiopea-org/pisek`
-```
-Pokud ani to nepomůže, [napiš nám issue](https://github.com/kasiopea-org/pisek/issues/new).
+## Testing tasks
 
+First create `config` file as documented [here](https://github.com/kasiopea-org/pisek/blob/master/example-config).
+Here are examples for [Kasiopea mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_kasiopea/config)
+and [CMS mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_cms/config).
 
-Pokud už Písek máš a chceš ho aktualizovat, přidej `--upgrade`:
-```
-pip3 install --user git+https://github.com/kasiopea-org/pisek --upgrade
-```
-
-## Použití
-
-Všechny možnosti Písku vám vypíše také příkaz `pisek --help`.
-Pokud si s něčím nevíš rady nebo něco nefunguje tak, jak má, dej nám vědět.
-Můžeš například [vytvořit issue](https://github.com/kasiopea-org/pisek/issues/new).
-
-Každá úloha má vlastní konfigurační soubor `config`, který určuje parametry úlohy,
-jako třeba za jaké podúlohy je kolik bodů, jaká jsou řešení a jak se kontroluje správnost.
-Zde je [příklad pro Kasiopeu](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_kasiopea/config)
-a [příklad pro CMS (MO-P)](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_cms/config).
-Kompletní funkčnost konfiguračního souboru je zdokumenotvaná [zde](https://github.com/kasiopea-org/pisek/blob/master/example-config).
-
-### Testování úloh
-
-Napřed vyplň konfigurační soubor `config`. Pak v terminálu přejdi do složky úlohy a spusť příkaz
-```
+```bash
 pisek
 ```
 
-Tento příkaz zkontroluje mimo jiné, že
-- řešení uvedená v `config` a generátor jdou zkompilovat
-- `sample.out` se shoduje s výstupem vzorového řešení spuštěného na `sample.in`
-- řešení dostanou tolik bodů, kolik je uvedeno v názvu souboru; řešení `solve_4b.cpp` by mělo
-    dostat 4 body, `solve.py` 10 bodů (když v názvu není uveden počet bodů)
-- pro Kasiopeu: že je generátor deterministický (pro jeden seed generuje totéž), správně načítá hexadecimální seed
-- 
-### Spouštění jednotlivých programů
+This command tests this task. It tests all task parts (generator, checker, solutions and judge).
 
-Může se hodit, třeba když chceš při vývoji spustit své řešení jen na konkrétním vstupu,
-nebo generátorem vygenerovat jeden vstup.
-Pokud chceš spustit `solve.cpp` na vstupu `foo.in`, použij
-```
-pisek run solve.cpp < foo.in
-```
-Příponu `.cpp` není potřeba psát.
+### Task testing overview
 
-Pokud chceš generátorem `gen.cpp` vygenerovat těžký vstup se seedem `123`, použij
-```
-pisek run gen 2 123
-```
+What pisek tests (roughly in order):
+ - Samples exist and are not empty
+ - Generator generates input
+    - In Kasiopea mode generator respects seed and is deterministic
+ - Checker validates all inputs.
+    - Inputs for harder subtasks are harder.
+ - Judge works
+    - Works on samples
+    - Doesn't break on malicious output
+ - Solutions run as expected
+    - Get expected number of points
+    - Succeed/fail on subtasks
+ - Data (inputs and outputs) are ok
+    - In correct encoding, no unprintable characters and with final newline
+    - For Kasiopea mode files are reasonably small
 
-### Rychlé testování jednolivých programů
+### Testing given programs
 
-Pokud chceš jen rychle otestovat pouze své řešení `solve_cool.cpp`, abys ušetřil čas, použij
-```
+For fast testing of a solution `solve_cool.cpp` write:
+```bash
 pisek test solution solve_cool
 ```
-Příponu `.cpp` není potřeba psát.
+(Don't write suffix `.cpp`)
 
-Dokonce si můžeš řešení nechat otestovat na hodně seedech, třeba na 42 následovně
-```
+For testing on multiple inputs use (only Kasiopea mode) write:
+```bash
 pisek test solution solve_cool -n 42
 ```
 
-Podobně jdou také otestovat malé změny generátoru pomocí
-```
+Similarly generator can be tested using.
+```bash
 pisek test generator
 ```
 
-### Čištění
+### Useful options
 
-Písek při testování vytváří potenciálně hodně dat. Ve složce úlohy můžeš
-spustit `pisek clean`, což smaže vygenerovaná data a zkompilovaná řešení.
-
-## Vývoj
-
-Vývoj má pár závislostí navíc. Po naklonování repa je můžeš nainstalovat tak,
-že v této složce spustíš:
-```
-pip3 install -e .[dev]
+For not stopping on first failure:
+```bash
+pisek --full
 ```
 
-Písek má i testy pro vývojáře, kterými se testuje samotný Písek.
-Ty se po instalaci dají spustit takto:
-```
-./self_tests.sh
-```
-
-Naše CI kontroluje i [formátování kódu](https://github.com/psf/black))
-a [typy](http://mypy-lang.org/). Abyste odchytili problémy s formátováním
-a typy rovnou, nainstalujte si pre-commit hook, který vše zkontroluje
-před tím, než něco commitnete:
-
-```
-ln -s ../../check_all.sh .git/hooks/pre-commit
+Use different time limit (in seconds) for testing solutions:
+```bash
+pisek --timeout 5
 ```
 
-Po instalaci hooku budou odmítnuty commity, které neprojdou kontrolami.
-Pokud je z nějakého důvodu potřeba kontroly odignorovat, můžete použít
-`git commit --no-verify`.
+For final check. Interprets warnings as failures:
+```bash
+pisek --strict
+```
 
-Pozor, nezapomeňte, že `check_all.sh` se dívá na soubory ve stavu, v jakém je
-máte vy, a ne na to, co budete skutečně commitovat. Pokud tedy něco opravíte a
-zapomenete změnu přidat do commitu, může skript seběhnout, ale pořád commitnete
-něco, co nefunguje.
+### Cleaning
 
-## Licence
+Pisek can create a lot of files used for testing. Remove them by running:
+```bash
+pisek clean
+```
+
+### Visualization
+
+For visualizing running time after the solution:
+```bash
+pisek              # test the task
+pisek extract      # extract data
+pisek visualize    # visualize
+```
+
+## License
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -143,3 +116,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
        (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
        (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
        (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+       (c)   2023        Daniel Skýpala <skipy@kam.mff.cuni.cz>
