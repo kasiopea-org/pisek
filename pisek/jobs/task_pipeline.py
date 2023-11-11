@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pisek.jobs.job_pipeline import JobPipeline
+from pisek.env import Env
 
 from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.samples import SampleManager
@@ -28,7 +29,7 @@ from pisek.jobs.parts.data import DataManager
 class TaskPipeline(JobPipeline):
     """JobPipeline that checks whether task behaves as expected."""
 
-    def __init__(self, env):
+    def __init__(self, env: Env):
         super().__init__()
         self.pipeline = [
             tools := ToolsManager(),
