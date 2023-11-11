@@ -240,9 +240,6 @@ def main(argv):
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
 
-    parser_run = subparsers.add_parser("run", help="Run target in server mode.")
-    add_argument_timeout(parser_run)
-
     _parser_clean = subparsers.add_parser("clean", help="Clean directory")
 
     parser_visualize = subparsers.add_parser(
