@@ -372,6 +372,8 @@ class SolutionConfig(BaseEnv):
         total_subtasks: int,
         config_section: configparser.SectionProxy,
     ) -> Optional[str]:
+        if "." in solution_name:
+            return f"Character '.' is not allowed in section name: {solution_name}"
         self._set("source", config_section.get("source", solution_name))
         primary = config_section.get("primary", "no").lower()
         if primary not in ("yes", "no"):
