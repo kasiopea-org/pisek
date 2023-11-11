@@ -85,6 +85,9 @@ class BaseEnv:
         """Gets variable with given name and logs access to it."""
         return self._get(name)
 
+    def __len__(self) -> int:
+        return len(self._vars)
+
     def keys(self) -> list[str]:
         """
         Return all names of variables stored.
