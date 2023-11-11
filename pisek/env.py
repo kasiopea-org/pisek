@@ -146,8 +146,12 @@ class BaseEnv:
         return self.__class__(**{**deepcopy(self._vars), **kwargs})
 
     def lock(self) -> "BaseEnv":
-        """Lock this BaseEnv so it cannot be forked."""
+        """Lock this BaseEnv and all subenvs so they cannot be forked."""
         self._locked = True
+        for var in self._vars:
+            if isinstance(self._vars[var], BaseEnv):
+                self._vars[var].lock()
+
         return self
 
     @log_off
