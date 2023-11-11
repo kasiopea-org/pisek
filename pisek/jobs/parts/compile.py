@@ -128,10 +128,8 @@ class Compile(ProgramJob):
         )
 
     def _run_compilation(self, args, program, **kwargs):
-        try:
-            subprocess.run(args[0], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except FileNotFoundError:
-            return self._fail(f"Missing tool: {args[0]}")
+        if not self._check_tool(args[0]):
+            return None
 
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
         while True:
@@ -145,6 +143,19 @@ class Compile(ProgramJob):
         if comp.returncode != 0:
             return self._fail(f"Compilation of {program} failed.")
 
+    def _check_tool(self, tool) -> bool:
+        try:
+            subprocess.run(
+                tool.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=0
+            )
+        except subprocess.TimeoutExpired:
+            pass
+        except FileNotFoundError:
+            self._fail(f"Missing tool: {tool}")
+            return False
+
+        return True
+
     def _compile_script(self, program: str):
         if not self.valid_shebang(program):
             return self._fail(
@@ -152,6 +163,11 @@ class Compile(ProgramJob):
                 "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
                 "Check also that you are using linux eol."
             )
+
+        with open(program, "r", newline="\n") as f:
+            interpreter = f.readline().strip().lstrip("#!")
+        if not self._check_tool(interpreter):
+            return None
 
         shutil.copyfile(program, self.target)
         self._chmod_exec(self.target)
