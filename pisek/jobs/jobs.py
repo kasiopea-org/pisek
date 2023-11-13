@@ -52,7 +52,7 @@ class PipelineItem(ABC):
     def __init__(self, name: str) -> None:
         self.name = name
         self.state = State.in_queue
-        self.result = None
+        self.result: Optional[Any] = None
         self.fail_msg = ""
         self.dirty = False  # Prints something to console?
 
@@ -274,7 +274,7 @@ class JobManager(PipelineItem):
         )
 
     def failures(self) -> str:
-        """Returns"""
+        """Returns failures of failed jobs or manager itself."""
         failed = self._jobs_with_state(State.failed)
         if len(failed):
             failed_msg = "\n".join([f'"{job.name}": {job.fail_msg}' for job in failed])
@@ -289,9 +289,14 @@ class JobManager(PipelineItem):
             self.result = self._evaluate()
             if self.state == State.running:
                 self.state = State.succeeded
+        self.result = self._compute_result()
         super().finish()
         return self._get_status()
 
     def _evaluate(self) -> Any:
         """Decide whether jobs did run as expected and return result."""
         pass
+
+    def _compute_result(self) -> dict[str,Any]:
+        """Creates result to be read by other managers."""
+        return {}
