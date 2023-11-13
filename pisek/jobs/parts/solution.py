@@ -145,6 +145,21 @@ class SolutionManager(TaskJobManager):
             return self._fail(
                 f"Solution {self.solution} should have gotten at most {below} but got {total_points} points."
             )
+    
+    def _compute_result(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        result["outputs"] = {
+            Verdict.ok: [],
+            Verdict.partial: [],
+            Verdict.wrong_answer: [],
+            Verdict.timeout: [],
+            Verdict.error: [],
+        }
+        for job in self.jobs:
+            if isinstance(job, RunJudge):
+                result["outputs"][job.result.verdict].append(job.output_name)
+
+        return result
 
 
 class SubtaskJobGroup:
