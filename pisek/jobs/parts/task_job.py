@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import difflib
 from enum import Enum
 import filecmp
-import os
-import shutil
 import glob
+import os
+import fnmatch
+import shutil
 from typing import Optional, Any, Callable
 
 import pisek.util as util
@@ -39,6 +39,14 @@ RESULT_MARK = {
     Verdict.timeout: "T",
     Verdict.wrong_answer: "W",
 }
+
+TOOLS_MAN_CODE = "tools"
+SAMPLES_MAN_CODE = "samples"
+GENERATOR_MAN_CODE = "generator"
+CHECKER_MAN_CODE = "checker"
+JUDGE_MAN_CODE = "judge"
+SOLUTION_MAN_CODE = "solution"
+DATA_MAN_CODE = "data"
 
 
 class TaskHelper:
@@ -79,64 +87,16 @@ class TaskHelper:
         else:
             return parts[-1]
 
-    def _get_samples(self) -> list[tuple[str, str]]:
-        """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._globs_to_files(
-            self._env.config.subtasks[0].all_globs, dir=self._env.config.samples_subdir
+    def _filter_globs(self, files: list[str], globs: list[str]):
+        return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
+
+    def _globs_to_files(
+        self, globs: list[str], directory: Optional[str] = None
+    ) -> list[str]:
+        files: list[str] = sum(
+            (glob.glob(g, root_dir=directory) for g in globs), start=[]
         )
-        outs = list(map(lambda inp: os.path.splitext(inp)[0] + ".out", ins))
-
-        def basename(s: str):
-            return str(os.path.basename(s))
-
-        return list(zip(map(basename, ins), map(basename, outs)))
-
-    def _all_inputs(self) -> list[str]:
-        """Get all input files"""
-        all_inputs: list[str] = sum(
-            [
-                self._subtask_inputs(subtask)
-                for _, subtask in sorted(self._env.config.subtasks.items())
-            ],
-            start=[],
-        )
-        seen = set()
-        unique_all = []
-        for inp in all_inputs:
-            if inp not in seen:
-                seen.add(inp)
-                unique_all.append(inp)
-        return unique_all
-
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
-        """Get all inputs of given subtask."""
-        if self._env.config.contest_type == "cms":
-            return self._globs_to_files(subtask.all_globs)
-        else:
-            inputs = set([])
-            for glob in subtask.all_globs:
-                inputs |= set(self._globs_to_files([glob])[: self._env.inputs])
-            return list(sorted(inputs))
-
-    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
-        """Get new inputs of given subtask."""
-        inputs = self._globs_to_files(subtask.in_globs)
-        if self._env.config.contest_type == "kasiopea":
-            inputs = inputs[: self._env.inputs]
-        return inputs
-
-    def _globs_to_files(self, globs: list[str], dir: Optional[str] = None):
-        if dir is None:
-            dir = self._env.config.data_subdir
-        dir = self._resolve_path(dir)
-
-        input_filenames: list[str] = []
-        for g in globs:
-            input_filenames += [
-                os.path.basename(f) for f in glob.glob(os.path.join(dir, g))
-            ]
-        input_filenames.sort()
-        return input_filenames
+        return list(sorted(set(files)))
 
     @staticmethod
     def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
@@ -174,6 +134,25 @@ class TaskJobManager(StatusJobManager, TaskHelper):
                 self._env.config.solution_manager
             )
         return compile_args
+
+    def _get_samples(self) -> list[tuple[str, str]]:
+        """Returns the list [(sample1.in, sample1.out), …]."""
+        samples_result = self.prerequisites_results[SAMPLES_MAN_CODE]
+        return list(zip(samples_result["inputs"], samples_result["outputs"]))
+
+    def _all_inputs(self) -> list[str]:
+        """Get all input files"""
+        samples = self.prerequisites_results[SAMPLES_MAN_CODE]["inputs"]
+        gen_ins = self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
+        return samples + gen_ins
+
+    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
+        """Get all inputs of given subtask."""
+        return self._filter_globs(self._all_inputs(), subtask.all_globs)
+
+    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
+        """Get new inputs of given subtask."""
+        return self._filter_globs(self._all_inputs(), subtask.in_globs)
 
 
 class TaskJob(Job, TaskHelper):

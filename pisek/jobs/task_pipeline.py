@@ -19,6 +19,16 @@ from collections import deque
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env import Env
 
+from pisek.jobs.parts.task_job import (
+    TOOLS_MAN_CODE,
+    SAMPLES_MAN_CODE,
+    GENERATOR_MAN_CODE,
+    CHECKER_MAN_CODE,
+    JUDGE_MAN_CODE,
+    SOLUTION_MAN_CODE,
+    DATA_MAN_CODE,
+)
+
 from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.samples import SampleManager
 from pisek.jobs.parts.generator import GeneratorManager
@@ -33,44 +43,52 @@ class TaskPipeline(JobPipeline):
 
     def __init__(self, env: Env):
         super().__init__()
-        self.pipeline = deque(
-            [
-                tools := ToolsManager(),
-                samples := SampleManager(),
-                generator := GeneratorManager(),
-                checker := CheckerManager(),
-            ]
-        )
-        generator.add_prerequisite(tools)
+        named_pipeline = [
+            tools := (ToolsManager(), TOOLS_MAN_CODE),
+            samples := (SampleManager(), SAMPLES_MAN_CODE),
+            generator := (GeneratorManager(), GENERATOR_MAN_CODE),
+            checker := (CheckerManager(), CHECKER_MAN_CODE),
+        ]
+        generator[0].add_prerequisite(*tools)
 
-        checker.add_prerequisite(samples)
-        checker.add_prerequisite(generator)
+        checker[0].add_prerequisite(*samples)
+        checker[0].add_prerequisite(*generator)
 
         solutions = []
         if env.solutions:
-            self.pipeline.append(judge := JudgeManager())
-            judge.add_prerequisite(samples)
-
-            self.pipeline.append(
-                primary_solution := SolutionManager(env.config.primary_solution)
+            named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
+            judge[0].add_prerequisite(*samples)
+            named_pipeline.append(
+                primary_solution := (
+                    SolutionManager(env.config.primary_solution),
+                    f"{SOLUTION_MAN_CODE}_{env.config.primary_solution}",
+                )
             )
-            primary_solution.add_prerequisite(generator)
-            primary_solution.add_prerequisite(judge)
             solutions.append(primary_solution)
 
         for solution in env.solutions:
             if solution == env.config.primary_solution:
                 continue
-            self.pipeline.append(solution := SolutionManager(solution))
-            solution.add_prerequisite(primary_solution)
+            named_pipeline.append(
+                solution := (
+                    SolutionManager(solution),
+                    f"{SOLUTION_MAN_CODE}_{solution}",
+                )
+            )
+            solution[0].add_prerequisite(*primary_solution)
             solutions.append(solution)
 
-        if env.solutions:
-            self.pipeline.append(data_check := DataManager())
+        for solution in solutions:
+            solution[0].add_prerequisite(*samples)
+            solution[0].add_prerequisite(*generator)
+            solution[0].add_prerequisite(*judge)
 
-            data_check.add_prerequisite(samples, name=f"samples")
-            data_check.add_prerequisite(generator, name=f"generator")
+        if env.solutions:
+            named_pipeline.append(data_check := (DataManager(), DATA_MAN_CODE))
+
+            data_check[0].add_prerequisite(*samples)
+            data_check[0].add_prerequisite(*generator)
             for solution in solutions:
-                data_check.add_prerequisite(
-                    solution, name=f"solution_{solution.solution}"
-                )
+                data_check[0].add_prerequisite(*solution)
+
+        self.pipeline = deque(map(lambda x: x[0], named_pipeline))

@@ -30,11 +30,16 @@ class SampleManager(TaskJobManager):
         super().__init__("Checking samples")
 
     def _get_jobs(self) -> list[Job]:
-        samples = self._get_samples()
-        self._inputs = list(map(lambda x: x[0], samples))
-        self._outputs = list(map(lambda x: x[1], samples))
+        self._inputs = self._globs_to_files(
+            self._env.config.subtasks[0].all_globs,
+            self._sample("."),
+        )
+        self._outputs = list(
+            map(lambda inp: os.path.splitext(inp)[0] + ".out", self._inputs)
+        )
+
         self._all = self._inputs + self._outputs
-        if len(samples) <= 0:
+        if len(self._all) <= 0:
             self._fail(
                 f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",

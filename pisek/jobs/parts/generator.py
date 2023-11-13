@@ -84,7 +84,10 @@ class GeneratorManager(TaskJobManager):
         return jobs
 
     def _compute_result(self) -> dict[str, Any]:
-        return {"inputs": self._inputs}
+        if self._env.config.contest_type == "kasiopea":
+            return {"inputs": self._inputs}
+        else:
+            return {"inputs": self.jobs[1].result}
 
 
 class RunOnlineGeneratorMan(TaskJobManager):
@@ -223,35 +226,42 @@ class OfflineGeneratorGenerate(ProgramJob):
     def __init__(self, env: Env, program: str) -> None:
         super().__init__(env, "Generate inputs", program)
 
-    def _gen(self) -> Optional[RunResult]:
+    def _subtask_inputs(self, subtask: str):
+        return self._globs_to_files(
+            self._env.config.subtasks[subtask].in_globs, self._data(".")
+        )
+
+    def _gen(self) -> Optional[list[str]]:
         """Generates all inputs."""
         if not self._load_compiled():
             return None
 
         # Clear old inputs
-        samples = self._subtask_inputs(self._env.config.subtasks["0"])
-        for inp in self._all_inputs():
-            if inp not in samples:
-                os.remove(self._data(inp))
+        ins = self._globs_to_files(["*.in"], self._data("."))
+        samples = self._subtask_inputs("0")
+        for inp in set(ins) - set(samples):
+            os.remove(self._data(inp))
 
         data_dir = self._data(".")
-        result = self._run_program([data_dir], print_stderr=True)
+        run_result = self._run_program([data_dir], print_stderr=True)
 
-        if result is None:
+        if run_result is None:
             return None
-        if result.kind != RunResultKind.OK:
-            return self._program_fail(f"Generator failed:", result)
+        if run_result.kind != RunResultKind.OK:
+            return self._program_fail(f"Generator failed:", run_result)
 
+        inputs = []
         for sub_num, subtask in self._env.config.subtasks.items():
             if sub_num == "0":
                 continue
-            files = self._subtask_inputs(subtask)
+            files = self._subtask_inputs(sub_num)
             if len(files) == 0:
                 self._fail(
                     f"Generator did not generate any inputs for subtask {sub_num}."
                 )
                 return None
             for file in files:
+                inputs.append(file)
                 self._access_file(self._data(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
@@ -259,7 +269,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             self._fail(f"Generator did not generate ant inputs.")
             return None
 
-        return result
+        return inputs
 
-    def _run(self) -> Optional[RunResult]:
+    def _run(self) -> Optional[list[str]]:
         return self._gen()
