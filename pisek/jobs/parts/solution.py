@@ -31,6 +31,7 @@ class SolutionManager(TaskJobManager):
     def __init__(self, solution: str):
         self.solution = solution
         self.subtasks: list[SubtaskJobGroup] = []
+        self._outputs: list[tuple[str, RunJudge]] = []
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> list[Job]:
@@ -64,11 +65,13 @@ class SolutionManager(TaskJobManager):
                             self._env.config.primary_solution
                         ].source
                         c_out = util.get_output_name(inp, primary_sol)
+
+                    out = util.get_output_name(inp, solution)
                     jobs.append(
                         run_judge := judge_job(
                             judge,
                             inp,
-                            util.get_output_name(inp, solution),
+                            out,
                             c_out,
                             sub_num,
                             lambda: self._get_seed(inp),
@@ -76,6 +79,7 @@ class SolutionManager(TaskJobManager):
                             self._env,
                         )
                     )
+                    self._outputs.append((out, run_judge))
 
                     run_judge.add_prerequisite(run_solution, name="run_solution")
                     testcases[inp] = (run_solution, run_judge)
@@ -145,7 +149,7 @@ class SolutionManager(TaskJobManager):
             return self._fail(
                 f"Solution {self.solution} should have gotten at most {below} but got {total_points} points."
             )
-    
+
     def _compute_result(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
         result["outputs"] = {
@@ -155,9 +159,9 @@ class SolutionManager(TaskJobManager):
             Verdict.timeout: [],
             Verdict.error: [],
         }
-        for job in self.jobs:
-            if isinstance(job, RunJudge):
-                result["outputs"][job.result.verdict].append(job.output_name)
+        for output, job in self._outputs:
+            if job.result is not None:
+                result["outputs"][job.result.verdict].append(output)
 
         return result
 

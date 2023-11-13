@@ -17,7 +17,7 @@
 import glob
 import random
 import os
-from typing import Optional
+from typing import Any, Optional
 
 import pisek.util as util
 from pisek.env import Env
@@ -29,6 +29,7 @@ from pisek.jobs.parts.compile import Compile
 
 class GeneratorManager(TaskJobManager):
     def __init__(self):
+        self._inputs = []
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
@@ -45,7 +46,9 @@ class GeneratorManager(TaskJobManager):
                 last_gen: OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
                     data_dir = self._env.config.get_data_dir()
-                    input_name = util.get_input_name(seed, sub_num)
+                    self._inputs.append(
+                        input_name := util.get_input_name(seed, sub_num)
+                    )
 
                     jobs.append(
                         gen := OnlineGeneratorGenerate(
@@ -79,6 +82,9 @@ class GeneratorManager(TaskJobManager):
             gen2.add_prerequisite(compile)
 
         return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        return {"inputs": self._inputs}
 
 
 class RunOnlineGeneratorMan(TaskJobManager):

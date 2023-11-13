@@ -16,6 +16,7 @@
 from pisek.jobs.jobs import Job
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
+from pisek.jobs.parts.judge import Verdict
 from pisek.jobs.parts.tools import IsClean
 
 MB = 1024 * 1024
@@ -28,17 +29,30 @@ class DataManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
 
-        files = self._globs_to_files(["*"])
-        for file in files:
-            inp, out = file.endswith(".in"), file.endswith(".out")
-            if inp or out:
-                jobs.append(IsClean(self._env, file))
-            if inp:
-                if self._env.config.contest_type == "kasiopea":
-                    jobs.append(InputSmall(self._env, file))
-            if out:
-                if self._env.config.contest_type == "kasiopea":
-                    jobs.append(OutputSmall(self._env, file))
+        inputs = []
+        outputs = []
+        for name, data in self.prerequisites_results.items():
+            if name.startswith("samples"):
+                inputs += data["inputs"]
+                outputs += data["outputs"]
+            elif name.startswith("generator"):
+                inputs += data["inputs"]
+            elif name.startswith("solution_"):
+                outs = data["outputs"]
+                outputs += (
+                    outs[Verdict.ok]
+                    + outs[Verdict.partial]
+                    + outs[Verdict.wrong_answer]
+                )
+        for inp in inputs:
+            jobs.append(IsClean(self._env, inp))
+            if self._env.config.contest_type == "kasiopea":
+                jobs.append(InputSmall(self._env, inp))
+
+        for out in outputs:
+            jobs.append(IsClean(self._env, out))
+            if self._env.config.contest_type == "kasiopea":
+                jobs.append(OutputSmall(self._env, out))
 
         return jobs
 

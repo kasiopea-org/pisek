@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from typing import Any
 
 from pisek.jobs.jobs import Job
 from pisek.env import Env
@@ -23,11 +24,16 @@ from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 
 class SampleManager(TaskJobManager):
     def __init__(self):
+        self._inputs = []
+        self._outputs = []
+        self._all = []
         super().__init__("Checking samples")
 
     def _get_jobs(self) -> list[Job]:
         samples = self._get_samples()
-        unzipped_samples: list[str] = sum(map(list[str], samples), start=[])
+        self._inputs = list(map(lambda x: x[0], samples))
+        self._outputs = list(map(lambda x: x[1], samples))
+        self._all = self._inputs + self._outputs
         if len(samples) <= 0:
             self._fail(
                 f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
@@ -36,7 +42,7 @@ class SampleManager(TaskJobManager):
             return []
 
         jobs: list[Job] = []
-        for fname in unzipped_samples:
+        for fname in self._all:
             jobs += [
                 existence := SampleExists(self._env, fname),
                 non_empty := SampleNotEmpty(self._env, fname),
@@ -46,6 +52,13 @@ class SampleManager(TaskJobManager):
             copy.add_prerequisite(existence)
 
         return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        return {
+            "inputs": self._inputs,
+            "outputs": self._outputs,
+            "all": self._all,
+        }
 
 
 class SampleJob(TaskJob):

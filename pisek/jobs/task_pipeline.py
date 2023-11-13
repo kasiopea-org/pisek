@@ -67,5 +67,10 @@ class TaskPipeline(JobPipeline):
 
         if env.solutions:
             self.pipeline.append(data_check := DataManager())
+
+            data_check.add_prerequisite(samples, name=f"samples")
+            data_check.add_prerequisite(generator, name=f"generator")
             for solution in solutions:
-                data_check.add_prerequisite(solution)
+                data_check.add_prerequisite(
+                    solution, name=f"solution_{solution.solution}"
+                )
