@@ -321,6 +321,8 @@ class SubtaskConfig(BaseEnv):
                 "in_globs",
                 config_section.get("in_globs", self._glob_i(subtask_number)).split(),
             )
+            if not all(glob.endswith(".in") for glob in self.in_globs):
+                return f"All in_globs must end with '.in': {' '.join(self.in_globs)}"
             prev = "" if subtask_number == 1 else str(subtask_number - 1)
             self._set("predecessors", config_section.get("predecessors", prev).split())
         self._constructing = False
