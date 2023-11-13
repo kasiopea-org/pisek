@@ -176,7 +176,7 @@ class Job(PipelineItem, CaptureInitParams):
             list(self.prerequisites_results),
         )
 
-    def run_job(self, cache: Cache) -> Optional[str]:
+    def run_job(self, cache: Cache) -> None:
         """Run this job. If result is already in cache use it instead."""
         if not self._initialized:
             raise RuntimeError(
@@ -199,8 +199,6 @@ class Job(PipelineItem, CaptureInitParams):
             if not cached:
                 cache.add(self._export(self.result))
             self.state = State.succeeded
-
-        return self.result
 
     @abstractmethod
     def _run(self):
@@ -297,6 +295,6 @@ class JobManager(PipelineItem):
         """Decide whether jobs did run as expected and return result."""
         pass
 
-    def _compute_result(self) -> dict[str,Any]:
+    def _compute_result(self) -> dict[str, Any]:
         """Creates result to be read by other managers."""
         return {}
