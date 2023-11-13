@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 import hashlib
 from enum import Enum
 from functools import wraps
@@ -94,7 +95,7 @@ class PipelineItem(ABC):
             for item, name in self.required_by:
                 item.prerequisites -= 1
                 if name is not None:
-                    item.prerequisites_results[name] = self.result
+                    item.prerequisites_results[name] = deepcopy(self.result)
 
         elif self.state == State.failed:
             for item, _ in self.required_by:
