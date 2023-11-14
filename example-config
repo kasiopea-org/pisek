@@ -99,6 +99,7 @@ predeccessors=
 
 source=solve
 # Filename of the program (without suffix)
+# Defaults to name of the section without "solution_" (in this case to "correct")
 
 primary=yes
 # Use this solution to generate correct outputs?
