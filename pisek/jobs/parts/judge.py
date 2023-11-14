@@ -103,7 +103,7 @@ class JudgeManager(TaskJobManager):
             if self._env.config.judge_type != "diff":
                 judge.add_prerequisite(comp)
 
-            JOBS = [(Incomplete, 5), (ChaosMonkey, 20)]
+            JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
 
             total = sum(map(lambda x: x[1], JOBS))
             random.seed(4)  # Reproducibility!

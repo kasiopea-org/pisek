@@ -27,6 +27,7 @@ def randword(length: int):
 
 
 NUMER_MODIFIERS = [
+    lambda _: 0,
     lambda x: int(x) + 1,
     lambda x: int(x) - 1,
     lambda x: -int(x),
@@ -71,10 +72,10 @@ class Incomplete(Invalidate):
             lines = f.readlines()
 
         random.seed(self.seed)
-        lines = lines[: random.randint(0, len(lines))]
+        lines = lines[: random.randint(0, len(lines) - 1)]
 
         with self._open_file(self.to_file, "w") as f:
-            f.write("\n".join(lines))
+            f.write("".join(lines))
 
 
 class ChaosMonkey(Invalidate):
