@@ -28,12 +28,13 @@ from .task_config import TaskConfig, SubtaskConfig
 
 VERDICTS = {
     "ok": "·",
+    "partial": "P",
     "timeout": "T",
     "timeout_limited": "t",
     "wrong_answer": "W",
     "error": "!",
 }
-VERDICTS_ORDER = ["·", "t", "T", "W", "!"]
+VERDICTS_ORDER = ["·", "P", "t", "T", "W", "!"]
 
 # subtask section
 TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "points"))
@@ -70,10 +71,7 @@ def evaluate_solution(
 
 
 def evaluate_subtask(subtask_results: list[TestCaseResult], max_points):
-    subtask_success = 1
-    for result in subtask_results:
-        subtask_success = min(subtask_success, result.points)
-    return max_points * subtask_success
+    return max_points * min(map(lambda r: r.points, subtask_results), default=0)
 
 
 # mode section
@@ -82,6 +80,8 @@ def slowest(results: list[TestCaseResult]) -> Union[str, list[TestCaseResult]]:
     err = filter_by_verdict(results, VERDICTS["error"])
     if len(wa) != 0 or len(err) != 0:
         return f"{len(wa)}{VERDICTS['wrong_answer']}, {len(err)}{VERDICTS['error']}"
+    if len(results) == 0:
+        return f"0S"
     slowest = max(results, key=lambda x: x.value)
     return [slowest]
 
@@ -199,7 +199,7 @@ def visualize_solution(
 
         # We are testing at higher limits in cms
         # TODO: Implement here for other values
-        if final_verdict == VERDICTS["ok"]:
+        if final_verdict == VERDICTS["ok"] or final_verdict == VERDICTS["partial"]:
             if result["time"] > limit:
                 final_verdict = VERDICTS["timeout_limited"]
                 points = 0.0
@@ -277,6 +277,8 @@ def visualize_solution(
 
 
 def get_subtask(name):
+    if name.startswith("sample"):
+        return "00"
     return name[:2]
 
 
