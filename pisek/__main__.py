@@ -21,7 +21,13 @@ import sys
 import signal
 
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.pipeline_tools import run_pipeline, load_env
+from pisek.pipeline_tools import (
+    run_pipeline,
+    load_env,
+    unlock_folder,
+    locked_folder,
+    PATH,
+)
 
 from pisek.util import clean_task_dir
 from pisek.terminal import eprint
@@ -31,14 +37,14 @@ from pisek.update_config import update
 from pisek.visualize import visualize_command
 from pisek.extract import extract
 
-PATH = "."
-
 
 def sigint_handler(sig, frame):
     eprint("\rStopping...")
-    sys.exit(0)
+    unlock_folder(PATH)
+    sys.exit(2)
 
 
+@locked_folder
 def test_task(args, **kwargs):
     return test_task_path(PATH, **vars(args), **kwargs)
 
@@ -62,6 +68,7 @@ def test_generator(args):
     return test_task(args, solutions=[])
 
 
+@locked_folder
 def extract_task(args, **kwargs):
     env = load_env(PATH, **vars(args), **kwargs)
     if env is None:
@@ -69,6 +76,7 @@ def extract_task(args, **kwargs):
     return extract(env)
 
 
+@locked_folder
 def clean_directory(args):
     task_dir = PATH
     eprint(f"Cleaning repository: {os.path.abspath(task_dir)}")

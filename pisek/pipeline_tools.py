@@ -1,9 +1,17 @@
-from typing import Optional
+from datetime import datetime
+import os
+import sys
+from typing import Callable, Optional, Any
 
 from pisek.terminal import eprint, tab, colored
 from pisek.task_config import TaskConfig
 from pisek.env import Env
 from pisek.jobs.cache import Cache
+
+PATH = "."
+
+LOCKED = False
+LOCK_FILE = ".pisek_lock"
 
 
 def run_pipeline(path, pipeline, **env_args):
@@ -65,3 +73,32 @@ def load_env(
             eprint(colored("Warning: Unsolved TODOs in config", env, "yellow"))
 
     return env
+
+
+def lock_folder(path: str):
+    global LOCKED
+    file = os.path.join(path, LOCK_FILE)
+    if os.path.exists(file):
+        eprint("Another pisek instance running in same directory.")
+        sys.exit(2)
+    with open(file, "w") as f:
+        f.write(f"Locked by pisek at {datetime.now()}")
+    LOCKED = True
+
+
+def unlock_folder(path: str):
+    global LOCKED
+    file = os.path.join(path, LOCK_FILE)
+    if LOCKED and os.path.exists(file):
+        os.unlink(file)
+    LOCKED = False
+
+
+def locked_folder(f):
+    def g(*args, **kwargs):
+        lock_folder(PATH)
+        res = f(*args, **kwargs)
+        unlock_folder(PATH)
+        return res
+
+    return g
