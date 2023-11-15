@@ -120,7 +120,7 @@ points_below=7
 subtasks=X10
 # Bitmask wheter subtasks should pass or fail
 # 1 - success, 0 - fail, X - any
-# Defaults to XX...
+# Defaults to 11... for primary solution or XX... otherwise
 
 [limits]
 

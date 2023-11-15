@@ -407,7 +407,7 @@ class SolutionConfig(BaseEnv):
 
         subtasks = config_section.get("subtasks")
         if subtasks is None:
-            subtasks = [None] * total_subtasks
+            subtasks = [1 if self.primary else None] * total_subtasks
         else:
             subtasks_str = subtasks.strip()
             if len(subtasks_str) != total_subtasks:
@@ -422,6 +422,9 @@ class SolutionConfig(BaseEnv):
                     subtasks.append(None)
                 else:
                     return f"Unallowed char in subtask string: {char}"
+
+        if self.primary and not all(map(lambda p: p == 1, subtasks)):
+            return f"Primary solution '{solution_name}' must have: subtasks={'1'*total_subtasks}"
 
         self._set("subtasks", subtasks)
         return None
