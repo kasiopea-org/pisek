@@ -28,6 +28,7 @@ def load_env(
     target: Optional[str] = None,
     solution: Optional[str] = None,
     full: bool = False,
+    all_inputs: bool = False,
     skip_on_timeout: bool = False,
     plain: bool = False,
     strict: bool = False,
@@ -63,6 +64,7 @@ def load_env(
         timeout=timeout,
         inputs=inputs,
         skip_on_timeout=skip_on_timeout,
+        all_inputs=all_inputs,
     )
 
     if config.check_todos():

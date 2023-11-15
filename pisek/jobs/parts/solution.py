@@ -228,6 +228,9 @@ class SubtaskJobGroup:
         """
         Checks whether subtask jobs have resulted in outcome that cannot be changed.
         """
+        if env.all_inputs:
+            return False
+
         old_points = self._convert_to_points(self.previous_jobs)
         new_points = self._convert_to_points(self.new_jobs)
         all_points = old_points + new_points

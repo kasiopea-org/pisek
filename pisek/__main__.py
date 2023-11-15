@@ -120,6 +120,13 @@ def main(argv):
             help="Number of test (only for kasiopea)",
         )
 
+    def add_argument_all_inputs(parser):
+        parser.add_argument(
+            "--all-inputs",
+            action="store_true",
+            help="Test solution on all inputs.",
+        )
+
     def add_argument_skip_on_timeout(parser):
         parser.add_argument(
             "--skip-on-timeout",
@@ -227,6 +234,7 @@ def main(argv):
     add_argument_full(parser)
     add_argument_strict(parser)
     add_argument_ninputs(parser)
+    add_argument_all_inputs(parser)
     add_argument_skip_on_timeout(parser)
     add_argument_clean(parser)
     add_argument_plain(parser)
