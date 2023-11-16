@@ -2,6 +2,7 @@
 Full list of ``env`` variables and their meaning:
 - general:
     - ``task_dir`` - directory being tested
+    - ``target`` - what is currently being tested (``all`` / ``solution`` / ``generator``)
     - ``config`` - variables from config
     - ``full`` - If true, don't stop on first failure
     - ``strict`` - For final test. Interprets warning as failures. Currently enforces:

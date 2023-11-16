@@ -56,6 +56,7 @@ def load_env(
 
     env = Env(
         task_dir=path,
+        target=target,
         config=config,
         full=full,
         plain=plain,

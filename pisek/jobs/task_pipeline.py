@@ -47,12 +47,13 @@ class TaskPipeline(JobPipeline):
             tools := (ToolsManager(), TOOLS_MAN_CODE),
             samples := (SampleManager(), SAMPLES_MAN_CODE),
             generator := (GeneratorManager(), GENERATOR_MAN_CODE),
-            checker := (CheckerManager(), CHECKER_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
 
-        checker[0].add_prerequisite(*samples)
-        checker[0].add_prerequisite(*generator)
+        if env.target != "solution":
+            named_pipeline.append(checker := (CheckerManager(), CHECKER_MAN_CODE))
+            checker[0].add_prerequisite(*samples)
+            checker[0].add_prerequisite(*generator)
 
         solutions = []
         if env.solutions:

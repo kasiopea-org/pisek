@@ -340,7 +340,7 @@ def main(argv):
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
     elif args.subcommand is None:
-        result = test_task(args, solutions=None)
+        result = test_task(args, solutions=None, target="all")
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
         actions = {
