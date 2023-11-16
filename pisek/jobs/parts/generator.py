@@ -227,7 +227,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         super().__init__(env, "Generate inputs", program)
 
     def _subtask_inputs(self, subtask: str):
-        return self._globs_to_files(
+        return self.globs_to_files(
             self._env.config.subtasks[subtask].in_globs, self._data(".")
         )
 
@@ -237,7 +237,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             return None
 
         # Clear old inputs
-        ins = self._globs_to_files(["*.in"], self._data("."))
+        ins = self.globs_to_files(["*.in"], self._data("."))
         samples = self._subtask_inputs("0")
         for inp in set(ins) - set(samples):
             os.remove(self._data(inp))

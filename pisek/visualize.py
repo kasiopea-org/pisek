@@ -25,6 +25,7 @@ from typing import Optional, Union, Iterable, Callable
 
 from pisek import util
 from .task_config import TaskConfig, SubtaskConfig
+from pisek.jobs.parts.task_job import TaskHelper
 
 VERDICTS = {
     "ok": "·",
@@ -58,7 +59,7 @@ def group_by_subtask(
 
 
 def in_subtask(name: str, subtask: SubtaskConfig):
-    return re.match(subtask.globs_regex(), name) is not None
+    return len(TaskHelper.filter_globs([name + ".in"], subtask.all_globs)) == 1
 
 
 def evaluate_solution(
@@ -80,8 +81,6 @@ def slowest(results: list[TestCaseResult]) -> Union[str, list[TestCaseResult]]:
     err = filter_by_verdict(results, VERDICTS["error"])
     if len(wa) != 0 or len(err) != 0:
         return f"{len(wa)}{VERDICTS['wrong_answer']}, {len(err)}{VERDICTS['error']}"
-    if len(results) == 0:
-        return f"0S"
     slowest = max(results, key=lambda x: x.value)
     return [slowest]
 

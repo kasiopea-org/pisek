@@ -87,12 +87,12 @@ class TaskHelper:
         else:
             return parts[-1]
 
-    def _filter_globs(self, files: list[str], globs: list[str]):
+    @staticmethod
+    def filter_globs(files: list[str], globs: list[str]):
         return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
 
-    def _globs_to_files(
-        self, globs: list[str], directory: Optional[str] = None
-    ) -> list[str]:
+    @staticmethod
+    def globs_to_files(globs: list[str], directory: Optional[str] = None) -> list[str]:
         files: list[str] = sum(
             (glob.glob(g, root_dir=directory) for g in globs), start=[]
         )
@@ -148,11 +148,11 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get all inputs of given subtask."""
-        return self._filter_globs(self._all_inputs(), subtask.all_globs)
+        return self.filter_globs(self._all_inputs(), subtask.all_globs)
 
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get new inputs of given subtask."""
-        return self._filter_globs(self._all_inputs(), subtask.in_globs)
+        return self.filter_globs(self._all_inputs(), subtask.in_globs)
 
 
 class TaskJob(Job, TaskHelper):

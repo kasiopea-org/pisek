@@ -30,7 +30,7 @@ class SampleManager(TaskJobManager):
         super().__init__("Checking samples")
 
     def _get_jobs(self) -> list[Job]:
-        self._inputs = self._globs_to_files(
+        self._inputs = self.globs_to_files(
             self._env.config.subtasks[0].all_globs,
             self._sample("."),
         )
