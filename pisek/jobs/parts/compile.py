@@ -18,9 +18,8 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Optional
 
-from pisek.jobs.jobs import State
+from pisek.jobs.jobs import State, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.program import ProgramJob
 
@@ -42,7 +41,7 @@ class Compile(ProgramJob):
             if manager:
                 self.manager = self._resolve_path(manager)
 
-    def _resolve_extension(self, name: str) -> Optional[str]:
+    def _resolve_extension(self, name: str) -> str:
         """
         Given `name`, finds a file named `name`.[ext],
         where [ext] is a file extension for one of the supported languages.
@@ -59,21 +58,17 @@ class Compile(ProgramJob):
                 candidates.append(name)
 
         if len(candidates) == 0:
-            self._fail(f"No program with given name exists: {name}")
-            return None
+            raise PipelineItemFailure(f"No program with given name exists: {name}")
         if len(candidates) > 1:
-            self._fail(
+            raise PipelineItemFailure(
                 f"Multiple programs with same name exist: {', '.join(candidates)}"
             )
-            return None
+
         return candidates[0]
 
     def _run(self):
         """Compiles program."""
         program = self._resolve_extension(self.program)
-        if program is None:
-            return None
-
         os.makedirs(self._executable("."), exist_ok=True)
 
         _, ext = os.path.splitext(program)
@@ -81,14 +76,12 @@ class Compile(ProgramJob):
         if ext in COMPILE_RULES:
             COMPILE_RULES[ext](self, program)
         else:
-            self._fail(f"No rule for compiling {program}.")
+            raise PipelineItemFailure(f"No rule for compiling {program}.")
 
         if self.state == State.failed:
             return None
 
-        if not self._load_compiled():
-            return self._fail("No executable after compilation.")
-
+        self._load_compiled()
         self._access_file(program)
         self._access_file(self.executable)
 
@@ -129,12 +122,11 @@ class Compile(ProgramJob):
             ["rustc", "-O", "-o", self.target, program], program
         )
 
-    def _run_compilation(self, args, program, **kwargs):
-        if not self._check_tool(args[0]):
-            return None
+    def _run_compilation(self, args, program, **kwargs) -> None:
+        self._check_tool(args[0])
 
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
-        while True:
+        while comp.stderr is not None:
             line = comp.stderr.readline().decode()
             if not line:
                 break
@@ -143,9 +135,9 @@ class Compile(ProgramJob):
 
         comp.wait()
         if comp.returncode != 0:
-            return self._fail(f"Compilation of {program} failed.")
+            raise PipelineItemFailure(f"Compilation of {program} failed.")
 
-    def _check_tool(self, tool) -> bool:
+    def _check_tool(self, tool) -> None:
         try:
             subprocess.run(
                 tool.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=0
@@ -153,14 +145,11 @@ class Compile(ProgramJob):
         except subprocess.TimeoutExpired:
             pass
         except FileNotFoundError:
-            self._fail(f"Missing tool: {tool}")
-            return False
+            raise PipelineItemFailure(f"Missing tool: {tool}")
 
-        return True
-
-    def _compile_script(self, program: str):
+    def _compile_script(self, program: str) -> None:
         if not self.valid_shebang(program):
-            return self._fail(
+            raise PipelineItemFailure(
                 f"{program} has invalid shebang. "
                 "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
                 "Check also that you are using linux eol."
@@ -168,12 +157,10 @@ class Compile(ProgramJob):
 
         with open(program, "r", newline="\n") as f:
             interpreter = f.readline().strip().lstrip("#!")
-        if not self._check_tool(interpreter):
-            return None
+        self._check_tool(interpreter)
 
         shutil.copyfile(program, self.target)
         self._chmod_exec(self.target)
-        return None
 
     @staticmethod
     def valid_shebang(filepath: str) -> bool:

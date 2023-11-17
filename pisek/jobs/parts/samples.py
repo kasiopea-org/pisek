@@ -17,7 +17,7 @@
 import os
 from typing import Any
 
-from pisek.jobs.jobs import Job
+from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 
@@ -40,11 +40,10 @@ class SampleManager(TaskJobManager):
 
         self._all = self._inputs + self._outputs
         if len(self._all) <= 0:
-            self._fail(
+            raise PipelineItemFailure(
                 f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",
             )
-            return []
 
         jobs: list[Job] = []
         for fname in self._all:
@@ -78,7 +77,9 @@ class SampleExists(SampleJob):
 
     def _run(self):
         if not self._file_exists(self.sample):
-            return self._fail(f"Sample does not exists or is not file: {self.sample}")
+            raise PipelineItemFailure(
+                f"Sample does not exists or is not file: {self.sample}"
+            )
 
 
 class SampleNotEmpty(SampleJob):
@@ -87,7 +88,7 @@ class SampleNotEmpty(SampleJob):
 
     def _run(self):
         if not self._file_not_empty(self.sample):
-            return self._fail(f"Sample is empty: {self.sample}")
+            raise PipelineItemFailure(f"Sample is empty: {self.sample}")
 
 
 class CopySample(SampleJob):

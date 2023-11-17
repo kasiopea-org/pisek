@@ -25,7 +25,7 @@ import yaml
 
 from pisek.task_config import DEFAULT_TIMEOUT
 from pisek.env import Env
-from pisek.jobs.jobs import State, Job, JobManager
+from pisek.jobs.jobs import PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskHelper, TaskJob
 
@@ -139,15 +139,6 @@ yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor("!RunResult", run_result_constructor)
 
 
-def completed_process_to_run_result(result: subprocess.CompletedProcess) -> RunResult:
-    stdout = result.stdout.decode("utf-8") if result.stdout is not None else ""
-    stderr = result.stderr.decode("utf-8") if result.stderr is not None else ""
-    if result.returncode == 0:
-        return RunResult(RunResultKind.OK, 0, stdout, stderr)
-    else:
-        return RunResult(RunResultKind.RUNTIME_ERROR, result.returncode, stdout, stderr)
-
-
 class ProgramJob(TaskJob):
     """Job that deals with a program."""
 
@@ -156,16 +147,14 @@ class ProgramJob(TaskJob):
         self.program = program
         self.executable: Optional[str] = None
 
-    def _load_compiled(self) -> bool:
+    def _load_compiled(self) -> None:
         """Loads name of compiled program."""
         self.executable = self._executable(os.path.basename(self.program))
         if not self._file_exists(self.executable):
-            self._fail(
+            raise PipelineItemFailure(
                 f"Program {self.name} does not exist, "
                 f"although it should have been compiled already."
             )
-            return False
-        return True
 
     def _run_raw(
         self,
@@ -178,7 +167,7 @@ class ProgramJob(TaskJob):
         stderr: Optional[str] = None,
         env={},
         print_stderr: bool = False,
-    ) -> Optional[RunResult]:
+    ) -> RunResult:
         """Runs args as a command."""
         executable = args[0]
         self._access_file(executable)
@@ -273,22 +262,20 @@ class ProgramJob(TaskJob):
             else:
                 raise RuntimeError(f"Unknown minibox status {meta['message']}.")
         else:
-            self._fail(f"Minibox error:\n{tab(stderr_raw)}")
-            return None
+            raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
 
-    def _run_program(self, add_args, **kwargs) -> Optional[RunResult]:
+    def _run_program(self, add_args, **kwargs) -> RunResult:
         """Runs program."""
-        if not self._load_compiled():
-            return None
+        self._load_compiled()
         return self._run_raw([self.executable] + add_args, **kwargs)
 
     def _get_executable(self) -> str:
         """Get a name of a compiled program."""
         return self._executable(os.path.basename(self.program))
 
-    def _program_fail(self, msg: str, res: RunResult):
-        """Fail that nicely formats RunResult"""
-        self._fail(f"{msg}\n{tab(self._quote_program(res))}")
+    def _create_program_failure(self, msg: str, res: RunResult):
+        """Create PipelineItemFailure that nicely formats RunResult"""
+        return PipelineItemFailure(f"{msg}\n{tab(self._quote_program(res))}")
 
     def _quote_program(self, res: RunResult):
         """Quotes program's stdout and stderr."""

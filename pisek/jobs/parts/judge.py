@@ -22,7 +22,7 @@ import yaml
 import subprocess
 
 from pisek.env import Env
-from pisek.jobs.jobs import State, Job
+from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
@@ -199,10 +199,10 @@ class RunJudge(ProgramJob):
         self.expected_points = expected_points
 
     @abstractmethod
-    def _judge(self) -> Optional[SolutionResult]:
+    def _judge(self) -> SolutionResult:
         pass
 
-    def _run(self) -> Optional[SolutionResult]:
+    def _run(self) -> SolutionResult:
         if "run_solution" in self.prerequisites_results:
             solution_res: RunResult = self.prerequisites_results["run_solution"]
             if solution_res.kind == RunResultKind.OK:
@@ -227,11 +227,10 @@ class RunJudge(ProgramJob):
             and result is not None
             and result.points != self.expected_points
         ):
-            self._fail(
+            raise PipelineItemFailure(
                 f"Output {self.output_name} for input {self.input_name} "
                 f"should have got {self.expected_points} points but got {result.points} points."
             )
-            return None
         return result
 
     def _nice_diff(self) -> str:
@@ -256,7 +255,7 @@ class RunDiffJudge(RunJudge):
             env, judge, input_name, output_name, correct_output, expected_points
         )
 
-    def _judge(self) -> Optional[SolutionResult]:
+    def _judge(self) -> SolutionResult:
         self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
         diff = subprocess.run(
@@ -283,8 +282,9 @@ class RunDiffJudge(RunJudge):
                 self._nice_diff(),
             )
         else:
-            self._fail(f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}")
-            return None
+            raise PipelineItemFailure(
+                f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}"
+            )
 
 
 class RunKasiopeaJudge(RunJudge):
@@ -305,7 +305,7 @@ class RunKasiopeaJudge(RunJudge):
         self.subtask = subtask
         self.seed = seed
 
-    def _judge(self) -> Optional[SolutionResult]:
+    def _judge(self) -> SolutionResult:
         envs = {}
         if self._env.config.judge_needs_in:
             envs["TEST_INPUT"] = self.input_name
@@ -319,8 +319,6 @@ class RunKasiopeaJudge(RunJudge):
             stdin=self.output_name,
             env=envs,
         )
-        if result is None:
-            return None
         if result.returncode == 0:
             return SolutionResult(
                 Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
@@ -334,7 +332,7 @@ class RunKasiopeaJudge(RunJudge):
                 self._nice_diff(),
             )
         else:
-            return self._program_fail(
+            raise self._create_program_failure(
                 f"Judge failed on output {self.output_name}:", result
             )
 
@@ -353,7 +351,7 @@ class RunCMSJudge(RunJudge):
             env, judge, input_name, output_name, correct_output, expected_points
         )
 
-    def _judge(self) -> Optional[SolutionResult]:
+    def _judge(self) -> SolutionResult:
         self._access_file(self.input_name)
         self._access_file(self.output_name)
         self._access_file(self.correct_output_name)
@@ -363,20 +361,18 @@ class RunCMSJudge(RunJudge):
             [self.input_name, self.correct_output_name, self.output_name],
             stdout=points_file,
         )
-        if result is None:
-            return None
         if result.returncode == 0:
             points_str = result.raw_stdout().split("\n")[0]
             msg = result.raw_stderr().split("\n")[0]
             try:
                 points = float(points_str)
             except ValueError:
-                return self._program_fail(
+                raise self._create_program_failure(
                     "Judge wrote didn't write points on stdout:", result
                 )
 
             if not 0 <= points <= 1:
-                return self._program_fail(
+                raise self._create_program_failure(
                     "Judge must give between 0 and 1 points:", result
                 )
 
@@ -399,7 +395,7 @@ class RunCMSJudge(RunJudge):
                     self._nice_diff(),
                 )
         else:
-            return self._program_fail(
+            raise self._create_program_failure(
                 f"Judge failed on output {self.output_name}:", result
             )
 

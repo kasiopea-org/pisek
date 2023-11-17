@@ -19,7 +19,7 @@ from importlib.resources import files
 from typing import Optional
 
 import subprocess
-from pisek.jobs.jobs import State, Job
+from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramJob
@@ -65,7 +65,7 @@ class PrepareMinibox(TaskJob):
             ]
         )
         if gcc.returncode != 0:
-            self._fail("Minibox compilation failed.")
+            raise PipelineItemFailure("Minibox compilation failed.")
 
 
 class PrepareTextPreprocessor(TaskJob):
@@ -94,18 +94,14 @@ class PrepareTextPreprocessor(TaskJob):
             ]
         )
         if gcc.returncode != 0:
-            self._fail("Text preprocessor compilation failed.")
+            raise PipelineItemFailure("Text preprocessor compilation failed.")
 
 
 class SanitizeAbstract(ProgramJob):
-    def _sanitize(self, input_: str, output: str):
+    def _sanitize(self, input_: str, output: str) -> None:
         result = self._run_program([], stdin=input_, stdout=output)
-        if result is None:  # Something wrong in _run_program
-            return None
-        elif result.returncode == 42:
-            return None
-        elif result.returncode == 43:
-            return self._program_fail(
+        if result.returncode == 43:
+            raise self._create_program_failure(
                 f"Text preprocessor failed on file: {input_}", result
             )
 
@@ -136,6 +132,6 @@ class IsClean(SanitizeAbstract):
             return None
 
         if not self._files_equal(self.input, self.output):
-            return self._fail(
+            raise PipelineItemFailure(
                 f"File {self.input} is not clean. Check encoding, missing newline at the end or \\r."
             )

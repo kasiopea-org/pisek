@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 import pisek.util as util
 from pisek.env import Env
-from pisek.jobs.jobs import State, Job
+from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
@@ -129,12 +129,10 @@ class OnlineGeneratorJob(ProgramJob):
         self.input_name = input_file
         self.input_file = self._data(input_file)
 
-    def _gen(self, input_file: str, seed: int, subtask: int) -> Optional[RunResult]:
-        if not self._load_compiled():
-            return None
+    def _gen(self, input_file: str, seed: int, subtask: int) -> RunResult:
+        self._load_compiled()
         if seed < 0:
-            self._fail(f"Seed {seed} is negative.")
-            return None
+            raise PipelineItemFailure(f"Seed {seed} is negative.")
 
         input_dir = os.path.dirname(input_file)
         os.makedirs(input_dir, exist_ok=True)
@@ -145,10 +143,8 @@ class OnlineGeneratorJob(ProgramJob):
         result = self._run_program(
             [difficulty, hexa_seed], stdout=input_file, print_stderr=True
         )
-        if result is None:
-            return None
         if result.kind != RunResultKind.OK:
-            return self._program_fail(
+            raise self._create_program_failure(
                 f"{self.program} failed on subtask {subtask}, seed {seed:x}:", result
             )
 
@@ -165,7 +161,7 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
             env, f"Generate {input_file}", generator, input_file, subtask, seed
         )
 
-    def _run(self) -> Optional[RunResult]:
+    def _run(self) -> RunResult:
         return self._gen(self.input_file, self.seed, self.subtask)
 
 
@@ -186,10 +182,9 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
 
     def _run(self) -> None:
         copy_file = self.input_file.replace(".in", ".copy")
-        if not self._gen(copy_file, self.seed, self.subtask):
-            return
+        self._gen(copy_file, self.seed, self.subtask)
         if not self._files_equal(self.input_file, copy_file):
-            return self._fail(
+            raise PipelineItemFailure(
                 f"Generator is not deterministic. Files {self.input_name} and {os.path.basename(copy_file)} differ "
                 f"(subtask {self.subtask}, seed {self.seed})",
             )
@@ -214,7 +209,7 @@ class OnlineGeneratorRespectsSeed(TaskJob):
 
     def _run(self) -> None:
         if self._files_equal(self.file1, self.file2):
-            return self._fail(
+            raise PipelineItemFailure(
                 f"Generator doesn't respect seed."
                 f"Files {self.file1_name} (seed {self.seed1:x}) and {self.file2_name} (seed {self.seed2:x}) are same."
             )
@@ -231,10 +226,9 @@ class OfflineGeneratorGenerate(ProgramJob):
             self._env.config.subtasks[subtask].in_globs, self._data(".")
         )
 
-    def _gen(self) -> Optional[list[str]]:
+    def _gen(self) -> list[str]:
         """Generates all inputs."""
-        if not self._load_compiled():
-            return None
+        self._load_compiled()
 
         # Clear old inputs
         ins = self.globs_to_files(["*.in"], self._data("."))
@@ -248,7 +242,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         if run_result is None:
             return None
         if run_result.kind != RunResultKind.OK:
-            return self._program_fail(f"Generator failed:", run_result)
+            raise self._create_program_failure(f"Generator failed:", run_result)
 
         inputs = []
         for sub_num, subtask in self._env.config.subtasks.items():
@@ -256,18 +250,16 @@ class OfflineGeneratorGenerate(ProgramJob):
                 continue
             files = self._subtask_inputs(sub_num)
             if len(files) == 0:
-                self._fail(
+                raise PipelineItemFailure(
                     f"Generator did not generate any inputs for subtask {sub_num}."
                 )
-                return None
             for file in files:
                 inputs.append(file)
                 self._access_file(self._data(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
         if len(test_files) == 0:
-            self._fail(f"Generator did not generate ant inputs.")
-            return None
+            raise PipelineItemFailure(f"Generator did not generate ant inputs.")
 
         return inputs
 

@@ -29,6 +29,10 @@ from pisek.env import Env
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
 
 
+class PipelineItemFailure(Exception):
+    pass
+
+
 class CaptureInitParams:
     _initialized = False
 
@@ -61,11 +65,11 @@ class PipelineItem(ABC):
         self.required_by: list[tuple["PipelineItem", Optional[str]]] = []
         self.prerequisites_results: dict[str, Any] = {}
 
-    def _fail(self, message: str) -> None:
+    def _fail(self, failure: PipelineItemFailure) -> None:
         if self.fail_msg != "":
             raise RuntimeError("PipelineItem cannot fail twice.")
         self.state = State.failed
-        self.fail_msg = message
+        self.fail_msg = str(failure)
 
     def cancel(self) -> None:
         """Cancels job and all that require it."""
@@ -194,7 +198,10 @@ class Job(PipelineItem, CaptureInitParams):
             cache.move_to_top(entry)
             self.result = entry.result
         else:
-            self.result = self._run()
+            try:
+                self.result = self._run()
+            except PipelineItemFailure as failure:
+                self._fail(failure)
 
         if self.state != State.failed:
             if not cached:
@@ -218,7 +225,11 @@ class JobManager(PipelineItem):
         else:
             self.state = State.running
             self._check_prerequisites()
-            self.jobs = self._get_jobs()
+            try:
+                self.jobs = self._get_jobs()
+            except PipelineItemFailure as failure:
+                self._fail(failure)
+                self.jobs = []
         return self.jobs
 
     @abstractmethod
@@ -285,10 +296,14 @@ class JobManager(PipelineItem):
         """Finalizes this JobManager - Does final evaluation and returns final status."""
 
         if self.state == State.running:
-            self.result = self._evaluate()
-            if self.state == State.running:
+            try:
+                self.result = self._evaluate()
+            except PipelineItemFailure as failure:
+                self._fail(failure)
+            else:
                 self.state = State.succeeded
-        self.result = self._compute_result()
+                self.result = self._compute_result()
+
         super().finish()
         return self._get_status()
 

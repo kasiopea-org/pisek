@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from pisek.jobs.jobs import Job
+from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
 from pisek.jobs.parts.judge import Verdict
@@ -77,7 +77,7 @@ class InputSmall(CheckData):
 
     def _run(self):
         if self._file_size(self.data) > self._env.config.input_max_size * MB:
-            self._fail("Input too big.")
+            raise PipelineItemFailure("Input too big.")
 
 
 class OutputSmall(CheckData):
@@ -92,4 +92,4 @@ class OutputSmall(CheckData):
 
     def _run(self):
         if self._file_size(self.data) > self._env.config.output_max_size * MB:
-            self._fail("Output too big.")
+            raise PipelineItemFailure("Output too big.")

@@ -16,7 +16,7 @@
 
 from typing import Any, Optional
 
-from pisek.jobs.jobs import State, Job
+from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
@@ -33,7 +33,7 @@ class CheckerManager(TaskJobManager):
         checker = self._env.config.checker
         if checker is None:
             if self._env.strict:
-                self._fail("No checker specified in config.")
+                raise PipelineItemFailure("No checker specified in config.")
             else:
                 self.skipped_checker = colored(
                     "Warning: No checker specified in config.\n"
@@ -78,7 +78,7 @@ class CheckerManager(TaskJobManager):
         for loose_subtask in self.loose_subtasks:
             err = loose_subtask.failed(self._env.config.fail_mode)
             if err is not None:
-                return self._fail(err)
+                raise PipelineItemFailure(err)
 
     def _get_status(self) -> str:
         if self.skipped_checker:
@@ -151,20 +151,18 @@ class CheckerJob(ProgramJob):
         self.input_file = self._data(input_name)
         self.expected = expected
 
-    def _check(self) -> Optional[RunResult]:
+    def _check(self) -> RunResult:
         return self._run_program([str(self.subtask)], stdin=self.input_file)
 
-    def _run(self) -> Optional[RunResult]:
+    def _run(self) -> RunResult:
         result = self._check()
-        if result is None:
-            return None
         if self.expected == RunResultKind.OK != result.kind:
-            return self._program_fail(
+            raise self._create_program_failure(
                 f"Checker failed on {self.input_name} (subtask {self.subtask}) but should have succeeded.",
                 result,
             )
         elif self.expected == RunResultKind.RUNTIME_ERROR != result.kind:
-            return self._program_fail(
+            raise self._create_program_failure(
                 f"Checker succeeded on {self.input_name} (subtask {self.subtask}) but should have failed.",
                 result,
             )
