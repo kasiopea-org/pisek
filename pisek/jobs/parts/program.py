@@ -230,15 +230,24 @@ class ProgramJob(TaskJob):
         stderr_text = None if stderr else stderr_raw
         if process.returncode == 0:
             t, wt = float(meta["time"]), float(meta["time-wall"])
-            return RunResult(RunResultKind.OK, 0, t, wt, stdout, stderr, stderr_text)
+            return RunResult(
+                RunResultKind.OK,
+                0,
+                t,
+                wt,
+                stdout,
+                stderr,
+                stderr_text,
+                "Finished successfully",
+            )
         elif process.returncode == 1:
             t, wt = float(meta["time"]), float(meta["time-wall"])
             if meta["status"] in ("RE", "SG"):
-                if (rc := re.search("\d+", meta["message"])) is None:
-                    raise RuntimeError(
-                        f"No error status in minibox message: {meta['message']}"
-                    )
-                return_code = int(rc[0])
+                if meta["status"] == "RE":
+                    return_code = int(meta["exitcode"])
+                elif meta["status"] == "SG":
+                    return_code = int(meta["exitsig"])
+
                 return RunResult(
                     RunResultKind.RUNTIME_ERROR,
                     return_code,
