@@ -363,7 +363,6 @@ class RunCMSJudge(RunJudge):
         )
         if result.returncode == 0:
             points_str = result.raw_stdout().split("\n")[0]
-            msg = result.raw_stderr().split("\n")[0]
             try:
                 points = float(points_str)
             except ValueError:
@@ -381,17 +380,19 @@ class RunCMSJudge(RunJudge):
                     Verdict.wrong_answer,
                     0.0,
                     result.raw_stderr(),
-                    msg,
+                    self._quote_program(result),
                     self._nice_diff(),
                 )
             elif points == 1:
-                return SolutionResult(Verdict.ok, 1.0, result.raw_stderr(), msg)
+                return SolutionResult(
+                    Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
+                )
             else:
                 return SolutionResult(
                     Verdict.partial,
                     points,
                     result.raw_stderr(),
-                    msg,
+                    self._quote_program(result),
                     self._nice_diff(),
                 )
         else:
