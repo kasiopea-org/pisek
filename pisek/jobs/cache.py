@@ -39,6 +39,7 @@ class CacheEntry(yaml.YAMLObject):
         envs: list[str],
         files: list[str],
         results: list[Any],
+        output: list[tuple[str, bool]],
     ) -> None:
         self.name = name
         self.signature = signature
@@ -46,12 +47,13 @@ class CacheEntry(yaml.YAMLObject):
         self.prerequisites_results = sorted(list(results))
         self.envs = list(sorted(envs))
         self.files = list(sorted(files))
+        self.output = output
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, "
             f"result={self.result}, prerequisites_results={self.prerequisites_results}, "
-            f"envs={self.envs}, files={self.files})"
+            f"envs={self.envs}, files={self.files}, output={self.output})"
         )
 
     def yaml_export(self) -> str:

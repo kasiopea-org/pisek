@@ -106,7 +106,7 @@ class Compile(ProgramJob):
         )
 
     def _c_colors(self):
-        if not self._env.get_without_log("plain"):
+        if not self._env.plain:
             return "-fdiagnostics-color=always"
         else:
             return "-fdiagnostics-color=never"
@@ -130,8 +130,7 @@ class Compile(ProgramJob):
             line = comp.stderr.readline().decode()
             if not line:
                 break
-            print(line, end="", file=sys.stderr)
-            self.dirty = True
+            self._print(line, end="", stderr=True)
 
         comp.wait()
         if comp.returncode != 0:

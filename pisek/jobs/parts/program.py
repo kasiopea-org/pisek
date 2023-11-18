@@ -218,8 +218,7 @@ class ProgramJob(TaskJob):
                 if not line:
                     break
                 stderr_raw += line
-                print(colored(line, self._env, "yellow"), end="", file=sys.stderr)
-                self.dirty = True
+                self._print(colored(line, self._env, "yellow"), end="", stderr=True)
 
         process.wait()
 

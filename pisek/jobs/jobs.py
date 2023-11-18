@@ -19,6 +19,7 @@ from copy import deepcopy
 import hashlib
 from enum import Enum
 from functools import wraps
+import sys
 from typing import Optional, AbstractSet, MutableSet, Any
 import yaml
 
@@ -64,6 +65,11 @@ class PipelineItem(ABC):
         self.prerequisites = 0
         self.required_by: list[tuple["PipelineItem", Optional[str]]] = []
         self.prerequisites_results: dict[str, Any] = {}
+
+    def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
+        """Prints text to stdout/stderr."""
+        self.dirty = True
+        (sys.stderr if stderr else sys.stdout).write(msg + end)
 
     def _fail(self, failure: PipelineItemFailure) -> None:
         if self.fail_msg != "":
@@ -115,8 +121,14 @@ class Job(PipelineItem, CaptureInitParams):
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
         self._accessed_files: MutableSet[str] = set([])
+        self._terminal_output: list[tuple[str, bool]] = []
         self.name = name
         super().__init__(name)
+
+    def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
+        """Prints text to stdout/stderr and caches it."""
+        self._terminal_output.append((msg + end, stderr))
+        return super()._print(msg, end, stderr)
 
     def _access_file(self, filename: str) -> None:
         """Add file this job depends on."""
@@ -179,6 +191,7 @@ class Job(PipelineItem, CaptureInitParams):
             self._env.get_accessed(),
             list(self._accessed_files),
             list(self.prerequisites_results),
+            self._terminal_output,
         )
 
     def run_job(self, cache: Cache) -> None:
@@ -196,6 +209,8 @@ class Job(PipelineItem, CaptureInitParams):
         if self.name in cache and (entry := self._find_entry(cache[self.name])):
             cached = True
             cache.move_to_top(entry)
+            for msg, stderr in entry.output:
+                self._print(msg, end="", stderr=stderr)
             self.result = entry.result
         else:
             try:
