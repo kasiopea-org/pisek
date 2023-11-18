@@ -21,7 +21,7 @@ import shutil
 from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
-from .task_config import TaskConfig
+from .task_config import TaskConfig, load_config
 
 BUILD_DIR = "build/"
 
@@ -80,10 +80,8 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
 
 
 def clean_task_dir(task_dir: str) -> None:
-    config = TaskConfig()
-    err = config.load(task_dir)
-    if err:
-        print(err, file=sys.stderr)
+    config = load_config(task_dir)
+    if config is None:
         exit(1)
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory

@@ -4,7 +4,7 @@ import sys
 from typing import Callable, Optional, Any
 
 from pisek.terminal import eprint, tab, colored
-from pisek.task_config import TaskConfig
+from pisek.task_config import load_config
 from pisek.env import Env
 from pisek.jobs.cache import Cache
 
@@ -37,10 +37,8 @@ def load_env(
     timeout: Optional[float] = None,
     inputs: int = 5,
 ):
-    config = TaskConfig()
-    err = config.load(path)
-    if err:
-        eprint(f"Error when loading config:\n{tab(err)}")
+    config = load_config(path)
+    if config is None:
         return None
 
     if solutions is None:

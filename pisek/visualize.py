@@ -24,7 +24,7 @@ from ansi.color import fg, fx
 from typing import Optional, Union, Iterable, Callable
 
 from pisek import util
-from .task_config import TaskConfig, SubtaskConfig
+from .task_config import load_config, TaskConfig, SubtaskConfig
 from pisek.jobs.parts.task_job import TaskHelper
 
 VERDICTS = {
@@ -121,11 +121,10 @@ def visualize(
     limit: Optional[float] = None,
     segments: int = 10,
 ):
-    config = TaskConfig()
-    err = config.load(path)
-    if err:
-        print(err, file=sys.stderr)
-        exit(1)
+    config = load_config(path)
+    if config is None:
+        return exit(1)
+
     with open(os.path.join(path, filename)) as f:
         testing_log = json.load(f)
 
@@ -155,7 +154,10 @@ def visualize(
             limit = 1
 
     # Kind of slow, but we will not have hundreds of solutions
-    solutions.sort(key=lambda x: config.solutions.keys().index(x))
+    def solution_index(name) -> int:
+        return config.solutions.keys().index(name)
+
+    solutions.sort(key=solution_index)
 
     unexpected_solutions = []
     for solution_name in solutions:

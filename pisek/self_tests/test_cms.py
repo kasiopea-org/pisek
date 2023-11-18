@@ -43,8 +43,7 @@ class TestOldInputsDeleted(TestSoucetCMS):
         return False
 
     def modify_task(self):
-        task_config = TaskConfig()
-        task_config.load(self.task_dir)
+        task_config = TaskConfig(self.task_dir)
         self.data_dir = task_config.get_data_dir()
 
         # We only care about the generation part, so remove solve.py to stop the tests

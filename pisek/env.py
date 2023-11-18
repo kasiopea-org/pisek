@@ -36,6 +36,13 @@ class BaseEnv:
         self._locked = False
         self._accessed: set[str] = set([])
 
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if __name not in ("_vars", "_log_off", "_locked", "_accessed"):
+            raise RuntimeError(
+                f"Cannot set attribute '{__name}'. Use 'self[\"{__name}\"] = {__value}' instead."
+            )
+        super().__setattr__(__name, __value)
+
     def _get(self, name: str) -> Any:
         """
         Gets variable of given name.
@@ -80,6 +87,9 @@ class BaseEnv:
 
     def __getitem__(self, key: str) -> Any:
         return self._get(str(key))
+
+    def __setitem__(self, key: str, val: Any):
+        self._set(key, val)
 
     def __getattr__(self, name: str) -> Any:
         """Gets variable with given name and logs access to it."""
@@ -146,7 +156,15 @@ class BaseEnv:
         """
         if self._locked:
             raise RuntimeError("Locked BaseEnv cannot be forked.")
-        return self.__class__(**{**deepcopy(self._vars), **kwargs})
+
+        # XXX: Ok this is nasty
+        # We actually need a copied object of the same class to keep methods
+        # However we cannot call it's __init__ because we don't want to repeat
+        # all calculations. But fortunately we have all stored in _vars.
+        instance = self.__class__.__new__(self.__class__)
+        BaseEnv.__init__(instance, **{**deepcopy(self._vars), **kwargs})
+        assert instance._accessed == set([])
+        return instance
 
     def lock(self) -> "BaseEnv":
         """Lock this BaseEnv and all subenvs so they cannot be forked."""
