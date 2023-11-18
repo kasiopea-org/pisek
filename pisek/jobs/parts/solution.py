@@ -246,8 +246,9 @@ class SubtaskJobGroup:
                     return True  # Points too low
                 if min(new_points, default=expected_points) != expected_points:
                     return True  # Subtask cannot be as expected
-                if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
-                    self.new_jobs
+                if (
+                    self._env.skip_on_timeout
+                    and Verdict.timeout in self._judge_verdicts(self.new_jobs)
                 ):
                     return True
         else:
