@@ -56,6 +56,10 @@ class CopyFile(TaskJob): # We inherit from TaskJob, because it provides useful m
             print(f"Coping {self.source} to {self.dest}")
             self.dirty = True  # Setting dirty flag because we wrote to a console
         
+        if os.path.exists(self.dest):
+            # Raise Failure if Job cannot be completed 
+            raise PipelineItemFailure("Destination file already exists.")
+
         shutil.copy(self.source, self.dest)
         self._access_file(self.source)  # Access the source as the result depends on it
         self._access_file(self.dest)  # Also access destination as we need to run the job again if it has changed
@@ -102,7 +106,7 @@ class ExampleManager(TaskJobManager):  # We inherit from TaskJobManager again fo
     # Finally we check for cross-job failures
     def _evaluate(self) -> Any:
         if self.jobs[0].result != self.jobs[1].result:
-            return self._fail("Both jobs have to have the same result.")
+            raise PipelineItemFailure("Both jobs have to have the same result.")
 ```
 
 ## JobPipeline
