@@ -80,6 +80,7 @@ def update(path) -> Optional[str]:
         config.add_section(solution)
         if i == 0:
             config[solution]["primary"] = "yes"
+            subtasks = "1" * len(subtask_points)
         config[solution]["source"] = source
         config[solution]["points"] = "X" if points is None else str(points)
         config[solution]["subtasks"] = subtasks
