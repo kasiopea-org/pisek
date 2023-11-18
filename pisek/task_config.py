@@ -51,6 +51,7 @@ class TaskConfigWrongValue(TaskConfigError):
             *args,
         )
 
+NO_FALLBACK = object()
 
 class TaskConfigParser(configparser.RawConfigParser):
     """
@@ -79,15 +80,15 @@ class TaskConfigParser(configparser.RawConfigParser):
         type_=str,
         raw=False,
         vars=None,
-        fallback=configparser._UNSET,
+        fallback=NO_FALLBACK,
     ):
         if section not in self:
-            if fallback == configparser._UNSET:
+            if fallback == NO_FALLBACK:
                 raise TaskConfigMissingSection(section)
             else:
                 return fallback
         if option not in self[section]:
-            if fallback == configparser._UNSET:
+            if fallback == NO_FALLBACK:
                 raise TaskConfigMissingOption(section, option)
             else:
                 return fallback
@@ -209,7 +210,7 @@ class TaskConfig(BaseEnv):
                 )
             except TaskConfigError as err:
                 raise TaskConfigError(
-                    f"Error while loading subtask {m}:\n{tab(str(err))}"
+                    f"Error while loading subtask {m[0]}:\n{tab(str(err))}"
                 )
 
         if "0" not in subtasks:  # Add samples
@@ -348,7 +349,7 @@ class SubtaskConfig(BaseEnv):
             self["predecessors"] = config_section.get("predecessors", "").split()
         else:
             self["name"] = config_section.get("name", None)
-            self["score"] = config_section.get("points", type_=int)
+            self["score"] = config_section.get("points", type_=int, fallback=NO_FALLBACK)
             self["in_globs"] = config_section.get(
                 "in_globs", self._glob_i(subtask_number)
             ).split()
