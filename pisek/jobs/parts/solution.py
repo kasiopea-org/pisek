@@ -50,7 +50,7 @@ class SolutionManager(TaskJobManager):
         testcases = {}
         used_inp = set()
         for sub_num, sub in self._env.config.subtasks.items():
-            self.subtasks.append(SubtaskJobGroup(sub_num))
+            self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:
                     jobs.append(
@@ -96,7 +96,7 @@ class SolutionManager(TaskJobManager):
         expected = self._env.config.solutions[self.solution].subtasks
 
         for subtask in self.subtasks:
-            if subtask.definitive(self._env, expected[subtask.num]):
+            if subtask.definitive(expected[subtask.num]):
                 subtask.cancel()
 
     def _get_status(self) -> str:
@@ -169,8 +169,9 @@ class SolutionManager(TaskJobManager):
 class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
 
-    def __init__(self, num) -> None:
+    def __init__(self, env: Env, num) -> None:
         self.num = int(num)
+        self._env = env
         self.run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
@@ -224,11 +225,11 @@ class SubtaskJobGroup:
     def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
         return list(map(SubtaskJobGroup._to_points, SubtaskJobGroup._finished(jobs)))
 
-    def definitive(self, env: Env, expected_points: Optional[float]) -> bool:
+    def definitive(self, expected_points: Optional[float]) -> bool:
         """
         Checks whether subtask jobs have resulted in outcome that cannot be changed.
         """
-        if env.all_inputs:
+        if self._env.all_inputs:
             return False
 
         old_points = self._convert_to_points(self.previous_jobs)
@@ -237,7 +238,7 @@ class SubtaskJobGroup:
         if len(all_points) == 0:
             return False
 
-        if env.config.fail_mode == "all":
+        if self._env.config.fail_mode == "all":
             if min(new_points, default=1) != max(new_points, default=1):
                 return True  # Inconsistent on this subtasks
             if expected_points is not None:
@@ -245,7 +246,7 @@ class SubtaskJobGroup:
                     return True  # Points too low
                 if min(new_points, default=expected_points) != expected_points:
                     return True  # Subtask cannot be as expected
-                if env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
+                if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
                     self.new_jobs
                 ):
                     return True
@@ -294,12 +295,13 @@ class SubtaskJobGroup:
         out = os.path.basename(job.output_name)
         if res is None:
             raise RuntimeError(f"Job {job.name} has not finished yet.")
+        judge = self._env.config.judge_type.capitalize()
         if res.verdict == Verdict.ok:
-            head = f"Judge accepted {out}"
+            head = f"{judge} accepted {out}"
         elif res.verdict == Verdict.wrong_answer:
-            head = f"Judge rejected {out}"
+            head = f"{judge} rejected {out}"
         elif res.verdict == Verdict.partial:
-            head = f"Judge partially accepted {out}"
+            head = f"{judge} partially accepted {out}"
         elif res.verdict == Verdict.error:
             head = f"Solution failed on input {inp}"
         elif res.verdict == Verdict.timeout:

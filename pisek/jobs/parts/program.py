@@ -266,7 +266,8 @@ class ProgramJob(TaskJob):
                     wt,
                     stdout,
                     stderr,
-                    f"[Timeout after {timeout}s]",
+                    stderr_text,
+                    f"Timeout after {timeout}s",
                 )
             else:
                 raise RuntimeError(f"Unknown minibox status {meta['message']}.")
