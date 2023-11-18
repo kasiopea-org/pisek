@@ -79,10 +79,10 @@ def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
         pass
 
 
-def clean_task_dir(task_dir: str) -> None:
+def clean_task_dir(task_dir: str) -> bool:
     config = load_config(task_dir)
     if config is None:
-        exit(1)
+        return False
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory
 
@@ -91,7 +91,8 @@ def clean_task_dir(task_dir: str) -> None:
     rm_f(SAMPLES_ZIP)
     rm_f(TESTS_ZIP)
     rm_f(CACHE_FILENAME)
-    return _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
+    _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
+    return True
 
 
 def get_expected_score(solution_name: str, config: TaskConfig) -> Optional[int]:

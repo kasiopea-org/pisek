@@ -31,7 +31,8 @@ class TestFixture(unittest.TestCase):
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
-        clean_task_dir(self.task_dir)
+        if not clean_task_dir(self.task_dir):
+            exit(1)
 
         self.cwd_orig = os.getcwd()
         os.chdir(self.task_dir)

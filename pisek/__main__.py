@@ -77,10 +77,10 @@ def extract_task(args, **kwargs):
 
 
 @locked_folder
-def clean_directory(args):
+def clean_directory(args) -> bool:
     task_dir = PATH
     eprint(f"Cleaning repository: {os.path.abspath(task_dir)}")
-    clean_task_dir(task_dir)
+    return clean_task_dir(task_dir)
 
 
 def main(argv):
@@ -329,7 +329,8 @@ def main(argv):
     result = None
 
     if args.clean:
-        clean_directory(args)
+        if not clean_directory(args):
+            return 1
 
     if args.subcommand == "test":
         if args.target == "solution":
@@ -365,7 +366,7 @@ def main(argv):
         checks[check_mode](args)
         return action(args)
     elif args.subcommand == "clean":
-        clean_directory(args)
+        result = not clean_directory(args)
     elif args.subcommand == "visualize":
         visualize_command(PATH, args)
     elif args.subcommand == "license":
