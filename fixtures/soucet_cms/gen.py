@@ -12,6 +12,7 @@ MAX_ABS = [int(1e9), int(1e9), int(1e18)]
 
 random.seed(123)
 
+print("Generating...", file=sys.stderr)
 for subtask_i, (positive_only, max_abs) in enumerate(zip(POSITIVE_ONLY, MAX_ABS)):
     for ti in range(5):
         a = random.randint(-max_abs, max_abs)
