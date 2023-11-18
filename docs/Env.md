@@ -11,6 +11,6 @@ Full list of ``env`` variables and their meaning:
     - ``solutions`` - Solutions to test ``pisek`` on. If empty test only generator.
 - modifiers:
     - ``timeout`` - Override config timeout for solutions.
-    - `skip_on_timeout` - Skip testing rest of the subtask's inputs once solution timeouts.
-    - `all_inputs` - Don't cancel solution on remaining inputs.
+    - ``skip_on_timeout`` - Skip testing rest of the subtask's inputs once solution timeouts.
+    - ``all_inputs`` - Don't cancel solution on remaining inputs.
     - ``inputs`` - Number of inputs in Kasiopea mode
