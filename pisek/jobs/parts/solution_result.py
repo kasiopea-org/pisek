@@ -16,6 +16,8 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import partial
+from typing import Callable
 import yaml
 
 Verdict = Enum("Verdict", ["ok", "partial", "wrong_answer", "error", "timeout"])
@@ -65,3 +67,22 @@ def sol_result_constructor(loader, value) -> SolutionResult:
 
 yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor("!SolutionResult", sol_result_constructor)
+
+
+def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
+    return sol_res.points == c
+
+
+def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
+    return sol_res.verdict == verdict
+
+
+SUBTASK_SPEC: dict[str, Callable[[SolutionResult], bool]] = {
+    "1": partial(solution_result_c_points, c=1.0),
+    "0": partial(solution_result_c_points, c=0.0),
+    "X": lambda _: True,
+    "P": partial(solution_result_verdict, verdict=Verdict.partial),
+    "W": partial(solution_result_verdict, verdict=Verdict.wrong_answer),
+    "!": partial(solution_result_verdict, verdict=Verdict.error),
+    "T": partial(solution_result_verdict, verdict=Verdict.timeout),
+}
