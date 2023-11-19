@@ -1,4 +1,4 @@
-# pisek  - Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž Kasiopea.
+# pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
