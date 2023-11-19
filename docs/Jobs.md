@@ -53,8 +53,7 @@ class CopyFile(TaskJob): # We inherit from TaskJob, because it provides useful m
 
     def _run(self):
         if self._env.verbose:  # Accessing a global variable
-            print(f"Coping {self.source} to {self.dest}")
-            self.dirty = True  # Setting dirty flag because we wrote to a console
+            self._print(f"Coping {self.source} to {self.dest}")  # For printing to terminal use Job._print
         
         if os.path.exists(self.dest):
             # Raise Failure if Job cannot be completed 
