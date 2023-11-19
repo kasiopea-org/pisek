@@ -385,7 +385,12 @@ def main(argv):
 
 def main_wrapped():
     signal.signal(signal.SIGINT, sigint_handler)
-    result = main(sys.argv[1:])
+    try:
+        result = main(sys.argv[1:])
+    except Exception as e:
+        unlock_folder(PATH)
+        raise e
+
     if result:
         exit(1)
 
