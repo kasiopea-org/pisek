@@ -21,10 +21,11 @@ import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.terminal import pad, tab, MSG_LEN
-from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
+from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramJob
 from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.judge import SolutionResult, judge_job, RunJudge
+from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult
+from pisek.jobs.parts.judge import judge_job, RunJudge
 
 
 class SolutionManager(TaskJobManager):

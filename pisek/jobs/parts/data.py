@@ -16,7 +16,7 @@
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
-from pisek.jobs.parts.judge import Verdict
+from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.tools import IsClean
 
 MB = 1024 * 1024

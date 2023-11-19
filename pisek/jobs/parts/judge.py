@@ -15,61 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from dataclasses import dataclass
 import random
 from typing import Optional, Union, Callable
-import yaml
 import subprocess
 
 from pisek.env import Env
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
-from pisek.jobs.parts.task_job import TaskJobManager, RESULT_MARK, Verdict
+from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.jobs.parts.tools import Sanitize
+from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
-
-
-@dataclass
-class SolutionResult:
-    """Class representing result of a solution on given input."""
-
-    verdict: Verdict
-    points: float
-    judge_stderr: str
-    output: str = ""
-    diff: str = ""
-
-    def __str__(self):
-        if self.verdict == Verdict.partial:
-            return f"[{self.points:.2f}]"
-        else:
-            return RESULT_MARK[self.verdict]
-
-
-def sol_result_representer(dumper, sol_result: SolutionResult):
-    return dumper.represent_sequence(
-        "!SolutionResult",
-        [
-            sol_result.verdict.name,
-            sol_result.points,
-            sol_result.judge_stderr,
-            sol_result.output,
-            sol_result.diff,
-        ],
-    )
-
-
-def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, stderr, output, diff = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, stderr, output, diff)
-
-
-yaml.add_representer(SolutionResult, sol_result_representer)
-yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
 class JudgeManager(TaskJobManager):

@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
 import filecmp
 import glob
 import os
@@ -30,15 +29,6 @@ from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
-
-Verdict = Enum("Verdict", ["ok", "partial", "wrong_answer", "error", "timeout"])
-RESULT_MARK = {
-    Verdict.ok: "·",
-    Verdict.partial: "P",
-    Verdict.error: "!",
-    Verdict.timeout: "T",
-    Verdict.wrong_answer: "W",
-}
 
 TOOLS_MAN_CODE = "tools"
 SAMPLES_MAN_CODE = "samples"

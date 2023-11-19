@@ -28,7 +28,8 @@ from pisek.jobs.cache import Cache
 from pisek.jobs.parts.tools import ToolsManager
 from pisek.jobs.parts.generator import RunOnlineGeneratorMan
 from pisek.jobs.parts.solution import RunPrimarySolutionMan
-from pisek.jobs.parts.judge import RunKasiopeaJudgeMan, SolutionResult
+from pisek.jobs.parts.solution_result import SolutionResult
+from pisek.jobs.parts.judge import RunKasiopeaJudgeMan
 
 
 class KasiopeaInputCase:
