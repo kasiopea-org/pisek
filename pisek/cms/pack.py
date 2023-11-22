@@ -35,7 +35,7 @@ def zip_testdata(path, out, sample_tests=False):
 def samples(args):
     config = TaskConfig(".")
     print(f"Vytvářím {SAMPLES_ZIP}.")
-    zip_testdata(config.samples_subdir, SAMPLES_ZIP, sample_tests=True)
+    zip_testdata(config.static_subdir, SAMPLES_ZIP, sample_tests=True)
 
 
 def pack(args):

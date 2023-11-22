@@ -55,7 +55,7 @@ class TaskHelper:
 
     def _sample(self, name: str) -> str:
         """Path to sample with given basename."""
-        return self._resolve_path(self._env.config.samples_subdir, name)
+        return self._resolve_path(self._env.config.static_subdir, name)
 
     def _data(self, name: str) -> str:
         """Path to data file (input or output) with given basename."""

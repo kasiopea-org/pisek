@@ -41,7 +41,7 @@ class SampleManager(TaskJobManager):
         self._all = self._inputs + self._outputs
         if len(self._all) <= 0:
             raise PipelineItemFailure(
-                f"In subfolder {self._env.config.samples_subdir} of task folder are no samples "
+                f"In subfolder {self._env.config.static_subdir} of task folder are no samples "
                 "(files sample*.in with according sample*.out)",
             )
 

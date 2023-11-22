@@ -183,7 +183,7 @@ class TaskConfig(BaseEnv):
             )  # MB
 
         # Support for different directory structures
-        self["samples_subdir"] = config.get("task", "samples_subdir", fallback=".")
+        self["static_subdir"] = config.get("task", "static_subdir", fallback=".")
         self["data_subdir"] = config.get("task", "data_subdir", fallback=DATA_SUBDIR)
         self["solutions_subdir"] = config.get("task", "solutions_subdir", fallback=".")
 
@@ -271,7 +271,7 @@ class TaskConfig(BaseEnv):
         return os.path.normpath(os.path.join(self.task_dir, self.data_subdir))
 
     def get_samples_dir(self):
-        return os.path.normpath(os.path.join(self.task_dir, self.samples_subdir))
+        return os.path.normpath(os.path.join(self.task_dir, self.static_subdir))
 
     def get_timeout(self, is_secondary_solution: bool) -> float:
         return (

@@ -17,8 +17,8 @@ contest_type=cms
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config
 # Default: .
-samples_subdir=sample_tests/
-# Try to find sample inputs and outputs in this folder relative to config
+static_subdir=sample_tests/
+# Try to find static inputs and outputs in this folder relative to config
 # Default: .
 data_subdir=tests/
 # Directory for automatically generated files (inputs, outputs, ...)

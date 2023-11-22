@@ -38,6 +38,10 @@ def update(path) -> Optional[str]:
 
     config["task"]["version"] = "v2"
 
+    if "samples_subdir" in config["task"]:
+        config["task"]["static_subdir"] = config["task"]["samples_subdir"]
+        del config["task"]["samples_subdir"]
+
     subtask_points = []
     for section in sorted(config.sections()):
         if re.fullmatch(r"test[0-9]{2}", section):
