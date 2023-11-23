@@ -1,0 +1,80 @@
+- !Entry
+  name: Prepare Minibox
+  signature: 90b3b0a4ae7e2cb8e9396f1ee55f95009413c88a5730959f25c024efb5879e36
+  result: null
+  prerequisites_results: []
+  envs:
+  - task_dir
+  files:
+  - build/minibox
+  output: []
+- !Entry
+  name: Prepare text preprocessor
+  signature: 135a572bdf3e064fb3e70f82503b7f755c43e00c82f911ea5ba5f69c00eeea71
+  result: null
+  prerequisites_results: []
+  envs:
+  - task_dir
+  files:
+  - build/text-preproc
+  output: []
+- !Entry
+  name: Compile gen
+  signature: 8e6fe3736e68e5dcf34042f5b67e8080b0ab4572f712ed4245bd674402797b14
+  result: null
+  prerequisites_results: []
+  envs:
+  - task_dir
+  files:
+  - build/gen
+  - gen.py
+  output: []
+- !Entry
+  name: Generate inputs
+  signature: c2d4bcdad533e63ad1fb936359195dd6d884e694ed4d401a8fc610df68845359
+  result:
+  - 01_01.in
+  - 01_02.in
+  - 01_03.in
+  - 01_04.in
+  - 01_05.in
+  - 02_01.in
+  - 02_02.in
+  - 02_03.in
+  - 02_04.in
+  - 02_05.in
+  - 03_01.in
+  - 03_02.in
+  - 03_03.in
+  - 03_04.in
+  - 03_05.in
+  prerequisites_results: []
+  envs:
+  - config.data_subdir
+  - config.subtasks.0.in_globs
+  - config.subtasks.1.in_globs
+  - config.subtasks.2.in_globs
+  - config.subtasks.3.in_globs
+  - plain
+  - task_dir
+  files:
+  - build/gen
+  - data/01_01.in
+  - data/01_02.in
+  - data/01_03.in
+  - data/01_04.in
+  - data/01_05.in
+  - data/02_01.in
+  - data/02_02.in
+  - data/02_03.in
+  - data/02_04.in
+  - data/02_05.in
+  - data/03_01.in
+  - data/03_02.in
+  - data/03_03.in
+  - data/03_04.in
+  - data/03_05.in
+  output:
+  - !!python/tuple
+    - "\e[33mGenerating...\n\e[0m"
+    - true

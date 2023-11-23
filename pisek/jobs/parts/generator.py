@@ -238,8 +238,8 @@ class OfflineGeneratorGenerate(ProgramJob):
         for inp in set(ins) - set(samples):
             os.remove(self._generated_input(inp))
 
-        data_dir = self._data(".")
-        run_result = self._run_program([data_dir], print_stderr=True)
+        gen_dir = self._generated_input(".")
+        run_result = self._run_program([gen_dir], print_stderr=True)
 
         if run_result is None:
             return None
@@ -259,7 +259,7 @@ class OfflineGeneratorGenerate(ProgramJob):
                 inputs.append(file)
                 self._access_file(self._data(file))
 
-        test_files = glob.glob(os.path.join(data_dir, "*.in"))
+        test_files = glob.glob(os.path.join(gen_dir, "*.in"))
         if len(test_files) == 0:
             raise PipelineItemFailure(f"Generator did not generate ant inputs.")
 
