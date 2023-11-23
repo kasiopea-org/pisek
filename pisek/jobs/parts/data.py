@@ -62,7 +62,7 @@ class CheckData(TaskJob):
 
     def __init__(self, env: Env, name: str, data_file: str) -> None:
         super().__init__(env, name)
-        self.data = self._generated_input(data_file)
+        self.data = self._data(data_file)
 
 
 class InputSmall(CheckData):

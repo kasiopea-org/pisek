@@ -29,6 +29,7 @@ from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
+GENERATED_DIR = "generated/"
 
 TOOLS_MAN_CODE = "tools"
 INPUTS_MAN_CODE = "samples"
@@ -53,17 +54,17 @@ class TaskHelper:
         """Path to executable with given basename."""
         return self._resolve_path(self._get_build_dir(), name)
 
-    def _static_input(self, name: str) -> str:
-        """Path to sample with given basename."""
-        return self._resolve_path(self._env.config.static_subdir, name)
-
     def _generated_input(self, name: str) -> str:
+        """Path to generated input."""
+        return self._resolve_path(GENERATED_DIR, name)
+
+    def _data(self, name: str) -> str:
         """Path to data file (input or output) with given basename."""
         return self._resolve_path(self._env.config.data_subdir, name)
 
     def _output(self, input_name: str, solution: str):
         """Path to output from given input and solution."""
-        return self._generated_input(util.get_output_name(input_name, solution))
+        return self._data(util.get_output_name(input_name, solution))
 
     def _solution(self, name: str) -> str:
         """Path to solution with given basename."""
@@ -127,14 +128,13 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        samples_result = self.prerequisites_results[INPUTS_MAN_CODE]
-        return list(zip(samples_result["inputs"], samples_result["outputs"]))
+        ins = self._subtask_inputs(self._env.config.subtasks['0'])
+        outs = map(lambda x: x.replace(".in", ".out"), ins)
+        return list(zip(ins, outs))
 
     def _all_inputs(self) -> list[str]:
         """Get all input files"""
-        samples = self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
-        gen_ins = self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
-        return samples + gen_ins
+        return self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get all inputs of given subtask."""

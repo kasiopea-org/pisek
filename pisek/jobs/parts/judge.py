@@ -153,9 +153,9 @@ class RunJudge(ProgramJob):
         expected_points: Optional[float],
     ) -> None:
         super().__init__(env, JUDGE_JOB_NAME.replace(r"(\w+)", output_name, 1), judge)
-        self.input_name = self._generated_input(input_name)
-        self.output_name = self._generated_input(output_name)
-        self.correct_output_name = self._generated_input(correct_output)
+        self.input_name = self._data(input_name)
+        self.output_name = self._data(output_name)
+        self.correct_output_name = self._data(correct_output)
         self.expected_points = expected_points
 
     @abstractmethod

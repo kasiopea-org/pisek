@@ -111,8 +111,8 @@ class Sanitize(SanitizeAbstract):
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
         super().__init__(env, f"Sanitize {input_} -> {output}", "text-preproc")
-        self.input = self._generated_input(input_)
-        self.output = self._generated_input(output if output is not None else input_ + ".clean")
+        self.input = self._data(input_)
+        self.output = self._data(output if output is not None else input_ + ".clean")
 
     def _run(self):
         return self._sanitize(self.input, self.output)
@@ -123,8 +123,8 @@ class IsClean(SanitizeAbstract):
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
         super().__init__(env, f"{input_} is clean", "text-preproc")
-        self.input = self._generated_input(input_)
-        self.output = self._generated_input(output if output is not None else input_ + ".clean")
+        self.input = self._data(input_)
+        self.output = self._data(output if output is not None else input_ + ".clean")
 
     def _run(self):
         self._sanitize(self.input, self.output)

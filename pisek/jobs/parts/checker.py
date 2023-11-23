@@ -148,7 +148,7 @@ class CheckerJob(ProgramJob):
         super().__init__(env, f"Check {input_name} on subtask {subtask}", checker)
         self.subtask = subtask
         self.input_name = input_name
-        self.input_file = self._generated_input(input_name)
+        self.input_file = self._data(input_name)
         self.expected = expected
 
     def _check(self) -> RunResult:

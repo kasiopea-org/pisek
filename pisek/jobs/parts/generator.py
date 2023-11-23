@@ -231,12 +231,14 @@ class OfflineGeneratorGenerate(ProgramJob):
         self._load_compiled()
 
         # Clear old inputs
+        
+        # TODO: Remove and create whole directory
         ins = self.globs_to_files(["*.in"], self._generated_input("."))
         samples = self._subtask_inputs("0")
         for inp in set(ins) - set(samples):
             os.remove(self._generated_input(inp))
 
-        data_dir = self._generated_input(".")
+        data_dir = self._data(".")
         run_result = self._run_program([data_dir], print_stderr=True)
 
         if run_result is None:
@@ -255,7 +257,7 @@ class OfflineGeneratorGenerate(ProgramJob):
                 )
             for file in files:
                 inputs.append(file)
-                self._access_file(self._generated_input(file))
+                self._access_file(self._data(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
         if len(test_files) == 0:

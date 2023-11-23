@@ -30,7 +30,7 @@ from pisek.jobs.parts.task_job import (
 )
 
 from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.inputs import SampleManager
+from pisek.jobs.parts.inputs import InputManager
 from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
@@ -46,19 +46,20 @@ class TaskPipeline(JobPipeline):
         named_pipeline = [
             tools := (ToolsManager(), TOOLS_MAN_CODE),
             generator := (GeneratorManager(), GENERATOR_MAN_CODE),
-            samples := (SampleManager(), INPUTS_MAN_CODE),
+            inputs := (InputManager(), INPUTS_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
+        inputs[0].add_prerequisite(*generator)
 
         if env.target != "solution":
             named_pipeline.append(checker := (CheckerManager(), CHECKER_MAN_CODE))
-            checker[0].add_prerequisite(*samples)
+            checker[0].add_prerequisite(*inputs)
             checker[0].add_prerequisite(*generator)
 
         solutions = []
         if env.solutions:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
-            judge[0].add_prerequisite(*samples)
+            judge[0].add_prerequisite(*inputs)
             named_pipeline.append(
                 primary_solution := (
                     SolutionManager(env.config.primary_solution),
@@ -80,14 +81,14 @@ class TaskPipeline(JobPipeline):
             solutions.append(solution)
 
         for solution in solutions:
-            solution[0].add_prerequisite(*samples)
+            solution[0].add_prerequisite(*inputs)
             solution[0].add_prerequisite(*generator)
             solution[0].add_prerequisite(*judge)
 
         if env.solutions:
             named_pipeline.append(data_check := (DataManager(), DATA_MAN_CODE))
 
-            data_check[0].add_prerequisite(*samples)
+            data_check[0].add_prerequisite(*inputs)
             data_check[0].add_prerequisite(*generator)
             for solution in solutions:
                 data_check[0].add_prerequisite(*solution)
