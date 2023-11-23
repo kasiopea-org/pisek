@@ -31,7 +31,7 @@ from pisek.jobs.status import StatusJobManager
 BUILD_DIR = "build/"
 
 TOOLS_MAN_CODE = "tools"
-SAMPLES_MAN_CODE = "samples"
+INPUTS_MAN_CODE = "samples"
 GENERATOR_MAN_CODE = "generator"
 CHECKER_MAN_CODE = "checker"
 JUDGE_MAN_CODE = "judge"
@@ -53,17 +53,17 @@ class TaskHelper:
         """Path to executable with given basename."""
         return self._resolve_path(self._get_build_dir(), name)
 
-    def _sample(self, name: str) -> str:
+    def _static_input(self, name: str) -> str:
         """Path to sample with given basename."""
         return self._resolve_path(self._env.config.static_subdir, name)
 
-    def _data(self, name: str) -> str:
+    def _generated_input(self, name: str) -> str:
         """Path to data file (input or output) with given basename."""
         return self._resolve_path(self._env.config.data_subdir, name)
 
     def _output(self, input_name: str, solution: str):
         """Path to output from given input and solution."""
-        return self._data(util.get_output_name(input_name, solution))
+        return self._generated_input(util.get_output_name(input_name, solution))
 
     def _solution(self, name: str) -> str:
         """Path to solution with given basename."""
@@ -127,12 +127,12 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        samples_result = self.prerequisites_results[SAMPLES_MAN_CODE]
+        samples_result = self.prerequisites_results[INPUTS_MAN_CODE]
         return list(zip(samples_result["inputs"], samples_result["outputs"]))
 
     def _all_inputs(self) -> list[str]:
         """Get all input files"""
-        samples = self.prerequisites_results[SAMPLES_MAN_CODE]["inputs"]
+        samples = self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
         gen_ins = self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         return samples + gen_ins
 

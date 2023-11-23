@@ -127,7 +127,7 @@ class OnlineGeneratorJob(ProgramJob):
         self.subtask = subtask
         self.seed = seed
         self.input_name = input_file
-        self.input_file = self._data(input_file)
+        self.input_file = self._generated_input(input_file)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> RunResult:
         self._load_compiled()
@@ -223,7 +223,7 @@ class OfflineGeneratorGenerate(ProgramJob):
 
     def _subtask_inputs(self, subtask: str):
         return self.globs_to_files(
-            self._env.config.subtasks[subtask].in_globs, self._data(".")
+            self._env.config.subtasks[subtask].in_globs, self._generated_input(".")
         )
 
     def _gen(self) -> list[str]:
@@ -231,12 +231,12 @@ class OfflineGeneratorGenerate(ProgramJob):
         self._load_compiled()
 
         # Clear old inputs
-        ins = self.globs_to_files(["*.in"], self._data("."))
+        ins = self.globs_to_files(["*.in"], self._generated_input("."))
         samples = self._subtask_inputs("0")
         for inp in set(ins) - set(samples):
-            os.remove(self._data(inp))
+            os.remove(self._generated_input(inp))
 
-        data_dir = self._data(".")
+        data_dir = self._generated_input(".")
         run_result = self._run_program([data_dir], print_stderr=True)
 
         if run_result is None:
@@ -255,7 +255,7 @@ class OfflineGeneratorGenerate(ProgramJob):
                 )
             for file in files:
                 inputs.append(file)
-                self._access_file(self._data(file))
+                self._access_file(self._generated_input(file))
 
         test_files = glob.glob(os.path.join(data_dir, "*.in"))
         if len(test_files) == 0:

@@ -359,9 +359,9 @@ class RunSolution(ProgramJob):
             r"(\w+)", input_name, 1
         )
         super().__init__(env, name, solution)
-        self.input_name = self._data(input_name)
+        self.input_name = self._generated_input(input_name)
         self.output_name = (
-            self._data(output_name)
+            self._generated_input(output_name)
             if output_name
             else self._output(self.input_name, solution)
         )

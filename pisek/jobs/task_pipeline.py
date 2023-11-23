@@ -21,7 +21,7 @@ from pisek.env import Env
 
 from pisek.jobs.parts.task_job import (
     TOOLS_MAN_CODE,
-    SAMPLES_MAN_CODE,
+    INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,
     CHECKER_MAN_CODE,
     JUDGE_MAN_CODE,
@@ -45,8 +45,8 @@ class TaskPipeline(JobPipeline):
         super().__init__()
         named_pipeline = [
             tools := (ToolsManager(), TOOLS_MAN_CODE),
-            samples := (SampleManager(), SAMPLES_MAN_CODE),
             generator := (GeneratorManager(), GENERATOR_MAN_CODE),
+            samples := (SampleManager(), INPUTS_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
 

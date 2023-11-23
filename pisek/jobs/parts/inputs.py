@@ -32,7 +32,7 @@ class SampleManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         self._inputs = self.globs_to_files(
             self._env.config.subtasks[0].all_globs,
-            self._sample("."),
+            self._static_input("."),
         )
         self._outputs = list(
             map(lambda inp: os.path.splitext(inp)[0] + ".out", self._inputs)
@@ -68,7 +68,7 @@ class SampleManager(TaskJobManager):
 class SampleJob(TaskJob):
     def __init__(self, env: Env, name: str, sample: str) -> None:
         super().__init__(env, name)
-        self.sample = self._sample(sample)
+        self.sample = self._static_input(sample)
 
 
 class SampleExists(SampleJob):
@@ -99,4 +99,4 @@ class CopySample(SampleJob):
         super().__init__(env, f"Copy {sample} to {data_subdir}", sample)
 
     def _run(self):
-        self._copy_file(self.sample, self._data(os.path.basename(self.sample)))
+        self._copy_file(self.sample, self._generated_input(os.path.basename(self.sample)))
