@@ -30,7 +30,7 @@ from pisek.jobs.parts.task_job import (
 )
 
 from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.samples import SampleManager
+from pisek.jobs.parts.inputs import SampleManager
 from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
