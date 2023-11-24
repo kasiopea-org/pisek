@@ -87,9 +87,9 @@ class SolutionManager(TaskJobManager):
 
                     used_inp.add(inp)
                     self.subtasks[-1].new_jobs.append(testcases[inp][1])
+                    self.subtasks[-1].new_run_jobs.append(testcases[inp][0])
                 else:
                     self.subtasks[-1].previous_jobs.append(testcases[inp][1])
-                self.subtasks[-1].run_jobs.append(testcases[inp][0])
 
         return jobs
 
@@ -173,7 +173,7 @@ class SubtaskJobGroup:
     def __init__(self, env: Env, num) -> None:
         self.num = int(num)
         self._env = env
-        self.run_jobs: list[RunSolution] = []
+        self.new_run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
 
@@ -288,7 +288,7 @@ class SubtaskJobGroup:
         return (min(all_points), ""), result_msg
 
     def cancel(self):
-        for job in self.run_jobs:
+        for job in self.new_run_jobs:
             job.cancel()
 
     def _job_msg(self, job: RunJudge) -> str:
