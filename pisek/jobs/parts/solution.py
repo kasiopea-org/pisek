@@ -341,7 +341,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         return jobs
 
 
-RUN_JOB_NAME = r"Run (\w+) on input (\w+)"
+RUN_JOB_NAME = r"Run (.*) on input (.*)"
 
 
 class RunSolution(ProgramJob):
@@ -355,8 +355,8 @@ class RunSolution(ProgramJob):
         input_name: str,
         output_name: Optional[str] = None,
     ) -> None:
-        name = RUN_JOB_NAME.replace(r"(\w+)", solution, 1).replace(
-            r"(\w+)", input_name, 1
+        name = RUN_JOB_NAME.replace(r"(.*)", solution, 1).replace(
+            r"(.*)", input_name, 1
         )
         super().__init__(env, name, solution)
         self.input_name = self._data(input_name)
