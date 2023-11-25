@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
 from enum import Enum
 import os
-import re
-import sys
 from typing import Optional
+import signal
 import subprocess
 import yaml
 
@@ -246,6 +244,7 @@ class ProgramJob(TaskJob):
                     return_code = int(meta["exitcode"])
                 elif meta["status"] == "SG":
                     return_code = int(meta["exitsig"])
+                    meta["message"] += f" ({signal.Signals(return_code).name})"
 
                 return RunResult(
                     RunResultKind.RUNTIME_ERROR,
