@@ -230,6 +230,8 @@ class OfflineGeneratorGenerate(ProgramJob):
         """Generates all inputs."""
         self._load_compiled()
 
+        os.makedirs(self._env.config.data_subdir, exist_ok=True)
+
         # Clear old inputs
         ins = self.globs_to_files(["*.in"], self._data("."))
         samples = self._subtask_inputs("0")
@@ -249,7 +251,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             if sub_num == "0":
                 continue
             files = self._subtask_inputs(sub_num)
-            if len(files) == 0:
+            if len(files) == 0 and len(self._env.config.subtasks[sub_num].in_globs) > 0:
                 raise PipelineItemFailure(
                     f"Generator did not generate any inputs for subtask {sub_num}."
                 )
