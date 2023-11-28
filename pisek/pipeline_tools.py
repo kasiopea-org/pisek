@@ -76,30 +76,29 @@ def load_env(
     return env
 
 
-def lock_folder(path: str):
-    global LOCKED
-    file = os.path.join(path, LOCK_FILE)
-    if os.path.exists(file):
-        eprint("Another pisek instance running in same directory.")
-        sys.exit(2)
-    with open(file, "w") as f:
-        f.write(f"Locked by pisek at {datetime.now()}")
-    LOCKED = True
+class Lock:
+    def __init__(self, path):
+        self._lock_file = os.path.join(path, LOCK_FILE)
+        self._locked = False
 
+    def __enter__(self):
+        if os.path.exists(self._lock_file):
+            eprint("Another pisek instance running in same directory.")
+            sys.exit(2)
 
-def unlock_folder(path: str):
-    global LOCKED
-    file = os.path.join(path, LOCK_FILE)
-    if LOCKED and os.path.exists(file):
-        os.unlink(file)
-    LOCKED = False
+        with open(self._lock_file, "w") as f:
+            f.write(f"Locked by pisek at {datetime.now()}")
+        self._locked = True
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self._locked and os.path.exists(self._lock_file):
+            os.unlink(self._lock_file)
 
 
 def locked_folder(f):
     def g(*args, **kwargs):
-        lock_folder(PATH)
-        res = f(*args, **kwargs)
-        unlock_folder(PATH)
+        with Lock(PATH):
+            res = f(*args, **kwargs)
         return res
 
     return g
