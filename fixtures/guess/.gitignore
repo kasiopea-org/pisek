@@ -1,3 +1,5 @@
 build/
 generated/
 data/
+.pisek_cache
+.pisek_lock
