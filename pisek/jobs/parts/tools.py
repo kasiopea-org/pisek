@@ -123,7 +123,7 @@ class IsClean(SanitizeAbstract):
     """Check that file is same after using Text Preprocessor."""
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
-        super().__init__(env, f"{input_} is clean", "text-preproc")
+        super().__init__(env, f"{os.path.basename(input_)} is clean", "text-preproc")
         self.input = input_
         self.output = self._sanitized(
             output if output is not None else os.path.basename(input_) + ".clean"

@@ -143,7 +143,9 @@ class LinkData(DataJob):
         self._dest = dest
 
     def _run(self):
-        self._link_file(self.data, self._dest(os.path.basename(self.data)), overwrite=True)
+        self._link_file(
+            self.data, self._dest(os.path.basename(self.data)), overwrite=True
+        )
 
 
 class LinkInput(LinkData):
@@ -201,13 +203,14 @@ class InputSmall(DataJob):
     def __init__(self, env: Env, input_file: str) -> None:
         super().__init__(
             env,
-            f"Input {input_file} is smaller than {env.config.input_max_size}MB",
+            f"Input {os.path.basename(input_file)} is smaller than {env.config.input_max_size}MB",
             input_file,
         )
 
     def _run(self):
-        if self._file_size(self.data) > self._env.config.input_max_size * MB:
-            raise PipelineItemFailure("Input too big.")
+        max_size = self._env.config.input_max_size
+        if self._file_size(self.data) > max_size * MB:
+            raise PipelineItemFailure(f"Input {self.data} is bigger than {max_size}MB.")
 
 
 class OutputSmall(DataJob):
@@ -216,10 +219,13 @@ class OutputSmall(DataJob):
     def __init__(self, env: Env, output_file: str) -> None:
         super().__init__(
             env,
-            f"Output {output_file} is smaller than {env.config.output_max_size}MB",
+            f"Output {os.path.basename(output_file)} is smaller than {env.config.output_max_size}MB",
             output_file,
         )
 
     def _run(self):
-        if self._file_size(self.data) > self._env.config.output_max_size * MB:
-            raise PipelineItemFailure("Output too big.")
+        max_size = self._env.config.output_max_size
+        if self._file_size(self.data) > max_size * MB:
+            raise PipelineItemFailure(
+                f"Output {self.data} is bigger than {max_size}MB."
+            )
