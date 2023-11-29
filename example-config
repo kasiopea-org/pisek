@@ -132,10 +132,6 @@ sec_solve_time_limit=4
 # Time limit for other solutions
 # No value means solve_time_limit
 
-timeout_lowerbound=5
-# Lowerbound for timeout. Timeouting solutions must run at least thisamout.
-# Defaults to time limit of respective solution
-
 input_max_size=20
 # Maximal input size in MB
 # Defaults to 50 (only in Kasiopea)

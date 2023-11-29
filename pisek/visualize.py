@@ -155,7 +155,10 @@ def visualize(
 
     # Kind of slow, but we will not have hundreds of solutions
     def solution_index(name) -> int:
-        return config.solutions.keys().index(name)
+        for i, (_, sol) in enumerate(config.solutions.items()):
+            if sol.source == name:
+                return i
+        raise ValueError(f"Unknown solution {name}")
 
     solutions.sort(key=solution_index)
 
@@ -225,8 +228,13 @@ def visualize_solution(
     else:
         results_filtered = {"all": mode_func(results_extracted)}
 
+    def get_points(name):
+        for _, sol in config.solutions.items():
+            if sol.source == name:
+                return sol.points
+
     # Lastly print
-    exp_score = util.get_expected_score(solution_name, config)
+    exp_score = get_points(solution_name)
     score = evaluate_solution(results_evaluate, config)
     as_expected = (exp_score is None) or (exp_score == score)
     print(f"{solution_name}: ({score}b)")

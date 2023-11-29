@@ -87,9 +87,9 @@ class SolutionManager(TaskJobManager):
 
                     used_inp.add(inp)
                     self.subtasks[-1].new_jobs.append(testcases[inp][1])
+                    self.subtasks[-1].new_run_jobs.append(testcases[inp][0])
                 else:
                     self.subtasks[-1].previous_jobs.append(testcases[inp][1])
-                self.subtasks[-1].run_jobs.append(testcases[inp][0])
 
         return jobs
 
@@ -173,7 +173,7 @@ class SubtaskJobGroup:
     def __init__(self, env: Env, num) -> None:
         self.num = int(num)
         self._env = env
-        self.run_jobs: list[RunSolution] = []
+        self.new_run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
 
@@ -288,7 +288,7 @@ class SubtaskJobGroup:
         return (min(all_points), ""), result_msg
 
     def cancel(self):
-        for job in self.run_jobs:
+        for job in self.new_run_jobs:
             job.cancel()
 
     def _job_msg(self, job: RunJudge) -> str:
@@ -341,7 +341,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         return jobs
 
 
-RUN_JOB_NAME = r"Run (\w+) on input (\w+)"
+RUN_JOB_NAME = r"Run (.*) on input (.*)"
 
 
 class RunSolution(ProgramJob):
@@ -355,8 +355,8 @@ class RunSolution(ProgramJob):
         input_name: str,
         output_name: Optional[str] = None,
     ) -> None:
-        name = RUN_JOB_NAME.replace(r"(\w+)", solution, 1).replace(
-            r"(\w+)", input_name, 1
+        name = RUN_JOB_NAME.replace(r"(.*)", solution, 1).replace(
+            r"(.*)", input_name, 1
         )
         super().__init__(env, name, solution)
         self.input_name = self._data(input_name)

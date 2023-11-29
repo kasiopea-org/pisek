@@ -21,13 +21,7 @@ import sys
 import signal
 
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.pipeline_tools import (
-    run_pipeline,
-    load_env,
-    unlock_folder,
-    locked_folder,
-    PATH,
-)
+from pisek.pipeline_tools import run_pipeline, load_env, PATH, locked_folder
 
 from pisek.util import clean_task_dir
 from pisek.terminal import eprint
@@ -40,7 +34,6 @@ from pisek.extract import extract
 
 def sigint_handler(sig, frame):
     eprint("\rStopping...")
-    unlock_folder(PATH)
     sys.exit(2)
 
 
@@ -385,11 +378,7 @@ def main(argv):
 
 def main_wrapped():
     signal.signal(signal.SIGINT, sigint_handler)
-    try:
-        result = main(sys.argv[1:])
-    except Exception as e:
-        unlock_folder(PATH)
-        raise e
+    result = main(sys.argv[1:])
 
     if result:
         exit(1)
