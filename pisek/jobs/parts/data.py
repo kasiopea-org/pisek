@@ -143,7 +143,7 @@ class LinkData(DataJob):
         self._dest = dest
 
     def _run(self):
-        self._link_file(self.data, self._dest(os.path.basename(self.data)))
+        self._link_file(self.data, self._dest(os.path.basename(self.data)), overwrite=True)
 
 
 class LinkInput(LinkData):

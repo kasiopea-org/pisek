@@ -213,8 +213,10 @@ class TaskJob(Job, TaskHelper):
         return shutil.copy(filename, dst)
 
     @_file_access(2)
-    def _link_file(self, filename: str, dst: str):
+    def _link_file(self, filename: str, dst: str, overwrite: bool = False):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if overwrite and os.path.exists(dst):
+            os.remove(dst)
         return os.link(filename, dst)
 
     @_file_access(2)
