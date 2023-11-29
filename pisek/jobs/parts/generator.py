@@ -225,13 +225,14 @@ class OfflineGeneratorGenerate(ProgramJob):
         self._load_compiled()
 
         try:
-            shutil.rmtree(self._data(GENERATED_SUBDIR))
+            shutil.rmtree(self._generated_input("."))
         except FileNotFoundError:
             pass
-        os.makedirs(self._data(GENERATED_SUBDIR))
+        os.makedirs(self._generated_input("."))
 
         gen_dir = self._generated_input(".")
         run_result = self._run_program([gen_dir], print_stderr=True)
+        self._access_file(self._generated_input("."))
 
         if run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(f"Generator failed:", run_result)
