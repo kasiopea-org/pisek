@@ -5,6 +5,7 @@ Full list of ``env`` variables and their meaning:
     - ``target`` - what is currently being tested (``all`` / ``solution`` / ``generator``)
     - ``config`` - variables from config
     - ``full`` - If true, don't stop on first failure
+    - ``plain`` - Don't use ASCI escape sequences
     - ``strict`` - For final test. Interprets warning as failures. Currently enforces:
         - There are no TODOs in config
         - Checker exists
