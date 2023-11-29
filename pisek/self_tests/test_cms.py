@@ -5,7 +5,7 @@ import unittest
 
 from pisek.self_tests.util import TestFixtureVariant, overwrite_file
 from pisek.task_config import TaskConfig
-from pisek.jobs.parts.task_job import INPUTS_SUBDIR
+from pisek.jobs.parts.task_job import GENERATED_SUBDIR
 
 
 class TestSoucetCMS(TestFixtureVariant):
@@ -45,7 +45,7 @@ class TestOldInputsDeleted(TestSoucetCMS):
 
     def modify_task(self):
         task_config = TaskConfig(self.task_dir)
-        self.inputs_dir = os.path.join(task_config.get_data_dir(), INPUTS_SUBDIR)
+        self.inputs_dir = os.path.join(task_config.get_data_dir(), GENERATED_SUBDIR)
 
         # We only care about the generation part, so remove solve.py to stop the tests
         # right after the generator finishes.
