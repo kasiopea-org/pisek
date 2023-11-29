@@ -144,18 +144,31 @@ class Job(PipelineItem, CaptureInitParams):
             sign.update(f"{i}={arg}".encode())
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}".encode())
+
         for variable in sorted(envs):
             if variable not in self._env:
                 return (None, "Env nonexistent")
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
-        for file in sorted(files):
+
+        expanded_files = []
+        for path in sorted(files):
+            if os.path.isfile(path):
+                expanded_files.append(path)
+            else:
+                for dir_, _, dir_files in os.walk(path):
+                    for file in dir_files:
+                        expanded_files.append(os.path.join(dir_, file))
+
+        for file in sorted(expanded_files):
             if not os.path.exists(file):
                 return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+
         for name, result in sorted(results.items()):
             sign.update(f"{name}={yaml.dump(result)}".encode())
+
         return (sign.hexdigest(), None)
 
     def _find_entry(self, cache_entries: list[CacheEntry]) -> Optional[CacheEntry]:
