@@ -88,9 +88,9 @@ def clean_task_dir(task_dir: str) -> bool:
 
     from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
 
-    rm_f(SAMPLES_ZIP)
-    rm_f(TESTS_ZIP)
-    rm_f(CACHE_FILENAME)
+    rm_f(os.path.join(task_dir, SAMPLES_ZIP))
+    rm_f(os.path.join(task_dir, TESTS_ZIP))
+    rm_f(os.path.join(task_dir, CACHE_FILENAME))
     _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
     return True
 
