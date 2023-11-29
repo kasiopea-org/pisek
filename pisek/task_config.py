@@ -221,8 +221,8 @@ class TaskConfig(BaseEnv):
 
         # subtask should be ordered by number
         subtasks = {key: val for key, val in sorted(subtasks.items())}
-        
-        all_globs = set([])
+
+        all_globs: set[str] = set([])
         for subtask in subtasks.values():
             subtask.construct_globs(subtasks)
             all_globs = all_globs.union(subtask.in_globs)
@@ -346,16 +346,18 @@ class SubtaskConfig(BaseEnv):
             self["score"] = int(
                 config_section.get("points", type_=int, fallback="0")
             )  # To make mypy happy
-            self["in_globs"] = tuple(config_section.get("in_globs", "sample*.in").split())
+            self["in_globs"] = tuple(
+                config_section.get("in_globs", "sample*.in").split()
+            )
             self["predecessors"] = config_section.get("predecessors", "").split()
         else:
             self["name"] = config_section.get("name", None)
             self["score"] = config_section.get("points", type_=int)
             if self.score is None:
                 raise TaskConfigMissingOption(config_section.name, "points")
-            self["in_globs"] = tuple(config_section.get(
-                "in_globs", self._glob_i(subtask_number)
-            ).split())
+            self["in_globs"] = tuple(
+                config_section.get("in_globs", self._glob_i(subtask_number)).split()
+            )
             if not all(glob.endswith(".in") for glob in self.in_globs):
                 raise TaskConfigError(
                     f"All in_globs must end with '.in': {' '.join(self.in_globs)}"

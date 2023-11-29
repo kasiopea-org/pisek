@@ -51,8 +51,8 @@ class Invalidate(TaskJob):
     ) -> None:
         super().__init__(env, name)
         self.seed = seed
-        self.from_file = self._data(from_file)
-        self.to_file = self._data(to_file)
+        self.from_file = self._output(from_file)
+        self.to_file = self._invalid_output(to_file)
 
 
 class Incomplete(Invalidate):

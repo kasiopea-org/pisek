@@ -71,9 +71,9 @@ class SolutionManager(TaskJobManager):
                     jobs.append(
                         run_judge := judge_job(
                             judge,
-                            inp,
-                            out,
-                            c_out,
+                            self._input(inp),
+                            self._output(out),
+                            self._output(c_out),
                             sub_num,
                             lambda: self._get_seed(inp),
                             None,
@@ -359,11 +359,11 @@ class RunSolution(ProgramJob):
             r"(.*)", input_name, 1
         )
         super().__init__(env, name, solution)
-        self.input_name = self._data(input_name)
+        self.input_name = self._input(input_name)
         self.output_name = (
-            self._data(output_name)
+            self._output(output_name)
             if output_name
-            else self._output(self.input_name, solution)
+            else self._output_from_input(self.input_name, solution)
         )
         self.timeout = timeout
 

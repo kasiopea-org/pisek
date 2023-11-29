@@ -19,7 +19,7 @@ import glob
 import os
 import fnmatch
 import shutil
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, Iterable
 
 import pisek.util as util
 import subprocess
@@ -32,7 +32,9 @@ BUILD_DIR = "build/"
 
 GENERATED_SUBDIR = "generated/"
 INPUTS_SUBDIR = "inputs/"
-OUTPUTS_SUBDIR = "out/"
+INVALID_OUTPUTS_SUBDIR = "invalid/"
+OUTPUTS_SUBDIR = "outputs/"
+SANITIZED_SUBDIR = "sanitized/"
 
 TOOLS_MAN_CODE = "tools"
 GENERATOR_MAN_CODE = "generator"
@@ -56,11 +58,11 @@ class TaskHelper:
     def _executable(self, name: str) -> str:
         """Path to executable with given basename."""
         return self._resolve_path(self._get_build_dir(), name)
-    
-    def _data(self, *path: list[str]) -> str:
+
+    def _data(self, *path: str) -> str:
         """Path to data file."""
         return self._resolve_path(self._env.config.data_subdir, *path)
-    
+
     def _static(self, name: str) -> str:
         """Path to generated input."""
         return self._resolve_path(self._env.config.static_subdir, name)
@@ -72,6 +74,14 @@ class TaskHelper:
     def _input(self, name: str) -> str:
         """Path to input."""
         return self._data(INPUTS_SUBDIR, name)
+
+    def _invalid_output(self, name: str) -> str:
+        """Path to input."""
+        return self._data(INVALID_OUTPUTS_SUBDIR, name)
+
+    def _sanitized(self, name: str) -> str:
+        """Path to input."""
+        return self._data(SANITIZED_SUBDIR, name)
 
     def _output(self, name: str):
         """Path to output from given input and solution."""
@@ -94,7 +104,7 @@ class TaskHelper:
             return parts[-1]
 
     @staticmethod
-    def filter_globs(files: list[str], globs: list[str]):
+    def filter_by_globs(globs: Iterable[str], files: Iterable[str]):
         return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
 
     @staticmethod
@@ -143,7 +153,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._subtask_inputs(self._env.config.subtasks['0'])
+        ins = self._subtask_inputs(self._env.config.subtasks["0"])
         outs = map(lambda x: x.replace(".in", ".out"), ins)
         return list(zip(ins, outs))
 
@@ -153,11 +163,11 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get all inputs of given subtask."""
-        return self.filter_globs(self._all_inputs(), subtask.all_globs)
+        return self.filter_by_globs(subtask.all_globs, self._all_inputs())
 
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
         """Get new inputs of given subtask."""
-        return self.filter_globs(self._all_inputs(), subtask.in_globs)
+        return self.filter_by_globs(subtask.in_globs, self._all_inputs())
 
 
 class TaskJob(Job, TaskHelper):
@@ -201,6 +211,11 @@ class TaskJob(Job, TaskHelper):
     def _copy_file(self, filename: str, dst: str):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         return shutil.copy(filename, dst)
+
+    @_file_access(2)
+    def _link_file(self, filename: str, dst: str):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        return os.link(filename, dst)
 
     @_file_access(2)
     def _files_equal(self, file_a: str, file_b: str) -> bool:

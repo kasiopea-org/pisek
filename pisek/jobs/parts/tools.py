@@ -99,6 +99,7 @@ class PrepareTextPreprocessor(TaskJob):
 
 class SanitizeAbstract(ProgramJob):
     def _sanitize(self, input_: str, output: str) -> None:
+        os.makedirs(os.path.dirname(output), exist_ok=True)
         result = self._run_program([], stdin=input_, stdout=output)
         if result.returncode == 43:
             raise self._create_program_failure(
@@ -123,8 +124,10 @@ class IsClean(SanitizeAbstract):
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
         super().__init__(env, f"{input_} is clean", "text-preproc")
-        self.input = self._data(input_)
-        self.output = self._data(output if output is not None else input_ + ".clean")
+        self.input = input_
+        self.output = self._sanitized(
+            output if output is not None else os.path.basename(input_) + ".clean"
+        )
 
     def _run(self):
         self._sanitize(self.input, self.output)

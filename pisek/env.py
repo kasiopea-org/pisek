@@ -113,7 +113,7 @@ class BaseEnv:
         """
         self._accessed |= self._vars.keys()
         return list(self._vars.items())
-    
+
     def subenvs(self) -> list[tuple[str, Any]]:
         """
         Return (name, value) for each subenv stored.

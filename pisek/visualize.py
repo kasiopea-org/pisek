@@ -49,7 +49,7 @@ def group_by_subtask(
     results: list[TestCaseResult], config: TaskConfig
 ) -> dict[str, list[TestCaseResult]]:
     subtasks: dict[str, list[TestCaseResult]] = {
-        num: [] for num in config.subtasks.keys()
+        num: [] for num, _ in config.subtasks.subenvs()
     }
     for result in results:
         for i, subtask in config.subtasks.subenvs():
@@ -59,7 +59,7 @@ def group_by_subtask(
 
 
 def in_subtask(name: str, subtask: SubtaskConfig):
-    return len(TaskHelper.filter_globs([name + ".in"], subtask.all_globs)) == 1
+    return len(TaskHelper.filter_by_globs(subtask.all_globs, [name + ".in"])) == 1
 
 
 def evaluate_solution(

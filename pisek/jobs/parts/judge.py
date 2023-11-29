@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
+import os
 import random
 from typing import Optional, Union, Callable
 import subprocess
@@ -51,9 +52,9 @@ class JudgeManager(TaskJobManager):
             jobs.append(
                 judge := judge_job(
                     self._env.config.judge,
-                    inp,
-                    out,
-                    out,
+                    self._input(inp),
+                    self._output(out),
+                    self._output(out),
                     0,
                     lambda: "0",
                     1.0,
@@ -77,9 +78,9 @@ class JudgeManager(TaskJobManager):
                         invalidate := job(self._env, out, inv_out, seed),
                         run_judge := judge_job(
                             self._env.config.judge,
-                            inp,
-                            inv_out,
-                            out,
+                            self._input(inp),
+                            self._invalid_output(inv_out),
+                            self._output(out),
                             0,
                             lambda: "0",
                             None,
@@ -111,9 +112,9 @@ class RunKasiopeaJudgeMan(TaskJobManager):
             sanitize := Sanitize(self._env, self._output_file, clean_output),
             judge := judge_job(
                 judge_program,
-                self._input_file,
-                clean_output,
-                self._correct_output,
+                self._input(self._input_file),
+                self._output(clean_output),
+                self._output(self._correct_output),
                 self._subtask,
                 lambda: f"{self._seed:x}",
                 None,
@@ -152,10 +153,14 @@ class RunJudge(ProgramJob):
         correct_output: str,
         expected_points: Optional[float],
     ) -> None:
-        super().__init__(env, JUDGE_JOB_NAME.replace(r"(\w+)", output_name, 1), judge)
-        self.input_name = self._data(input_name)
-        self.output_name = self._data(output_name)
-        self.correct_output_name = self._data(correct_output)
+        super().__init__(
+            env,
+            JUDGE_JOB_NAME.replace(r"(\w+)", os.path.basename(output_name), 1),
+            judge,
+        )
+        self.input_name = input_name
+        self.output_name = output_name
+        self.correct_output_name = correct_output
         self.expected_points = expected_points
 
     @abstractmethod

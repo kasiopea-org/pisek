@@ -17,6 +17,7 @@
 import glob
 import random
 import os
+import shutil
 from typing import Optional
 
 import pisek.util as util
@@ -40,7 +41,7 @@ class GeneratorManager(TaskJobManager):
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
             seeds = random.sample(range(0, 16**4), self._env.inputs)
-            for sub_num in self._env.config.subtasks.keys():
+            for sub_num, _ in self._env.config.subtasks.subenvs():
                 if sub_num == "0":
                     continue  # skip samples
                 last_gen: OnlineGeneratorGenerate
@@ -219,46 +220,21 @@ class OfflineGeneratorGenerate(ProgramJob):
             self._env.config.subtasks[subtask].in_globs, self._generated_input(".")
         )
 
-    def _gen(self) -> list[str]:
+    def _gen(self) -> None:
         """Generates all inputs."""
         self._load_compiled()
 
-        os.makedirs(self._data(GENERATED_SUBDIR), exist_ok=True)
-
-        # Clear old inputs
-        
-        # TODO: Remove and create whole directory
-        ins = self.globs_to_files(["*.in"], self._generated_input("."))
-        samples = self._subtask_inputs("0")
-        for inp in set(ins) - set(samples):
-            os.remove(self._generated_input(inp))
+        try:
+            shutil.rmtree(self._data(GENERATED_SUBDIR))
+        except FileNotFoundError:
+            pass
+        os.makedirs(self._data(GENERATED_SUBDIR))
 
         gen_dir = self._generated_input(".")
         run_result = self._run_program([gen_dir], print_stderr=True)
 
-        if run_result is None:
-            return None
         if run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(f"Generator failed:", run_result)
 
-        inputs = []
-        for sub_num, subtask in self._env.config.subtasks.subenvs():
-            if sub_num == "0":
-                continue
-            files = self._subtask_inputs(sub_num)
-            if len(files) == 0 and len(self._env.config.subtasks[sub_num].in_globs) > 0:
-                raise PipelineItemFailure(
-                    f"Generator did not generate any inputs for subtask {sub_num}."
-                )
-            for file in files:
-                inputs.append(file)
-                self._access_file(self._generated_input(file))
-
-        test_files = glob.glob(os.path.join(gen_dir, "*.in"))
-        if len(test_files) == 0:
-            raise PipelineItemFailure(f"Generator did not generate ant inputs.")
-
-        return inputs
-
-    def _run(self) -> Optional[list[str]]:
-        return self._gen()
+    def _run(self) -> None:
+        self._gen()
