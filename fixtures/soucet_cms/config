@@ -36,6 +36,7 @@ predecessors=
 name=Subtask C
 points=6
 in_globs=03*.in
+predecessors=1 2
 
 [limits]
 # Time limit (seconds) for solutions
