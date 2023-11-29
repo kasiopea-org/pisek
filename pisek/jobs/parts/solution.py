@@ -36,62 +36,70 @@ class SolutionManager(TaskJobManager):
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> list[Job]:
-        solution = self._solution(self._env.config.solutions[self.solution].source)
-        judge = self._executable(self._env.config.judge)
+        self._solution_file = self._solution(
+            self._env.config.solutions[self.solution].source
+        )
+        self._judge = self._executable(self._env.config.judge)
 
         jobs: list[Job] = []
 
-        jobs.append(compile := Compile(self._env, solution, True, self._compile_args()))
+        jobs.append(
+            compile_ := Compile(
+                self._env, self._solution_file, True, self._compile_args()
+            )
+        )
+        self._compile_job = compile_
 
         if self._env.config.solutions[self.solution].primary:
-            timeout = self._get_timeout("solve")
+            self._timeout = self._get_timeout("solve")
         else:
-            timeout = self._get_timeout("sec_solve")
+            self._timeout = self._get_timeout("sec_solve")
 
         testcases = {}
-        used_inp = set()
         for sub_num, sub in self._env.config.subtasks.subenvs():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp not in used_inp:
-                    jobs.append(
-                        run_solution := RunSolution(self._env, solution, timeout, inp)
-                    )
-                    run_solution.add_prerequisite(compile)
+                if inp not in testcases:
+                    run_sol, run_judge = self._create_run_and_judge(sub_num, inp)
+                    jobs += [run_sol, run_judge]
 
-                    if sub_num == "0":
-                        c_out = inp.replace(".in", ".out")
-                    else:
-                        primary_sol = self._env.config.solutions[
-                            self._env.config.primary_solution
-                        ].source
-                        c_out = util.get_output_name(inp, primary_sol)
-
-                    out = util.get_output_name(inp, solution)
-                    jobs.append(
-                        run_judge := judge_job(
-                            judge,
-                            self._input(inp),
-                            self._output(out),
-                            self._output(c_out),
-                            sub_num,
-                            lambda: self._get_seed(inp),
-                            None,
-                            self._env,
-                        )
-                    )
-                    self._outputs.append((out, run_judge))
-
-                    run_judge.add_prerequisite(run_solution, name="run_solution")
-                    testcases[inp] = (run_solution, run_judge)
-
-                    used_inp.add(inp)
-                    self.subtasks[-1].new_jobs.append(testcases[inp][1])
-                    self.subtasks[-1].new_run_jobs.append(testcases[inp][0])
+                    testcases[inp] = run_judge
+                    self._outputs.append((run_judge.output_name, run_judge))
+                    self.subtasks[-1].new_jobs.append(run_judge)
+                    self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(testcases[inp][1])
+                    self.subtasks[-1].previous_jobs.append(testcases[inp])
 
         return jobs
+
+    def _create_run_and_judge(
+        self, sub_num: int, inp: str
+    ) -> tuple["RunSolution", RunJudge]:
+        run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
+        run_solution.add_prerequisite(self._compile_job)
+
+        if sub_num == "0":
+            c_out = inp.replace(".in", ".out")
+        else:
+            primary_sol = self._env.config.solutions[
+                self._env.config.primary_solution
+            ].source
+            c_out = util.get_output_name(inp, primary_sol)
+
+        out = util.get_output_name(inp, self._solution_file)
+        run_judge = judge_job(
+            self._judge,
+            self._input(inp),
+            self._output(out),
+            self._output(c_out),
+            sub_num,
+            lambda: self._get_seed(inp),
+            None,
+            self._env,
+        )
+        run_judge.add_prerequisite(run_solution, name="run_solution")
+
+        return (run_solution, run_judge)
 
     def _update(self):
         expected = self._env.config.solutions[self.solution].subtasks
@@ -162,7 +170,7 @@ class SolutionManager(TaskJobManager):
         }
         for output, job in self._outputs:
             if job.result is not None:
-                result["outputs"][job.result.verdict].append(output)
+                result["outputs"][job.result.verdict].append(os.path.basename(output))
 
         return result
 
