@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .tools import ToolsManager
-from .data import InputManager
+from .data import DataManager
 from .generator import GeneratorManager
 from .checker import CheckerManager
 from .judge import JudgeManager

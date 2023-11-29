@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Any
+from typing import Any, Callable
 
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
@@ -24,7 +24,7 @@ from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.tools import IsClean
 
 
-class InputManager(TaskJobManager):
+class DataManager(TaskJobManager):
     def __init__(self):
         self._static_inputs = []
         self._generated_inputs = []
@@ -45,15 +45,21 @@ class InputManager(TaskJobManager):
             self._data(GENERATED_SUBDIR)
         )))
 
-        self._all = self._static_inputs + self._generated_inputs + self._static_outputs
+        self._all_input_files = self._static_inputs + self._generated_inputs
+        self._all_output_files = self._static_outputs
         jobs: list[Job] = []
 
         # TODO: Check matching sample inputs for outputs 
 
-        for fname in self._all:
+        for fname in self._all_input_files:
             jobs += [
                 non_empty := DataIsNotEmpty(self._env, fname),
                 copy := CopyInput(self._env, fname),
+            ]
+        for fname in self._all_output_files:
+            jobs += [
+                non_empty := DataIsNotEmpty(self._env, fname),
+                copy := CopyOutput(self._env, fname),
             ]
  
         # TODO: Check existence of input for each subtask 
@@ -62,9 +68,9 @@ class InputManager(TaskJobManager):
 
     def _compute_result(self) -> dict[str, Any]:
         res = {
-            "inputs": self._static_inputs + self._generated_inputs,
-            "outputs": self._static_outputs,
-            "all": self._all,
+            "inputs": self._all_input_files,
+            "outputs": self._all_output_files,
+            "all": self._all_input_files + self._all_output_files,
         }
         for key in ("inputs", "outputs", "all"):
             res[key] = list(map(os.path.basename, res[key]))
@@ -73,33 +79,45 @@ class InputManager(TaskJobManager):
 
 
 class DataJob(TaskJob):
-    def __init__(self, env: Env, name: str, input_: str) -> None:
+    def __init__(self, env: Env, name: str, data: str) -> None:
         super().__init__(env, name)
-        self.input = input_
+        self.data = data
 
 
 class DataIsNotEmpty(DataJob):
     """Check that input file is not empty."""
-    def __init__(self, env: Env, input_: str) -> None:
-        super().__init__(env, f"Input {input_} is not empty.", input_)
+    def __init__(self, env: Env, data: str) -> None:
+        super().__init__(env, f"Input {data} is not empty.", data)
 
     def _run(self):
-        if not self._file_not_empty(self.input):
-            raise PipelineItemFailure(f"Input {self.input} is empty.")
+        if not self._file_not_empty(self.data):
+            raise PipelineItemFailure(f"Input {self.data} is empty.")
 
 
-class CopyInput(DataJob):
-    """Copy input to into data folder so we can treat them normally."""
-    def __init__(self, env: Env, input_: str) -> None:
-        super().__init__(env, f"Copy {input_} to {self._input('.')}", input_)
+class CopyData(DataJob):
+    """Copy data to into dest folder."""
+    def __init__(self, env: Env, data: str, dest: Callable[[str], str]) -> None:
+        super().__init__(env, f"Copy {data} to {dest('.')}", data)
+        self._dest = dest
 
     def _run(self):
-        self._copy_file(self.input, self._input(os.path.basename(self.input)))
+        self._copy_file(self.data, self._dest(os.path.basename(self.data)))
+
+
+class CopyInput(CopyData):
+    """Copy input to its place."""
+    def __init__(self, env: Env, input_: str) -> None:
+        super().__init__(env, input_, self._input)
+
+class CopyOutput(CopyData):
+    """Copy output to its place."""
+    def __init__(self, env: Env, input_: str) -> None:
+        super().__init__(env, input_, self._output)
 
 
 MB = 1024 * 1024
 
-class DataManager(TaskJobManager):
+class DataCheckingManager(TaskJobManager):
     def __init__(self):
         super().__init__("Checking data")
 

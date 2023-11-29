@@ -73,7 +73,11 @@ class TaskHelper:
         """Path to input."""
         return self._data(INPUTS_SUBDIR, name)
 
-    def _output(self, input_name: str, solution: str):
+    def _output(self, name: str):
+        """Path to output from given input and solution."""
+        return self._data(OUTPUTS_SUBDIR, name)
+
+    def _output_from_input(self, input_name: str, solution: str):
         """Path to output from given input and solution."""
         return self._data(OUTPUTS_SUBDIR, util.get_output_name(input_name, solution))
 
