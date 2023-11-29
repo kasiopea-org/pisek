@@ -221,8 +221,13 @@ class TaskConfig(BaseEnv):
 
         # subtask should be ordered by number
         subtasks = {key: val for key, val in sorted(subtasks.items())}
+        
+        all_globs = set([])
+        for subtask in subtasks.values():
+            subtask.construct_globs(subtasks)
+            all_globs = all_globs.union(subtask.in_globs)
 
-        self["subtasks"] = BaseEnv(**subtasks)
+        self["subtasks"] = BaseEnv(**subtasks, all_globs=list(sorted(all_globs)))
 
         self["_solution_section_names"] = set()
         solutions = {}
@@ -259,18 +264,15 @@ class TaskConfig(BaseEnv):
         self["solutions"] = BaseEnv(**solutions)
         self["primary_solution"] = primary
 
-        for subtask in subtasks.values():
-            subtask.construct_globs(subtasks)
-
         self.check_unused_keys(config)
 
     def get_maximum_score(self) -> int:
-        return sum([subtask.score for _, subtask in self.subtasks.items()])
+        return sum([subtask.score for _, subtask in self.subtasks.subenvs()])
 
     def get_data_dir(self):
         return os.path.normpath(os.path.join(self.task_dir, self.data_subdir))
 
-    def get_samples_dir(self):
+    def get_static_dir(self):
         return os.path.normpath(os.path.join(self.task_dir, self.static_subdir))
 
     def get_timeout(self, is_secondary_solution: bool) -> float:
@@ -344,16 +346,16 @@ class SubtaskConfig(BaseEnv):
             self["score"] = int(
                 config_section.get("points", type_=int, fallback="0")
             )  # To make mypy happy
-            self["in_globs"] = config_section.get("in_globs", "sample*.in").split()
+            self["in_globs"] = tuple(config_section.get("in_globs", "sample*.in").split())
             self["predecessors"] = config_section.get("predecessors", "").split()
         else:
             self["name"] = config_section.get("name", None)
             self["score"] = config_section.get("points", type_=int)
             if self.score is None:
                 raise TaskConfigMissingOption(config_section.name, "points")
-            self["in_globs"] = config_section.get(
+            self["in_globs"] = tuple(config_section.get(
                 "in_globs", self._glob_i(subtask_number)
-            ).split()
+            ).split())
             if not all(glob.endswith(".in") for glob in self.in_globs):
                 raise TaskConfigError(
                     f"All in_globs must end with '.in': {' '.join(self.in_globs)}"
@@ -378,7 +380,7 @@ class SubtaskConfig(BaseEnv):
                 prev_globs = subtasks[str(prev)].construct_globs(subtasks)
                 for glob in prev_globs:
                     all_globs.add(glob)
-            self["all_globs"] = list(sorted(all_globs))
+            self["all_globs"] = tuple(sorted(all_globs))
 
         self["_constructing"] = False
         return self.all_globs

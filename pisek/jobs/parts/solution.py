@@ -50,7 +50,7 @@ class SolutionManager(TaskJobManager):
 
         testcases = {}
         used_inp = set()
-        for sub_num, sub in self._env.config.subtasks.items():
+        for sub_num, sub in self._env.config.subtasks.subenvs():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in used_inp:

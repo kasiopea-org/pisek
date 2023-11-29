@@ -29,11 +29,14 @@ from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
 BUILD_DIR = "build/"
-GENERATED_DIR = "generated/"
+
+GENERATED_SUBDIR = "generated/"
+INPUTS_SUBDIR = "inputs/"
+OUTPUTS_SUBDIR = "out/"
 
 TOOLS_MAN_CODE = "tools"
-INPUTS_MAN_CODE = "samples"
 GENERATOR_MAN_CODE = "generator"
+INPUTS_MAN_CODE = "inputs"
 CHECKER_MAN_CODE = "checker"
 JUDGE_MAN_CODE = "judge"
 SOLUTION_MAN_CODE = "solution"
@@ -53,18 +56,26 @@ class TaskHelper:
     def _executable(self, name: str) -> str:
         """Path to executable with given basename."""
         return self._resolve_path(self._get_build_dir(), name)
+    
+    def _data(self, *path: list[str]) -> str:
+        """Path to data file."""
+        return self._resolve_path(self._env.config.data_subdir, *path)
+    
+    def _static(self, name: str) -> str:
+        """Path to generated input."""
+        return self._resolve_path(self._env.config.static_subdir, name)
 
     def _generated_input(self, name: str) -> str:
         """Path to generated input."""
-        return self._resolve_path(GENERATED_DIR, name)
+        return self._data(GENERATED_SUBDIR, name)
 
-    def _data(self, name: str) -> str:
-        """Path to data file (input or output) with given basename."""
-        return self._resolve_path(self._env.config.data_subdir, name)
+    def _input(self, name: str) -> str:
+        """Path to input."""
+        return self._data(INPUTS_SUBDIR, name)
 
     def _output(self, input_name: str, solution: str):
         """Path to output from given input and solution."""
-        return self._data(util.get_output_name(input_name, solution))
+        return self._data(OUTPUTS_SUBDIR, util.get_output_name(input_name, solution))
 
     def _solution(self, name: str) -> str:
         """Path to solution with given basename."""

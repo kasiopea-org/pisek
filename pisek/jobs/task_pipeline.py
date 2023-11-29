@@ -30,7 +30,7 @@ from pisek.jobs.parts.task_job import (
 )
 
 from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.inputs import InputManager
+from pisek.jobs.parts.data import InputManager
 from pisek.jobs.parts.generator import GeneratorManager
 from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
@@ -54,7 +54,6 @@ class TaskPipeline(JobPipeline):
         if env.target != "solution":
             named_pipeline.append(checker := (CheckerManager(), CHECKER_MAN_CODE))
             checker[0].add_prerequisite(*inputs)
-            checker[0].add_prerequisite(*generator)
 
         solutions = []
         if env.solutions:
@@ -82,14 +81,12 @@ class TaskPipeline(JobPipeline):
 
         for solution in solutions:
             solution[0].add_prerequisite(*inputs)
-            solution[0].add_prerequisite(*generator)
             solution[0].add_prerequisite(*judge)
 
         if env.solutions:
             named_pipeline.append(data_check := (DataManager(), DATA_MAN_CODE))
 
             data_check[0].add_prerequisite(*inputs)
-            data_check[0].add_prerequisite(*generator)
             for solution in solutions:
                 data_check[0].add_prerequisite(*solution)
 

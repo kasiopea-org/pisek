@@ -10,7 +10,7 @@ def subtask_formula(subtask):
 def scoring_formula(config: TaskConfig):
     fls = []
     fls.append(r'[0, "^sample"]')
-    for i, subtask in sorted(config.subtasks.items()):
+    for i, subtask in sorted(config.subtasks.subenvs()):
         fls.append(subtask_formula(subtask))
     return "[\n " + ",\n ".join(f for f in fls) + "\n]"
 

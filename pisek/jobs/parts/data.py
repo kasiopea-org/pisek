@@ -13,14 +13,91 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import os
+from typing import Any
+
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
-from pisek.jobs.parts.task_job import TaskJobManager, TaskJob
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, GENERATED_SUBDIR
 from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.tools import IsClean
 
-MB = 1024 * 1024
 
+class InputManager(TaskJobManager):
+    def __init__(self):
+        self._static_inputs = []
+        self._generated_inputs = []
+        self._static_outputs = []
+        super().__init__("Checking inputs")
+
+    def _get_jobs(self) -> list[Job]:
+        self._static_inputs = list(map(self._static, self.globs_to_files(
+            self._env.config.subtasks[0].all_globs,
+            self._resolve_path(self._env.config.static_subdir),
+        )))
+        self._static_outputs = list(map(self._static, self.globs_to_files(
+            map(lambda x: x.replace(".in", ".out") , self._env.config.subtasks[0].all_globs),
+            self._resolve_path(self._env.config.static_subdir),
+        )))
+        self._generated_inputs = list(map(self._generated_input, self.globs_to_files(
+            self._env.config.subtasks.all_globs,
+            self._data(GENERATED_SUBDIR)
+        )))
+
+        self._all = self._static_inputs + self._generated_inputs + self._static_outputs
+        jobs: list[Job] = []
+
+        # TODO: Check matching sample inputs for outputs 
+
+        for fname in self._all:
+            jobs += [
+                non_empty := DataIsNotEmpty(self._env, fname),
+                copy := CopyInput(self._env, fname),
+            ]
+ 
+        # TODO: Check existence of input for each subtask 
+
+        return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        res = {
+            "inputs": self._static_inputs + self._generated_inputs,
+            "outputs": self._static_outputs,
+            "all": self._all,
+        }
+        for key in ("inputs", "outputs", "all"):
+            res[key] = list(map(os.path.basename, res[key]))
+
+        return res
+
+
+class DataJob(TaskJob):
+    def __init__(self, env: Env, name: str, input_: str) -> None:
+        super().__init__(env, name)
+        self.input = input_
+
+
+class DataIsNotEmpty(DataJob):
+    """Check that input file is not empty."""
+    def __init__(self, env: Env, input_: str) -> None:
+        super().__init__(env, f"Input {input_} is not empty.", input_)
+
+    def _run(self):
+        if not self._file_not_empty(self.input):
+            raise PipelineItemFailure(f"Input {self.input} is empty.")
+
+
+class CopyInput(DataJob):
+    """Copy input to into data folder so we can treat them normally."""
+    def __init__(self, env: Env, input_: str) -> None:
+        super().__init__(env, f"Copy {input_} to {self._input('.')}", input_)
+
+    def _run(self):
+        self._copy_file(self.input, self._input(os.path.basename(self.input)))
+
+
+MB = 1024 * 1024
 
 class DataManager(TaskJobManager):
     def __init__(self):

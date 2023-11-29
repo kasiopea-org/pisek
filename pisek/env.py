@@ -113,6 +113,13 @@ class BaseEnv:
         """
         self._accessed |= self._vars.keys()
         return list(self._vars.items())
+    
+    def subenvs(self) -> list[tuple[str, Any]]:
+        """
+        Return (name, value) for each subenv stored.
+        Logs each variable.
+        """
+        return list(filter(lambda v: isinstance(v[1], BaseEnv), self.items()))
 
     def _set(self, name: str, value: Any):
         """Sets variable to value. Use only in __init__ and for other cases use fork."""

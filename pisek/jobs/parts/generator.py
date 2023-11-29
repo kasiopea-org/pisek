@@ -17,12 +17,12 @@
 import glob
 import random
 import os
-from typing import Any, Optional
+from typing import Optional
 
 import pisek.util as util
 from pisek.env import Env
-from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
+from pisek.jobs.jobs import Job, PipelineItemFailure
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, GENERATED_SUBDIR
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
 from pisek.jobs.parts.compile import Compile
 
@@ -45,7 +45,6 @@ class GeneratorManager(TaskJobManager):
                     continue  # skip samples
                 last_gen: OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
-                    data_dir = self._env.config.get_data_dir()
                     self._inputs.append(
                         input_name := util.get_input_name(seed, sub_num)
                     )
@@ -82,12 +81,6 @@ class GeneratorManager(TaskJobManager):
             gen2.add_prerequisite(compile)
 
         return jobs
-
-    def _compute_result(self) -> dict[str, Any]:
-        if self._env.config.contest_type == "kasiopea":
-            return {"inputs": self._inputs}
-        else:
-            return {"inputs": self.jobs[1].result}
 
 
 class RunOnlineGeneratorMan(TaskJobManager):
@@ -230,7 +223,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         """Generates all inputs."""
         self._load_compiled()
 
-        os.makedirs(self._env.config.data_subdir, exist_ok=True)
+        os.makedirs(self._data(GENERATED_SUBDIR), exist_ok=True)
 
         # Clear old inputs
         
@@ -249,7 +242,7 @@ class OfflineGeneratorGenerate(ProgramJob):
             raise self._create_program_failure(f"Generator failed:", run_result)
 
         inputs = []
-        for sub_num, subtask in self._env.config.subtasks.items():
+        for sub_num, subtask in self._env.config.subtasks.subenvs():
             if sub_num == "0":
                 continue
             files = self._subtask_inputs(sub_num)
@@ -259,7 +252,7 @@ class OfflineGeneratorGenerate(ProgramJob):
                 )
             for file in files:
                 inputs.append(file)
-                self._access_file(self._data(file))
+                self._access_file(self._generated_input(file))
 
         test_files = glob.glob(os.path.join(gen_dir, "*.in"))
         if len(test_files) == 0:

@@ -48,7 +48,7 @@ class CheckerManager(TaskJobManager):
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 
         self.loose_subtasks = []
-        for sub_num, sub in self._env.config.subtasks.items():
+        for sub_num, sub in self._env.config.subtasks.subenvs():
             if sub_num == "0":
                 continue  # Skip samples
             for inp in self._subtask_inputs(sub):
@@ -148,7 +148,7 @@ class CheckerJob(ProgramJob):
         super().__init__(env, f"Check {input_name} on subtask {subtask}", checker)
         self.subtask = subtask
         self.input_name = input_name
-        self.input_file = self._data(input_name)
+        self.input_file = self._input(input_name)
         self.expected = expected
 
     def _check(self) -> RunResult:

@@ -52,7 +52,7 @@ def group_by_subtask(
         num: [] for num in config.subtasks.keys()
     }
     for result in results:
-        for i, subtask in config.subtasks.items():
+        for i, subtask in config.subtasks.subenvs():
             if in_subtask(result.name, subtask):
                 subtasks[i].append(result)
     return subtasks
