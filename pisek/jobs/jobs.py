@@ -46,8 +46,8 @@ class CaptureInitParams:
                 self._args = args
                 self._kwargs = kwargs
                 self._initialized = True
-                env = env.fork().lock()
-            real_init(self, env, *args, **kwargs)
+                self._env = env.fork().lock()
+            real_init(self, self._env, *args, **kwargs)
 
         cls.__init__ = wrapped_init
 
