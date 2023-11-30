@@ -24,7 +24,7 @@ import pisek.util as util
 from pisek.env import Env
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, GENERATED_SUBDIR
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
+from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 
 
@@ -105,7 +105,7 @@ class RunOnlineGeneratorMan(TaskJobManager):
         return jobs
 
 
-class OnlineGeneratorJob(ProgramJob):
+class OnlineGeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
     def __init__(
@@ -117,14 +117,14 @@ class OnlineGeneratorJob(ProgramJob):
         subtask: int,
         seed: int,
     ) -> None:
-        super().__init__(env, name, generator)
+        super().__init__(env, name)
+        self.generator = generator
         self.subtask = subtask
         self.seed = seed
         self.input_name = input_file
         self.input_file = self._generated_input(input_file)
 
     def _gen(self, input_file: str, seed: int, subtask: int) -> RunResult:
-        self._load_compiled()
         if seed < 0:
             raise PipelineItemFailure(f"Seed {seed} is negative.")
 
@@ -135,11 +135,11 @@ class OnlineGeneratorJob(ProgramJob):
         hexa_seed = f"{seed:x}"
 
         result = self._run_program(
-            [difficulty, hexa_seed], stdout=input_file, print_stderr=True
+            self.generator, args=[difficulty, hexa_seed], stdout=input_file, print_first_stderr=True
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.program} failed on subtask {subtask}, seed {seed:x}:", result
+                f"{self.generator} failed on subtask {subtask}, seed {seed:x}:", result
             )
 
         return result
@@ -209,11 +209,12 @@ class OnlineGeneratorRespectsSeed(TaskJob):
             )
 
 
-class OfflineGeneratorGenerate(ProgramJob):
+class OfflineGeneratorGenerate(ProgramsJob):
     """Job that generates all inputs using OfflineGenerator."""
 
-    def __init__(self, env: Env, program: str) -> None:
-        super().__init__(env, "Generate inputs", program)
+    def __init__(self, env: Env, generator: str) -> None:
+        super().__init__(env, "Generate inputs")
+        self.generator = generator
 
     def _subtask_inputs(self, subtask: str):
         return self.globs_to_files(
@@ -222,8 +223,6 @@ class OfflineGeneratorGenerate(ProgramJob):
 
     def _gen(self) -> None:
         """Generates all inputs."""
-        self._load_compiled()
-
         try:
             shutil.rmtree(self._generated_input("."))
         except FileNotFoundError:
@@ -231,7 +230,7 @@ class OfflineGeneratorGenerate(ProgramJob):
         os.makedirs(self._generated_input("."))
 
         gen_dir = self._generated_input(".")
-        run_result = self._run_program([gen_dir], print_stderr=True)
+        run_result = self._run_program(self.generator, args=[gen_dir], print_first_stderr=True)
         self._access_file(self._generated_input("."))
 
         if run_result.kind != RunResultKind.OK:

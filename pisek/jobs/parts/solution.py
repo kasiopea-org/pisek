@@ -22,7 +22,7 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, ProgramJob
+from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult
 from pisek.jobs.parts.judge import judge_job, RunJudge
@@ -75,31 +75,36 @@ class SolutionManager(TaskJobManager):
     def _create_run_and_judge(
         self, sub_num: int, inp: str
     ) -> tuple["RunSolution", RunJudge]:
-        run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
-        run_solution.add_prerequisite(self._compile_job)
+        if self._env.config.task_type == "batch":
+            run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
+            run_solution.add_prerequisite(self._compile_job)
 
-        if sub_num == "0":
-            c_out = inp.replace(".in", ".out")
+            if sub_num == "0":
+                c_out = inp.replace(".in", ".out")
+            else:
+                primary_sol = self._env.config.solutions[
+                    self._env.config.primary_solution
+                ].source
+                c_out = util.get_output_name(inp, primary_sol)
+
+            out = util.get_output_name(inp, self._solution_file)
+            run_judge = judge_job(
+                self._judge,
+                self._input(inp),
+                self._output(out),
+                self._output(c_out),
+                sub_num,
+                lambda: self._get_seed(inp),
+                None,
+                self._env,
+            )
+            run_judge.add_prerequisite(run_solution, name="run_solution")
+
+            return (run_solution, run_judge)
+        elif self._env.config.task_type == "communication":
+            return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
         else:
-            primary_sol = self._env.config.solutions[
-                self._env.config.primary_solution
-            ].source
-            c_out = util.get_output_name(inp, primary_sol)
-
-        out = util.get_output_name(inp, self._solution_file)
-        run_judge = judge_job(
-            self._judge,
-            self._input(inp),
-            self._output(out),
-            self._output(c_out),
-            sub_num,
-            lambda: self._get_seed(inp),
-            None,
-            self._env,
-        )
-        run_judge.add_prerequisite(run_solution, name="run_solution")
-
-        return (run_solution, run_judge)
+            raise ValueError(f"Unknown task type {self._env.config.task_type}")
 
     def _update(self):
         expected = self._env.config.solutions[self.solution].subtasks
@@ -352,7 +357,7 @@ class RunPrimarySolutionMan(TaskJobManager):
 RUN_JOB_NAME = r"Run (.*) on input (.*)"
 
 
-class RunSolution(ProgramJob):
+class RunSolution(ProgramsJob):
     """Runs solution on given input."""
 
     def __init__(
@@ -366,7 +371,8 @@ class RunSolution(ProgramJob):
         name = RUN_JOB_NAME.replace(r"(.*)", solution, 1).replace(
             r"(.*)", input_name, 1
         )
-        super().__init__(env, name, solution)
+        super().__init__(env, name)
+        self.solution = solution
         self.input_name = self._input(input_name)
         self.output_name = (
             self._output(output_name)
@@ -377,7 +383,7 @@ class RunSolution(ProgramJob):
 
     def _run_solution(self) -> RunResult:
         return self._run_program(
-            [], stdin=self.input_name, stdout=self.output_name, timeout=self.timeout
+            self.solution, stdin=self.input_name, stdout=self.output_name, timeout=self.timeout
         )
 
     def _run(self) -> Optional[RunResult]:

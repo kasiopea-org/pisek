@@ -22,7 +22,7 @@ import subprocess
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import ProgramJob
+from pisek.jobs.parts.program import ProgramsJob
 
 
 class ToolsManager(TaskJobManager):
@@ -97,10 +97,10 @@ class PrepareTextPreprocessor(TaskJob):
             raise PipelineItemFailure("Text preprocessor compilation failed.")
 
 
-class SanitizeAbstract(ProgramJob):
+class SanitizeAbstract(ProgramsJob):
     def _sanitize(self, input_: str, output: str) -> None:
         os.makedirs(os.path.dirname(output), exist_ok=True)
-        result = self._run_program([], stdin=input_, stdout=output)
+        result = self._run_program("text-preproc", stdin=input_, stdout=output)
         if result.returncode == 43:
             raise self._create_program_failure(
                 f"Text preprocessor failed on file: {input_}", result
@@ -111,7 +111,7 @@ class Sanitize(SanitizeAbstract):
     """Sanitize text file using Text Preprocessor."""
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
-        super().__init__(env, f"Sanitize {input_} -> {output}", "text-preproc")
+        super().__init__(env, f"Sanitize {input_} -> {output}")
         self.input = self._data(input_)
         self.output = self._data(output if output is not None else input_ + ".clean")
 
@@ -123,7 +123,7 @@ class IsClean(SanitizeAbstract):
     """Check that file is same after using Text Preprocessor."""
 
     def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
-        super().__init__(env, f"{os.path.basename(input_)} is clean", "text-preproc")
+        super().__init__(env, f"{os.path.basename(input_)} is clean")
         self.input = input_
         self.output = self._sanitized(
             output if output is not None else os.path.basename(input_) + ".clean"

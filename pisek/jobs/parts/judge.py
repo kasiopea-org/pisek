@@ -24,7 +24,7 @@ from pisek.env import Env
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
+from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.jobs.parts.tools import Sanitize
@@ -141,7 +141,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
 JUDGE_JOB_NAME = r"Judge (\w+)"
 
 
-class RunJudge(ProgramJob):
+class RunJudge(ProgramsJob):
     """Runs judge on single input. (Abstract class)"""
 
     def __init__(
@@ -156,8 +156,8 @@ class RunJudge(ProgramJob):
         super().__init__(
             env,
             JUDGE_JOB_NAME.replace(r"(\w+)", os.path.basename(output_name), 1),
-            judge,
         )
+        self.judge = judge
         self.input_name = input_name
         self.output_name = output_name
         self.correct_output_name = correct_output
@@ -281,7 +281,8 @@ class RunKasiopeaJudge(RunJudge):
             self._access_file(self.correct_output_name)
 
         result = self._run_program(
-            [str(self.subtask), self.seed],
+            self.judge,
+            args=[str(self.subtask), self.seed],
             stdin=self.output_name,
             env=envs,
         )
@@ -324,7 +325,8 @@ class RunCMSJudge(RunJudge):
         points_file = self.output_name.replace(".out", ".judge")
         self._access_file(points_file)
         result = self._run_program(
-            [self.input_name, self.correct_output_name, self.output_name],
+            self.judge,
+            args=[self.input_name, self.correct_output_name, self.output_name],
             stdout=points_file,
         )
         if result.returncode == 0:

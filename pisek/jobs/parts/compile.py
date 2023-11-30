@@ -21,16 +21,17 @@ import sys
 
 from pisek.jobs.jobs import State, PipelineItemFailure
 from pisek.env import Env
-from pisek.jobs.parts.program import ProgramJob
+from pisek.jobs.parts.program import ProgramsJob
 
 
-class Compile(ProgramJob):
+class Compile(ProgramsJob):
     """Job that compiles a program."""
 
     def __init__(
         self, env: Env, program: str, use_manager: bool = False, compile_args: dict = {}
     ) -> None:
-        super().__init__(env, f"Compile {os.path.basename(program)}", program)
+        super().__init__(env, f"Compile {os.path.basename(program)}")
+        self.program = program
         self.use_manager = use_manager
         self._compile_args = compile_args
         self.target = self._executable(os.path.basename(program))
@@ -81,9 +82,8 @@ class Compile(ProgramJob):
         if self.state == State.failed:
             return None
 
-        self._load_compiled()
         self._access_file(program)
-        self._access_file(self.executable)
+        self._access_file(self._load_compiled(self.program))
 
     def _compile_cpp(self, program: str):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]

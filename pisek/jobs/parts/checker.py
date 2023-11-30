@@ -20,7 +20,7 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramJob
+from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 
 
@@ -134,7 +134,7 @@ class LooseCheckJobGroup:
         return self.jobs[pred][results.index(result)]
 
 
-class CheckerJob(ProgramJob):
+class CheckerJob(ProgramsJob):
     """Runs checker on single input."""
 
     def __init__(
@@ -145,14 +145,15 @@ class CheckerJob(ProgramJob):
         subtask: int,
         expected: Optional[RunResultKind],
     ):
-        super().__init__(env, f"Check {input_name} on subtask {subtask}", checker)
+        super().__init__(env, f"Check {input_name} on subtask {subtask}")
+        self.checker = checker
         self.subtask = subtask
         self.input_name = input_name
         self.input_file = self._input(input_name)
         self.expected = expected
 
     def _check(self) -> RunResult:
-        return self._run_program([str(self.subtask)], stdin=self.input_file)
+        return self._run_program(self.checker, args=[str(self.subtask)], stdin=self.input_file)
 
     def _run(self) -> RunResult:
         result = self._check()

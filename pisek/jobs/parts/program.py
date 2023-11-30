@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass, field
 from enum import Enum
 import os
 from typing import Optional
@@ -137,26 +138,63 @@ yaml.add_representer(RunResult, run_result_representer)
 yaml.add_constructor("!RunResult", run_result_constructor)
 
 
-class ProgramJob(TaskJob):
+@dataclass
+class ProgramPoolItem:
+    executable: str
+    args: list[str]
+    timeout: float
+    mem: int
+    processes: int
+    stdin: Optional[str]
+    stdout: Optional[str]
+    stderr: Optional[str]
+    env: dict[str, str] = field(default_factory=lambda: {})
+
+    def to_minibox_args(self) -> list[str]:
+        minibox_args = []
+        minibox_args.append(f"--time={self.timeout}")
+        minibox_args.append(f"--wall-time={self.timeout}")
+        minibox_args.append(f"--mem={self.mem}")
+        minibox_args.append(f"--processes={self.processes}")
+
+        minibox_args.append(
+            f"--stdin={os.path.abspath(self.stdin) if self.stdin else '/dev/null'}"
+        )
+        minibox_args.append(
+            f"--stdout={os.path.abspath(self.stdout) if self.stdout else '/dev/null'}"
+        )
+        if self.stderr:
+            minibox_args.append(f"--stderr={os.path.abspath(self.stderr)}")
+
+        for key, val in self.env.items():
+            minibox_args.append(f"--env={key}={val}")
+
+        minibox_args.append(f"--silent")
+        minibox_args.append(f"--meta=-")
+        return minibox_args + ["--run", "--", self.executable] + self.args
+
+
+class ProgramsJob(TaskJob):
     """Job that deals with a program."""
 
-    def __init__(self, env: Env, name: str, program: str) -> None:
+    def __init__(self, env: Env, name: str) -> None:
         super().__init__(env, name)
-        self.program = program
-        self.executable: Optional[str] = None
+        self._program_pool: list[ProgramPoolItem] = []
 
-    def _load_compiled(self) -> None:
+    def _load_compiled(self, program: str) -> str:
         """Loads name of compiled program."""
-        self.executable = self._executable(os.path.basename(self.program))
-        if not self._file_exists(self.executable):
+        executable = self._executable(os.path.basename(program))
+        if not self._file_exists(executable):
             raise PipelineItemFailure(
-                f"Program {self.name} does not exist, "
+                f"Program {executable} does not exist, "
                 f"although it should have been compiled already."
             )
+        return executable
 
-    def _run_raw(
+    def _load_program(
         self,
-        args,
+        program: str,
+        args: list[str] = [],
         timeout: float = DEFAULT_TIMEOUT,
         mem: int = 0,
         processes: int = 1,
@@ -164,122 +202,116 @@ class ProgramJob(TaskJob):
         stdout: Optional[str] = None,
         stderr: Optional[str] = None,
         env={},
-        print_stderr: bool = False,
-    ) -> RunResult:
-        """Runs args as a command."""
-        executable = args[0]
+    ) -> None:
+        """Adds program to execution pool."""
+        executable = self._load_compiled(program)
+
         self._access_file(executable)
-
-        minibox_args = []
-
-        minibox_args.append(f"--time={timeout}")
-        minibox_args.append(f"--wall-time={timeout}")
-        minibox_args.append(f"--mem={mem}")
-        minibox_args.append(f"--processes={processes}")
-
         if stdin:
             self._access_file(stdin)
         if stdout:
             self._access_file(stdout)
-        minibox_args.append(
-            f"--stdin={os.path.abspath(stdin) if stdin else '/dev/null'}"
-        )
-        minibox_args.append(
-            f"--stdout={os.path.abspath(stdout) if stdout else '/dev/null'}"
-        )
         if stderr:
             self._access_file(stderr)
-            minibox_args.append(f"--stderr={os.path.abspath(stderr)}")
 
-        for key, val in env.items():
-            minibox_args.append(f"--env={key}={val}")
-
-        minibox_args.append(f"--silent")
-        minibox_args.append(f"--meta=-")
-
-        process = subprocess.Popen(
-            [self._executable("minibox")] + minibox_args + ["--run", "--"] + args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        self._program_pool.append(
+            ProgramPoolItem(
+                executable,
+                args,
+                timeout,
+                mem,
+                processes,
+                stdin,
+                stdout,
+                stderr,
+                env,
+            )
         )
 
-        # Mypy
-        if process.stdout is None:
-            raise RuntimeError(f"Captured stdout of {process} should not be None")
-        if process.stderr is None:
-            raise RuntimeError(f"Captured stderr of {process} should not be None")
+    def _run_programs(self, print_first_stderr = False) -> list[RunResult]:
+        """Runs all programs in execution pool."""
+        running_pool = []
+        for prog_pool_item in self._program_pool:
+            running_pool.append(subprocess.Popen(
+                [self._executable("minibox")] + prog_pool_item.to_minibox_args(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ))
 
-        if print_stderr:
+        if print_first_stderr:
             stderr_raw = ""
             while True:
-                line = process.stderr.read().decode()
+                assert running_pool[0].stderr is not None # To make mypy happy
+                line = running_pool[0].stderr.read().decode()
                 if not line:
                     break
                 stderr_raw += line
                 self._print(colored(line, self._env, "yellow"), end="", stderr=True)
 
-        process.wait()
+        run_results = []
+        for prog_pool_item, process in zip(self._program_pool, running_pool):
+            process.wait()
+            assert process.stdout is not None # To make mypy happy
+            assert process.stderr is not None # To make mypy happy
 
-        meta_raw = process.stdout.read().decode().strip().split("\n")
-        meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
-        if not print_stderr:
-            stderr_raw = process.stderr.read().decode()
-        stderr_text = None if stderr else stderr_raw
-        if process.returncode == 0:
-            t, wt = float(meta["time"]), float(meta["time-wall"])
-            return RunResult(
-                RunResultKind.OK,
-                0,
-                t,
-                wt,
-                stdout,
-                stderr,
-                stderr_text,
-                "Finished successfully",
-            )
-        elif process.returncode == 1:
-            t, wt = float(meta["time"]), float(meta["time-wall"])
-            if meta["status"] in ("RE", "SG"):
-                if meta["status"] == "RE":
-                    return_code = int(meta["exitcode"])
-                elif meta["status"] == "SG":
-                    return_code = int(meta["exitsig"])
-                    meta["message"] += f" ({signal.Signals(return_code).name})"
-
-                return RunResult(
-                    RunResultKind.RUNTIME_ERROR,
-                    return_code,
+            meta_raw = process.stdout.read().decode().strip().split("\n")
+            meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
+            if not print_first_stderr:
+                stderr_raw = process.stderr.read().decode()
+            stderr_text = None if prog_pool_item.stderr else stderr_raw
+            if process.returncode == 0:
+                t, wt = float(meta["time"]), float(meta["time-wall"])
+                run_results.append(RunResult(
+                    RunResultKind.OK,
+                    0,
                     t,
                     wt,
-                    stdout,
-                    stderr,
+                    prog_pool_item.stdout,
+                    prog_pool_item.stderr,
                     stderr_text,
-                    meta["message"],
-                )
-            elif meta["status"] == "TO":
-                return RunResult(
-                    RunResultKind.TIMEOUT,
-                    -1,
-                    t,
-                    wt,
-                    stdout,
-                    stderr,
-                    stderr_text,
-                    f"Timeout after {timeout}s",
-                )
+                    "Finished successfully",
+                ))
+            elif process.returncode == 1:
+                t, wt = float(meta["time"]), float(meta["time-wall"])
+                if meta["status"] in ("RE", "SG"):
+                    if meta["status"] == "RE":
+                        return_code = int(meta["exitcode"])
+                    elif meta["status"] == "SG":
+                        return_code = int(meta["exitsig"])
+                        meta["message"] += f" ({signal.Signals(return_code).name})"
+
+                    run_results.append(RunResult(
+                        RunResultKind.RUNTIME_ERROR,
+                        return_code,
+                        t,
+                        wt,
+                        prog_pool_item.stdout,
+                        prog_pool_item.stderr,
+                        stderr_text,
+                        meta["message"],
+                    ))
+                elif meta["status"] == "TO":
+                    run_results.append(RunResult(
+                        RunResultKind.TIMEOUT,
+                        -1,
+                        t,
+                        wt,
+                        prog_pool_item.stdout,
+                        prog_pool_item.stderr,
+                        stderr_text,
+                        f"Timeout after {prog_pool_item.timeout}s",
+                    ))
+                else:
+                    raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
-                raise RuntimeError(f"Unknown minibox status {meta['message']}.")
-        else:
-            raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
+                raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
+        
+        return run_results
 
-    def _run_program(self, add_args, **kwargs) -> RunResult:
+    def _run_program(self, program: str, print_first_stderr=False, **kwargs) -> RunResult:
         """Runs program."""
-        self._load_compiled()
-        return self._run_raw([self.executable] + add_args, **kwargs)
-
-    def _get_executable(self) -> str:
-        """Get a name of a compiled program."""
-        return self._executable(os.path.basename(self.program))
+        self._load_program(program, **kwargs)
+        return self._run_programs(print_first_stderr)[0]
 
     def _create_program_failure(self, msg: str, res: RunResult):
         """Create PipelineItemFailure that nicely formats RunResult"""
