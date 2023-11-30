@@ -60,11 +60,18 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in testcases:
-                    run_sol, run_judge = self._create_run_and_judge(sub_num, inp)
-                    jobs += [run_sol, run_judge]
+                    run_sol : ProgramsJob
+                    run_judge: ProgramsJob
+                    if self._env.config.task_type == "batch":
+                        run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
+                        jobs += [run_sol, run_judge]
+                        self._outputs.append((run_judge.output_name, run_judge))
+
+                    elif self._env.config.task_type == "communication":
+                        run_sol = run_judge = self._create_communication_jobs(inp)
+                        jobs.append(run_sol)
 
                     testcases[inp] = run_judge
-                    self._outputs.append((run_judge.output_name, run_judge))
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
@@ -72,7 +79,7 @@ class SolutionManager(TaskJobManager):
 
         return jobs
 
-    def _create_run_and_judge(
+    def _create_batch_jobs(
         self, sub_num: int, inp: str
     ) -> tuple["RunSolution", RunJudge]:
         if self._env.config.task_type == "batch":
@@ -101,10 +108,9 @@ class SolutionManager(TaskJobManager):
             run_judge.add_prerequisite(run_solution, name="run_solution")
 
             return (run_solution, run_judge)
-        elif self._env.config.task_type == "communication":
-            return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
-        else:
-            raise ValueError(f"Unknown task type {self._env.config.task_type}")
+
+    def _create_communication_jobs(self, inp: str):
+        return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
 
     def _update(self):
         expected = self._env.config.solutions[self.solution].subtasks
@@ -391,3 +397,22 @@ class RunSolution(ProgramsJob):
         if result is None:
             return None
         return result
+
+class RunCommunication(ProgramsJob):
+    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str):
+        super().__init__(env, RUN_JOB_NAME.replace(r"(.*)", solution).replace(r"(.*)", input_name))
+        self.solution = solution
+        self.judge = judge
+        self.timeout = timeout
+        self.input_name = input_name
+
+    def _run(self):
+        sol_out, judge_in  = os.pipe()
+        sol_in, judge_out = os.pipe()
+        self._load_program(
+            self.judge, stdin=judge_in, stdout=judge_out, timeout=self.timeout,
+        )
+        self._load_program(
+            self.solution, stdin=sol_in, stdout=sol_out, timeout=self.timeout,
+        )
+        self._print(self._run_programs())

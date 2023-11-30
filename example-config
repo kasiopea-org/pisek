@@ -14,6 +14,11 @@ contest_type=cms
 # Enviroment for which is task developed
 # kasiopea (default) / cms
 
+task_type=communication
+# Task type:
+# - Batch (default)
+# - Communication
+
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config
 # Default: .
@@ -41,6 +46,7 @@ out_check=diff
 # Describes how to check outputs
 #   - diff: checks that contestant output equals correct output (ignores whitespace) (deafault)
 #   - judge: if there can be multiple solutions, checks with program (called 'judge')
+# In communication, only judge is allowed
 
 out_judge=judge
 # Only for out_check=judge

@@ -7,6 +7,7 @@ tests=1
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
+task_type=communication
 
 solutions_subdir=solutions/
 version=v2
@@ -21,10 +22,8 @@ in_gen=src/gen
 # The important line:
 solution_manager=src/manager
 
-out_check=diff
-
-# judge source file
-# out_judge=judge
+out_check=judge
+out_judge=judge
 
 [test01]
 name=Subtask A

@@ -140,10 +140,14 @@ class TaskConfig(BaseEnv):
         self["task_name"] = config.get("task", "name")
 
         self["contest_type"] = config.get("task", "contest_type", fallback="kasiopea")
+        self["task_type"] = config.get("task", "task_type", fallback="batch")
 
         self["generator"] = config.get("tests", "in_gen")
         self["checker"] = config.get("tests", "checker", fallback=None)
         self["judge_type"] = config.get("tests", "out_check", fallback="diff")
+        if self.task_type == "communication" and self.judge_type != "judge":
+            raise TaskConfigError(f"For communication task 'out_check' must be 'judge'.")
+
         if self.judge_type == "judge":
             self["judge"] = config.get("tests", "out_judge")
             self["judge_needs_in"] = config.get(
