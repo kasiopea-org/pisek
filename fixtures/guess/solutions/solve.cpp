@@ -1,4 +1,4 @@
-#include "manager.h"
+#include "stub.h"
 
 int guessNumber() {
     int mn = 0, mx = 100;

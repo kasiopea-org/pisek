@@ -1,4 +1,4 @@
-#include "manager.h"
+#include "stub.h"
 
 int guessNumber() {
     for (int i = 0; i <= 100; i++) {
