@@ -194,9 +194,8 @@ class Compile(ProgramsJob):
         res = []
         if os.path.dirname(self.manager):
             res.append(f"-I{os.path.dirname(self.manager)}")
-        res.append(self.manager + extension)
 
-        self._access_file(self.manager + extension)
+        self._access_file(self.manager + ".h")
 
         return res
 
