@@ -45,16 +45,16 @@ class JudgeManager(TaskJobManager):
             )
 
         samples = self._get_samples()
-        if samples is None:
-            return []
+        if self._env.config.task_type == "communication":
+            return jobs
 
         for inp, out in samples:
             jobs.append(
                 judge := judge_job(
                     self._env.config.judge,
-                    self._input(inp),
-                    self._output(out),
-                    self._output(out),
+                    inp,
+                    out,
+                    out,
                     0,
                     lambda: "0",
                     1.0,
@@ -78,9 +78,9 @@ class JudgeManager(TaskJobManager):
                         invalidate := job(self._env, out, inv_out, seed),
                         run_judge := judge_job(
                             self._env.config.judge,
-                            self._input(inp),
-                            self._invalid_output(inv_out),
-                            self._output(out),
+                            inp,
+                            inv_out,
+                            out,
                             0,
                             lambda: "0",
                             None,
@@ -112,9 +112,9 @@ class RunKasiopeaJudgeMan(TaskJobManager):
             sanitize := Sanitize(self._env, self._output_file, clean_output),
             judge := judge_job(
                 judge_program,
-                self._input(self._input_file),
-                self._output(clean_output),
-                self._output(self._correct_output),
+                self._input_file,
+                clean_output,
+                self._correct_output,
                 self._subtask,
                 lambda: f"{self._seed:x}",
                 None,
@@ -143,7 +143,62 @@ JUDGE_JOB_NAME = r"Judge (\w+)"
 
 class RunJudge(ProgramsJob):
     """Runs judge on single input. (Abstract class)"""
+    def __init__(
+        self,
+        env: Env,
+        name: str,
+        judge: str,
+        input_name: str,
+        expected_points: Optional[float],
+    ) -> None:
+        super().__init__(env, name)
+        self.judge = judge
+        self.input_name = input_name
+        self.input = self._input(input_name)
+        self.expected_points = expected_points
 
+    @abstractmethod
+    def _get_solution_run_res(self) -> RunResult:
+        pass
+
+    @abstractmethod
+    def _judge(self) -> SolutionResult:
+        pass
+
+    @abstractmethod
+    def _unexpected_points_str(self) -> str:
+        pass
+
+    def _run(self) -> SolutionResult:
+        solution_res = self._get_solution_run_res()
+        if solution_res.kind == RunResultKind.OK:
+            result = self._judge()
+        elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
+            result = SolutionResult(
+                Verdict.error,
+                0.0,
+                "",
+                self._quote_program(solution_res),
+                solution_res.status,
+            )
+        elif solution_res.kind == RunResultKind.TIMEOUT:
+            result = SolutionResult(
+                Verdict.timeout, 0.0, "", self._quote_program(solution_res)
+            )
+
+        if (
+            self.expected_points is not None
+            and result is not None
+            and result.points != self.expected_points
+        ):
+            raise PipelineItemFailure(
+                self._unexpected_points_str() + \
+                f"should have got {self.expected_points} points but got {result.points} points."
+            )
+        return result
+
+class RunBatchJudge(RunJudge):
+    """Runs batch judge on single input. (Abstract class)"""
     def __init__(
         self,
         env: Env,
@@ -156,57 +211,35 @@ class RunJudge(ProgramsJob):
         super().__init__(
             env,
             JUDGE_JOB_NAME.replace(r"(\w+)", os.path.basename(output_name), 1),
+            judge,
+            input_name,
+            expected_points
         )
-        self.judge = judge
-        self.input_name = input_name
         self.output_name = output_name
+        self.output = (self._invalid_output if output_name.endswith(".invalid") else self._output)(output_name)
         self.correct_output_name = correct_output
-        self.expected_points = expected_points
+        self.correct_output = self._output(correct_output)
 
-    @abstractmethod
-    def _judge(self) -> SolutionResult:
-        pass
-
-    def _run(self) -> SolutionResult:
+    def _get_solution_run_res(self) -> RunResult:
         if "run_solution" in self.prerequisites_results:
-            solution_res: RunResult = self.prerequisites_results["run_solution"]
-            if solution_res.kind == RunResultKind.OK:
-                result = self._judge()
-            elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
-                result = SolutionResult(
-                    Verdict.error,
-                    0.0,
-                    "",
-                    self._quote_program(solution_res),
-                    solution_res.status,
-                )
-            elif solution_res.kind == RunResultKind.TIMEOUT:
-                result = SolutionResult(
-                    Verdict.timeout, 0.0, "", self._quote_program(solution_res)
-                )
+            return self.prerequisites_results["run_solution"] 
         else:
-            result = self._judge()
+            # There is no solution (judging samples)
+            # XXX: We only care about the kind
+            return RunResult(RunResultKind.OK, 0, 0.0, 0.0)
 
-        if (
-            self.expected_points is not None
-            and result is not None
-            and result.points != self.expected_points
-        ):
-            raise PipelineItemFailure(
-                f"Output {self.output_name} for input {self.input_name} "
-                f"should have got {self.expected_points} points but got {result.points} points."
-            )
-        return result
-
+    def _unexpected_points_str(self) -> str:
+        return f"Output {self.output_name} for input {self.input_name} "
+    
     def _nice_diff(self) -> str:
         """Create a nice diff between output and correct output."""
         diff = self._short_text(
-            self._diff_files(self.correct_output_name, self.output_name)
+            self._diff_files(self.correct_output, self.output)
         )
         return colored(diff, self._env, "yellow")
 
 
-class RunDiffJudge(RunJudge):
+class RunDiffJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
@@ -221,10 +254,10 @@ class RunDiffJudge(RunJudge):
         )
 
     def _judge(self) -> SolutionResult:
-        self._access_file(self.output_name)
-        self._access_file(self.correct_output_name)
+        self._access_file(self.output)
+        self._access_file(self.correct_output)
         diff = subprocess.run(
-            ["diff", "-Bq", self.output_name, self.correct_output_name],
+            ["diff", "-Bq", self.output, self.correct_output],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -253,7 +286,7 @@ class RunDiffJudge(RunJudge):
             )
 
 
-class RunKasiopeaJudge(RunJudge):
+class RunKasiopeaJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
@@ -274,16 +307,16 @@ class RunKasiopeaJudge(RunJudge):
     def _judge(self) -> SolutionResult:
         envs = {}
         if self._env.config.judge_needs_in:
-            envs["TEST_INPUT"] = self.input_name
-            self._access_file(self.input_name)
+            envs["TEST_INPUT"] = self.input
+            self._access_file(self.input)
         if self._env.config.judge_needs_out:
-            envs["TEST_OUTPUT"] = self.correct_output_name
-            self._access_file(self.correct_output_name)
+            envs["TEST_OUTPUT"] = self.correct_output
+            self._access_file(self.correct_output)
 
         result = self._run_program(
             self.judge,
             args=[str(self.subtask), self.seed],
-            stdin=self.output_name,
+            stdin=self.output,
             env=envs,
         )
         if result.returncode == 0:
@@ -304,7 +337,7 @@ class RunKasiopeaJudge(RunJudge):
             )
 
 
-class RunCMSJudge(RunJudge):
+class RunCMSJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
@@ -319,14 +352,14 @@ class RunCMSJudge(RunJudge):
         )
 
     def _judge(self) -> SolutionResult:
-        self._access_file(self.input_name)
-        self._access_file(self.output_name)
-        self._access_file(self.correct_output_name)
-        points_file = self.output_name.replace(".out", ".judge")
+        self._access_file(self.input)
+        self._access_file(self.output)
+        self._access_file(self.correct_output)
+        points_file = self.output.replace(".out", ".judge")
         self._access_file(points_file)
         result = self._run_program(
             self.judge,
-            args=[self.input_name, self.correct_output_name, self.output_name],
+            args=[self.input, self.correct_output, self.output],
             stdout=points_file,
         )
         if result.returncode == 0:

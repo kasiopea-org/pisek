@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
@@ -25,7 +25,7 @@ from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult
-from pisek.jobs.parts.judge import judge_job, RunJudge
+from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
 
 
 class SolutionManager(TaskJobManager):
@@ -82,32 +82,31 @@ class SolutionManager(TaskJobManager):
     def _create_batch_jobs(
         self, sub_num: int, inp: str
     ) -> tuple["RunSolution", RunJudge]:
-        if self._env.config.task_type == "batch":
-            run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
-            run_solution.add_prerequisite(self._compile_job)
+        run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
+        run_solution.add_prerequisite(self._compile_job)
 
-            if sub_num == "0":
-                c_out = inp.replace(".in", ".out")
-            else:
-                primary_sol = self._env.config.solutions[
-                    self._env.config.primary_solution
-                ].source
-                c_out = util.get_output_name(inp, primary_sol)
+        if sub_num == "0":
+            c_out = inp.replace(".in", ".out")
+        else:
+            primary_sol = self._env.config.solutions[
+                self._env.config.primary_solution
+            ].source
+            c_out = util.get_output_name(inp, primary_sol)
 
-            out = util.get_output_name(inp, self._solution_file)
-            run_judge = judge_job(
-                self._judge,
-                self._input(inp),
-                self._output(out),
-                self._output(c_out),
-                sub_num,
-                lambda: self._get_seed(inp),
-                None,
-                self._env,
-            )
-            run_judge.add_prerequisite(run_solution, name="run_solution")
+        out = util.get_output_name(inp, self._solution_file)
+        run_judge = judge_job(
+            self._judge,
+            inp,
+            out,
+            c_out,
+            sub_num,
+            lambda: self._get_seed(inp),
+            None,
+            self._env,
+        )
+        run_judge.add_prerequisite(run_solution, name="run_solution")
 
-            return (run_solution, run_judge)
+        return (run_solution, run_judge)
 
     def _create_communication_jobs(self, inp: str):
         return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
@@ -290,13 +289,14 @@ class SubtaskJobGroup:
         # We need new first because we return first occurrence
         all_jobs = SubtaskJobGroup._finished(self.new_jobs + self.previous_jobs)
         all_points = new_points + prev_points
+        if len(all_points) == 0:
+            text = f"No inputs for subtask {self.num}"
+            return (1.0, ""), (text, text)
+        
         result_msg = (
             self._job_msg(all_jobs[all_points.index(max(all_points))]),
             self._job_msg(all_jobs[all_points.index(min(all_points))]),
         )
-
-        if len(all_points) == 0:
-            return (1.0, ""), result_msg
 
         if fail_mode == "all" and self.num > 0:  # Don't check this on samples
             if max(new_points, default=1) != min(new_points, default=1):
@@ -310,10 +310,14 @@ class SubtaskJobGroup:
         for job in self.new_run_jobs:
             job.cancel()
 
-    def _job_msg(self, job: RunJudge) -> str:
+    def _job_msg(self, job: Union[RunBatchJudge, 'RunCommunication']) -> str:
         res = job.result
         inp = os.path.basename(job.input_name)
-        out = os.path.basename(job.output_name)
+        if isinstance(job, RunBatchJudge):
+            out = os.path.basename(job.output_name)
+        else:
+            out = f"{job.solution} on {inp}"
+
         if res is None:
             raise RuntimeError(f"Job {job.name} has not finished yet.")
         judge = self._env.config.judge_type.capitalize()
@@ -374,7 +378,7 @@ class RunSolution(ProgramsJob):
         input_name: str,
         output_name: Optional[str] = None,
     ) -> None:
-        name = RUN_JOB_NAME.replace(r"(.*)", solution, 1).replace(
+        name = RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
             r"(.*)", input_name, 1
         )
         super().__init__(env, name)
@@ -398,21 +402,50 @@ class RunSolution(ProgramsJob):
             return None
         return result
 
-class RunCommunication(ProgramsJob):
-    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str):
-        super().__init__(env, RUN_JOB_NAME.replace(r"(.*)", solution).replace(r"(.*)", input_name))
+class RunCommunication(RunJudge):
+    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str, expected_points: Optional[float] = None):
+        super().__init__(
+            env,
+            RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(r"(.*)", input_name, 1),
+            judge,
+            input_name,
+            expected_points
+        )
         self.solution = solution
         self.judge = judge
         self.timeout = timeout
-        self.input_name = input_name
 
-    def _run(self):
-        sol_out, judge_in  = os.pipe()
+    def _get_solution_run_res(self) -> RunResult:
+        judge_in, sol_out = os.pipe()
         sol_in, judge_out = os.pipe()
+        self._access_file(self.input)
         self._load_program(
             self.judge, stdin=judge_in, stdout=judge_out, timeout=self.timeout,
+            env={"TEST_INPUT": self.input},
         )
         self._load_program(
             self.solution, stdin=sol_in, stdout=sol_out, timeout=self.timeout,
         )
-        self._print(self._run_programs())
+        judge_res, sol_res = self._run_programs()
+        self._judge_run_result = judge_res
+        return sol_res
+    
+    def _judge(self) -> SolutionResult:
+        if self._judge_run_result.returncode == 42:
+            return SolutionResult(
+                Verdict.ok, 1.0, self._judge_run_result.raw_stderr(), self._quote_program(self._judge_run_result)
+            )
+        elif self._judge_run_result.returncode == 43:
+            return SolutionResult(
+                Verdict.wrong_answer,
+                0.0,
+                self._judge_run_result.raw_stderr(),
+                self._quote_program(self._judge_run_result),
+            )
+        else:
+            raise self._create_program_failure(
+                f"Judge failed on output {self.output_name}:", self._judge_run_result
+            )
+    
+    def _unexpected_points_str(self) -> str:
+        return f"Solution {self.solution} on input {self.input_name}"

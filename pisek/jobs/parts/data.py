@@ -74,11 +74,12 @@ class DataManager(TaskJobManager):
         self._all_output_files = self._static_outputs
         jobs: list[Job] = []
 
-        for static_inp in self._static_inputs:
-            if static_inp.replace(".in", ".out") not in self._static_outputs:
-                raise PipelineItemFailure(
-                    f"No matching output for static input {os.path.basename(static_inp)}."
-                )
+        if self._env.config.task_type != "communication":
+            for static_inp in self._static_inputs:
+                if static_inp.replace(".in", ".out") not in self._static_outputs:
+                    raise PipelineItemFailure(
+                        f"No matching output for static input {os.path.basename(static_inp)}."
+                    )
 
         for fname in self._all_input_files:
             jobs += [

@@ -71,7 +71,7 @@ class RunResult:
         return res
 
     def raw_stdout(self):
-        if self.stdout_file:
+        if isinstance(self.stdout_file, str):
             return open(self.stdout_file).read()
         else:
             return None
@@ -83,7 +83,7 @@ class RunResult:
             return self.stderr_text
 
     def stdout(self, env: Env):
-        if self.stdout_file:
+        if isinstance(self.stdout_file, str):
             return f" in file {self.stdout_file}:\n" + self._format(
                 self.raw_stdout(), env
             )
@@ -151,7 +151,7 @@ class ProgramPoolItem:
     stderr: Optional[str]
     env: dict[str, str] = field(default_factory=lambda: {})
 
-    def to_popen(self, minibox: str, meta_file: int) -> dict[str, Any]:
+    def to_popen(self, minibox: str, meta_file: str) -> dict[str, Any]:
         result = {}
 
         minibox_args = []
