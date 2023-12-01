@@ -17,7 +17,8 @@
 from dataclasses import dataclass, field
 from enum import Enum
 import os
-from typing import Optional
+import tempfile
+from typing import Optional, Any
 import signal
 import subprocess
 import yaml
@@ -150,28 +151,39 @@ class ProgramPoolItem:
     stderr: Optional[str]
     env: dict[str, str] = field(default_factory=lambda: {})
 
-    def to_minibox_args(self) -> list[str]:
+    def to_popen(self, minibox: str, meta_file: int) -> dict[str, Any]:
+        result = {}
+
         minibox_args = []
         minibox_args.append(f"--time={self.timeout}")
         minibox_args.append(f"--wall-time={self.timeout}")
         minibox_args.append(f"--mem={self.mem}")
         minibox_args.append(f"--processes={self.processes}")
 
-        minibox_args.append(
-            f"--stdin={os.path.abspath(self.stdin) if self.stdin else '/dev/null'}"
-        )
-        minibox_args.append(
-            f"--stdout={os.path.abspath(self.stdout) if self.stdout else '/dev/null'}"
-        )
-        if self.stderr:
-            minibox_args.append(f"--stderr={os.path.abspath(self.stderr)}")
+        for std in ("stdin", "stdout", "stderr"):
+            attr = getattr(self, std)
+            if isinstance(attr, str):
+                minibox_args.append(
+                    f"--{std}={attr}"
+                )
+            elif getattr(self, std) is None and std != "stderr":
+                minibox_args.append(
+                    f"--{std}=/dev/null"
+                )
+
+            if isinstance(attr, int):
+                result[std] = attr
+            else:
+                result[std] = subprocess.PIPE
 
         for key, val in self.env.items():
             minibox_args.append(f"--env={key}={val}")
 
         minibox_args.append(f"--silent")
-        minibox_args.append(f"--meta=-")
-        return minibox_args + ["--run", "--", self.executable] + self.args
+        minibox_args.append(f"--meta={meta_file}")
+
+        result["args"] = [minibox] + minibox_args + ["--run", "--", self.executable] + self.args
+        return result
 
 
 class ProgramsJob(TaskJob):
@@ -207,11 +219,11 @@ class ProgramsJob(TaskJob):
         executable = self._load_compiled(program)
 
         self._access_file(executable)
-        if stdin:
+        if isinstance(stdin, str):
             self._access_file(stdin)
-        if stdout:
+        if isinstance(stdout, str):
             self._access_file(stdout)
-        if stderr:
+        if isinstance(stderr, str):
             self._access_file(stderr)
 
         self._program_pool.append(
@@ -231,11 +243,11 @@ class ProgramsJob(TaskJob):
     def _run_programs(self, print_first_stderr = False) -> list[RunResult]:
         """Runs all programs in execution pool."""
         running_pool = []
-        for prog_pool_item in self._program_pool:
+        meta_files = []
+        for pool_item in self._program_pool:
+            meta_files.append(tempfile.mkstemp()[1])
             running_pool.append(subprocess.Popen(
-                [self._executable("minibox")] + prog_pool_item.to_minibox_args(),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                **pool_item.to_popen(self._executable("minibox"), meta_files[-1]),
             ))
 
         if print_first_stderr:
@@ -249,16 +261,16 @@ class ProgramsJob(TaskJob):
                 self._print(colored(line, self._env, "yellow"), end="", stderr=True)
 
         run_results = []
-        for prog_pool_item, process in zip(self._program_pool, running_pool):
+        for pool_item, (process, meta_file) in zip(self._program_pool, zip(running_pool, meta_files)):
             process.wait()
-            assert process.stdout is not None # To make mypy happy
             assert process.stderr is not None # To make mypy happy
 
-            meta_raw = process.stdout.read().decode().strip().split("\n")
+            with open(meta_file) as f:
+                meta_raw = f.read().strip().split("\n")
             meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
             if not print_first_stderr:
                 stderr_raw = process.stderr.read().decode()
-            stderr_text = None if prog_pool_item.stderr else stderr_raw
+            stderr_text = None if pool_item.stderr else stderr_raw
             if process.returncode == 0:
                 t, wt = float(meta["time"]), float(meta["time-wall"])
                 run_results.append(RunResult(
@@ -266,8 +278,8 @@ class ProgramsJob(TaskJob):
                     0,
                     t,
                     wt,
-                    prog_pool_item.stdout,
-                    prog_pool_item.stderr,
+                    pool_item.stdout,
+                    pool_item.stderr,
                     stderr_text,
                     "Finished successfully",
                 ))
@@ -285,8 +297,8 @@ class ProgramsJob(TaskJob):
                         return_code,
                         t,
                         wt,
-                        prog_pool_item.stdout,
-                        prog_pool_item.stderr,
+                        pool_item.stdout,
+                        pool_item.stderr,
                         stderr_text,
                         meta["message"],
                     ))
@@ -296,16 +308,16 @@ class ProgramsJob(TaskJob):
                         -1,
                         t,
                         wt,
-                        prog_pool_item.stdout,
-                        prog_pool_item.stderr,
+                        pool_item.stdout,
+                        pool_item.stderr,
                         stderr_text,
-                        f"Timeout after {prog_pool_item.timeout}s",
+                        f"Timeout after {pool_item.timeout}s",
                     ))
                 else:
                     raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
                 raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
-        
+
         return run_results
 
     def _run_program(self, program: str, print_first_stderr=False, **kwargs) -> RunResult:
