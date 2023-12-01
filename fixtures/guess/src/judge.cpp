@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
         scanf(" %c %d", &c, &q);
         if (c == '?') {
             printf("%d\n", q - x);
+            fflush(stdout);
         } else if (c == '!') {
             if (x == q) {
                 verdict(1, "OK");
