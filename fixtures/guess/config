@@ -25,9 +25,6 @@ solution_manager=src/stub
 out_check=judge
 out_judge=src/judge
 
-[test00]
-in_globs=
-
 [test01]
 name=Subtask A
 points=10

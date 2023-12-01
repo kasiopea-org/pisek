@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-
+#include <unistd.h>
 using namespace std;
 
-const int MAX_QUERIES = 20;
+const int MAX_QUERIES = 10;
 
 void verdict(int points, string msg){
 	cerr << msg << endl;
@@ -19,12 +19,16 @@ int main(int argc, char** argv) {
     char c;
     int x, q;
     fscanf(fin, "%d", &x);
-
     int queries = 0;
-    while (queries <= MAX_QUERIES) {
+    while (true) {
         scanf(" %c %d", &c, &q);
         if (c == '?') {
-            printf("%d\n", q - x);
+            if (queries == MAX_QUERIES) {
+                printf("-1\n");
+                fflush(stdout);
+                verdict(0, "Queries limit exceeded");
+            }
+            printf("%d\n", (x == q));
             fflush(stdout);
         } else if (c == '!') {
             if (x == q) {
@@ -38,5 +42,4 @@ int main(int argc, char** argv) {
         }
         queries++;
     }
-    verdict(0, "Queries limit exceeded");
 }
