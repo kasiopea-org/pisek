@@ -1,4 +1,4 @@
-# Součet
+# Sum
 
 Add two numbers.
 

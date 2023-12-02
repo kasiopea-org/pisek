@@ -19,8 +19,8 @@ pip install git+https://github.com/kasiopea-org/pisek --upgrade
 ## Testing tasks
 
 First create `config` file as documented [here](https://github.com/kasiopea-org/pisek/blob/master/example-config).
-Here are examples for [Kasiopea mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_kasiopea/config)
-and [CMS mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/soucet_cms/config).
+Here are examples for [Kasiopea mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/sum_kasiopea/config)
+and [CMS mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/sum_cms/config).
 
 ```bash
 pisek

@@ -8,12 +8,12 @@ from pisek.task_config import TaskConfig
 from pisek.jobs.parts.task_job import GENERATED_SUBDIR
 
 
-class TestSoucetCMS(TestFixtureVariant):
+class TestSumCMS(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/soucet_cms/"
+        return "../../fixtures/sum_cms/"
 
 
-class TestMissingGenerator(TestSoucetCMS):
+class TestMissingGenerator(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -21,7 +21,7 @@ class TestMissingGenerator(TestSoucetCMS):
         os.remove(os.path.join(self.task_dir, "gen.py"))
 
 
-class TestGeneratorDoesNotCreateTests(TestSoucetCMS):
+class TestGeneratorDoesNotCreateTests(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -29,7 +29,7 @@ class TestGeneratorDoesNotCreateTests(TestSoucetCMS):
         overwrite_file(self.task_dir, "gen.py", "gen_dummy.py")
 
 
-class TestMissingInputFilesForSubtask(TestSoucetCMS):
+class TestMissingInputFilesForSubtask(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -37,7 +37,7 @@ class TestMissingInputFilesForSubtask(TestSoucetCMS):
         overwrite_file(self.task_dir, "gen.py", "gen_incomplete.py")
 
 
-class TestOldInputsDeleted(TestSoucetCMS):
+class TestOldInputsDeleted(TestSumCMS):
     """Do we get rid of out-of-date inputs?"""
 
     def expecting_success(self):
@@ -61,7 +61,7 @@ class TestOldInputsDeleted(TestSoucetCMS):
         self.assertNotIn("01_outdated.in", os.listdir(self.inputs_dir))
 
 
-class TestScoreCounting(TestSoucetCMS):
+class TestScoreCounting(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -71,7 +71,7 @@ class TestScoreCounting(TestSoucetCMS):
         )
 
 
-class TestPartialJudge(TestSoucetCMS):
+class TestPartialJudge(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -79,7 +79,7 @@ class TestPartialJudge(TestSoucetCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_no_partial.cpp")
 
 
-class TestInvalidJudgeScore(TestSoucetCMS):
+class TestInvalidJudgeScore(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -87,7 +87,7 @@ class TestInvalidJudgeScore(TestSoucetCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestLooseChecker(TestSoucetCMS):
+class TestLooseChecker(TestSumCMS):
     """A checker that cannot distinguish between subtasks."""
 
     def expecting_success(self):
@@ -97,7 +97,7 @@ class TestLooseChecker(TestSoucetCMS):
         overwrite_file(self.task_dir, "check.py", "check_loose.py")
 
 
-class TestStrictChecker(TestSoucetCMS):
+class TestStrictChecker(TestSumCMS):
     """A checker whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
@@ -107,7 +107,7 @@ class TestStrictChecker(TestSoucetCMS):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
-class TestDirtySamle(TestSoucetCMS):
+class TestDirtySamle(TestSumCMS):
     """Sample without newline at the end."""
 
     def expecting_success(self):

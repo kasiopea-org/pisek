@@ -20,7 +20,7 @@ def quote_test_suite_output(l):
 
 class TestCLI(TestFixture):
     def fixture_path(self):
-        return "../../fixtures/soucet_cms/"
+        return "../../fixtures/sum_cms/"
 
     def args(self):
         return ["--timeout", "1"]

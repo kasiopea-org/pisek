@@ -10,12 +10,12 @@ import os
 from pisek.self_tests.util import TestFixtureVariant, overwrite_file, modify_config
 
 
-class TestSoucetKasiopea(TestFixtureVariant):
+class TestSumKasiopea(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/soucet_kasiopea/"
+        return "../../fixtures/sum_kasiopea/"
 
 
-class TestMissingSampleIn(TestSoucetKasiopea):
+class TestMissingSampleIn(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -23,7 +23,7 @@ class TestMissingSampleIn(TestSoucetKasiopea):
         os.remove(os.path.join(self.task_dir, "sample.in"))
 
 
-class TestMissingSampleOut(TestSoucetKasiopea):
+class TestMissingSampleOut(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -31,7 +31,7 @@ class TestMissingSampleOut(TestSoucetKasiopea):
         os.remove(os.path.join(self.task_dir, "sample.out"))
 
 
-class TestWrongSampleOut(TestSoucetKasiopea):
+class TestWrongSampleOut(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -40,7 +40,7 @@ class TestWrongSampleOut(TestSoucetKasiopea):
             f.write("0\n")
 
 
-class TestMissingGenerator(TestSoucetKasiopea):
+class TestMissingGenerator(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -48,7 +48,7 @@ class TestMissingGenerator(TestSoucetKasiopea):
         os.remove(os.path.join(self.task_dir, "gen.cpp"))
 
 
-class TestBadGenerator(TestSoucetKasiopea):
+class TestBadGenerator(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -60,7 +60,7 @@ class TestBadGenerator(TestSoucetKasiopea):
             f.write("int main() { return 0; }\n")
 
 
-class TestPythonGenerator(TestSoucetKasiopea):
+class TestPythonGenerator(TestSumKasiopea):
     def expecting_success(self):
         return True
 
@@ -68,7 +68,7 @@ class TestPythonGenerator(TestSoucetKasiopea):
         overwrite_file(self.task_dir, "gen.cpp", "gen_2.py", new_file_name="gen.py")
 
 
-class TestNonHexaPythonGenerator(TestSoucetKasiopea):
+class TestNonHexaPythonGenerator(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -85,7 +85,7 @@ class TestNonHexaPythonGenerator(TestSoucetKasiopea):
             f.write("\n".join(new_program))
 
 
-class TestNonHexaGenerator(TestSoucetKasiopea):
+class TestNonHexaGenerator(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -105,7 +105,7 @@ class TestNonHexaGenerator(TestSoucetKasiopea):
             f.write("\n".join(new_program))
 
 
-class TestScoreCounting(TestSoucetKasiopea):
+class TestScoreCounting(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -115,7 +115,7 @@ class TestScoreCounting(TestSoucetKasiopea):
         )
 
 
-class TestJudge(TestSoucetKasiopea):
+class TestJudge(TestSumKasiopea):
     def expecting_success(self):
         return True
 
@@ -127,7 +127,7 @@ class TestJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestJudgeWithNoInput(TestSoucetKasiopea):
+class TestJudgeWithNoInput(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -140,7 +140,7 @@ class TestJudgeWithNoInput(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestJudgeWithNoOutput(TestSoucetKasiopea):
+class TestJudgeWithNoOutput(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -153,7 +153,7 @@ class TestJudgeWithNoOutput(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestPythonJudge(TestSoucetKasiopea):
+class TestPythonJudge(TestSumKasiopea):
     def expecting_success(self):
         return True
 
@@ -165,7 +165,7 @@ class TestPythonJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestBadJudge(TestSoucetKasiopea):
+class TestBadJudge(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -177,7 +177,7 @@ class TestBadJudge(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestPythonCRLF(TestSoucetKasiopea):
+class TestPythonCRLF(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -196,7 +196,7 @@ class TestPythonCRLF(TestSoucetKasiopea):
             f.write("\r\n".join(new_program))
 
 
-class TestLooseChecker(TestSoucetKasiopea):
+class TestLooseChecker(TestSumKasiopea):
     """A checker that cannot distinguish between subtasks."""
 
     def expecting_success(self):
@@ -206,7 +206,7 @@ class TestLooseChecker(TestSoucetKasiopea):
         overwrite_file(self.task_dir, "check.py", "check_loose.py")
 
 
-class TestStrictChecker(TestSoucetKasiopea):
+class TestStrictChecker(TestSumKasiopea):
     """A checker whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
@@ -216,7 +216,7 @@ class TestStrictChecker(TestSoucetKasiopea):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
-class TestBigInput(TestSoucetKasiopea):
+class TestBigInput(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -227,7 +227,7 @@ class TestBigInput(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestDirtySamle(TestSoucetKasiopea):
+class TestDirtySamle(TestSumKasiopea):
     """Sample without newline at the end."""
 
     def expecting_success(self):
@@ -239,7 +239,7 @@ class TestDirtySamle(TestSoucetKasiopea):
             f.write("\n".join(sample))
 
 
-class TestBigOutput(TestSoucetKasiopea):
+class TestBigOutput(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -250,7 +250,7 @@ class TestBigOutput(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestExtraConfigKeys(TestSoucetKasiopea):
+class TestExtraConfigKeys(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -264,7 +264,7 @@ class TestExtraConfigKeys(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestExtraConfigKeysInSubtask(TestSoucetKasiopea):
+class TestExtraConfigKeysInSubtask(TestSumKasiopea):
     def expecting_success(self):
         return False
 
@@ -278,7 +278,7 @@ class TestExtraConfigKeysInSubtask(TestSoucetKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestExtraConfigSection(TestSoucetKasiopea):
+class TestExtraConfigSection(TestSumKasiopea):
     def expecting_success(self):
         return False
 
