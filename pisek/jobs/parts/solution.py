@@ -460,4 +460,4 @@ class RunCommunication(RunJudge, RunSolution):
             )
 
     def _judging_message(self) -> str:
-        return f"solution {self.solution} on input {self.input_name}"
+        return f"solution {os.path.basename(self.solution)} on input {self.input_name}"

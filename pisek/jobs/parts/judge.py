@@ -221,7 +221,7 @@ class RunJudge(ProgramsJob):
         elif self.result.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {self.input_name}"
 
-        text = f"{head}\n{tab(self.result.output)}"
+        text = f"{head}:\n{tab(self.result.output)}"
         if self.result.diff != "":
             text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
 
