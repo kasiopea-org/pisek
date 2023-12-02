@@ -439,14 +439,46 @@ class RunCommunication(RunJudge, RunSolution):
         self._judge_run_result = judge_res
         return sol_res
 
+    def _load_stderr(self, run_result: RunResult) -> dict[str, Any]:
+        KNOWN_METADATA = {"POINTS": float}
+        lines = run_result.raw_stderr().split("\n")
+        res = {"msg": lines[0]}
+        for line in lines[1:]:
+            if line.strip() == "":
+                continue
+            if line.count("=") != 1:
+                raise PipelineItemFailure(
+                    f"Metadata line must be in format 'KEY=value': {line}"
+                )
+            key, val = map(str.strip, line.split("="))
+            if key not in KNOWN_METADATA:
+                raise PipelineItemFailure(f"Unknown key {key}")
+
+            try:
+                res[key] = KNOWN_METADATA[key](val)
+            except ValueError:
+                raise PipelineItemFailure(f"Invalid value '{val}' for metadata {key}")
+
+        return res
+
     def _judge(self) -> SolutionResult:
         if self._judge_run_result.returncode == 42:
-            return SolutionResult(
-                Verdict.ok,
-                1.0,
-                self._judge_run_result.raw_stderr(),
-                self._quote_program(self._judge_run_result),
-            )
+            metadata = self._load_stderr(self._judge_run_result)
+            points = metadata.get("POINTS", 1.0)
+            if points == 1.0:
+                return SolutionResult(
+                    Verdict.ok,
+                    1.0,
+                    self._judge_run_result.raw_stderr(),
+                    self._quote_program(self._judge_run_result),
+                )
+            else:
+                return SolutionResult(
+                    Verdict.partial,
+                    points,
+                    self._judge_run_result.raw_stderr(),
+                    self._quote_program(self._judge_run_result),
+                )
         elif self._judge_run_result.returncode == 43:
             return SolutionResult(
                 Verdict.wrong_answer,
