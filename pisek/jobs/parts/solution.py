@@ -60,8 +60,8 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in testcases:
-                    run_sol : ProgramsJob
-                    run_judge: ProgramsJob
+                    run_sol : RunSolution
+                    run_judge: RunJudge
                     if self._env.config.task_type == "batch":
                         run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
                         jobs += [run_sol, run_judge]
@@ -81,8 +81,8 @@ class SolutionManager(TaskJobManager):
 
     def _create_batch_jobs(
         self, sub_num: int, inp: str
-    ) -> tuple["RunSolution", RunJudge]:
-        run_solution = RunSolution(self._env, self._solution_file, self._timeout, inp)
+    ) -> tuple["RunSolution", RunBatchJudge]:
+        run_solution = RunBatchSolution(self._env, self._solution_file, self._timeout, inp)
         run_solution.add_prerequisite(self._compile_job)
 
         if sub_num == "0":
@@ -108,7 +108,7 @@ class SolutionManager(TaskJobManager):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: str):
+    def _create_communication_jobs(self, inp: str) -> 'RunCommunication':
         return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
 
     def _update(self):
@@ -294,8 +294,8 @@ class SubtaskJobGroup:
             return (1.0, ""), (text, text)
         
         result_msg = (
-            self._job_msg(all_jobs[all_points.index(max(all_points))]),
-            self._job_msg(all_jobs[all_points.index(min(all_points))]),
+            all_jobs[all_points.index(max(all_points))].message(),
+            all_jobs[all_points.index(min(all_points))].message(),
         )
 
         if fail_mode == "all" and self.num > 0:  # Don't check this on samples
@@ -309,33 +309,6 @@ class SubtaskJobGroup:
     def cancel(self):
         for job in self.new_run_jobs:
             job.cancel()
-
-    def _job_msg(self, job: Union[RunBatchJudge, 'RunCommunication']) -> str:
-        res = job.result
-        inp = os.path.basename(job.input_name)
-        if isinstance(job, RunBatchJudge):
-            out = os.path.basename(job.output_name)
-        else:
-            out = f"{job.solution} on {inp}"
-
-        if res is None:
-            raise RuntimeError(f"Job {job.name} has not finished yet.")
-        judge = self._env.config.judge_type.capitalize()
-        if res.verdict == Verdict.ok:
-            head = f"{judge} accepted {out}"
-        elif res.verdict == Verdict.wrong_answer:
-            head = f"{judge} rejected {out}"
-        elif res.verdict == Verdict.partial:
-            head = f"{judge} partially accepted {out}"
-        elif res.verdict == Verdict.error:
-            head = f"Solution failed on input {inp}"
-        elif res.verdict == Verdict.timeout:
-            head = f"Solution did timeout on input {inp}"
-
-        text = f"{head}:\n{tab(res.output)}"
-        if res.diff != "":
-            text += "\n" + tab(f"diff:\n{tab(res.diff)}")
-        return text
 
 
 class RunPrimarySolutionMan(TaskJobManager):
@@ -351,7 +324,7 @@ class RunPrimarySolutionMan(TaskJobManager):
 
         jobs: list[Job] = [
             compile := Compile(self._env, solution, True, self._compile_args()),
-            run_solution := RunSolution(
+            run_solution := RunBatchSolution(
                 self._env,
                 solution,
                 self._get_timeout("solve"),
@@ -372,47 +345,57 @@ class RunSolution(ProgramsJob):
 
     def __init__(
         self,
+        name: str,
+        env: Env,
+        solution: str,
+        timeout: float,
+        **kwargs,
+    ) -> None:
+        super().__init__(env, name, **kwargs)
+        self.solution = solution
+        self.timeout = timeout
+
+
+class RunBatchSolution(RunSolution):
+    def __init__(
+        self,
         env: Env,
         solution: str,
         timeout: float,
         input_name: str,
         output_name: Optional[str] = None,
+        **kwargs
     ) -> None:
         name = RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
             r"(.*)", input_name, 1
         )
-        super().__init__(env, name)
-        self.solution = solution
+        super().__init__(env, name, solution, timeout, input_name, **kwargs)
         self.input_name = self._input(input_name)
         self.output_name = (
             self._output(output_name)
             if output_name
             else self._output_from_input(self.input_name, solution)
         )
-        self.timeout = timeout
-
-    def _run_solution(self) -> RunResult:
+    
+    def _run(self) -> RunResult:
         return self._run_program(
             self.solution, stdin=self.input_name, stdout=self.output_name, timeout=self.timeout
         )
 
-    def _run(self) -> Optional[RunResult]:
-        result = self._run_solution()
-        if result is None:
-            return None
-        return result
 
-class RunCommunication(RunJudge):
-    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str, expected_points: Optional[float] = None):
+class RunCommunication(RunJudge, RunSolution):
+    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str, expected_points: Optional[float] = None, **kwargs):
         super().__init__(
-            env,
-            RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(r"(.*)", input_name, 1),
-            judge,
-            input_name,
-            expected_points
+            env=env,
+            name=RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(r"(.*)", input_name, 1),
+            judge=judge,
+            input_name=input_name,
+            expected_points=expected_points,
+            solution=solution,
+            timeout=timeout,
+            **kwargs
         )
         self.solution = solution
-        self.judge = judge
         self.timeout = timeout
 
     def _get_solution_run_res(self) -> RunResult:
@@ -444,8 +427,8 @@ class RunCommunication(RunJudge):
             )
         else:
             raise self._create_program_failure(
-                f"Judge failed on output {self.output_name}:", self._judge_run_result
+                f"Judge failed on {self._judging_message()}:", self._judge_run_result
             )
     
-    def _unexpected_points_str(self) -> str:
-        return f"Solution {self.solution} on input {self.input_name}"
+    def _judging_message(self) -> str:
+        return f"solution {self.solution} on input {self.input_name}"
