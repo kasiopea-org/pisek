@@ -1,11 +1,11 @@
 # Součet
 
-Sečti dvě čísla.
+Add two numbers.
 
-- Subtask 1 (2 body): 0 <= x, y <= 1e9
-- Subtask 2 (2 body): -1e9 <= x, y <= 1e9
-- Subtask 3 (6 bodů): -1e18, <= x, y <= 1e18
+- Subtask 1 (2 points): 0 <= x, y <= 1e9
+- Subtask 2 (2 points): -1e9 <= x, y <= 1e9
+- Subtask 3 (6 points): -1e18, <= x, y <= 1e18
 
-Judge funguje tak, že pokud se řešení shoduje v absolutní hodnotě
-(tj. |a| + |b| = vypsane reseni), pak udělí za subtask polovinu bodů.
-Tím pádem je možné získat i třeba 3 body.
+Judge will give full points for correct result or
+half points if solution matches absolute value: |a| + |b| = result
+Therefore it is possible to get 3 points.
