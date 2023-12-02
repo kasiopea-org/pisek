@@ -144,8 +144,11 @@ class CheckerJob(ProgramsJob):
         input_name: str,
         subtask: int,
         expected: Optional[RunResultKind],
+        **kwargs,
     ):
-        super().__init__(env, f"Check {input_name} on subtask {subtask}")
+        super().__init__(
+            env=env, name=f"Check {input_name} on subtask {subtask}", **kwargs
+        )
         self.checker = checker
         self.subtask = subtask
         self.input_name = input_name
@@ -153,7 +156,9 @@ class CheckerJob(ProgramsJob):
         self.expected = expected
 
     def _check(self) -> RunResult:
-        return self._run_program(self.checker, args=[str(self.subtask)], stdin=self.input_file)
+        return self._run_program(
+            self.checker, args=[str(self.subtask)], stdin=self.input_file
+        )
 
     def _run(self) -> RunResult:
         result = self._check()

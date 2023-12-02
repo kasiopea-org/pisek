@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import os
 import tempfile
-from typing import Optional, Any
+from typing import Optional, Any, Union
 import signal
 import subprocess
 import yaml
@@ -49,7 +49,7 @@ class RunResult:
         returncode: int,
         time: float,
         wall_time: float,
-        stdout_file: Optional[str] = None,
+        stdout_file: Optional[Union[str, int]] = None,
         stderr_file: Optional[str] = None,
         stderr_text: Optional[str] = None,
         status: str = "",
@@ -146,13 +146,13 @@ class ProgramPoolItem:
     timeout: float
     mem: int
     processes: int
-    stdin: Optional[str]
-    stdout: Optional[str]
+    stdin: Optional[Union[str, int]]
+    stdout: Optional[Union[str, int]]
     stderr: Optional[str]
     env: dict[str, str] = field(default_factory=lambda: {})
 
     def to_popen(self, minibox: str, meta_file: str) -> dict[str, Any]:
-        result = {}
+        result: dict[str, Any] = {}
 
         minibox_args = []
         minibox_args.append(f"--time={self.timeout}")
@@ -163,13 +163,9 @@ class ProgramPoolItem:
         for std in ("stdin", "stdout", "stderr"):
             attr = getattr(self, std)
             if isinstance(attr, str):
-                minibox_args.append(
-                    f"--{std}={attr}"
-                )
+                minibox_args.append(f"--{std}={attr}")
             elif getattr(self, std) is None and std != "stderr":
-                minibox_args.append(
-                    f"--{std}=/dev/null"
-                )
+                minibox_args.append(f"--{std}=/dev/null")
 
             if isinstance(attr, int):
                 result[std] = attr
@@ -182,15 +178,17 @@ class ProgramPoolItem:
         minibox_args.append(f"--silent")
         minibox_args.append(f"--meta={meta_file}")
 
-        result["args"] = [minibox] + minibox_args + ["--run", "--", self.executable] + self.args
+        result["args"] = (
+            [minibox] + minibox_args + ["--run", "--", self.executable] + self.args
+        )
         return result
 
 
 class ProgramsJob(TaskJob):
     """Job that deals with a program."""
 
-    def __init__(self, env: Env, name: str) -> None:
-        super().__init__(env, name)
+    def __init__(self, env: Env, name: str, **kwargs) -> None:
+        super().__init__(env=env, name=name, **kwargs)
         self._program_pool: list[ProgramPoolItem] = []
 
     def _load_compiled(self, program: str) -> str:
@@ -210,8 +208,8 @@ class ProgramsJob(TaskJob):
         timeout: float = DEFAULT_TIMEOUT,
         mem: int = 0,
         processes: int = 1,
-        stdin: Optional[str] = None,
-        stdout: Optional[str] = None,
+        stdin: Optional[Union[str, int]] = None,
+        stdout: Optional[Union[str, int]] = None,
         stderr: Optional[str] = None,
         env={},
     ) -> None:
@@ -240,20 +238,22 @@ class ProgramsJob(TaskJob):
             )
         )
 
-    def _run_programs(self, print_first_stderr = False) -> list[RunResult]:
+    def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
         """Runs all programs in execution pool."""
         running_pool = []
         meta_files = []
         for pool_item in self._program_pool:
             meta_files.append(tempfile.mkstemp()[1])
-            running_pool.append(subprocess.Popen(
-                **pool_item.to_popen(self._executable("minibox"), meta_files[-1]),
-            ))
+            running_pool.append(
+                subprocess.Popen(
+                    **pool_item.to_popen(self._executable("minibox"), meta_files[-1]),
+                )
+            )
 
         if print_first_stderr:
             stderr_raw = ""
             while True:
-                assert running_pool[0].stderr is not None # To make mypy happy
+                assert running_pool[0].stderr is not None  # To make mypy happy
                 line = running_pool[0].stderr.read().decode()
                 if not line:
                     break
@@ -261,9 +261,11 @@ class ProgramsJob(TaskJob):
                 self._print(colored(line, self._env, "yellow"), end="", stderr=True)
 
         run_results = []
-        for pool_item, (process, meta_file) in zip(self._program_pool, zip(running_pool, meta_files)):
+        for pool_item, (process, meta_file) in zip(
+            self._program_pool, zip(running_pool, meta_files)
+        ):
             process.wait()
-            assert process.stderr is not None # To make mypy happy
+            assert process.stderr is not None  # To make mypy happy
 
             with open(meta_file) as f:
                 meta_raw = f.read().strip().split("\n")
@@ -273,16 +275,18 @@ class ProgramsJob(TaskJob):
             stderr_text = None if pool_item.stderr else stderr_raw
             if process.returncode == 0:
                 t, wt = float(meta["time"]), float(meta["time-wall"])
-                run_results.append(RunResult(
-                    RunResultKind.OK,
-                    0,
-                    t,
-                    wt,
-                    pool_item.stdout,
-                    pool_item.stderr,
-                    stderr_text,
-                    "Finished successfully",
-                ))
+                run_results.append(
+                    RunResult(
+                        RunResultKind.OK,
+                        0,
+                        t,
+                        wt,
+                        pool_item.stdout,
+                        pool_item.stderr,
+                        stderr_text,
+                        "Finished successfully",
+                    )
+                )
             elif process.returncode == 1:
                 t, wt = float(meta["time"]), float(meta["time-wall"])
                 if meta["status"] in ("RE", "SG"):
@@ -292,27 +296,31 @@ class ProgramsJob(TaskJob):
                         return_code = int(meta["exitsig"])
                         meta["message"] += f" ({signal.Signals(return_code).name})"
 
-                    run_results.append(RunResult(
-                        RunResultKind.RUNTIME_ERROR,
-                        return_code,
-                        t,
-                        wt,
-                        pool_item.stdout,
-                        pool_item.stderr,
-                        stderr_text,
-                        meta["message"],
-                    ))
+                    run_results.append(
+                        RunResult(
+                            RunResultKind.RUNTIME_ERROR,
+                            return_code,
+                            t,
+                            wt,
+                            pool_item.stdout,
+                            pool_item.stderr,
+                            stderr_text,
+                            meta["message"],
+                        )
+                    )
                 elif meta["status"] == "TO":
-                    run_results.append(RunResult(
-                        RunResultKind.TIMEOUT,
-                        -1,
-                        t,
-                        wt,
-                        pool_item.stdout,
-                        pool_item.stderr,
-                        stderr_text,
-                        f"Timeout after {pool_item.timeout}s",
-                    ))
+                    run_results.append(
+                        RunResult(
+                            RunResultKind.TIMEOUT,
+                            -1,
+                            t,
+                            wt,
+                            pool_item.stdout,
+                            pool_item.stderr,
+                            stderr_text,
+                            f"Timeout after {pool_item.timeout}s",
+                        )
+                    )
                 else:
                     raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
@@ -320,7 +328,9 @@ class ProgramsJob(TaskJob):
 
         return run_results
 
-    def _run_program(self, program: str, print_first_stderr=False, **kwargs) -> RunResult:
+    def _run_program(
+        self, program: str, print_first_stderr=False, **kwargs
+    ) -> RunResult:
         """Runs program."""
         self._load_program(program, **kwargs)
         return self._run_programs(print_first_stderr)[0]

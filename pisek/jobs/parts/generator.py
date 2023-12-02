@@ -116,8 +116,9 @@ class OnlineGeneratorJob(ProgramsJob):
         input_file: str,
         subtask: int,
         seed: int,
+        **kwargs,
     ) -> None:
-        super().__init__(env, name)
+        super().__init__(env=env, name=name, **kwargs)
         self.generator = generator
         self.subtask = subtask
         self.seed = seed
@@ -135,7 +136,10 @@ class OnlineGeneratorJob(ProgramsJob):
         hexa_seed = f"{seed:x}"
 
         result = self._run_program(
-            self.generator, args=[difficulty, hexa_seed], stdout=input_file, print_first_stderr=True
+            self.generator,
+            args=[difficulty, hexa_seed],
+            stdout=input_file,
+            print_first_stderr=True,
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -149,10 +153,22 @@ class OnlineGeneratorGenerate(OnlineGeneratorJob):
     """Generates single input using OnlineGenerator."""
 
     def __init__(
-        self, env: Env, generator: str, input_file: str, subtask: int, seed: int
+        self,
+        env: Env,
+        generator: str,
+        input_file: str,
+        subtask: int,
+        seed: int,
+        **kwargs,
     ) -> None:
         super().__init__(
-            env, f"Generate {input_file}", generator, input_file, subtask, seed
+            env=env,
+            name=f"Generate {input_file}",
+            generator=generator,
+            input_file=input_file,
+            subtask=subtask,
+            seed=seed,
+            **kwargs,
         )
 
     def _run(self) -> RunResult:
@@ -163,15 +179,22 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     """Test whether generating given input again has same result."""
 
     def __init__(
-        self, env: Env, generator: str, input_file: str, subtask: int, seed: int
+        self,
+        env: Env,
+        generator: str,
+        input_file: str,
+        subtask: int,
+        seed: int,
+        **kwargs,
     ) -> None:
         super().__init__(
-            env,
-            f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
-            generator,
-            input_file,
-            subtask,
-            seed,
+            env=env,
+            name=f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
+            generator=generator,
+            input_file=input_file,
+            subtask=subtask,
+            seed=seed,
+            **kwargs,
         )
 
     def _run(self) -> None:
@@ -188,7 +211,14 @@ class OnlineGeneratorRespectsSeed(TaskJob):
     """Test whether two files generated with different seed are different."""
 
     def __init__(
-        self, env: Env, subtask: int, seed1: int, seed2: int, file1: str, file2: str
+        self,
+        env: Env,
+        subtask: int,
+        seed1: int,
+        seed2: int,
+        file1: str,
+        file2: str,
+        **kwargs,
     ) -> None:
         self.file1, self.file2 = file1, file2
         self.file1_name, self.file2_name = map(
@@ -197,8 +227,9 @@ class OnlineGeneratorRespectsSeed(TaskJob):
         self.subtask = subtask
         self.seed1, self.seed2 = seed1, seed2
         super().__init__(
-            env,
-            f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)",
+            env=env,
+            name=f"Generator respects seeds ({self.file1_name} and {self.file2_name} are different)",
+            **kwargs,
         )
 
     def _run(self) -> None:
@@ -212,8 +243,8 @@ class OnlineGeneratorRespectsSeed(TaskJob):
 class OfflineGeneratorGenerate(ProgramsJob):
     """Job that generates all inputs using OfflineGenerator."""
 
-    def __init__(self, env: Env, generator: str) -> None:
-        super().__init__(env, "Generate inputs")
+    def __init__(self, env: Env, generator: str, **kwargs) -> None:
+        super().__init__(env=env, name="Generate inputs", **kwargs)
         self.generator = generator
 
     def _subtask_inputs(self, subtask: str):
@@ -230,7 +261,9 @@ class OfflineGeneratorGenerate(ProgramsJob):
         os.makedirs(self._generated_input("."))
 
         gen_dir = self._generated_input(".")
-        run_result = self._run_program(self.generator, args=[gen_dir], print_first_stderr=True)
+        run_result = self._run_program(
+            self.generator, args=[gen_dir], print_first_stderr=True
+        )
         self._access_file(self._generated_input("."))
 
         if run_result.kind != RunResultKind.OK:

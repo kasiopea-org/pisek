@@ -143,6 +143,7 @@ JUDGE_JOB_NAME = r"Judge (\w+)"
 
 class RunJudge(ProgramsJob):
     """Runs judge on single input. (Abstract class)"""
+
     def __init__(
         self,
         env: Env,
@@ -152,7 +153,7 @@ class RunJudge(ProgramsJob):
         expected_points: Optional[float],
         **kwargs,
     ) -> None:
-        super().__init__(env, name, **kwargs)
+        super().__init__(env=env, name=name, **kwargs)
         self.judge = judge
         self.input_name = input_name
         self.input = self._input(input_name)
@@ -197,17 +198,16 @@ class RunJudge(ProgramsJob):
             and result.points != self.expected_points
         ):
             raise PipelineItemFailure(
-                self._judging_message_capitalized() + \
-                f"should have got {self.expected_points} points but got {result.points} points."
+                self._judging_message_capitalized()
+                + f"should have got {self.expected_points} points but got {result.points} points."
             )
 
         return result
 
-
     def message(self) -> str:
         if self.result is None:
             raise RuntimeError(f"Job {self.name} has not finished yet.")
-        
+
         judge = os.path.basename(self.judge)
         judging = self._judging_message()
         if self.result.verdict == Verdict.ok:
@@ -220,15 +220,17 @@ class RunJudge(ProgramsJob):
             head = f"Solution failed on input {self.input_name}"
         elif self.result.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {self.input_name}"
-        
+
         text = f"{head}\n{tab(self.result.output)}"
         if self.result.diff != "":
             text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
 
         return text
 
+
 class RunBatchJudge(RunJudge):
     """Runs batch judge on single input. (Abstract class)"""
+
     def __init__(
         self,
         env: Env,
@@ -237,7 +239,7 @@ class RunBatchJudge(RunJudge):
         output_name: str,
         correct_output: str,
         expected_points: Optional[float],
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(
             env=env,
@@ -245,16 +247,18 @@ class RunBatchJudge(RunJudge):
             judge=judge,
             input_name=input_name,
             expected_points=expected_points,
-            **kwargs
+            **kwargs,
         )
         self.output_name = output_name
-        self.output = (self._invalid_output if output_name.endswith(".invalid") else self._output)(output_name)
+        self.output = (
+            self._invalid_output if output_name.endswith(".invalid") else self._output
+        )(output_name)
         self.correct_output_name = correct_output
         self.correct_output = self._output(correct_output)
 
     def _get_solution_run_res(self) -> RunResult:
         if "run_solution" in self.prerequisites_results:
-            return self.prerequisites_results["run_solution"] 
+            return self.prerequisites_results["run_solution"]
         else:
             # There is no solution (judging samples)
             # XXX: We only care about the kind
@@ -265,9 +269,7 @@ class RunBatchJudge(RunJudge):
 
     def _nice_diff(self) -> str:
         """Create a nice diff between output and correct output."""
-        diff = self._short_text(
-            self._diff_files(self.correct_output, self.output)
-        )
+        diff = self._short_text(self._diff_files(self.correct_output, self.output))
         return colored(diff, self._env, "yellow")
 
 
@@ -287,7 +289,7 @@ class RunDiffJudge(RunBatchJudge):
             input_name=input_name,
             output_name=output_name,
             correct_output=correct_output,
-            expected_points=expected_points
+            expected_points=expected_points,
         )
 
     def _judge(self) -> SolutionResult:
@@ -334,7 +336,7 @@ class RunKasiopeaJudge(RunBatchJudge):
         subtask: int,
         seed: str,
         expected_points: Optional[float],
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(
             env=env,
@@ -343,7 +345,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             output_name=output_name,
             correct_output=correct_output,
             expected_points=expected_points,
-            **kwargs
+            **kwargs,
         )
         self.subtask = subtask
         self.seed = seed
@@ -390,7 +392,7 @@ class RunCMSJudge(RunBatchJudge):
         output_name: str,
         correct_output: str,
         expected_points: Optional[float],
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(
             env=env,
@@ -399,7 +401,7 @@ class RunCMSJudge(RunBatchJudge):
             output_name=output_name,
             correct_output=correct_output,
             expected_points=expected_points,
-            **kwargs
+            **kwargs,
         )
 
     def _judge(self) -> SolutionResult:

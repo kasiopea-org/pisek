@@ -146,7 +146,9 @@ class TaskConfig(BaseEnv):
         self["checker"] = config.get("tests", "checker", fallback=None)
         self["judge_type"] = config.get("tests", "out_check", fallback="diff")
         if self.task_type == "communication" and self.judge_type != "judge":
-            raise TaskConfigError(f"For communication task 'out_check' must be 'judge'.")
+            raise TaskConfigError(
+                f"For communication task 'out_check' must be 'judge'."
+            )
 
         if self.judge_type == "judge":
             self["judge"] = config.get("tests", "out_judge")

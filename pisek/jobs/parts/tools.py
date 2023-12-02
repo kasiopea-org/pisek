@@ -40,8 +40,8 @@ class ToolsManager(TaskJobManager):
 class PrepareMinibox(TaskJob):
     """Compiles minibox."""
 
-    def __init__(self, env: Env) -> None:
-        super().__init__(env, "Prepare Minibox")
+    def __init__(self, env: Env, **kwargs) -> None:
+        super().__init__(env=env, name="Prepare Minibox", **kwargs)
 
     def _run(self):
         source = files("pisek").joinpath("tools/minibox.c")
@@ -71,8 +71,8 @@ class PrepareMinibox(TaskJob):
 class PrepareTextPreprocessor(TaskJob):
     """Copies Text Preprocessor."""
 
-    def __init__(self, env: Env) -> None:
-        super().__init__(env, "Prepare text preprocessor")
+    def __init__(self, env: Env, **kwargs) -> None:
+        super().__init__(env=env, name="Prepare text preprocessor", **kwargs)
 
     def _run(self):
         source = files("pisek").joinpath("tools/text-preproc.c")
@@ -110,8 +110,10 @@ class SanitizeAbstract(ProgramsJob):
 class Sanitize(SanitizeAbstract):
     """Sanitize text file using Text Preprocessor."""
 
-    def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
-        super().__init__(env, f"Sanitize {input_} -> {output}")
+    def __init__(
+        self, env: Env, input_: str, output: Optional[str] = None, **kwargs
+    ) -> None:
+        super().__init__(env=env, name=f"Sanitize {input_} -> {output}", **kwargs)
         self.input = self._data(input_)
         self.output = self._data(output if output is not None else input_ + ".clean")
 
@@ -122,8 +124,10 @@ class Sanitize(SanitizeAbstract):
 class IsClean(SanitizeAbstract):
     """Check that file is same after using Text Preprocessor."""
 
-    def __init__(self, env: Env, input_: str, output: Optional[str] = None) -> None:
-        super().__init__(env, f"{os.path.basename(input_)} is clean")
+    def __init__(
+        self, env: Env, input_: str, output: Optional[str] = None, **kwargs
+    ) -> None:
+        super().__init__(env=env, name=f"{os.path.basename(input_)} is clean", **kwargs)
         self.input = input_
         self.output = self._sanitized(
             output if output is not None else os.path.basename(input_) + ".clean"

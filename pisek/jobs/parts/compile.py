@@ -28,9 +28,14 @@ class Compile(ProgramsJob):
     """Job that compiles a program."""
 
     def __init__(
-        self, env: Env, program: str, use_manager: bool = False, compile_args: dict = {}
+        self,
+        env: Env,
+        program: str,
+        use_manager: bool = False,
+        compile_args: dict = {},
+        **kwargs,
     ) -> None:
-        super().__init__(env, f"Compile {os.path.basename(program)}")
+        super().__init__(env=env, name=f"Compile {os.path.basename(program)}", **kwargs)
         self.program = program
         self.use_manager = use_manager
         self._compile_args = compile_args

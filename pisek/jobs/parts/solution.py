@@ -60,7 +60,7 @@ class SolutionManager(TaskJobManager):
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp not in testcases:
-                    run_sol : RunSolution
+                    run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
                         run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
@@ -82,7 +82,9 @@ class SolutionManager(TaskJobManager):
     def _create_batch_jobs(
         self, sub_num: int, inp: str
     ) -> tuple["RunSolution", RunBatchJudge]:
-        run_solution = RunBatchSolution(self._env, self._solution_file, self._timeout, inp)
+        run_solution = RunBatchSolution(
+            self._env, self._solution_file, self._timeout, inp
+        )
         run_solution.add_prerequisite(self._compile_job)
 
         if sub_num == "0":
@@ -108,8 +110,10 @@ class SolutionManager(TaskJobManager):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: str) -> 'RunCommunication':
-        return RunCommunication(self._env, self._solution_file, self._judge, self._timeout, inp)
+    def _create_communication_jobs(self, inp: str) -> "RunCommunication":
+        return RunCommunication(
+            self._env, self._solution_file, self._judge, self._timeout, inp
+        )
 
     def _update(self):
         expected = self._env.config.solutions[self.solution].subtasks
@@ -292,7 +296,7 @@ class SubtaskJobGroup:
         if len(all_points) == 0:
             text = f"No inputs for subtask {self.num}"
             return (1.0, ""), (text, text)
-        
+
         result_msg = (
             all_jobs[all_points.index(max(all_points))].message(),
             all_jobs[all_points.index(min(all_points))].message(),
@@ -345,13 +349,13 @@ class RunSolution(ProgramsJob):
 
     def __init__(
         self,
-        name: str,
         env: Env,
+        name: str,
         solution: str,
         timeout: float,
         **kwargs,
     ) -> None:
-        super().__init__(env, name, **kwargs)
+        super().__init__(env=env, name=name, **kwargs)
         self.solution = solution
         self.timeout = timeout
 
@@ -364,36 +368,52 @@ class RunBatchSolution(RunSolution):
         timeout: float,
         input_name: str,
         output_name: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         name = RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
             r"(.*)", input_name, 1
         )
-        super().__init__(env, name, solution, timeout, input_name, **kwargs)
+        super().__init__(
+            env=env, name=name, solution=solution, timeout=timeout, **kwargs
+        )
         self.input_name = self._input(input_name)
         self.output_name = (
             self._output(output_name)
             if output_name
             else self._output_from_input(self.input_name, solution)
         )
-    
+
     def _run(self) -> RunResult:
         return self._run_program(
-            self.solution, stdin=self.input_name, stdout=self.output_name, timeout=self.timeout
+            self.solution,
+            stdin=self.input_name,
+            stdout=self.output_name,
+            timeout=self.timeout,
         )
 
 
 class RunCommunication(RunJudge, RunSolution):
-    def __init__(self, env: Env, solution: str, judge: str, timeout: float, input_name: str, expected_points: Optional[float] = None, **kwargs):
+    def __init__(
+        self,
+        env: Env,
+        solution: str,
+        judge: str,
+        timeout: float,
+        input_name: str,
+        expected_points: Optional[float] = None,
+        **kwargs,
+    ):
         super().__init__(
             env=env,
-            name=RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(r"(.*)", input_name, 1),
+            name=RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
+                r"(.*)", input_name, 1
+            ),
             judge=judge,
             input_name=input_name,
             expected_points=expected_points,
             solution=solution,
             timeout=timeout,
-            **kwargs
+            **kwargs,
         )
         self.solution = solution
         self.timeout = timeout
@@ -403,20 +423,29 @@ class RunCommunication(RunJudge, RunSolution):
         sol_in, judge_out = os.pipe()
         self._access_file(self.input)
         self._load_program(
-            self.judge, stdin=judge_in, stdout=judge_out, timeout=self.timeout,
+            self.judge,
+            stdin=judge_in,
+            stdout=judge_out,
+            timeout=self.timeout,
             env={"TEST_INPUT": self.input},
         )
         self._load_program(
-            self.solution, stdin=sol_in, stdout=sol_out, timeout=self.timeout,
+            self.solution,
+            stdin=sol_in,
+            stdout=sol_out,
+            timeout=self.timeout,
         )
         judge_res, sol_res = self._run_programs()
         self._judge_run_result = judge_res
         return sol_res
-    
+
     def _judge(self) -> SolutionResult:
         if self._judge_run_result.returncode == 42:
             return SolutionResult(
-                Verdict.ok, 1.0, self._judge_run_result.raw_stderr(), self._quote_program(self._judge_run_result)
+                Verdict.ok,
+                1.0,
+                self._judge_run_result.raw_stderr(),
+                self._quote_program(self._judge_run_result),
             )
         elif self._judge_run_result.returncode == 43:
             return SolutionResult(
@@ -429,6 +458,6 @@ class RunCommunication(RunJudge, RunSolution):
             raise self._create_program_failure(
                 f"Judge failed on {self._judging_message()}:", self._judge_run_result
             )
-    
+
     def _judging_message(self) -> str:
         return f"solution {self.solution} on input {self.input_name}"

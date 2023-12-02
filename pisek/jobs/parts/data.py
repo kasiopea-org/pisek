@@ -118,17 +118,24 @@ class DataManager(TaskJobManager):
 
 
 class DataJob(TaskJob):
-    def __init__(self, env: Env, name: str, data: str) -> None:
-        super().__init__(env, name)
+    def __init__(self, env: Env, name: str, data: str, **kwargs) -> None:
+        super().__init__(
+            env=env,
+            name=name,
+            **kwargs,
+        )
         self.data = data
 
 
 class DataIsNotEmpty(DataJob):
     """Check that input file is not empty."""
 
-    def __init__(self, env: Env, data: str) -> None:
+    def __init__(self, env: Env, data: str, **kwargs) -> None:
         super().__init__(
-            env, f"Input/Output {os.path.basename(data)} is not empty.", data
+            env=env,
+            name=f"Input/Output {os.path.basename(data)} is not empty.",
+            data=data,
+            **kwargs,
         )
 
     def _run(self):
@@ -139,8 +146,12 @@ class DataIsNotEmpty(DataJob):
 class LinkData(DataJob):
     """Copy data to into dest folder."""
 
-    def __init__(self, env: Env, data: str, dest: Callable[[str], str]) -> None:
-        super().__init__(env, f"Copy {data} to {dest('.')}", data)
+    def __init__(
+        self, env: Env, data: str, dest: Callable[[str], str], **kwargs
+    ) -> None:
+        super().__init__(
+            env=env, name=f"Copy {data} to {dest('.')}", data=data, **kwargs
+        )
         self._dest = dest
 
     def _run(self):
@@ -152,15 +163,15 @@ class LinkData(DataJob):
 class LinkInput(LinkData):
     """Copy input to its place."""
 
-    def __init__(self, env: Env, input_: str) -> None:
-        super().__init__(env, input_, self._input)
+    def __init__(self, env: Env, input_: str, **kwargs) -> None:
+        super().__init__(env=env, data=input_, dest=self._input, **kwargs)
 
 
 class LinkOutput(LinkData):
     """Copy output to its place."""
 
-    def __init__(self, env: Env, input_: str) -> None:
-        super().__init__(env, input_, self._output)
+    def __init__(self, env: Env, output: str, **kwargs) -> None:
+        super().__init__(env=env, data=output, dest=self._output, **kwargs)
 
 
 MB = 1024 * 1024
@@ -201,11 +212,12 @@ class DataCheckingManager(TaskJobManager):
 class InputSmall(DataJob):
     """Checks that input is small enough to download."""
 
-    def __init__(self, env: Env, input_file: str) -> None:
+    def __init__(self, env: Env, input_file: str, **kwargs) -> None:
         super().__init__(
-            env,
-            f"Input {os.path.basename(input_file)} is smaller than {env.config.input_max_size}MB",
-            input_file,
+            env=env,
+            name=f"Input {os.path.basename(input_file)} is smaller than {env.config.input_max_size}MB",
+            data=input_file,
+            **kwargs,
         )
 
     def _run(self):
@@ -217,11 +229,12 @@ class InputSmall(DataJob):
 class OutputSmall(DataJob):
     """Checks that output is small enough to upload."""
 
-    def __init__(self, env: Env, output_file: str) -> None:
+    def __init__(self, env: Env, output_file: str, **kwargs) -> None:
         super().__init__(
-            env,
-            f"Output {os.path.basename(output_file)} is smaller than {env.config.output_max_size}MB",
-            output_file,
+            env=env,
+            name=f"Output {os.path.basename(output_file)} is smaller than {env.config.output_max_size}MB",
+            data=output_file,
+            **kwargs,
         )
 
     def _run(self):
