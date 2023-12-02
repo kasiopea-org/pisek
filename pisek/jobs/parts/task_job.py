@@ -143,14 +143,6 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         else:
             raise ValueError(f"Unknown timeout for: {target}.")
 
-    def _compile_args(self) -> dict[str, str]:
-        compile_args = {}
-        if self._env.config.solution_manager:
-            compile_args["manager"] = self._resolve_path(
-                self._env.config.solution_manager
-            )
-        return compile_args
-
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._subtask_inputs(self._env.config.subtasks["0"])

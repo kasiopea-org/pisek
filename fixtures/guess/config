@@ -20,7 +20,7 @@ in_gen=src/gen
 # checker=check
 
 # The important line:
-solution_manager=src/stub
+stub=src/stub
 
 out_check=judge
 out_judge=src/judge

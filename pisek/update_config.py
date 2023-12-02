@@ -38,9 +38,13 @@ def update(path) -> Optional[str]:
 
     config["task"]["version"] = "v2"
 
-    if "samples_subdir" in config["task"]:
-        config["task"]["static_subdir"] = config["task"]["samples_subdir"]
-        del config["task"]["samples_subdir"]
+    def rename(config, section, key_from, key_to):
+        if key_from in config[section]:
+            config[section][key_to] = config[section][key_from]
+            del config[section][key_from]
+    # Renames
+    rename(config, "task", "samples_subdir", "static_subdir")
+    rename(config, "tests", "solution_manager", "stub")
 
     subtask_points = []
     for section in sorted(config.sections()):

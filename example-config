@@ -58,7 +58,7 @@ judge_needs_out=0
 # Set to 1 if judge needs input/output
 # Defaults to 1
 
-solution_manager=src/manager
+stub=src/stub
 # Only for C++ CMS tasks
 # Link each solution with given program (without suffix)
 # Used commonly for interactive tasks

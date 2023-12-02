@@ -43,11 +43,7 @@ class SolutionManager(TaskJobManager):
 
         jobs: list[Job] = []
 
-        jobs.append(
-            compile_ := Compile(
-                self._env, self._solution_file, True, self._compile_args()
-            )
-        )
+        jobs.append(compile_ := Compile(self._env, self._solution_file, True))
         self._compile_job = compile_
 
         if self._env.config.solutions[self.solution].primary:
@@ -327,7 +323,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         )
 
         jobs: list[Job] = [
-            compile := Compile(self._env, solution, True, self._compile_args()),
+            compile := Compile(self._env, solution, True),
             run_solution := RunBatchSolution(
                 self._env,
                 solution,

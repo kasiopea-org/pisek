@@ -166,9 +166,7 @@ class TaskConfig(BaseEnv):
         self["fail_mode"] = "all" if self.contest_type == "kasiopea" else "any"
         # Relevant for CMS interactive tasks. The file to be linked with
         # the contestant's solution (primarily for C++)
-        self["solution_manager"] = config.get(
-            "tests", "solution_manager", fallback=None
-        )
+        self["stub"] = config.get("tests", "stub", fallback=None)
 
         self["timeout_model_solution"] = config.get(
             "limits", "solve_time_limit", type_=float, fallback=DEFAULT_TIMEOUT

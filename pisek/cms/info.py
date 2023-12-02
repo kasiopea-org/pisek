@@ -40,5 +40,5 @@ def task_info(args=None):
     def dash(text):
         return text if text is not None else "—"
 
-    print(f"Manager: {dash(config.solution_manager)}")
+    print(f"Stub: {dash(config.stub)}")
     print(f"Judge: {dash(config.judge_name)}")

@@ -31,21 +31,17 @@ class Compile(ProgramsJob):
         self,
         env: Env,
         program: str,
-        use_manager: bool = False,
-        compile_args: dict = {},
+        use_stub: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=f"Compile {os.path.basename(program)}", **kwargs)
         self.program = program
-        self.use_manager = use_manager
-        self._compile_args = compile_args
+        self.use_stub = use_stub
         self.target = self._executable(os.path.basename(program))
 
-        self.manager = None
-        if self.use_manager:
-            manager = self._env.config.solution_manager
-            if manager:
-                self.manager = self._resolve_path(manager)
+        self.stub = None
+        if use_stub and self._env.config.stub:
+            self.stub = self._resolve_path(self._env.config.stub)
 
     def _resolve_extension(self, name: str) -> str:
         """
@@ -93,8 +89,8 @@ class Compile(ProgramsJob):
     def _compile_cpp(self, program: str):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
-        if self.manager is not None:  # Interactive task
-            cpp_flags += self.manager_flags(".cpp")
+        if self.stub is not None:  # Interactive task
+            cpp_flags += self.stub_flags(".cpp")
 
         return self._run_compilation(
             ["g++", program, "-o", self.target] + cpp_flags, program
@@ -103,8 +99,8 @@ class Compile(ProgramsJob):
     def _compile_c(self, program: str):
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
-        if self.manager is not None:  # Interactive task
-            c_flags += self.manager_flags(".c")
+        if self.stub is not None:  # Interactive task
+            c_flags += self.stub_flags(".c")
 
         return self._run_compilation(
             ["gcc", program, "-o", self.target] + c_flags, program
@@ -193,14 +189,14 @@ class Compile(ProgramsJob):
         st = os.stat(filepath)
         os.chmod(filepath, st.st_mode | 0o111)
 
-    def manager_flags(self, extension):
+    def stub_flags(self, extension):
         # For interactive tasks - compile with the manager and add its directory
         # to the search path to allow `#include "manager.h"`
         res = []
-        if os.path.dirname(self.manager):
-            res.append(f"-I{os.path.dirname(self.manager)}")
+        if os.path.dirname(self.stub):
+            res.append(f"-I{os.path.dirname(self.stub)}")
 
-        self._access_file(self.manager + ".h")
+        self._access_file(self.stub + ".h")
 
         return res
 
