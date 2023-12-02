@@ -8,11 +8,11 @@ set -e
 # Redirect stdout to stderr
 exec 2>&1
 
-echo "======== Kontroluji formátování ========"
+echo "======== Checking formatting ========"
 python3 -m black . --check
 
-echo "======== Kontroluji typy ========"
+echo "======== Checking types ========"
 python3 -m mypy pisek/
 
-echo "======== Testuji ========"
+echo "======== Testing ========"
 ./self_tests.sh
