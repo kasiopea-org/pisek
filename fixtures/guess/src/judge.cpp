@@ -5,11 +5,17 @@
 #include <unistd.h>
 using namespace std;
 
-const int MAX_QUERIES = 10;
+const int OPT_QUERIES = 10;
+const int MAX_QUERIES = 20;
 
-void verdict(int points, string msg){
-	cerr << msg << endl;
-	exit(43 - points);
+void verdict(double points, string msg){
+    cerr << msg << endl;
+	if (points == 0.0) {
+        exit(43);
+    } else {
+        cerr << "POINTS=" << points << endl;
+        exit(42);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -32,7 +38,7 @@ int main(int argc, char** argv) {
             fflush(stdout);
         } else if (c == '!') {
             if (x == q) {
-                verdict(1, "OK");
+                verdict(min(1.0, double(OPT_QUERIES) / double(queries)), "OK");
             } else {
                 verdict(0, "Wrong");
             }

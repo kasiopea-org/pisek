@@ -37,13 +37,14 @@ solve_time_limit=2
 sec_solve_time_limit=2
 
 [solution_solve]
-source=solve
 primary=yes
 points=10
 subtasks=11
 
+[solution_solve_subopt]
+points_above=5
+subtasks=1X
+
 [solution_solve_0b]
-source=solve_0b
 points=0
 subtasks=10
-
