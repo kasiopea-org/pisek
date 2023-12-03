@@ -42,6 +42,7 @@ def update(path) -> Optional[str]:
         if key_from in config[section]:
             config[section][key_to] = config[section][key_from]
             del config[section][key_from]
+
     # Renames
     rename(config, "task", "samples_subdir", "static_subdir")
     rename(config, "tests", "solution_manager", "stub")
