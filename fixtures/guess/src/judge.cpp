@@ -43,7 +43,6 @@ int main(int argc, char** argv) {
                 verdict(0, "Wrong");
             }
         } else {
-            cout << c << endl;
             verdict(0, "Protocol violation.");
         }
         queries++;
