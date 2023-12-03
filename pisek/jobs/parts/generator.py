@@ -139,6 +139,7 @@ class OnlineGeneratorJob(ProgramsJob):
             self.generator,
             args=[difficulty, hexa_seed],
             stdout=input_file,
+            stderr=self._log_file(os.path.basename(self.input_file), self.generator),
             print_first_stderr=True,
         )
         if result.kind != RunResultKind.OK:

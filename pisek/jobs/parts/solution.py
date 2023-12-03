@@ -378,12 +378,14 @@ class RunBatchSolution(RunSolution):
             if output_name
             else self._output_from_input(self.input_name, solution)
         )
+        self.log_file = self._log_file(input_name, self.solution)
 
     def _run(self) -> RunResult:
         return self._run_program(
             self.solution,
             stdin=self.input_name,
             stdout=self.output_name,
+            stderr=self.log_file,
             timeout=self.timeout,
         )
 
@@ -412,6 +414,8 @@ class RunCommunication(RunJudge, RunSolution):
             **kwargs,
         )
         self.solution = solution
+        self.judge_log_file = self._log_file(os.path.basename(self.input), self.judge)
+        self.sol_log_file = self._log_file(os.path.basename(self.input), self.solution)
         self.timeout = timeout
 
     def _get_solution_run_res(self) -> RunResult:
@@ -422,6 +426,7 @@ class RunCommunication(RunJudge, RunSolution):
             self.judge,
             stdin=judge_in,
             stdout=judge_out,
+            stderr=self.judge_log_file,
             timeout=self.timeout,
             env={"TEST_INPUT": self.input},
         )
@@ -429,6 +434,7 @@ class RunCommunication(RunJudge, RunSolution):
             self.solution,
             stdin=sol_in,
             stdout=sol_out,
+            stderr=self.sol_log_file,
             timeout=self.timeout,
         )
         judge_res, sol_res = self._run_programs()

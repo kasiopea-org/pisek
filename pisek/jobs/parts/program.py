@@ -222,6 +222,7 @@ class ProgramsJob(TaskJob):
         if isinstance(stdout, str):
             self._access_file(stdout)
         if isinstance(stderr, str):
+            os.makedirs(os.path.dirname(stderr), exist_ok=True)
             self._access_file(stderr)
 
         self._program_pool.append(

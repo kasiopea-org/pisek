@@ -255,6 +255,7 @@ class RunBatchJudge(RunJudge):
         )(output_name)
         self.correct_output_name = correct_output
         self.correct_output = self._output(correct_output)
+        self.log_file = self._log_file(self.output_name, self.judge)
 
     def _get_solution_run_res(self) -> RunResult:
         if "run_solution" in self.prerequisites_results:
@@ -363,6 +364,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             self.judge,
             args=[str(self.subtask), self.seed],
             stdin=self.output,
+            stderr=self.log_file,
             env=envs,
         )
         if result.returncode == 0:
@@ -414,6 +416,7 @@ class RunCMSJudge(RunBatchJudge):
             self.judge,
             args=[self.input, self.correct_output, self.output],
             stdout=points_file,
+            stderr=self.log_file,
         )
         if result.returncode == 0:
             points_str = result.raw_stdout().split("\n")[0]

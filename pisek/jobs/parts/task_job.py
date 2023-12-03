@@ -35,6 +35,7 @@ INPUTS_SUBDIR = "inputs/"
 INVALID_OUTPUTS_SUBDIR = "invalid/"
 OUTPUTS_SUBDIR = "outputs/"
 SANITIZED_SUBDIR = "sanitized/"
+LOG_SUBDIR = "log/"
 
 TOOLS_MAN_CODE = "tools"
 GENERATOR_MAN_CODE = "generator"
@@ -62,6 +63,13 @@ class TaskHelper:
     def _data(self, *path: str) -> str:
         """Path to data file."""
         return self._resolve_path(self._env.config.data_subdir, *path)
+
+    def _log_file(self, name: str, program: str) -> str:
+        """Path to log file."""
+        name_without_suffix = os.path.splitext(name)[0]
+        return self._data(
+            LOG_SUBDIR, f"{name_without_suffix}.{os.path.basename(program)}.log"
+        )
 
     def _static(self, name: str) -> str:
         """Path to generated input."""
