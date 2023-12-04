@@ -20,10 +20,11 @@ from functools import partial
 from typing import Callable
 import yaml
 
-Verdict = Enum("Verdict", ["ok", "partial", "wrong_answer", "error", "timeout"])
+Verdict = Enum("Verdict", ["ok", "partial", "indeterminate", "wrong_answer", "error", "timeout"])
 RESULT_MARK = {
     Verdict.ok: "·",
     Verdict.partial: "P",
+    Verdict.indeterminate: "?",
     Verdict.error: "!",
     Verdict.timeout: "T",
     Verdict.wrong_answer: "W",
@@ -70,7 +71,7 @@ yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
 def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
-    return sol_res.points == c
+    return sol_res.points == c and sol_res.verdict != Verdict.indeterminate
 
 
 def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
