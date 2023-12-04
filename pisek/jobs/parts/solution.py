@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Any, Optional, Union
+from typing import Any, Optional, Callable
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
@@ -24,7 +24,7 @@ from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult
+from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult, SUBTASK_SPEC, SUBTASK_QUANTIFIER_OVERRIDE
 from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
 
 
@@ -197,11 +197,17 @@ class SubtaskJobGroup:
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
+    
+    def _finished_job_results(self, jobs: list[RunJudge]) -> list[SolutionResult]:
+        return list(filter(lambda r: r is not None, jobs))
 
     def _judge_verdicts(self, jobs: list[RunJudge]) -> list[Optional[Verdict]]:
         return list(
             map(lambda r: r.verdict if r is not None else None, self._job_results(jobs))
         )
+    
+    def _to_points(self, results: list[SolutionResult]) -> list[float]:
+        return list(map(lambda r: r.points, results))
 
     def __str__(self) -> str:
         s = "("
@@ -228,83 +234,40 @@ class SubtaskJobGroup:
                 s += str(result)
 
         return s
-
-    @staticmethod
-    def _to_points(job: RunJudge) -> float:
-        res = job.result
-        if res is None:
-            raise RuntimeError(f"Job {job.name} has not finished yet.")
-        return res.points
-
-    @staticmethod
-    def _finished(jobs: list[RunJudge]) -> list[RunJudge]:
-        return list(filter(lambda j: j.state == State.succeeded, jobs))
-
-    @staticmethod
-    def _convert_to_points(jobs: list[RunJudge]) -> list[float]:
-        return list(map(SubtaskJobGroup._to_points, SubtaskJobGroup._finished(jobs)))
-
-    def definitive(self, expected_points: Optional[float]) -> bool:
-        """
-        Checks whether subtask jobs have resulted in outcome that cannot be changed.
-        """
+ 
+    def definitive(self, expected_str: str) -> bool:
+        """Checks whether subtask jobs have resulted in outcome that cannot be changed."""
         if self._env.all_inputs:
             return False
 
-        old_points = self._convert_to_points(self.previous_jobs)
-        new_points = self._convert_to_points(self.new_jobs)
-        all_points = old_points + new_points
-        if len(all_points) == 0:
-            return False
+        if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(self.new_jobs):
+            return True
 
-        if self._env.config.fail_mode == "all":
-            if min(new_points, default=1) != max(new_points, default=1):
-                return True  # Inconsistent on this subtasks
-            if expected_points is not None:
-                if min(all_points) < expected_points:
-                    return True  # Points too low
-                if min(new_points, default=expected_points) != expected_points:
-                    return True  # Subtask cannot be as expected
-                if (
-                    self._env.skip_on_timeout
-                    and Verdict.timeout in self._judge_verdicts(self.new_jobs)
-                ):
-                    return True
+        quant = self._get_quantifier(expected_str)
+        ok = self.result(expected_str)
+        return (ok and quant == any) or (not ok and quant == all)
+
+    def points(self, expected_str: str) -> float:
+        """Returns points from this subtask. Raises PipelineItemFailure if not as expected."""
+        ok = self.result(expected_str)
+
+        if not ok:
+            raise PipelineItemFailure("TODO")
+
+        return min(map(self._to_points(self._finished_job_results(self.new_jobs  + self.previous_jobs))))
+
+    def result(self, expected_str: str) -> bool:
+        """Returns whether subtask jobs have resulted as expected."""
+        verdicts: list[SolutionResult] = self._finished_job_results(self.new_jobs + self.previous_jobs)
+        return self._get_quantifier(expected_str)(map(SUBTASK_SPEC[expected_str], verdicts))
+
+    def _get_quantifier(self, expected_str: str) -> Callable[[list[bool]], bool]:
+        if expected_str in SUBTASK_QUANTIFIER_OVERRIDE:
+            return SUBTASK_QUANTIFIER_OVERRIDE[expected_str]
+        elif self._env.config.fail_mode == "all":
+            return all
         else:
-            if min(all_points) == 0:
-                return True
-
-        return False
-
-    def result(
-        self, fail_mode: str
-    ) -> tuple[tuple[Optional[float], str], tuple[str, str]]:
-        """
-        Checks whether subtask jobs have resulted as expected and computes points.
-        Returns (points, error msg), (best program output, worst program output)
-        """
-        prev_points = self._convert_to_points(self.previous_jobs)
-        new_points = self._convert_to_points(self.new_jobs)
-
-        # We need new first because we return first occurrence
-        all_jobs = SubtaskJobGroup._finished(self.new_jobs + self.previous_jobs)
-        all_points = new_points + prev_points
-        if len(all_points) == 0:
-            text = f"No inputs for subtask {self.num}"
-            return (1.0, ""), (text, text)
-
-        result_msg = (
-            all_jobs[all_points.index(max(all_points))].message(),
-            all_jobs[all_points.index(min(all_points))].message(),
-        )
-
-        if fail_mode == "all" and self.num > 0:  # Don't check this on samples
-            if max(new_points, default=1) != min(new_points, default=1):
-                return (None, "Only some inputs were incorrect"), result_msg
-            if min(new_points, default=1) > min(prev_points, default=1):
-                return (None, "Previous subtask failed but this did not"), result_msg
-
-        return (min(all_points), ""), result_msg
+            return any
 
     def cancel(self):
         for job in self.new_run_jobs:
