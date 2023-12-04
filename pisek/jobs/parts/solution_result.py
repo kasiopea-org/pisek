@@ -87,3 +87,8 @@ SUBTASK_SPEC: dict[str, Callable[[SolutionResult], bool]] = {
     "!": partial(solution_result_verdict, verdict=Verdict.error),
     "T": partial(solution_result_verdict, verdict=Verdict.timeout),
 }
+
+SUBTASK_QUANTIFIER_OVERRIDE: dict[str, Callable[[list[bool]], bool]] = {
+    "1": all,
+    "P": all,
+}
