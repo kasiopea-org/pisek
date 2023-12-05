@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Iterable
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
@@ -24,7 +24,13 @@ from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.solution_result import RESULT_MARK, Verdict, SolutionResult, SUBTASK_SPEC, SUBTASK_QUANTIFIER_OVERRIDE
+from pisek.jobs.parts.solution_result import (
+    RESULT_MARK,
+    Verdict,
+    SolutionResult,
+    SUBTASK_SPEC,
+    solution_res_true,
+)
 from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
 
 
@@ -131,25 +137,7 @@ class SolutionManager(TaskJobManager):
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
-            exp_sub = expected[sub_job.num]
-            (points, err), results = sub_job.result(self._env.config.fail_mode)
-            if points is None:
-                raise PipelineItemFailure(
-                    f"Scoring on subtask {sub_job.num} failed:\n"
-                    + tab(f"{err}:\n{tab(results[0 if exp_sub is None else exp_sub])}")
-                )
-
-            if exp_sub == 1 and points != 1:
-                raise PipelineItemFailure(
-                    f"Solution {self.solution} should have succeeded on subtask {sub_job.num}:\n"
-                    + tab(results[1])
-                )
-            elif exp_sub == 0 and points != 0:
-                raise PipelineItemFailure(
-                    f"Solution {self.solution} should have failed on subtask {sub_job.num}:\n"
-                    + tab(results[0])
-                )
-
+            points = sub_job.points(expected[sub_job.num])
             total_points += subtask.score * points
 
         points = solution_conf.points
@@ -197,17 +185,26 @@ class SubtaskJobGroup:
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
-    
+
     def _finished_job_results(self, jobs: list[RunJudge]) -> list[SolutionResult]:
-        return list(filter(lambda r: r is not None, jobs))
+        filtered = []
+        for res in self._job_results(jobs):
+            if res is not None:
+                filtered.append(res)
+        return filtered
 
     def _judge_verdicts(self, jobs: list[RunJudge]) -> list[Optional[Verdict]]:
         return list(
             map(lambda r: r.verdict if r is not None else None, self._job_results(jobs))
         )
-    
-    def _to_points(self, results: list[SolutionResult]) -> list[float]:
-        return list(map(lambda r: r.points, results))
+
+    def _jobs_points(self) -> list[float]:
+        return list(
+            map(
+                lambda r: r.points,
+                self._finished_job_results(self.new_jobs + self.previous_jobs),
+            )
+        )
 
     def __str__(self) -> str:
         s = "("
@@ -234,40 +231,60 @@ class SubtaskJobGroup:
                 s += str(result)
 
         return s
- 
+
     def definitive(self, expected_str: str) -> bool:
         """Checks whether subtask jobs have resulted in outcome that cannot be changed."""
         if self._env.all_inputs:
             return False
 
-        if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(self.new_jobs):
+        if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
+            self.new_jobs
+        ):
             return True
 
-        quant = self._get_quantifier(expected_str)
-        ok = self.result(expected_str)
-        return (ok and quant == any) or (not ok and quant == all)
+        if expected_str == "X" and min(self._jobs_points(), default=1) > 0:
+            return False  # Cause X is very very special
+
+        return self._as_expected(expected_str)[1]
 
     def points(self, expected_str: str) -> float:
         """Returns points from this subtask. Raises PipelineItemFailure if not as expected."""
-        ok = self.result(expected_str)
-
+        ok, _, breaker = self._as_expected(expected_str)
         if not ok:
-            raise PipelineItemFailure("TODO")
+            msg = f"Subtask {self.num} did not result as expected: '{expected_str}'"
+            if breaker is not None:
+                msg += f"\n{tab(breaker.message())}"
+            raise PipelineItemFailure(msg)
 
-        return min(map(self._to_points(self._finished_job_results(self.new_jobs  + self.previous_jobs))))
+        return min(self._jobs_points())
 
-    def result(self, expected_str: str) -> bool:
-        """Returns whether subtask jobs have resulted as expected."""
-        verdicts: list[SolutionResult] = self._finished_job_results(self.new_jobs + self.previous_jobs)
-        return self._get_quantifier(expected_str)(map(SUBTASK_SPEC[expected_str], verdicts))
+    def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
+        """Returns whether subtask jobs have resulted as expected and whether the result is definitive."""
+        mode_quantifier = self._get_quant()
+        jobs = self.new_jobs + ([] if mode_quantifier == all else self.previous_jobs)
+        verdicts = self._finished_job_results(jobs)
 
-    def _get_quantifier(self, expected_str: str) -> Callable[[list[bool]], bool]:
-        if expected_str in SUBTASK_QUANTIFIER_OVERRIDE:
-            return SUBTASK_QUANTIFIER_OVERRIDE[expected_str]
-        elif self._env.config.fail_mode == "all":
-            return all
-        else:
-            return any
+        result = True
+        definitive = True
+        breaker = None
+        quantifiers = [all, mode_quantifier]
+        for i, quant in enumerate(quantifiers):
+            oks = list(map(SUBTASK_SPEC[expected_str][i], verdicts))
+            ok = quant(oks)
+
+            result &= ok
+            definitive &= (
+                (quant == any and ok)
+                or (quant == all and not ok)
+                or (SUBTASK_SPEC[expected_str][i] == solution_res_true)
+            )
+            if quant == all and ok == False:
+                breaker = jobs[oks.index(False)]
+
+        return result, definitive, breaker
+
+    def _get_quant(self) -> Callable[[Iterable[bool]], bool]:
+        return all if self._env.config.fail_mode == "all" else any
 
     def cancel(self):
         for job in self.new_run_jobs:

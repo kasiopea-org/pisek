@@ -43,8 +43,8 @@ subtasks=11
 
 [solution_solve_subopt]
 points_above=5
-subtasks=1X
+subtasks=1P
 
 [solution_solve_0b]
 points=0
-subtasks=10
+subtasks=1W

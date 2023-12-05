@@ -51,15 +51,15 @@ subtasks=1111
 [solution_solve_3b]
 source=solve_3b
 points=3
-subtasks=X1X0
+subtasks=P1PW
 
 [solution_solve_slow_4b]
 source=solve_slow_4b
 points=4
-subtasks=1110
+subtasks=111T
 
 [solution_solve_0b]
 source=solve_0b
 points=0
-subtasks=0000
+subtasks=WWWW
 

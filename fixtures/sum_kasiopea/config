@@ -37,17 +37,17 @@ subtasks=111
 [solution_solve_4b]
 source=solve_4b
 points=4
-subtasks=110
+subtasks=11W
 
 [solution_solve_slow_4b]
 source=solve_slow_4b
 points=4
-subtasks=110
+subtasks=11T
 
 [solution_solve_0b]
 source=solve_0b
 points=0
-subtasks=100
+subtasks=1WW
 
 [limits]
 # Time limit (seconds) for solutions

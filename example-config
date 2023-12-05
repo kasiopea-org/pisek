@@ -124,8 +124,15 @@ points_below=7
 # Cannot be set simultaneously with points
 
 subtasks=X10
-# Bitmask wheter subtasks should pass or fail
-# 1 - success, 0 - fail, X - any
+# String describing result on each subtask:
+# 1 - success
+# 0 - fail
+# P - partial success
+# W - wrong answer
+# ! - runtime error
+# T - timeout
+# X - any result
+#
 # Defaults to 11... for primary solution or XX... otherwise
 
 [limits]

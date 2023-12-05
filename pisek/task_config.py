@@ -17,9 +17,10 @@
 import configparser
 import os
 import re
-from typing import Union, Optional, TypeVar, Callable
+from typing import Optional
 
 from pisek.terminal import tab, eprint
+from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
 DEFAULT_TIMEOUT: float = 360.0
 CONFIG_FILENAME = "config"
@@ -441,32 +442,27 @@ class SolutionConfig(BaseEnv):
                     )
                 self[name] = value
 
-        subtasks = config_section.get("subtasks")
-        if subtasks is None:
-            subtasks = [1 if self.primary else None] * total_subtasks
-        else:
-            subtasks_str = subtasks.strip()
-            if len(subtasks_str) != total_subtasks:
-                raise TaskConfigError(
-                    f"There are {total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
-                )
-            subtasks = []
-            for char in subtasks_str:
-                if char == "1":
-                    subtasks.append(1)
-                elif char == "0":
-                    subtasks.append(0)
-                elif char == "X":
-                    subtasks.append(None)
-                else:
-                    raise TaskConfigError(f"Unallowed char in subtask string: {char}")
+        subtasks_str = config_section.get(
+            "subtasks", fallback=("1" if self.primary else "X") * total_subtasks
+        )
 
-        if self.primary and not all(map(lambda p: p == 1, subtasks)):
+        if len(subtasks_str) != total_subtasks:
+            raise TaskConfigError(
+                f"There are {total_subtasks} but subtasks string has {len(subtasks_str)} characters: '{subtasks_str}'"
+            )
+
+        for char in subtasks_str:
+            if char not in SUBTASK_SPEC:
+                raise TaskConfigError(
+                    f"Unallowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}"
+                )
+
+        if self.primary and subtasks_str != "1" * total_subtasks:
             raise TaskConfigError(
                 f"Primary solution '{solution_name}' must have: subtasks={'1'*total_subtasks}"
             )
 
-        self["subtasks"] = subtasks
+        self["subtasks"] = subtasks_str
 
 
 def load_config(path: str) -> Optional[TaskConfig]:

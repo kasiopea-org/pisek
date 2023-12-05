@@ -17,10 +17,12 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Callable
+from typing import Callable, Iterable
 import yaml
 
-Verdict = Enum("Verdict", ["ok", "partial", "indeterminate", "wrong_answer", "error", "timeout"])
+Verdict = Enum(
+    "Verdict", ["ok", "partial", "indeterminate", "wrong_answer", "error", "timeout"]
+)
 RESULT_MARK = {
     Verdict.ok: "·",
     Verdict.partial: "P",
@@ -70,6 +72,10 @@ yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
+def solution_res_true(sol_res: SolutionResult) -> bool:
+    return True
+
+
 def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
     return sol_res.points == c and sol_res.verdict != Verdict.indeterminate
 
@@ -78,17 +84,23 @@ def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
     return sol_res.verdict == verdict
 
 
-SUBTASK_SPEC: dict[str, Callable[[SolutionResult], bool]] = {
-    "1": partial(solution_result_c_points, c=1.0),
-    "0": partial(solution_result_c_points, c=0.0),
-    "X": lambda _: True,
-    "P": partial(solution_result_verdict, verdict=Verdict.partial),
-    "W": partial(solution_result_verdict, verdict=Verdict.wrong_answer),
-    "!": partial(solution_result_verdict, verdict=Verdict.error),
-    "T": partial(solution_result_verdict, verdict=Verdict.timeout),
-}
-
-SUBTASK_QUANTIFIER_OVERRIDE: dict[str, Callable[[list[bool]], bool]] = {
-    "1": all,
-    "P": all,
+# Specifies how expected str should be interpreted
+# First function must be true for all
+# Second function must be true for any/all according to fail_mode
+SUBTASK_SPEC: dict[
+    str, tuple[Callable[[SolutionResult], bool], Callable[[SolutionResult], bool]]
+] = {
+    "1": (partial(solution_result_c_points, c=1.0), solution_res_true),
+    "0": (solution_res_true, partial(solution_result_c_points, c=0.0)),
+    "X": (solution_res_true, solution_res_true),
+    "P": (
+        lambda r: not solution_result_c_points(r, 0.0),
+        partial(solution_result_verdict, verdict=Verdict.partial),
+    ),
+    "W": (
+        solution_res_true,
+        partial(solution_result_verdict, verdict=Verdict.wrong_answer),
+    ),
+    "!": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.error)),
+    "T": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.timeout)),
 }
