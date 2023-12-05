@@ -266,7 +266,7 @@ class RunBatchJudge(RunJudge):
             return RunResult(RunResultKind.OK, 0, 0.0, 0.0)
 
     def _judging_message(self) -> str:
-        return f"output {self.output_name} for input {self.input_name} "
+        return f"output {self.output_name} for input {self.input_name}"
 
     def _nice_diff(self) -> str:
         """Create a nice diff between output and correct output."""
