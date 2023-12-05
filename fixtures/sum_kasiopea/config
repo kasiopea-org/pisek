@@ -4,7 +4,7 @@
 # Task author: Kasiopea Org
 
 [task]
-name=2019-doma-H
+name=sum-kasiopea
 tests=2
 
 version=v2
@@ -19,12 +19,12 @@ online_validity=360
 out_check=diff
 
 [test01]
-name=Lehký vstup
+name=Easy input
 file_name=H-lehky.txt
 points=4
 
 [test02]
-name=Těžký vstup
+name=Hard input
 file_name=H-tezky.txt
 points=6
 
