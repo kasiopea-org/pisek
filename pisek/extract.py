@@ -45,7 +45,6 @@ def extract(env) -> None:
     for name in cache.entry_names():
         if m := re.match(RUN_JOB_NAME, name):
             solution, inp = m[1], m[2]
-            solution = os.path.relpath(solution, env.config.solutions_subdir)
             run = cache.last_entry(name).result
 
             if solution not in data:
