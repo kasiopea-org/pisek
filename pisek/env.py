@@ -37,6 +37,9 @@ class BaseEnv:
         self._accessed: set[str] = set([])
 
     def __setattr__(self, __name: str, __value: Any) -> None:
+        """
+        Disallow setting variables as they should be in _vars.
+        """
         if __name not in ("_vars", "_log_off", "_locked", "_accessed"):
             raise RuntimeError(
                 f"Cannot set attribute '{__name}'. Use 'self[\"{__name}\"] = {__value}' instead."
@@ -86,9 +89,11 @@ class BaseEnv:
             return name in self._vars
 
     def __getitem__(self, key: str) -> Any:
+        """Gets variable with given name and logs access to it."""
         return self._get(str(key))
 
     def __setitem__(self, key: str, val: Any):
+        """Sets variable with given name."""
         self._set(key, val)
 
     def __getattr__(self, name: str) -> Any:
@@ -96,6 +101,7 @@ class BaseEnv:
         return self._get(name)
 
     def __len__(self) -> int:
+        """Returns number of stared variables."""
         return len(self._vars)
 
     def keys(self) -> list[str]:
@@ -196,6 +202,7 @@ class BaseEnv:
         return accessed
 
     def __deepcopy__(self, memo):
+        """Deepcopies this env. Clears all logged accesses."""
         copy = self.fork()
         memo[id(self)] = copy
         return copy

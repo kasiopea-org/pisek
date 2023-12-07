@@ -138,6 +138,7 @@ class Compile(ProgramsJob):
             raise PipelineItemFailure(f"Compilation of {program} failed.")
 
     def _check_tool(self, tool) -> None:
+        """Checks that a tool exists."""
         try:
             subprocess.run(
                 tool.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=0

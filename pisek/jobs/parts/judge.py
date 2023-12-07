@@ -34,6 +34,8 @@ DIFF_NAME = "diff.sh"
 
 
 class JudgeManager(TaskJobManager):
+    """Manager that prepares and test judge."""
+
     def __init__(self):
         super().__init__("Preparing judge")
 
@@ -165,6 +167,7 @@ class RunJudge(ProgramsJob):
 
     @abstractmethod
     def _judge(self) -> SolutionResult:
+        """Here actually do the judging."""
         pass
 
     @abstractmethod
@@ -205,6 +208,7 @@ class RunJudge(ProgramsJob):
         return result
 
     def message(self) -> str:
+        """Message about how judging ended."""
         if self.result is None:
             raise RuntimeError(f"Job {self.name} has not finished yet.")
 
@@ -275,6 +279,8 @@ class RunBatchJudge(RunJudge):
 
 
 class RunDiffJudge(RunBatchJudge):
+    """Judges solution output and correct output using diff."""
+
     def __init__(
         self,
         env: Env,
@@ -327,6 +333,8 @@ class RunDiffJudge(RunBatchJudge):
 
 
 class RunKasiopeaJudge(RunBatchJudge):
+    """Judges solution output using judge with Kasiopea interface."""
+
     def __init__(
         self,
         env: Env,
@@ -386,6 +394,8 @@ class RunKasiopeaJudge(RunBatchJudge):
 
 
 class RunCMSJudge(RunBatchJudge):
+    """Judges solution output using judge with CMS interface."""
+
     def __init__(
         self,
         env: Env,

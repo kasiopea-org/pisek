@@ -152,6 +152,7 @@ class ProgramPoolItem:
     env: dict[str, str] = field(default_factory=lambda: {})
 
     def to_popen(self, minibox: str, meta_file: str) -> dict[str, Any]:
+        """Returns subprocess.Popen args for executing this PoolItem."""
         result: dict[str, Any] = {}
 
         minibox_args = []
@@ -332,7 +333,7 @@ class ProgramsJob(TaskJob):
     def _run_program(
         self, program: str, print_first_stderr=False, **kwargs
     ) -> RunResult:
-        """Runs program."""
+        """Loads one program and runs it."""
         self._load_program(program, **kwargs)
         return self._run_programs(print_first_stderr)[0]
 

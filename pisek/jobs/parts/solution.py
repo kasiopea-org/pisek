@@ -84,6 +84,7 @@ class SolutionManager(TaskJobManager):
     def _create_batch_jobs(
         self, sub_num: int, inp: str
     ) -> tuple["RunSolution", RunBatchJudge]:
+        """Create RunSolution and RunBatchJudge jobs for batch task type."""
         run_solution = RunBatchSolution(
             self._env, self._solution_file, self._timeout, inp
         )
@@ -113,6 +114,7 @@ class SolutionManager(TaskJobManager):
         return (run_solution, run_judge)
 
     def _create_communication_jobs(self, inp: str) -> "RunCommunication":
+        """Create RunCommunication job for communication task type."""
         return RunCommunication(
             self._env, self._solution_file, self._judge, self._timeout, inp
         )

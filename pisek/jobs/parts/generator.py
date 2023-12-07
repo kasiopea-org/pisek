@@ -29,6 +29,8 @@ from pisek.jobs.parts.compile import Compile
 
 
 class GeneratorManager(TaskJobManager):
+    """Manager that generates inputs and test generator."""
+
     def __init__(self):
         self._inputs = []
         super().__init__("Running generator")

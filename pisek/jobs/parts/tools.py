@@ -26,6 +26,8 @@ from pisek.jobs.parts.program import ProgramsJob
 
 
 class ToolsManager(TaskJobManager):
+    """Manager that prepares all tools necessary for task testing."""
+
     def __init__(self):
         super().__init__("Preparing tools")
 
@@ -69,7 +71,7 @@ class PrepareMinibox(TaskJob):
 
 
 class PrepareTextPreprocessor(TaskJob):
-    """Copies Text Preprocessor."""
+    """Compiles Text Preprocessor."""
 
     def __init__(self, env: Env, **kwargs) -> None:
         super().__init__(env=env, name="Prepare text preprocessor", **kwargs)
@@ -98,6 +100,8 @@ class PrepareTextPreprocessor(TaskJob):
 
 
 class SanitizeAbstract(ProgramsJob):
+    """Abstract job that has method for file sanitization."""
+
     def _sanitize(self, input_: str, output: str) -> None:
         os.makedirs(os.path.dirname(output), exist_ok=True)
         result = self._run_program("text-preproc", stdin=input_, stdout=output)
@@ -122,7 +126,7 @@ class Sanitize(SanitizeAbstract):
 
 
 class IsClean(SanitizeAbstract):
-    """Check that file is same after using Text Preprocessor."""
+    """Check that file is same after sanitizing with Text Preprocessor."""
 
     def __init__(
         self, env: Env, input_: str, output: Optional[str] = None, **kwargs

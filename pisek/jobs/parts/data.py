@@ -31,11 +31,13 @@ from pisek.jobs.parts.tools import IsClean
 
 
 class DataManager(TaskJobManager):
+    """Moves data to correct folders."""
+
     def __init__(self):
         self._static_inputs = []
         self._generated_inputs = []
         self._static_outputs = []
-        super().__init__("Moving inputs")
+        super().__init__("Moving data")
 
     def _get_jobs(self) -> list[Job]:
         self._static_inputs = list(

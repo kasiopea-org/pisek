@@ -35,6 +35,11 @@ class PipelineItemFailure(Exception):
 
 
 class CaptureInitParams:
+    """
+    Class that stores __init__ args and kwargs of its descendants
+    and forks and locks Env given to it. Only does that to the topmost __init__.
+    """
+
     _initialized = False
 
     def __init_subclass__(cls):
@@ -72,6 +77,7 @@ class PipelineItem(ABC):
         (sys.stderr if stderr else sys.stdout).write(msg + end)
 
     def _fail(self, failure: PipelineItemFailure) -> None:
+        """End this job in failure."""
         if self.fail_msg != "":
             raise RuntimeError("PipelineItem cannot fail twice.")
         self.state = State.failed
@@ -270,9 +276,11 @@ class JobManager(PipelineItem):
         return tuple(map(lambda j: j.state, self.jobs))
 
     def _jobs_with_state(self, state: State) -> list[Job]:
+        """Filter this manager's jobs by state."""
         return list(filter(lambda j: j.state == state, self.jobs))
 
     def _update(self) -> None:
+        """Override this function for manager-specific."""
         pass
 
     def update(self) -> str:

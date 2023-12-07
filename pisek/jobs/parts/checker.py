@@ -25,6 +25,8 @@ from pisek.jobs.parts.compile import Compile
 
 
 class CheckerManager(TaskJobManager):
+    """Runs checker on inputs."""
+
     def __init__(self):
         self.skipped_checker = ""
         super().__init__("Running checker")
