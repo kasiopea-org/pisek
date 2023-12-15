@@ -23,7 +23,7 @@ import signal
 import subprocess
 import yaml
 
-from pisek.task_config import DEFAULT_TIMEOUT
+from pisek.task_config import ProgramType
 from pisek.env import Env
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.terminal import tab, colored
@@ -143,9 +143,10 @@ yaml.add_constructor("!RunResult", run_result_constructor)
 class ProgramPoolItem:
     executable: str
     args: list[str]
-    timeout: float
-    mem: int
-    processes: int
+    time_limit: float
+    clock_limit: float
+    mem_limit: int
+    process_limit: int
     stdin: Optional[Union[str, int]]
     stdout: Optional[Union[str, int]]
     stderr: Optional[str]
@@ -156,10 +157,10 @@ class ProgramPoolItem:
         result: dict[str, Any] = {}
 
         minibox_args = []
-        minibox_args.append(f"--time={self.timeout}")
-        minibox_args.append(f"--wall-time={self.timeout}")
-        minibox_args.append(f"--mem={self.mem}")
-        minibox_args.append(f"--processes={self.processes}")
+        minibox_args.append(f"--time={self.time_limit}")
+        minibox_args.append(f"--wall-time={self.clock_limit}")
+        minibox_args.append(f"--mem={self.mem_limit}")
+        minibox_args.append(f"--processes={self.process_limit}")
 
         for std in ("stdin", "stdout", "stderr"):
             attr = getattr(self, std)
@@ -204,11 +205,9 @@ class ProgramsJob(TaskJob):
 
     def _load_program(
         self,
+        program_type: ProgramType,
         program: str,
         args: list[str] = [],
-        timeout: float = DEFAULT_TIMEOUT,
-        mem: int = 0,
-        processes: int = 1,
         stdin: Optional[Union[str, int]] = None,
         stdout: Optional[Union[str, int]] = None,
         stderr: Optional[str] = None,
@@ -228,15 +227,13 @@ class ProgramsJob(TaskJob):
 
         self._program_pool.append(
             ProgramPoolItem(
-                executable,
-                args,
-                timeout,
-                mem,
-                processes,
-                stdin,
-                stdout,
-                stderr,
-                env,
+                executable=executable,
+                args=args,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                env=env,
+                **self._get_limits(program_type),
             )
         )
 
@@ -320,7 +317,7 @@ class ProgramsJob(TaskJob):
                             pool_item.stdout,
                             pool_item.stderr,
                             stderr_text,
-                            f"Timeout after {pool_item.timeout}s",
+                            f"Timeout after {pool_item.time_limit}s",
                         )
                     )
                 else:
@@ -331,10 +328,14 @@ class ProgramsJob(TaskJob):
         return run_results
 
     def _run_program(
-        self, program: str, print_first_stderr=False, **kwargs
+        self,
+        program_type: ProgramType,
+        program: str,
+        print_first_stderr=False,
+        **kwargs,
     ) -> RunResult:
         """Loads one program and runs it."""
-        self._load_program(program, **kwargs)
+        self._load_program(program_type, program, **kwargs)
         return self._run_programs(print_first_stderr)[0]
 
     def _create_program_failure(self, msg: str, res: RunResult):
