@@ -136,19 +136,32 @@ subtasks=X10
 # Defaults to 11... for primary solution or XX... otherwise
 
 [limits]
-
+# Resource limits for various programs: all of them are called KEY_LIMIT,
+# where KEY is one of:
+#   in_gen      Input generator
+#   checker     Checker
+#   judge       Judge
+#   solve       Primary solution
+#   sec_solve   Secondary solution usually subject to much less strict limits.
+# and LIMIT is one of:
+#   time_limit  Execution time limit [seconds]
+#   clock_limit Wall clock time limit [seconds]
+#   mem_limit   Memory limit [MB]
+#   process_limit   Maximum number of processes -- at the moment,
+#           limits greater than 1 are interpreted as "unlimited".
+#           Please keep in mind that killing of multiple processes
+#           upon errors is inherently unreliable.
+# Defaults:
+#   time_limit     360s
+#   clock_limit    360s
+#   mem_limit      unlimited
+#   process_limit  1
 solve_time_limit=3
-# Time limit (seconds) for example solution (first in key solutions)
-# No value defaults to 6 minutes
-
-sec_solve_time_limit=4
-# Time limit for other solutions
-# No value means solve_time_limit
 
 input_max_size=20
-# Maximal input size in MB
+# Maximal input size [MB]
 # Defaults to 50 (only in Kasiopea)
 
 output_max_size=5
-# Maximal input size in MB
+# Maximal input size [MB]
 # Defaults to 10 (only in Kasiopea)
