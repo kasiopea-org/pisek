@@ -7,7 +7,7 @@ int main() {
     cin >> a >> b;
     if (a > (long long) 1e9) {
         // Simulate a slow algorithm
-        sleep(5);
+        while (true) {}
     }
     cout << (a + b) << endl;
 }
