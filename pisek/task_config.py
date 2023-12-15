@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import configparser
+from enum import Enum
 import os
 import re
-from typing import Optional
+from typing import Optional, Any
 
 from pisek.terminal import tab, eprint
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
@@ -25,6 +26,12 @@ from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 DEFAULT_TIMEOUT: float = 360.0
 CONFIG_FILENAME = "config"
 DATA_SUBDIR = "data/"
+
+
+ProgramType = Enum(
+    "Program_type", ["tool", "in_gen", "checker", "solve", "sec_solve", "judge"]
+)
+
 
 from pisek.env import BaseEnv
 
@@ -169,23 +176,7 @@ class TaskConfig(BaseEnv):
         # the contestant's solution (primarily for C++)
         self["stub"] = config.get("tests", "stub", fallback=None)
 
-        self["timeout_model_solution"] = config.get(
-            "limits", "solve_time_limit", type_=float, fallback=DEFAULT_TIMEOUT
-        )
-        self["timeout_other_solutions"] = config.get(
-            "limits",
-            "sec_solve_time_limit",
-            type_=float,
-            fallback=self.timeout_model_solution,
-        )
-
-        if self.contest_type == "kasiopea":
-            self["input_max_size"] = config.get(
-                "limits", "input_max_size", type_=int, fallback=50
-            )  # MB
-            self["output_max_size"] = config.get(
-                "limits", "output_max_size", type_=int, fallback=10
-            )  # MB
+        self["limits"] = LimitsConfig(self.contest_type, config)
 
         # Support for different directory structures
         self["static_subdir"] = config.get("task", "static_subdir", fallback=".")
@@ -463,6 +454,55 @@ class SolutionConfig(BaseEnv):
             )
 
         self["subtasks"] = subtasks_str
+
+
+class LimitsConfig(BaseEnv):
+    def __init__(
+        self,
+        contest_type: str,
+        config: TaskConfigParser,
+    ):
+        super().__init__()
+        LIMITS = [
+            ("time_limit", float),
+            ("clock_limit", float),
+            ("mem_limit", int),
+            ("process_limit", int),
+        ]
+
+        if contest_type == "kasiopea":
+            self["input_max_size"] = config.get(
+                "limits", "input_max_size", type_=int, fallback=50
+            )  # MB
+            self["output_max_size"] = config.get(
+                "limits", "output_max_size", type_=int, fallback=10
+            )  # MB
+
+        for program_type in ProgramType:
+            limits: dict[str, Any] = {}
+            if "limits" in config and program_type != ProgramType.tool:
+                for limit, type_ in LIMITS:
+                    key = f"{program_type.name}_{limit}"
+                    if key in config["limits"]:
+                        limits[limit] = config.get("limits", key, type_=type_)
+                    elif program_type.name == "sec_solve":
+                        limits[limit] = self.solve[limit]
+            self[program_type.name] = ProgramLimits(**limits)
+
+
+class ProgramLimits(BaseEnv):
+    def __init__(
+        self,
+        time_limit: float = DEFAULT_TIMEOUT,
+        clock_limit: float = DEFAULT_TIMEOUT,
+        mem_limit: int = 0,
+        process_limit: int = 1,
+    ) -> None:
+        super().__init__()
+        self["time_limit"] = time_limit
+        self["clock_limit"] = clock_limit
+        self["mem_limit"] = mem_limit
+        self["process_limit"] = process_limit
 
 
 def load_config(path: str) -> Optional[TaskConfig]:
