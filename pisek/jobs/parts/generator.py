@@ -22,6 +22,7 @@ from typing import Optional
 
 import pisek.util as util
 from pisek.env import Env
+from pisek.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, GENERATED_SUBDIR
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
@@ -138,6 +139,7 @@ class OnlineGeneratorJob(ProgramsJob):
         hexa_seed = f"{seed:x}"
 
         result = self._run_program(
+            ProgramType.in_gen,
             self.generator,
             args=[difficulty, hexa_seed],
             stdout=input_file,
@@ -265,7 +267,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
 
         gen_dir = self._generated_input(".")
         run_result = self._run_program(
-            self.generator, args=[gen_dir], print_first_stderr=True
+            ProgramType.in_gen, self.generator, args=[gen_dir], print_first_stderr=True
         )
         self._access_file(self._generated_input("."))
 

@@ -24,7 +24,7 @@ from typing import Optional, Any, Callable, Iterable
 import pisek.util as util
 import subprocess
 from pisek.env import Env
-from pisek.task_config import SubtaskConfig
+from pisek.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
@@ -111,6 +111,21 @@ class TaskHelper:
         else:
             return parts[-1]
 
+    def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
+        limits = self._env.config.limits[program_type.name]
+        time_limit = limits.time_limit
+
+        if program_type in (ProgramType.solve, ProgramType.sec_solve):
+            if self._env.timeout is not None:
+                time_limit = self._env.timeout
+
+        return {
+            "time_limit": time_limit,
+            "clock_limit": limits.clock_limit,
+            "mem_limit": limits.mem_limit,
+            "process_limit": limits.process_limit,
+        }
+
     @staticmethod
     def filter_by_globs(globs: Iterable[str], files: Iterable[str]):
         return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
@@ -139,17 +154,6 @@ class TaskHelper:
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
-
-    def _get_timeout(self, target: str) -> float:
-        if self._env.timeout is not None:
-            return self._env.timeout
-
-        if target == "solve":
-            return self._env.config.timeout_model_solution
-        elif target == "sec_solve":
-            return self._env.config.timeout_other_solutions
-        else:
-            raise ValueError(f"Unknown timeout for: {target}.")
 
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""

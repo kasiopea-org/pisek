@@ -18,6 +18,7 @@ from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.task_config import ProgramType
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
@@ -159,7 +160,10 @@ class CheckerJob(ProgramsJob):
 
     def _check(self) -> RunResult:
         return self._run_program(
-            self.checker, args=[str(self.subtask)], stdin=self.input_file
+            ProgramType.checker,
+            self.checker,
+            args=[str(self.subtask)],
+            stdin=self.input_file,
         )
 
     def _run(self) -> RunResult:

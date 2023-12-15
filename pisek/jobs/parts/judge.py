@@ -21,6 +21,7 @@ from typing import Optional, Union, Callable
 import subprocess
 
 from pisek.env import Env
+from pisek.task_config import ProgramType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJobManager
@@ -369,6 +370,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             self._access_file(self.correct_output)
 
         result = self._run_program(
+            ProgramType.judge,
             self.judge,
             args=[str(self.subtask), self.seed],
             stdin=self.output,
@@ -423,6 +425,7 @@ class RunCMSJudge(RunBatchJudge):
         points_file = self.output.replace(".out", ".judge")
         self._access_file(points_file)
         result = self._run_program(
+            ProgramType.judge,
             self.judge,
             args=[self.input, self.correct_output, self.output],
             stdout=points_file,

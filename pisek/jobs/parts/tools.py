@@ -21,6 +21,7 @@ from typing import Optional
 import subprocess
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.task_config import ProgramType
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramsJob
 
@@ -104,7 +105,9 @@ class SanitizeAbstract(ProgramsJob):
 
     def _sanitize(self, input_: str, output: str) -> None:
         os.makedirs(os.path.dirname(output), exist_ok=True)
-        result = self._run_program("text-preproc", stdin=input_, stdout=output)
+        result = self._run_program(
+            ProgramType.tool, "text-preproc", stdin=input_, stdout=output
+        )
         if result.returncode == 43:
             raise self._create_program_failure(
                 f"Text preprocessor failed on file: {input_}", result

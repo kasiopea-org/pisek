@@ -217,13 +217,13 @@ class InputSmall(DataJob):
     def __init__(self, env: Env, input_file: str, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Input {os.path.basename(input_file)} is smaller than {env.config.input_max_size}MB",
+            name=f"Input {os.path.basename(input_file)} is smaller than {env.config.limits.input_max_size}MB",
             data=input_file,
             **kwargs,
         )
 
     def _run(self):
-        max_size = self._env.config.input_max_size
+        max_size = self._env.config.limits.input_max_size
         if self._file_size(self.data) > max_size * MB:
             raise PipelineItemFailure(f"Input {self.data} is bigger than {max_size}MB.")
 
@@ -234,13 +234,13 @@ class OutputSmall(DataJob):
     def __init__(self, env: Env, output_file: str, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Output {os.path.basename(output_file)} is smaller than {env.config.output_max_size}MB",
+            name=f"Output {os.path.basename(output_file)} is smaller than {env.config.limits.output_max_size}MB",
             data=output_file,
             **kwargs,
         )
 
     def _run(self):
-        max_size = self._env.config.output_max_size
+        max_size = self._env.config.limits.output_max_size
         if self._file_size(self.data) > max_size * MB:
             raise PipelineItemFailure(
                 f"Output {self.data} is bigger than {max_size}MB."

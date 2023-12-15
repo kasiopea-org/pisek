@@ -20,6 +20,7 @@ from typing import Any, Optional, Callable, Iterable
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.task_config import ProgramType
 from pisek.terminal import pad, tab, MSG_LEN
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
@@ -42,6 +43,7 @@ class SolutionManager(TaskJobManager):
         super().__init__(f"Solution {solution} Manager")
 
     def _get_jobs(self) -> list[Job]:
+        self.is_primary = self._env.config.solutions[self.solution].primary
         self._solution_file = self._solution(
             self._env.config.solutions[self.solution].source
         )
@@ -51,11 +53,6 @@ class SolutionManager(TaskJobManager):
 
         jobs.append(compile_ := Compile(self._env, self._solution_file, True))
         self._compile_job = compile_
-
-        if self._env.config.solutions[self.solution].primary:
-            self._timeout = self._get_timeout("solve")
-        else:
-            self._timeout = self._get_timeout("sec_solve")
 
         testcases = {}
         for sub_num, sub in self._env.config.subtasks.subenvs():
@@ -86,7 +83,10 @@ class SolutionManager(TaskJobManager):
     ) -> tuple["RunSolution", RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
         run_solution = RunBatchSolution(
-            self._env, self._solution_file, self._timeout, inp
+            self._env,
+            self._solution_file,
+            self.is_primary,
+            inp,
         )
         run_solution.add_prerequisite(self._compile_job)
 
@@ -116,7 +116,7 @@ class SolutionManager(TaskJobManager):
     def _create_communication_jobs(self, inp: str) -> "RunCommunication":
         """Create RunCommunication job for communication task type."""
         return RunCommunication(
-            self._env, self._solution_file, self._judge, self._timeout, inp
+            self._env, self._solution_file, self.is_primary, self._judge, inp
         )
 
     def _update(self):
@@ -309,7 +309,7 @@ class RunPrimarySolutionMan(TaskJobManager):
             run_solution := RunBatchSolution(
                 self._env,
                 solution,
-                self._get_timeout("solve"),
+                True,
                 self._input_file,
                 self._output_file,
             ),
@@ -330,12 +330,15 @@ class RunSolution(ProgramsJob):
         env: Env,
         name: str,
         solution: str,
-        timeout: float,
+        is_primary: bool,
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
         self.solution = solution
-        self.timeout = timeout
+        self.is_primary = is_primary
+
+    def _solution_type(self) -> ProgramType:
+        return (ProgramType.solve) if self.is_primary else (ProgramType.sec_solve)
 
 
 class RunBatchSolution(RunSolution):
@@ -343,7 +346,7 @@ class RunBatchSolution(RunSolution):
         self,
         env: Env,
         solution: str,
-        timeout: float,
+        is_primary: bool,
         input_name: str,
         output_name: Optional[str] = None,
         **kwargs,
@@ -352,7 +355,7 @@ class RunBatchSolution(RunSolution):
             r"(.*)", input_name, 1
         )
         super().__init__(
-            env=env, name=name, solution=solution, timeout=timeout, **kwargs
+            env=env, name=name, solution=solution, is_primary=is_primary, **kwargs
         )
         self.input_name = self._input(input_name)
         self.output_name = (
@@ -364,11 +367,11 @@ class RunBatchSolution(RunSolution):
 
     def _run(self) -> RunResult:
         return self._run_program(
-            self.solution,
+            program_type=self._solution_type(),
+            program=self.solution,
             stdin=self.input_name,
             stdout=self.output_name,
             stderr=self.log_file,
-            timeout=self.timeout,
         )
 
 
@@ -377,8 +380,8 @@ class RunCommunication(RunJudge, RunSolution):
         self,
         env: Env,
         solution: str,
+        is_primary: bool,
         judge: str,
-        timeout: float,
         input_name: str,
         expected_points: Optional[float] = None,
         **kwargs,
@@ -392,32 +395,31 @@ class RunCommunication(RunJudge, RunSolution):
             input_name=input_name,
             expected_points=expected_points,
             solution=solution,
-            timeout=timeout,
+            is_primary=is_primary,
             **kwargs,
         )
         self.solution = solution
         self.judge_log_file = self._log_file(os.path.basename(self.input), self.judge)
         self.sol_log_file = self._log_file(os.path.basename(self.input), self.solution)
-        self.timeout = timeout
 
     def _get_solution_run_res(self) -> RunResult:
         judge_in, sol_out = os.pipe()
         sol_in, judge_out = os.pipe()
         self._access_file(self.input)
         self._load_program(
+            ProgramType.judge,
             self.judge,
             stdin=judge_in,
             stdout=judge_out,
             stderr=self.judge_log_file,
-            timeout=self.timeout,
             env={"TEST_INPUT": self.input},
         )
         self._load_program(
+            self._solution_type(),
             self.solution,
             stdin=sol_in,
             stdout=sol_out,
             stderr=self.sol_log_file,
-            timeout=self.timeout,
         )
         judge_res, sol_res = self._run_programs()
         self._judge_run_result = judge_res
