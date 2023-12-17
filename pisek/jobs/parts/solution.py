@@ -37,6 +37,7 @@ from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
 
 class SolutionManager(TaskJobManager):
     """Runs a solution and checks if it works as expected."""
+
     def __init__(self, solution: str):
         self.solution = solution
         self.subtasks: list[SubtaskJobGroup] = []
@@ -279,7 +280,7 @@ class SubtaskJobGroup:
         quantifiers = [all, mode_quantifier]
         for i, quant in enumerate(quantifiers):
             oks = list(map(SUBTASK_SPEC[expected_str][i], verdicts))
-            ok = quant(oks) or (len(oks) == 0)
+            ok = quant(oks) or (len(jobs) == 0)
 
             result &= ok
             definitive &= (
