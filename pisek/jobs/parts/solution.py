@@ -407,7 +407,10 @@ class RunCommunication(RunJudge, RunSolution):
             **kwargs,
         )
         self.solution = solution
-        self.judge_log_file = self._log_file(os.path.basename(self.input), self.judge)
+        self.judge_log_file = self._log_file(
+            os.path.basename(self._output_from_input(self.input, self.solution)),
+            self.judge,
+        )
         self.sol_log_file = self._log_file(os.path.basename(self.input), self.solution)
 
     def _get_solution_run_res(self) -> RunResult:
