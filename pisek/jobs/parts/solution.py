@@ -36,6 +36,7 @@ from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
 
 
 class SolutionManager(TaskJobManager):
+    """Runs a solution and checks if it works as expected."""
     def __init__(self, solution: str):
         self.solution = solution
         self.subtasks: list[SubtaskJobGroup] = []
@@ -120,6 +121,7 @@ class SolutionManager(TaskJobManager):
         )
 
     def _update(self):
+        """Cancel running on inputs that can't change anything."""
         expected = self._env.config.solutions[self.solution].subtasks
 
         for subtask in self.subtasks:
@@ -261,7 +263,12 @@ class SubtaskJobGroup:
         return min(self._jobs_points(), default=1.0)
 
     def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
-        """Returns whether subtask jobs have resulted as expected and whether the result is definitive."""
+        """
+        Returns tuple:
+            - whether subtask jobs have resulted as expected
+            - whether the result is definitive (cannot be changed)
+            - a job that makes the result different than expected (if there is one particular)
+        """
         mode_quantifier = self._get_quant()
         jobs = self.new_jobs + ([] if mode_quantifier == all else self.previous_jobs)
         verdicts = self._finished_job_results(jobs)
