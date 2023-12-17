@@ -258,7 +258,7 @@ class SubtaskJobGroup:
                 msg += f"\n{tab(breaker.message())}"
             raise PipelineItemFailure(msg)
 
-        return min(self._jobs_points())
+        return min(self._jobs_points(), default=1.0)
 
     def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
         """Returns whether subtask jobs have resulted as expected and whether the result is definitive."""
@@ -272,7 +272,7 @@ class SubtaskJobGroup:
         quantifiers = [all, mode_quantifier]
         for i, quant in enumerate(quantifiers):
             oks = list(map(SUBTASK_SPEC[expected_str][i], verdicts))
-            ok = quant(oks)
+            ok = quant(oks) or (len(oks) == 0)
 
             result &= ok
             definitive &= (
