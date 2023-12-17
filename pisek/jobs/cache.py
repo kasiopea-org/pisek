@@ -26,7 +26,15 @@ CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
 
-class CacheEntry(yaml.YAMLObject):
+class YAMLObjectWithRequiredAttr(yaml.YAMLObject):
+    """Yaml object that has must have all attributes set."""
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        return cls(**loader.construct_mapping(node, deep=True))
+
+
+class CacheEntry(YAMLObjectWithRequiredAttr):
     """Object representing single cached job."""
 
     yaml_tag = "!Entry"
@@ -38,13 +46,13 @@ class CacheEntry(yaml.YAMLObject):
         result: Any,
         envs: list[str],
         files: list[str],
-        results: list[Any],
+        prerequisites_results: list[Any],
         output: list[tuple[str, bool]],
     ) -> None:
         self.name = name
         self.signature = signature
         self.result = result
-        self.prerequisites_results = sorted(list(results))
+        self.prerequisites_results = list(sorted(prerequisites_results))
         self.envs = list(sorted(envs))
         self.files = list(sorted(files))
         self.output = output
@@ -60,7 +68,7 @@ class CacheEntry(yaml.YAMLObject):
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
 
-class CacheSeal(yaml.YAMLObject):
+class CacheSeal(YAMLObjectWithRequiredAttr):
     """Seal is stored after last entry containing data about run."""
 
     yaml_tag = "!Seal"
@@ -114,7 +122,7 @@ class Cache:
         with open(self.cache_path, encoding="utf-8") as f:
             try:
                 entries = yaml.full_load(f)
-            except ValueError:
+            except (TypeError, ValueError):
                 eprint(
                     colored(
                         "Invalid .pisek_cache file. Starting from scratch...",
