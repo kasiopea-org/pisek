@@ -290,6 +290,7 @@ class SubtaskJobGroup:
             )
             if quant == all and ok == False:
                 breaker = jobs[oks.index(False)]
+                break
 
         return result, definitive, breaker
 
