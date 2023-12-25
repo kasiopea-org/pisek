@@ -39,6 +39,8 @@ class SolutionResult:
 
     verdict: Verdict
     points: float
+    time: float
+    wall_time: float
     judge_stderr: str
     output: str = ""
     diff: str = ""
@@ -56,6 +58,8 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
         [
             sol_result.verdict.name,
             sol_result.points,
+            sol_result.time,
+            sol_result.wall_time,
             sol_result.judge_stderr,
             sol_result.output,
             sol_result.diff,
@@ -64,8 +68,12 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
 
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, stderr, output, diff = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, stderr, output, diff)
+    verdict, points, time, wall_time, stderr, output, diff = loader.construct_sequence(
+        value
+    )
+    return SolutionResult(
+        Verdict[verdict], points, time, wall_time, stderr, output, diff
+    )
 
 
 yaml.add_representer(SolutionResult, sol_result_representer)

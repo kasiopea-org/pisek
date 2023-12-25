@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
+from functools import cache
 import os
 import random
 from typing import Optional, Union, Callable
@@ -162,8 +163,19 @@ class RunJudge(ProgramsJob):
         self.input = self._input(input_name)
         self.expected_points = expected_points
 
+    @cache
+    def _load_solution_run_res(self) -> None:
+        """
+        Loads solution's RunResult into self.solution_res
+        """
+        self._solution_run_res = self._get_solution_run_res()
+
     @abstractmethod
     def _get_solution_run_res(self) -> RunResult:
+        """
+        Gets solution's RunResult.
+        Call this only through _load_solution_run_res as this can run the solution.
+        """
         pass
 
     @abstractmethod
@@ -180,20 +192,27 @@ class RunJudge(ProgramsJob):
         return msg[0].upper() + msg[1:]
 
     def _run(self) -> SolutionResult:
-        solution_res = self._get_solution_run_res()
-        if solution_res.kind == RunResultKind.OK:
+        self._load_solution_run_res()
+        if self._solution_run_res.kind == RunResultKind.OK:
             result = self._judge()
-        elif solution_res.kind == RunResultKind.RUNTIME_ERROR:
+        elif self._solution_run_res.kind == RunResultKind.RUNTIME_ERROR:
             result = SolutionResult(
                 Verdict.error,
                 0.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
                 "",
-                self._quote_program(solution_res),
-                solution_res.status,
+                self._quote_program(self._solution_run_res),
+                self._solution_run_res.status,
             )
-        elif solution_res.kind == RunResultKind.TIMEOUT:
+        elif self._solution_run_res.kind == RunResultKind.TIMEOUT:
             result = SolutionResult(
-                Verdict.timeout, 0.0, "", self._quote_program(solution_res)
+                Verdict.timeout,
+                0.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
+                "",
+                self._quote_program(self._solution_run_res),
             )
 
         if (
@@ -267,7 +286,7 @@ class RunBatchJudge(RunJudge):
             return self.prerequisites_results["run_solution"]
         else:
             # There is no solution (judging samples)
-            # XXX: We only care about the kind
+            # XXX: It didn't technically finish in 0 time.
             return RunResult(RunResultKind.OK, 0, 0.0, 0.0)
 
     def _judging_message(self) -> str:
@@ -318,11 +337,20 @@ class RunDiffJudge(RunBatchJudge):
             status="Files are same" if diff.returncode == 0 else "Files differ",
         )
         if diff.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0, "", self._quote_program(rr))
+            return SolutionResult(
+                Verdict.ok,
+                1.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
+                "",
+                self._quote_program(rr),
+            )
         elif diff.returncode == 1:
             return SolutionResult(
                 Verdict.wrong_answer,
                 0.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
                 "",
                 self._quote_program(rr),
                 self._nice_diff(),
@@ -379,12 +407,19 @@ class RunKasiopeaJudge(RunBatchJudge):
         )
         if result.returncode == 0:
             return SolutionResult(
-                Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
+                Verdict.ok,
+                1.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
+                result.raw_stderr(),
+                self._quote_program(result),
             )
         elif result.returncode == 1:
             return SolutionResult(
                 Verdict.wrong_answer,
                 0.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
                 result.raw_stderr(),
                 self._quote_program(result),
                 self._nice_diff(),
@@ -431,6 +466,7 @@ class RunCMSJudge(RunBatchJudge):
             stdout=points_file,
             stderr=self.log_file,
         )
+
         if result.returncode == 0:
             points_str = result.raw_stdout().split("\n")[0]
             try:
@@ -449,18 +485,27 @@ class RunCMSJudge(RunBatchJudge):
                 return SolutionResult(
                     Verdict.wrong_answer,
                     0.0,
+                    self._solution_run_res.time,
+                    self._solution_run_res.wall_time,
                     result.raw_stderr(),
                     self._quote_program(result),
                     self._nice_diff(),
                 )
             elif points == 1:
                 return SolutionResult(
-                    Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
+                    Verdict.ok,
+                    1.0,
+                    self._solution_run_res.time,
+                    self._solution_run_res.wall_time,
+                    result.raw_stderr(),
+                    self._quote_program(result),
                 )
             else:
                 return SolutionResult(
                     Verdict.partial,
                     points,
+                    self._solution_run_res.time,
+                    self._solution_run_res.wall_time,
                     result.raw_stderr(),
                     self._quote_program(result),
                     self._nice_diff(),

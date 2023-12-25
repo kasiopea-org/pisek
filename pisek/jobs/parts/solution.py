@@ -467,6 +467,8 @@ class RunCommunication(RunJudge, RunSolution):
                 return SolutionResult(
                     Verdict.ok,
                     1.0,
+                    self._solution_run_res.time,
+                    self._solution_run_res.wall_time,
                     self._judge_run_result.raw_stderr(),
                     self._quote_program(self._judge_run_result),
                 )
@@ -474,6 +476,8 @@ class RunCommunication(RunJudge, RunSolution):
                 return SolutionResult(
                     Verdict.partial,
                     points,
+                    self._solution_run_res.time,
+                    self._solution_run_res.wall_time,
                     self._judge_run_result.raw_stderr(),
                     self._quote_program(self._judge_run_result),
                 )
@@ -481,6 +485,8 @@ class RunCommunication(RunJudge, RunSolution):
             return SolutionResult(
                 Verdict.wrong_answer,
                 0.0,
+                self._solution_run_res.time,
+                self._solution_run_res.wall_time,
                 self._judge_run_result.raw_stderr(),
                 self._quote_program(self._judge_run_result),
             )
