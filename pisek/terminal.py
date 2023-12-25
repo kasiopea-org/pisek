@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from functools import partial
 import sys
 
 from ansi.color import fg, fx
@@ -35,9 +36,9 @@ def tab(text: str, tab_str: str = "  "):
     return tab_str + text.replace("\n", f"\n{tab_str}")
 
 
-def plain_variant(f: Callable) -> Callable:
+def _plain_variant(f: Callable, attr: str) -> Callable:
     def g(msg: str, env: Env, *args, **kwargs):
-        if env.plain:
+        if getattr(env, attr):
             return msg
         else:
             return f(msg, *args, **kwargs)
@@ -45,7 +46,11 @@ def plain_variant(f: Callable) -> Callable:
     return g
 
 
-@plain_variant
+no_color_variant = partial(_plain_variant, attr="no_colors")
+no_jumps_variant = partial(_plain_variant, attr="no_jumps")
+
+
+@no_color_variant
 def colored(msg: str, color: str) -> str:
     # Recolors all white text to given color
     col = getattr(fg, color)

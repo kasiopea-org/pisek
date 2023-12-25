@@ -66,9 +66,7 @@ class RunResult:
     @staticmethod
     def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
         res = tab(TaskHelper._short_text(text, max_lines, max_chars))
-        if not env.plain:
-            res = colored(res, env, "yellow")
-        return res
+        return colored(res, env, "yellow")
 
     def raw_stdout(self):
         if isinstance(self.stdout_file, str):

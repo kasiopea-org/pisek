@@ -96,7 +96,7 @@ class JobPipeline(ABC):
 
     def _print_tmp(self, msg, env: Env, *args, **kwargs):
         """Prints a text to be rewriten latter."""
-        if not env.plain:
+        if not env.no_jumps:
             self._tmp_lines += msg.count("\n") + 1
             print(str(msg), *args, **kwargs)
 

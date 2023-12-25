@@ -142,6 +142,20 @@ def main(argv):
             help="Do not use ANSI escape sequences.",
         )
 
+    def add_argument_no_jumps(parser):
+        parser.add_argument(
+            "--no-jumps",
+            action="store_true",
+            help="Do not use ANSI control sequences.",
+        )
+
+    def add_argument_no_colors(parser):
+        parser.add_argument(
+            "--no-colors",
+            action="store_true",
+            help="Do not use ANSI color sequences.",
+        )
+
     def add_argument_cms_contest(parser):
         parser.add_argument(
             "--contest-id",
@@ -231,6 +245,8 @@ def main(argv):
     add_argument_skip_on_timeout(parser)
     add_argument_clean(parser)
     add_argument_plain(parser)
+    add_argument_no_jumps(parser)
+    add_argument_no_colors(parser)
 
     subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
 

@@ -107,7 +107,7 @@ class Compile(ProgramsJob):
         )
 
     def _c_colors(self):
-        if not self._env.plain:
+        if not self._env.no_colors:
             return "-fdiagnostics-color=always"
         else:
             return "-fdiagnostics-color=never"
