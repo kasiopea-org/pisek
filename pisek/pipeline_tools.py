@@ -34,6 +34,7 @@ def load_env(
     no_jumps: bool = False,
     no_colors: bool = False,
     strict: bool = False,
+    testing_log: bool = False,
     clean: bool = False,
     solutions: Optional[list[str]] = None,
     timeout: Optional[float] = None,
@@ -62,11 +63,12 @@ def load_env(
         no_jumps=plain or no_jumps,
         no_colors=plain or no_colors,
         strict=strict,
+        testing_log=testing_log,
         solutions=solutions,
         timeout=timeout,
         inputs=inputs,
         skip_on_timeout=skip_on_timeout,
-        all_inputs=all_inputs,
+        all_inputs=all_inputs or testing_log,
     )
 
     if config.check_todos():

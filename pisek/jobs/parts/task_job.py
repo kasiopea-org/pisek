@@ -42,7 +42,7 @@ GENERATOR_MAN_CODE = "generator"
 INPUTS_MAN_CODE = "inputs"
 CHECKER_MAN_CODE = "checker"
 JUDGE_MAN_CODE = "judge"
-SOLUTION_MAN_CODE = "solution"
+SOLUTION_MAN_CODE = "solution_"
 DATA_MAN_CODE = "data"
 
 

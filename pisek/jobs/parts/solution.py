@@ -56,11 +56,11 @@ class SolutionManager(TaskJobManager):
         jobs.append(compile_ := Compile(self._env, self._solution_file, True))
         self._compile_job = compile_
 
-        testcases = {}
+        self._judges: dict[str, RunJudge] = {}
         for sub_num, sub in self._env.config.subtasks.subenvs():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp not in testcases:
+                if inp not in self._judges:
                     run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
@@ -72,11 +72,11 @@ class SolutionManager(TaskJobManager):
                         run_sol = run_judge = self._create_communication_jobs(inp)
                         jobs.append(run_sol)
 
-                    testcases[inp] = run_judge
+                    self._judges[inp] = run_judge
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(testcases[inp])
+                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
 
         return jobs
 
@@ -174,6 +174,10 @@ class SolutionManager(TaskJobManager):
         for output, job in self._outputs:
             if job.result is not None:
                 result["outputs"][job.result.verdict].append(os.path.basename(output))
+
+        result["results"] = {}
+        for inp in self._judges:
+            result["results"][inp] = self._judges[inp].result
 
         return result
 

@@ -36,6 +36,7 @@ from pisek.jobs.parts.checker import CheckerManager
 from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
 from pisek.jobs.parts.data import DataCheckingManager
+from pisek.jobs.parts.testing_log import CreateTestingLog
 
 
 class TaskPipeline(JobPipeline):
@@ -62,7 +63,7 @@ class TaskPipeline(JobPipeline):
             named_pipeline.append(
                 primary_solution := (
                     SolutionManager(env.config.primary_solution),
-                    f"{SOLUTION_MAN_CODE}_{env.config.primary_solution}",
+                    f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
                 )
             )
             solutions.append(primary_solution)
@@ -73,7 +74,7 @@ class TaskPipeline(JobPipeline):
             named_pipeline.append(
                 solution := (
                     SolutionManager(solution),
-                    f"{SOLUTION_MAN_CODE}_{solution}",
+                    f"{SOLUTION_MAN_CODE}{solution}",
                 )
             )
             solution[0].add_prerequisite(*primary_solution)
@@ -89,5 +90,10 @@ class TaskPipeline(JobPipeline):
             data_check[0].add_prerequisite(*inputs)
             for solution in solutions:
                 data_check[0].add_prerequisite(*solution)
+
+            if env.testing_log:
+                named_pipeline.append(testing_log := (CreateTestingLog(), ""))
+                for solution in solutions:
+                    testing_log[0].add_prerequisite(*solution)
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))

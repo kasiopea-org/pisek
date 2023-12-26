@@ -127,6 +127,13 @@ def main(argv):
             help="Skip following inputs on timeout",
         )
 
+    def add_argument_strict(parser):
+        parser.add_argument(
+            "--testing-log",
+            action="store_true",
+            help="Write test results to testing_log.json",
+        )
+
     def add_argument_clean(parser):
         parser.add_argument(
             "--clean",
