@@ -29,7 +29,6 @@ from pisek.license import license, license_gnu
 import pisek.cms as cms
 from pisek.update_config import update
 from pisek.visualize import visualize_command
-from pisek.extract import extract
 
 
 def sigint_handler(sig, frame):
@@ -59,14 +58,6 @@ def test_solution(args):
 def test_generator(args):
     eprint(f"Testing generator")
     return test_task(args, solutions=[])
-
-
-@locked_folder
-def extract_task(args, **kwargs):
-    env = load_env(PATH, **vars(args), **kwargs)
-    if env is None:
-        return 1
-    return extract(env)
 
 
 @locked_folder
@@ -288,10 +279,6 @@ def main(argv):
     parser_update = subparsers.add_parser(
         "update", help="Update config to newer version"
     )
-    parser_extract = subparsers.add_parser(
-        "extract", help="Extract solution data from .pisek_cache"
-    )
-
     parser_license = subparsers.add_parser("license", help="Print license")
     parser_license.add_argument(
         "--print", action="store_true", help="Print entire license"
@@ -391,8 +378,6 @@ def main(argv):
         result = update(PATH)
         if result:
             eprint(result)
-    elif args.subcommand == "extract":
-        extract_task(args)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 

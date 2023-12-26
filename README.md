@@ -90,11 +90,10 @@ pisek clean
 
 ### Visualization
 
-For visualizing running time after the solution:
+For visualizing running time for each solution and testcase:
 ```bash
-pisek              # test the task
-pisek extract      # extract data
-pisek visualize    # visualize
+pisek --testing-log  # test the task
+pisek visualize      # visualize
 ```
 
 ## License
