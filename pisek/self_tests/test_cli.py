@@ -62,6 +62,9 @@ class TestCLITestingLog(TestCLI):
     def args(self):
         return ["--testing-log"]
 
+    def created_files(self):
+        return ["testing_log.json"]
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

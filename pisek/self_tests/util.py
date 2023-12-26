@@ -52,7 +52,11 @@ class TestFixture(unittest.TestCase):
 
     def log_files(self):
         """Log all files for checking whether new ones have been created."""
-        self.original_files = set(glob.glob("*", root_dir=self.task_dir))
+        self.original_files = os.listdir(self.task_dir)
+
+    def created_files(self):
+        """Additional files that are expected to be created."""
+        return []
 
     def check_files(self):
         """
@@ -60,14 +64,16 @@ class TestFixture(unittest.TestCase):
         Ignored:
             .pisek_cache data/* build/*
         """
-        for file in glob.glob("*", root_dir=self.task_dir):
-            directories = ["build", "data"]
-            files = [".pisek_cache"]
-            self.assertTrue(
-                file in self.original_files
-                or file in (directories + files)
-                or any(file.startswith(directory) for directory in directories),
-                f"Pisek generated new file {file}.",
+        directories = ["build", "data"]
+        files = [".pisek_cache"] + self.created_files()
+
+        all_paths = set(self.original_files + directories + files)
+
+        for path in os.listdir(self.task_dir):
+            self.assertIn(
+                path,
+                all_paths,
+                f"Pisek generated new file {path}.",
             )
 
 
