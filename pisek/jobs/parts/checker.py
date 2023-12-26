@@ -74,7 +74,7 @@ class CheckerManager(TaskJobManager):
 
         return jobs
 
-    def _evaluate(self) -> Any:
+    def _evaluate(self) -> None:
         if len(self.jobs) == 0:
             return
 

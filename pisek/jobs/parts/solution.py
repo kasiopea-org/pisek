@@ -135,7 +135,7 @@ class SolutionManager(TaskJobManager):
             return self._job_bar(msg)
         return pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
 
-    def _evaluate(self) -> Any:
+    def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
         total_points = 0
         solution_conf = self._env.config.solutions[self.solution]

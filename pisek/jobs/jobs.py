@@ -253,6 +253,7 @@ class JobManager(PipelineItem):
 
     def create_jobs(self, env: Env) -> list[Job]:
         """Crates this JobManager's jobs."""
+        self.result : Optional[dict[str, Any]]
         self._env = env
         if self.state == State.canceled:
             self.jobs = []
@@ -333,7 +334,7 @@ class JobManager(PipelineItem):
 
         if self.state == State.running:
             try:
-                self.result = self._evaluate()
+                self._evaluate()
             except PipelineItemFailure as failure:
                 self._fail(failure)
             else:
@@ -343,7 +344,7 @@ class JobManager(PipelineItem):
         super().finish()
         return self._get_status()
 
-    def _evaluate(self) -> Any:
+    def _evaluate(self) -> None:
         """Decide whether jobs did run as expected and return result."""
         pass
 
