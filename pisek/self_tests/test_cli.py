@@ -58,5 +58,10 @@ class TestCLIClean(TestCLI):
         return ["clean"]
 
 
+class TestCLITestingLog(TestCLI):
+    def args(self):
+        return ["--testing-log"]
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
