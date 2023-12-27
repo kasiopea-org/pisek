@@ -63,10 +63,7 @@ class JobPipeline(ABC):
 
     def _status_update(self, env: Env) -> bool:
         """Display current progress. Return true if there were no failures."""
-        for _ in range(self._tmp_lines):
-            print(f"{cur.up()}{cur.erase_line()}", end="")
-        self._tmp_lines = 0
-
+        self._clear_print_tmp()
         while len(self.job_managers):
             job_man = self.job_managers.popleft()
             # We are updating job_man's state with this call!
@@ -76,6 +73,8 @@ class JobPipeline(ABC):
                 self._print(job_man.failures(), env, end="", file=sys.stderr)
                 return False
             if job_man.state == State.failed or job_man.ready():
+                self._print_tmp(ongoing_msg, env)
+                self._print_active_item(job_man, env)
                 msg = job_man.finalize()
                 if msg:
                     self._print(msg, env)
@@ -90,9 +89,17 @@ class JobPipeline(ABC):
                 break
 
         if len(self.pipeline):
-            t = time.strftime("%H:%M:%S", time.localtime())
-            self._print_tmp(f"Active job: {self.pipeline[0].name} ({t})", env)
+            self._print_active_item(self.pipeline[0], env)
         return True
+
+    def _clear_print_tmp(self):
+        for _ in range(self._tmp_lines):
+            print(f"{cur.up()}{cur.erase_line()}", end="")
+        self._tmp_lines = 0
+
+    def _print_active_item(self, p_item: PipelineItem, env: Env):
+        t = time.strftime("%H:%M:%S", time.localtime())
+        self._print_tmp(f"Active job: {p_item.name} ({t})", env)
 
     def _print_tmp(self, msg, env: Env, *args, **kwargs):
         """Prints a text to be rewriten latter."""
@@ -102,5 +109,5 @@ class JobPipeline(ABC):
 
     def _print(self, msg, env: Env, *args, **kwargs):
         """Prints a text."""
-        self._tmp_lines += 0
+        self._clear_print_tmp()
         print(str(msg), *args, **kwargs)

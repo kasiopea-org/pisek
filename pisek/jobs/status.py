@@ -13,8 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from math import inf
 import os
 
 from pisek.terminal import tab, pad, colored, MSG_LEN
@@ -38,11 +36,7 @@ class StatusJobManager(JobManager):
         progress_msg = f"  ({part}/{full})"
 
         bar_len = min(terminal_width - len(msg) - len(progress_msg), MAX_BAR_LEN)
-
-        if full == 0:
-            filled = bar_len
-        else:
-            filled = bar_len * part // full
+        filled = bar_len * part // full
 
         return f"{msg}{colored(filled*'━', self._env, color)}{colored((bar_len-filled)*'━', self._env, 'grey')}{progress_msg}"
 
@@ -58,8 +52,9 @@ class StatusJobManager(JobManager):
 
         return self._bar(
             msg,
-            len(self._jobs_with_state(State.succeeded)),
-            len(self.jobs),
+            len(self._jobs_with_state(State.succeeded))
+            + (self.state == State.succeeded),
+            len(self.jobs) + 1,
             color=color,
         )
 
