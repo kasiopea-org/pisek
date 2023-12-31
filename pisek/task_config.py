@@ -213,7 +213,7 @@ class TaskConfig(BaseEnv):
                 0, configparser.SectionProxy(config, "test00")
             )
 
-        total_points = sum(map(lambda s: s.score, subtasks.values()))
+        self["total_points"] = sum(map(lambda s: s.score, subtasks.values()))
 
         # subtask should be ordered by number
         subtasks = {key: val for key, val in sorted(subtasks.items())}
@@ -239,7 +239,7 @@ class TaskConfig(BaseEnv):
 
             try:
                 solutions[solution] = SolutionConfig(
-                    solution, total_points, len(subtasks), config[section_name]
+                    solution, self.total_points, len(subtasks), config[section_name]
                 )
             except TaskConfigError as err:
                 raise TaskConfigError(

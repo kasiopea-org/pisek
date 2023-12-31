@@ -21,7 +21,8 @@ import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
 from pisek.task_config import ProgramType
-from pisek.terminal import pad, tab, MSG_LEN
+from pisek.terminal import pad, pad_left, tab, MSG_LEN
+from pisek.jobs.status import MAX_BAR_LEN
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
@@ -40,6 +41,7 @@ class SolutionManager(TaskJobManager):
 
     def __init__(self, solution: str):
         self.solution = solution
+        self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
         self._outputs: list[tuple[str, RunJudge]] = []
         super().__init__(f"Solution {solution} Manager")
@@ -133,33 +135,44 @@ class SolutionManager(TaskJobManager):
         msg = f"Testing {self.solution} "
         if self.state == State.canceled:
             return self._job_bar(msg)
-        return pad(msg, MSG_LEN) + "|".join(map(str, self.subtasks))
+        msg = pad(msg, MSG_LEN)
+
+        INT_PLACES = len(str(self._env.config.total_points))
+        DEC_PLACES = 2
+        if self.solution_points is None:
+            points = "?" + "." + "?" * DEC_PLACES
+        else:
+            points = format(self.solution_points, f".{DEC_PLACES}f")
+        points = pad_left(f"{points}p ", INT_PLACES + DEC_PLACES + 3)
+
+        subtasks_res = "|".join(map(str, self.subtasks))
+        return msg + points + subtasks_res
 
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
-        total_points = 0
+        self.solution_points = 0
         solution_conf = self._env.config.solutions[self.solution]
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
             points = sub_job.points(expected[sub_job.num])
-            total_points += subtask.score * points
+            self.solution_points += subtask.score * points
 
         points = solution_conf.points
         above = solution_conf.points_above
         below = solution_conf.points_below
 
-        if points is not None and total_points != points:
+        if points is not None and self.solution_points != points:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten {points} but got {total_points} points."
+                f"Solution {self.solution} should have gotten {points} but got {self.solution_points} points."
             )
-        elif above is not None and total_points < above:
+        elif above is not None and self.solution_points < above:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten at least {above} but got {total_points} points."
+                f"Solution {self.solution} should have gotten at least {above} but got {self.solution_points} points."
             )
-        elif below is not None and total_points > below:
+        elif below is not None and self.solution_points > below:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten at most {below} but got {total_points} points."
+                f"Solution {self.solution} should have gotten at most {below} but got {self.solution_points} points."
             )
 
     def _compute_result(self) -> dict[str, Any]:
