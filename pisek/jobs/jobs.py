@@ -147,9 +147,9 @@ class Job(PipelineItem, CaptureInitParams):
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
         for i, arg in enumerate(self._args):
-            sign.update(f"{i}={arg}".encode())
+            sign.update(f"{i}={arg}\n".encode())
         for key, val in self._kwargs.items():
-            sign.update(f"{key}={val}".encode())
+            sign.update(f"{key}={val}\n".encode())
 
         for variable in sorted(envs):
             if variable not in self._env:
