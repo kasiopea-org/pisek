@@ -16,7 +16,8 @@
 import json
 from typing import Any
 
-from pisek.jobs.jobs import Job
+from pisek.jobs.jobs import Job, PipelineItemFailure
+from pisek.terminal import colored
 from pisek.jobs.parts.task_job import (
     TaskJobManager,
     SOLUTION_MAN_CODE,
@@ -35,6 +36,7 @@ class CreateTestingLog(TaskJobManager):
 
     def _evaluate(self) -> None:
         log: dict[str, Any] = {"source": "pisek"}
+        warn_skipped: bool = False
         for name, data in self.prerequisites_results.items():
             if not name.startswith(SOLUTION_MAN_CODE):
                 continue
@@ -46,9 +48,8 @@ class CreateTestingLog(TaskJobManager):
             sol_res: SolutionResult
             for inp, sol_res in data["results"].items():
                 if sol_res is None:
-                    raise ValueError(
-                        f"Job of running solution {solution} on {inp} should not be None."
-                    )
+                    warn_skipped = True
+                    continue
                 log[solution]["results"].append(
                     {
                         "time": sol_res.time,
@@ -58,6 +59,13 @@ class CreateTestingLog(TaskJobManager):
                         "result": sol_res.verdict.name,
                     }
                 )
+
+        if warn_skipped:
+            MSG = "Not all inputs were tested. For testing them use --all-inputs."
+            if self._env.strict:
+                raise PipelineItemFailure(MSG)
+            else:
+                self._print(colored(MSG, self._env, "yellow"))
 
         with open(self._resolve_path(TESTING_LOG), "w") as f:
             json.dump(log, f, indent=4)

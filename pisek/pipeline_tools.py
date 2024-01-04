@@ -68,7 +68,7 @@ def load_env(
         timeout=timeout,
         inputs=inputs,
         skip_on_timeout=skip_on_timeout,
-        all_inputs=all_inputs or testing_log,
+        all_inputs=all_inputs,
     )
 
     if config.check_todos():
