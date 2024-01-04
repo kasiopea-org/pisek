@@ -118,7 +118,7 @@ def main(argv):
             help="Skip following inputs on timeout",
         )
 
-    def add_argument_strict(parser):
+    def add_argument_testing_log(parser):
         parser.add_argument(
             "--testing-log",
             action="store_true",
@@ -245,6 +245,7 @@ def main(argv):
     add_argument_plain(parser)
     add_argument_no_jumps(parser)
     add_argument_no_colors(parser)
+    add_argument_testing_log(parser)
 
     subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
 
