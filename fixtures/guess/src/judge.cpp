@@ -1,50 +1,57 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <fstream>
 #include <iostream>
-#include <unistd.h>
-using namespace std;
 
 const int OPT_QUERIES = 10;
 const int MAX_QUERIES = 20;
 
-void verdict(double points, string msg){
-    cerr << msg << endl;
-	if (points == 0.0) {
-        exit(43);
-    } else {
-        cerr << "POINTS=" << points << endl;
-        exit(42);
-    }
+void verdict(double points, std::string msg) {
+    std::cerr << msg << std::endl;
+    std::cout << points << std::endl;
+
+    std::exit(0);
 }
 
-int main(int argc, char** argv) {
-	FILE* fin = fopen(getenv("TEST_INPUT"), "r");
-	assert(fin);
+int main(int argc, char **argv) {
+    if (argc < 3)
+        return 1;
 
-    char c;
-    int x, q;
-    fscanf(fin, "%d", &x);
+    std::ifstream recv(argv[1], std::ios::in);
+    std::ofstream send(argv[2], std::ios::out);
+
+    int target;
+    std::cin >> target;
+
     int queries = 0;
+
     while (true) {
-        scanf(" %c %d", &c, &q);
-        if (c == '?') {
+        char type;
+        int query;
+
+        if (!(recv >> type >> query))
+            verdict(0, "Protocol violation");
+
+        if (type == '?') {
             if (queries == MAX_QUERIES) {
-                printf("-1\n");
-                fflush(stdout);
-                verdict(0, "Queries limit exceeded");
+                send << -1 << std::endl;
+                verdict(0, "Query limit exceeded");
             }
-            printf("%d\n", (x == q));
-            fflush(stdout);
-        } else if (c == '!') {
-            if (x == q) {
-                verdict(min(1.0, double(OPT_QUERIES) / double(queries)), "OK");
+
+            send << (query == target) << std::endl;
+        } else if (type == '!') {
+            if (query == target) {
+                double score = double(OPT_QUERIES) / double(queries);
+
+                if (score >= 1.0)
+                    verdict(1.0, "translate:success");
+                else
+                    verdict(score, "translate:partial");
             } else {
-                verdict(0, "Wrong");
+                verdict(0, "translate:wrong");
             }
         } else {
-            verdict(0, "Protocol violation.");
+            verdict(0, "Protocol violation");
         }
+
         queries++;
     }
 }
