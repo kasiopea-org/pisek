@@ -75,7 +75,12 @@ class JobPipeline(ABC):
             if job_man.state == State.failed or job_man.ready():
                 self._print_tmp(ongoing_msg, env)
                 self._print_active_item(job_man, env)
+
+                job_man.dirty = False
                 msg = job_man.finalize()
+                if job_man.dirty:
+                    self._tmp_lines = 0
+
                 if msg:
                     self._print(msg, env)
                 if job_man.state == State.failed:
