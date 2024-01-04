@@ -203,7 +203,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
         )
 
     def _run(self) -> None:
-        copy_file = self.input_file.replace(".in", ".copy")
+        copy_file = self._replace_file_suffix(self.input_file, ".in", ".copy")
         self._gen(copy_file, self.seed, self.subtask)
         if not self._files_equal(self.input_file, copy_file):
             raise PipelineItemFailure(

@@ -77,7 +77,9 @@ class JudgeManager(TaskJobManager):
             for job, times in JOBS:
                 for i in range(times):
                     seed = seeds.pop()
-                    inv_out = out.replace(".out", f".{seed:x}.invalid")
+                    inv_out = self._replace_file_suffix(
+                        out, ".out", f".{seed:x}.invalid"
+                    )
                     jobs += [
                         invalidate := job(self._env, out, inv_out, seed),
                         run_judge := judge_job(
@@ -154,6 +156,7 @@ class RunJudge(ProgramsJob):
         name: str,
         judge: str,
         input_name: str,
+        judge_log_file_name: str,
         expected_points: Optional[float],
         **kwargs,
     ) -> None:
@@ -161,6 +164,7 @@ class RunJudge(ProgramsJob):
         self.judge = judge
         self.input_name = input_name
         self.input = self._input(input_name)
+        self.judge_log_file = self._log_file(judge_log_file_name, judge)
         self.expected_points = expected_points
 
     @cache
@@ -255,6 +259,15 @@ class RunJudge(ProgramsJob):
 class RunCMSJudge(RunJudge):
     """Judge class with CMS helper functions"""
 
+    def __init__(
+        self,
+        env: Env,
+        judge_log_file_name: str,
+        **kwargs,
+    ) -> None:
+        super().__init__(env=env, judge_log_file_name=judge_log_file_name, **kwargs)
+        self.points_file = self._points_file(judge_log_file_name)
+
     def _load_points(self, result: RunResult) -> float:
         points_str = result.raw_stdout().split("\n")[0]
         try:
@@ -313,6 +326,7 @@ class RunBatchJudge(RunJudge):
             name=JUDGE_JOB_NAME.replace(r"(\w+)", os.path.basename(output_name), 1),
             judge=judge,
             input_name=input_name,
+            judge_log_file_name=output_name,
             expected_points=expected_points,
             **kwargs,
         )
@@ -322,7 +336,6 @@ class RunBatchJudge(RunJudge):
         )(output_name)
         self.correct_output_name = correct_output
         self.correct_output = self._output(correct_output)
-        self.log_file = self._log_file(self.output_name, self.judge)
 
     def _get_solution_run_res(self) -> RunResult:
         if "run_solution" in self.prerequisites_results:
@@ -445,7 +458,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             self.judge,
             args=[str(self.subtask), self.seed],
             stdin=self.output,
-            stderr=self.log_file,
+            stderr=self.judge_log_file,
             env=envs,
         )
         if result.returncode == 0:
@@ -500,14 +513,12 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
         self._access_file(self.input)
         self._access_file(self.output)
         self._access_file(self.correct_output)
-        points_file = self.output.replace(".out", ".judge")
-        self._access_file(points_file)
         result = self._run_program(
             ProgramType.judge,
             self.judge,
             args=[self.input, self.correct_output, self.output],
-            stdout=points_file,
-            stderr=self.log_file,
+            stdout=self.points_file,
+            stderr=self.judge_log_file,
         )
 
         sol_result = self._load_solution_result(result)

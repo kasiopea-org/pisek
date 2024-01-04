@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import filecmp
+import fnmatch
 import glob
 import os
-import fnmatch
+import re
 import shutil
 from typing import Optional, Any, Callable, Iterable
 
@@ -52,6 +53,9 @@ class TaskHelper:
     def _get_build_dir(self) -> str:
         return BUILD_DIR
 
+    def _replace_file_suffix(self, what: str, from_: str, to: str) -> str:
+        return re.sub(f"{re.escape(from_)}$", to, what)
+
     def _resolve_path(self, *path: str) -> str:
         """Like os.path.join but adds current task directory."""
         return os.path.normpath(os.path.join(self._env.task_dir, *path))
@@ -64,11 +68,20 @@ class TaskHelper:
         """Path to data file."""
         return self._resolve_path(self._env.config.data_subdir, *path)
 
+    def _log_dir_file(self, name: str) -> str:
+        """Path to file in log directory."""
+        return self._data(LOG_SUBDIR, name)
+
+    def _points_file(self, name: str) -> str:
+        """Path to points file."""
+        name_without_suffix = os.path.splitext(name)[0]
+        return self._log_dir_file(f"{name_without_suffix}.points")
+
     def _log_file(self, name: str, program: str) -> str:
         """Path to log file."""
         name_without_suffix = os.path.splitext(name)[0]
-        return self._data(
-            LOG_SUBDIR, f"{name_without_suffix}.{os.path.basename(program)}.log"
+        return self._log_dir_file(
+            f"{name_without_suffix}.{os.path.basename(program)}.log"
         )
 
     def _static(self, name: str) -> str:
@@ -158,7 +171,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     def _get_samples(self) -> list[tuple[str, str]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._subtask_inputs(self._env.config.subtasks["0"])
-        outs = map(lambda x: x.replace(".in", ".out"), ins)
+        outs = map(lambda x: self._replace_file_suffix(x, ".in", ".out"), ins)
         return list(zip(ins, outs))
 
     def _all_inputs(self) -> list[str]:

@@ -97,7 +97,7 @@ class SolutionManager(TaskJobManager):
         run_solution.add_prerequisite(self._compile_job)
 
         if sub_num == "0":
-            c_out = inp.replace(".in", ".out")
+            c_out = self._replace_file_suffix(inp, ".in", ".out")
         else:
             primary_sol = self._env.config.solutions[
                 self._env.config.primary_solution
@@ -422,15 +422,14 @@ class RunCommunication(RunCMSJudge, RunSolution):
             judge=judge,
             input_name=input_name,
             expected_points=expected_points,
+            judge_log_file_name=os.path.basename(
+                self._output_from_input(input_name, solution)
+            ),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
         )
         self.solution = solution
-        self.judge_log_file = self._log_file(
-            os.path.basename(self._output_from_input(self.input, self.solution)),
-            self.judge,
-        )
         self.sol_log_file = self._log_file(os.path.basename(self.input), self.solution)
 
     def _get_solution_run_res(self) -> RunResult:
@@ -448,14 +447,11 @@ class RunCommunication(RunCMSJudge, RunSolution):
             fd_from_solution = os.open(fifo_from_solution, os.O_WRONLY)
             fd_to_solution = os.open(fifo_to_solution, os.O_RDONLY)
 
-            points_file = self._output(self.input_name.replace(".in", ".judge"))
-            os.makedirs(os.path.dirname(points_file), exist_ok=True)
-
             self._load_program(
                 ProgramType.judge,
                 self.judge,
                 stdin=self.input,
-                stdout=points_file,
+                stdout=self.points_file,
                 stderr=self.judge_log_file,
                 args=[fifo_from_solution, fifo_to_solution],
             )

@@ -55,7 +55,7 @@ class DataManager(TaskJobManager):
                 self.globs_to_files(
                     list(
                         map(
-                            lambda x: x.replace(".in", ".out"),
+                            lambda x: self._replace_file_suffix(x, ".in", ".out"),
                             self._env.config.subtasks[0].all_globs,
                         )
                     ),
@@ -78,7 +78,10 @@ class DataManager(TaskJobManager):
 
         if self._env.config.task_type != "communication":
             for static_inp in self._static_inputs:
-                if static_inp.replace(".in", ".out") not in self._static_outputs:
+                if (
+                    self._replace_file_suffix(static_inp, ".in", ".out")
+                    not in self._static_outputs
+                ):
                     raise PipelineItemFailure(
                         f"No matching output for static input {os.path.basename(static_inp)}."
                     )
