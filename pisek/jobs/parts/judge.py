@@ -231,8 +231,10 @@ class RunJudge(ProgramsJob):
 
         return text
 
+
 class RunCMSJudge(RunJudge):
-    """Judge class with cms helper functions"""
+    """Judge class with CMS helper functions"""
+
     def _load_points(self, result: RunResult) -> float:
         points_str = result.raw_stdout().split("\n")[0]
         try:
@@ -267,7 +269,7 @@ class RunCMSJudge(RunJudge):
             )
         else:
             raise self._create_program_failure(
-                f"Judge failed on output {self.output_name}:", judge_run_result
+                f"Judge failed on {self._judging_message()}:", judge_run_result
             )
 
 
