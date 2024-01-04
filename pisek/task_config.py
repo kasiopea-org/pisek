@@ -362,6 +362,10 @@ class SubtaskConfig(BaseEnv):
             self["predecessors"] = config_section.get("predecessors", prev).split()
         self["_constructing"] = False
 
+        for in_glob in self.in_globs:
+            if not in_glob.endswith(".in"):
+                raise TaskConfigError(f"Input glob '{in_glob}' must end with '.in'.")
+
     def _glob_i(self, i: int):
         return f"{i:02}*.in"
 
