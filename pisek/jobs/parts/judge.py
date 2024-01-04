@@ -434,7 +434,7 @@ class RunCMSJudge(RunBatchJudge):
                 points = float(points_str)
             except ValueError:
                 raise self._create_program_failure(
-                    "Judge wrote didn't write points on stdout:", result
+                    "Judge didn't write points on stdout:", result
                 )
 
             if not 0 <= points <= 1:

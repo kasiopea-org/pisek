@@ -16,6 +16,8 @@
 
 import os
 from typing import Any, Optional, Callable, Iterable
+import tempfile
+
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
@@ -401,79 +403,83 @@ class RunCommunication(RunJudge, RunSolution):
         self.timeout = timeout
 
     def _get_solution_run_res(self) -> RunResult:
-        judge_in, sol_out = os.pipe()
-        sol_in, judge_out = os.pipe()
-        self._access_file(self.input)
-        self._load_program(
-            self.judge,
-            stdin=judge_in,
-            stdout=judge_out,
-            stderr=self.judge_log_file,
-            timeout=self.timeout,
-            env={"TEST_INPUT": self.input},
-        )
-        self._load_program(
-            self.solution,
-            stdin=sol_in,
-            stdout=sol_out,
-            stderr=self.sol_log_file,
-            timeout=self.timeout,
-        )
-        judge_res, sol_res = self._run_programs()
-        self._judge_run_result = judge_res
-        return sol_res
+        with tempfile.TemporaryDirectory() as fifo_dir:
+            fifo_from_solution = os.path.join(fifo_dir, "solution-to-manager")
+            fifo_to_solution = os.path.join(fifo_dir, "manager-to-solution")
 
-    def _load_stderr(self, run_result: RunResult) -> dict[str, Any]:
-        KNOWN_METADATA = {"POINTS": float}
-        lines = run_result.raw_stderr().split("\n")
-        res = {"msg": lines[0]}
-        for line in lines[1:]:
-            if line.strip() == "":
-                continue
-            if line.count("=") != 1:
-                raise PipelineItemFailure(
-                    f"Metadata line must be in format 'KEY=value': {line}"
-                )
-            key, val = map(str.strip, line.split("="))
-            if key not in KNOWN_METADATA:
-                raise PipelineItemFailure(f"Unknown key {key}")
+            os.mkfifo(fifo_from_solution)
+            os.mkfifo(fifo_to_solution)
 
-            try:
-                res[key] = KNOWN_METADATA[key](val)
-            except ValueError:
-                raise PipelineItemFailure(f"Invalid value '{val}' for metadata {key}")
+            # Open fifos to prevent blocking on future opens
+            os.open(fifo_from_solution, os.O_RDWR)
+            os.open(fifo_to_solution, os.O_RDWR)
 
-        return res
+            fd_from_solution = os.open(fifo_from_solution, os.O_WRONLY)
+            fd_to_solution = os.open(fifo_to_solution, os.O_RDONLY)
+
+            points_file = self._output(self.input_name.replace(".in", ".judge"))
+            os.makedirs(os.path.dirname(points_file), exist_ok=True)
+
+            self._load_program(
+                self.judge,
+                stdin=self.input,
+                stdout=points_file,
+                stderr=self.judge_log_file,
+                timeout=self.timeout,
+                args=[fifo_from_solution, fifo_to_solution],
+            )
+
+            self._load_program(
+                self.solution,
+                stdin=fd_to_solution,
+                stdout=fd_from_solution,
+                stderr=self.sol_log_file,
+                timeout=self.timeout,
+            )
+
+            judge_res, sol_res = self._run_programs()
+            self._judge_run_result = judge_res
+
+            return sol_res
+
+    def _load_points(self, result: RunResult) -> float:
+        lines = result.raw_stdout().split("\n")
+
+        try:
+            points = float(lines[0])
+        except ValueError:
+            raise self._create_program_failure(
+                "Manager didn't write points to stdout:", result
+            )
+
+        if not 0 <= points <= 1:
+            raise self._create_program_failure(
+                "Manager didn't give between 0 and 1 points:", result
+            )
+
+        return points
 
     def _judge(self) -> SolutionResult:
-        if self._judge_run_result.returncode == 42:
-            metadata = self._load_stderr(self._judge_run_result)
-            points = metadata.get("POINTS", 1.0)
-            if points == 1.0:
-                return SolutionResult(
-                    Verdict.ok,
-                    1.0,
-                    self._judge_run_result.raw_stderr(),
-                    self._quote_program(self._judge_run_result),
-                )
-            else:
-                return SolutionResult(
-                    Verdict.partial,
-                    points,
-                    self._judge_run_result.raw_stderr(),
-                    self._quote_program(self._judge_run_result),
-                )
-        elif self._judge_run_result.returncode == 43:
-            return SolutionResult(
-                Verdict.wrong_answer,
-                0.0,
-                self._judge_run_result.raw_stderr(),
-                self._quote_program(self._judge_run_result),
-            )
-        else:
+        if self._judge_run_result.returncode != 0:
             raise self._create_program_failure(
-                f"Judge failed on {self._judging_message()}:", self._judge_run_result
+                f"Manager failed on {self._judging_message()}:", self._judge_run_result
             )
+
+        points = self._load_points(self._judge_run_result)
+
+        if points == 1.0:
+            verdict = Verdict.ok
+        elif points == 0.0:
+            verdict = Verdict.wrong_answer
+        else:
+            verdict = Verdict.partial
+
+        return SolutionResult(
+            verdict,
+            points,
+            self._judge_run_result.raw_stderr(),
+            self._quote_program(self._judge_run_result),
+        )
 
     def _judging_message(self) -> str:
         return f"solution {os.path.basename(self.solution)} on input {self.input_name}"
