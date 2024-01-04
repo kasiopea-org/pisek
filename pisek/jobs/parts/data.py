@@ -78,12 +78,10 @@ class DataManager(TaskJobManager):
 
         if self._env.config.task_type != "communication":
             for static_inp in self._static_inputs:
-                if (
-                    self._replace_file_suffix(static_inp, ".in", ".out")
-                    not in self._static_outputs
-                ):
+                static_out = self._replace_file_suffix(static_inp, ".in", ".out")
+                if static_out not in self._static_outputs:
                     raise PipelineItemFailure(
-                        f"No matching output for static input {os.path.basename(static_inp)}."
+                        f"Missing matching output '{os.path.basename(static_out)}' for static input '{os.path.basename(static_inp)}'."
                     )
 
         for fname in self._all_input_files:
