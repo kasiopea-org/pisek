@@ -231,6 +231,45 @@ class RunJudge(ProgramsJob):
 
         return text
 
+class RunCMSJudge(RunJudge):
+    """Judge class with cms helper functions"""
+    def _load_points(self, result: RunResult) -> float:
+        points_str = result.raw_stdout().split("\n")[0]
+        try:
+            points = float(points_str)
+        except ValueError:
+            raise self._create_program_failure(
+                "Judge didn't write points on stdout:", result
+            )
+
+        if not 0 <= points <= 1:
+            raise self._create_program_failure(
+                "Judge must give between 0 and 1 points:", result
+            )
+
+        return points
+
+    def _load_solution_result(self, judge_run_result: RunResult) -> SolutionResult:
+        if judge_run_result.returncode == 0:
+            points = self._load_points(judge_run_result)
+            if points == 1.0:
+                verdict = Verdict.ok
+            elif points == 0.0:
+                verdict = Verdict.wrong_answer
+            else:
+                verdict = Verdict.partial
+
+            return SolutionResult(
+                verdict,
+                points,
+                judge_run_result.raw_stderr(),
+                self._quote_program(judge_run_result),
+            )
+        else:
+            raise self._create_program_failure(
+                f"Judge failed on output {self.output_name}:", judge_run_result
+            )
+
 
 class RunBatchJudge(RunJudge):
     """Runs batch judge on single input. (Abstract class)"""
@@ -393,7 +432,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             )
 
 
-class RunCMSJudge(RunBatchJudge):
+class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
     """Judges solution output using judge with CMS interface."""
 
     def __init__(
@@ -428,44 +467,11 @@ class RunCMSJudge(RunBatchJudge):
             stdout=points_file,
             stderr=self.log_file,
         )
-        if result.returncode == 0:
-            points_str = result.raw_stdout().split("\n")[0]
-            try:
-                points = float(points_str)
-            except ValueError:
-                raise self._create_program_failure(
-                    "Judge didn't write points on stdout:", result
-                )
 
-            if not 0 <= points <= 1:
-                raise self._create_program_failure(
-                    "Judge must give between 0 and 1 points:", result
-                )
-
-            if points == 0:
-                return SolutionResult(
-                    Verdict.wrong_answer,
-                    0.0,
-                    result.raw_stderr(),
-                    self._quote_program(result),
-                    self._nice_diff(),
-                )
-            elif points == 1:
-                return SolutionResult(
-                    Verdict.ok, 1.0, result.raw_stderr(), self._quote_program(result)
-                )
-            else:
-                return SolutionResult(
-                    Verdict.partial,
-                    points,
-                    result.raw_stderr(),
-                    self._quote_program(result),
-                    self._nice_diff(),
-                )
-        else:
-            raise self._create_program_failure(
-                f"Judge failed on output {self.output_name}:", result
-            )
+        sol_result = self._load_solution_result(result)
+        if sol_result.verdict != Verdict.ok:
+            sol_result.diff = self._nice_diff()
+        return sol_result
 
 
 def judge_job(
@@ -477,14 +483,14 @@ def judge_job(
     get_seed: Callable[[], str],
     expected_points: Optional[float],
     env: Env,
-) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSJudge]:
+) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.judge_type == "diff":
         return RunDiffJudge(
             env, judge, input_name, output_name, correct_output, expected_points
         )
     elif env.config.contest_type == "cms":
-        return RunCMSJudge(
+        return RunCMSBatchJudge(
             env, judge, input_name, output_name, correct_output, expected_points
         )
     else:

@@ -33,7 +33,7 @@ from pisek.jobs.parts.solution_result import (
     SUBTASK_SPEC,
     solution_res_true,
 )
-from pisek.jobs.parts.judge import judge_job, RunJudge, RunBatchJudge
+from pisek.jobs.parts.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
 
 class SolutionManager(TaskJobManager):
@@ -374,7 +374,7 @@ class RunBatchSolution(RunSolution):
         )
 
 
-class RunCommunication(RunJudge, RunSolution):
+class RunCommunication(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,
@@ -442,44 +442,8 @@ class RunCommunication(RunJudge, RunSolution):
 
             return sol_res
 
-    def _load_points(self, result: RunResult) -> float:
-        lines = result.raw_stdout().split("\n")
-
-        try:
-            points = float(lines[0])
-        except ValueError:
-            raise self._create_program_failure(
-                "Manager didn't write points to stdout:", result
-            )
-
-        if not 0 <= points <= 1:
-            raise self._create_program_failure(
-                "Manager didn't give between 0 and 1 points:", result
-            )
-
-        return points
-
     def _judge(self) -> SolutionResult:
-        if self._judge_run_result.returncode != 0:
-            raise self._create_program_failure(
-                f"Manager failed on {self._judging_message()}:", self._judge_run_result
-            )
-
-        points = self._load_points(self._judge_run_result)
-
-        if points == 1.0:
-            verdict = Verdict.ok
-        elif points == 0.0:
-            verdict = Verdict.wrong_answer
-        else:
-            verdict = Verdict.partial
-
-        return SolutionResult(
-            verdict,
-            points,
-            self._judge_run_result.raw_stderr(),
-            self._quote_program(self._judge_run_result),
-        )
+        return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
         return f"solution {os.path.basename(self.solution)} on input {self.input_name}"
