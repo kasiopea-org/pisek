@@ -1,0 +1,9 @@
+{
+  "name": "CMS",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": ["--add-host=db.internal:host-gateway"],
+  "appPort": [8888, 8889],
+  "privileged": true
+}
