@@ -266,10 +266,10 @@ def main(argv):
         "--print", action="store_true", help="Print entire license"
     )
 
-    parser_cms = subparsers.add_parser(
-        "cms", help="Import tasks into CMS"
+    parser_cms = subparsers.add_parser("cms", help="Import tasks into CMS")
+    subparsers_cms = parser_cms.add_subparsers(
+        help="subcommands", dest="cms_subcommand"
     )
-    subparsers_cms = parser_cms.add_subparsers(help="subcommands", dest="cms_subcommand")
 
     parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
 
@@ -299,7 +299,7 @@ def main(argv):
         except ImportError as err:
             err.add_note("Failed to locate CMS installation")
             raise
-        
+
         if args.cms_subcommand == "create":
             cms.create(args)
         else:
