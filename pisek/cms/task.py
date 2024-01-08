@@ -23,5 +23,5 @@ def create_task(session: Session, name: str):
 
 
 def get_default_file_name(name: str):
-    name = re.sub("[^a-zA-Z0-9]+", "_")
+    name = re.sub("[^a-zA-Z0-9]+", "_", name)
     return f"{name}.%l"
