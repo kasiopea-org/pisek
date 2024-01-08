@@ -1,4 +1,14 @@
-from pisek.cms.pack import pack, samples
-from pisek.cms.submit import submit_all
-from pisek.cms.info import task_info
-from pisek.cms.analyze import analyze, dump_data
+from cms.db.session import Session
+
+from pisek.cms.task import create_task
+from pisek.task_config import TaskConfig
+
+def create(args):
+    config = TaskConfig(".")
+    session = Session()
+
+    name = config["task_name"]
+
+    create_task(session, name)
+
+    session.commit()

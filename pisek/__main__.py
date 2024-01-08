@@ -26,7 +26,6 @@ from pisek.pipeline_tools import run_pipeline, load_env, PATH, locked_folder
 from pisek.util import clean_task_dir
 from pisek.terminal import eprint
 from pisek.license import license, license_gnu
-import pisek.cms as cms
 from pisek.update_config import update
 from pisek.visualize import visualize_command
 
@@ -154,24 +153,6 @@ def main(argv):
             help="Do not use ANSI color sequences.",
         )
 
-    def add_argument_cms_contest(parser):
-        parser.add_argument(
-            "--contest-id",
-            "-c",
-            help="Contest id, where to submit",
-            type=int,
-            required=True,
-        )
-
-    def add_argument_cms_user(parser):
-        parser.add_argument(
-            "--username",
-            "-u",
-            help="Username, to submit with.",
-            type=str,
-            required=True,
-        )
-
     def add_argument_mode(parser):
         parser.add_argument(
             "--mode",
@@ -253,7 +234,7 @@ def main(argv):
     parser_test.add_argument(
         "target",
         choices=["solution", "generator"],
-        help="choice between 'solution' ot 'generator'",
+        help="choice between 'solution' or 'generator'",
     )
     parser_test.add_argument(
         "solution", type=str, help="name of solution section", nargs="?"
@@ -286,47 +267,11 @@ def main(argv):
     )
 
     parser_cms = subparsers.add_parser(
-        "cms", help="Nástroj na nahrávání Pískovitých úloh do CMSka"
+        "cms", help="Import tasks into CMS"
     )
-    subparsers_cms = parser_cms.add_subparsers(help="podpříkazy", dest="cms_subcommand")
-    parser_cms_check = subparsers_cms.add_parser("check", help="do a preflight check")
-    parser_cms_pack = subparsers_cms.add_parser("pack", help="check and pack")
-    parser_cms_submit = subparsers_cms.add_parser("submit", help="submit for testing")
-    add_argument_cms_contest(parser_cms_submit)
-    add_argument_cms_user(parser_cms_submit)
-    parser_cms_analyze = subparsers_cms.add_parser(
-        "analyze", help="analyze submitted solutions"
-    )
-    add_argument_cms_contest(parser_cms_analyze)
-    add_argument_cms_user(parser_cms_analyze)
-    parser_cms_dump = subparsers_cms.add_parser(
-        "dump", help="save json with run logs from submitted solutions"
-    )
-    add_argument_cms_contest(parser_cms_dump)
-    add_argument_cms_user(parser_cms_dump)
-    parser_cms_dump.add_argument(
-        "output",
-        help="Output file (json)",
-        type=str,
-    )
+    subparsers_cms = parser_cms.add_subparsers(help="subcommands", dest="cms_subcommand")
 
-    parser_cms_info = subparsers_cms.add_parser(
-        "info", help="print task info without testing"
-    )
-    parser_cms_samples = subparsers_cms.add_parser(
-        "samples", help="pack samples into .zip"
-    )
-    CHECK_NONE = "none"
-    CHECK_INSTANT = "instant"
-    CHECK_SANE = "sane"
-    CHECK_THOROUGH = "thorough"
-    CHECK_MODES = [CHECK_NONE, CHECK_INSTANT, CHECK_SANE, CHECK_THOROUGH]
-    parser_cms.add_argument(
-        "--check-mode",
-        choices=CHECK_MODES,
-        default=None,
-        help="Úroveň kontrol, které se mají provést",
-    )
+    parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
 
     args = parser.parse_args(argv)
 
@@ -348,27 +293,18 @@ def main(argv):
         result = test_task(args, solutions=None, target="all")
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
-        actions = {
-            "check": (CHECK_THOROUGH, lambda a: None),
-            "pack": (CHECK_SANE, cms.pack),
-            "submit": (CHECK_INSTANT, cms.submit_all),
-            "analyze": (CHECK_NONE, cms.analyze),
-            "dump": (CHECK_NONE, cms.dump_data),
-            "info": (CHECK_INSTANT, cms.task_info),
-            "samples": (CHECK_SANE, cms.samples),
-            None: (CHECK_SANE, cms.pack),
-        }
-        checks = {
-            CHECK_NONE: lambda a: None,
-            CHECK_INSTANT: cms.check.instant,
-            CHECK_SANE: cms.check.sane,
-            CHECK_THOROUGH: cms.check.thorough,
-        }
-        check_mode, action = actions[args.cms_subcommand]
-        if args.check_mode is not None:  # allow overriding
-            check_mode = args.check_mode
-        checks[check_mode](args)
-        return action(args)
+
+        try:
+            import pisek.cms as cms
+        except ImportError as err:
+            err.add_note("Failed to locate CMS installation")
+            raise
+        
+        if args.cms_subcommand == "create":
+            cms.create(args)
+        else:
+            raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
+
     elif args.subcommand == "clean":
         result = not clean_directory(args)
     elif args.subcommand == "visualize":
