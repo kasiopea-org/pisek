@@ -86,10 +86,6 @@ def clean_task_dir(task_dir: str) -> bool:
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory
 
-    from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
-
-    rm_f(os.path.join(task_dir, SAMPLES_ZIP))
-    rm_f(os.path.join(task_dir, TESTS_ZIP))
     rm_f(os.path.join(task_dir, CACHE_FILENAME))
     _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
     return True
