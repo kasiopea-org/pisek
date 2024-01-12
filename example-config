@@ -7,6 +7,11 @@
 
 [task]
 
+# Task version
+# - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
+# - v2 - Current version, Added solution sections and redone test sections.
+version=v2
+
 # Name of task (for automatic CMS import)
 name=blecha
 
