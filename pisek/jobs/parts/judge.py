@@ -225,8 +225,7 @@ class RunJudge(ProgramsJob):
             and result.points != self.expected_points
         ):
             raise PipelineItemFailure(
-                self._judging_message_capitalized()
-                + f"should have got {self.expected_points} points but got {result.points} points."
+                f"{self._judging_message_capitalized()} should have got {self.expected_points} points but got {result.points} points."
             )
 
         return result
