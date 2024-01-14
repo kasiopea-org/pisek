@@ -21,8 +21,8 @@ contest_type=cms
 
 task_type=communication
 # Task type:
-# - Batch (default)
-# - Communication
+# - batch (default)
+# - communication
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config
