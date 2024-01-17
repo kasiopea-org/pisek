@@ -59,7 +59,7 @@ out_judge=judge
 
 judge_needs_in=0
 judge_needs_out=0
-# Only for out_check=judge
+# Only for task_type=batch and out_check=judge
 # Set to 1 if judge needs input/output
 # Defaults to 1
 

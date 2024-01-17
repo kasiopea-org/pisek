@@ -160,12 +160,16 @@ class TaskConfig(BaseEnv):
 
         if self.judge_type == "judge":
             self["judge"] = config.get("tests", "out_judge")
-            self["judge_needs_in"] = config.get(
-                "tests", "judge_needs_in", type_=int, fallback=1
-            )
-            self["judge_needs_out"] = config.get(
-                "tests", "judge_needs_out", type_=int, fallback=1
-            )
+            if self.task_type == "batch":
+                self["judge_needs_in"] = config.get(
+                    "tests", "judge_needs_in", type_=int, fallback=1
+                )
+                self["judge_needs_out"] = config.get(
+                    "tests", "judge_needs_out", type_=int, fallback=1
+                )
+            elif self.task_type == "communication":
+                self["judge_needs_in"] = 1
+                self["judge_needs_out"] = 0
         else:
             self["judge"] = "diff"
             self["judge_needs_in"] = 0
