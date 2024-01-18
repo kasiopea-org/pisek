@@ -243,6 +243,6 @@ class TaskJob(Job, TaskHelper):
     @_file_access(2)
     def _diff_files(self, file_a: str, file_b: str) -> str:
         diff = subprocess.run(
-            ["diff", file_a, file_b, "-B", "-u2"], stdout=subprocess.PIPE
+            ["diff", file_a, file_b, "-Bb", "-u2"], stdout=subprocess.PIPE
         )
         return diff.stdout.decode("utf-8")
