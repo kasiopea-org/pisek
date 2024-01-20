@@ -172,9 +172,12 @@ class TaskConfig(BaseEnv):
             self["judge_needs_out"] = 1
 
         self["fail_mode"] = "all" if self.contest_type == "kasiopea" else "any"
-        # Relevant for CMS interactive tasks. The file to be linked with
-        # the contestant's solution (primarily for C++)
+
+        # Relevant for CMS tasks.
+        # The file to be linked with the contestant's solution (primarily for C++)
         self["stub"] = config.get("tests", "stub", fallback=None)
+        # A list of header files that the solution can include
+        self["headers"] = config.get("tests", "headers", fallback="").split()
 
         self["limits"] = LimitsConfig(self.contest_type, config)
 

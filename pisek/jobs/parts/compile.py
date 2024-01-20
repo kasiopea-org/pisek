@@ -40,8 +40,14 @@ class Compile(ProgramsJob):
         self.target = self._executable(os.path.basename(program))
 
         self.stub = None
+        self.headers = []
+
         if use_stub and self._env.config.stub:
             self.stub = self._resolve_path(self._env.config.stub)
+        if use_stub and self._env.config.headers:
+            self.headers = [
+                self._resolve_path(header) for header in self._env.config.headers
+            ]
 
     def _resolve_extension(self, name: str) -> str:
         """
@@ -89,8 +95,7 @@ class Compile(ProgramsJob):
     def _compile_cpp(self, program: str):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
-        if self.stub is not None:  # Interactive task
-            cpp_flags += self.stub_flags(".cpp")
+        cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
             ["g++", program, "-o", self.target] + cpp_flags, program
@@ -99,8 +104,7 @@ class Compile(ProgramsJob):
     def _compile_c(self, program: str):
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
-        if self.stub is not None:  # Interactive task
-            c_flags += self.stub_flags(".c")
+        c_flags += self._add_stub("c")
 
         return self._run_compilation(
             ["gcc", program, "-o", self.target] + c_flags, program
@@ -190,16 +194,19 @@ class Compile(ProgramsJob):
         st = os.stat(filepath)
         os.chmod(filepath, st.st_mode | 0o111)
 
-    def stub_flags(self, extension):
-        # For interactive tasks - compile with the manager and add its directory
-        # to the search path to allow `#include "manager.h"`
-        res = []
-        if os.path.dirname(self.stub):
-            res.append(f"-I{os.path.dirname(self.stub)}")
+    def _add_stub(self, extension):
+        flags = []
 
-        self._access_file(self.stub + ".h")
+        if self.stub is not None:
+            filename = f"{self.stub}.{extension}"
+            self._access_file(filename)
+            flags += [filename]
 
-        return res
+        for header in self.headers:
+            self._access_file(header)
+            flags += [f"-I{os.path.dirname(header)}"]
+
+        return flags
 
 
 # This is the list of supported Python interpreters.
