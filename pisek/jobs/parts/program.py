@@ -17,8 +17,10 @@
 from dataclasses import dataclass, field
 from enum import Enum
 import os
+import psutil
 import tempfile
-from typing import Optional, Any, Union
+import time
+from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
 import yaml
@@ -190,6 +192,7 @@ class ProgramsJob(TaskJob):
     def __init__(self, env: Env, name: str, **kwargs) -> None:
         super().__init__(env=env, name=name, **kwargs)
         self._program_pool: list[ProgramPoolItem] = []
+        self._callback: Optional[Callable[[subprocess.Popen], None]] = None
 
     def _load_compiled(self, program: str) -> str:
         """Loads name of compiled program."""
@@ -235,6 +238,11 @@ class ProgramsJob(TaskJob):
             )
         )
 
+    def _load_callback(self, callback: Callable[[subprocess.Popen], None]) -> None:
+        if self._callback is not None:
+            raise RuntimeError("Callback already loaded.")
+        self._callback = callback
+
     def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
         """Runs all programs in execution pool."""
         running_pool = []
@@ -247,15 +255,26 @@ class ProgramsJob(TaskJob):
                 )
             )
 
-        if print_first_stderr:
-            stderr_raw = ""
-            while True:
+        stderr_raw = ""
+        callback_exec = False
+        while True:
+            states = [process is not None for process in running_pool]
+            if not callback_exec and any(states):
+                callback_exec = True
+                if self._callback is not None:
+                    self._callback(running_pool[states.index(True)])
+
+            if all(states):
+                break
+
+            if print_first_stderr:
                 assert running_pool[0].stderr is not None  # To make mypy happy
                 line = running_pool[0].stderr.read().decode()
-                if not line:
-                    break
-                stderr_raw += line
-                self._print(colored(line, self._env, "yellow"), end="", stderr=True)
+                if line:
+                    stderr_raw += line
+                    self._print(colored(line, self._env, "yellow"), end="", stderr=True)
+
+            time.sleep(0.1)
 
         run_results = []
         for pool_item, (process, meta_file) in zip(

@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Any, Optional, Callable, Iterable
 import tempfile
-
+import time
+from typing import Any, Optional, Callable, Iterable
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
@@ -440,12 +440,13 @@ class RunCommunication(RunCMSJudge, RunSolution):
             os.mkfifo(fifo_from_solution)
             os.mkfifo(fifo_to_solution)
 
-            # Open fifos to prevent blocking on future opens
-            os.open(fifo_from_solution, os.O_RDWR)
-            os.open(fifo_to_solution, os.O_RDWR)
-
-            fd_from_solution = os.open(fifo_from_solution, os.O_WRONLY)
-            fd_to_solution = os.open(fifo_to_solution, os.O_RDONLY)
+            pipes = [
+                os.open(fifo_from_solution, os.O_RDWR),
+                os.open(fifo_to_solution, os.O_RDWR),
+                # Open fifos to prevent blocking on future opens
+                fd_from_solution := os.open(fifo_from_solution, os.O_WRONLY),
+                fd_to_solution := os.open(fifo_to_solution, os.O_RDONLY),
+            ]
 
             self._load_program(
                 ProgramType.judge,
@@ -463,6 +464,13 @@ class RunCommunication(RunCMSJudge, RunSolution):
                 stdout=fd_from_solution,
                 stderr=self.sol_log_file,
             )
+
+            def close_pipes(_):
+                time.sleep(0.05)
+                for pipe in pipes:
+                    os.close(pipe)
+
+            self._load_callback(close_pipes)
 
             judge_res, sol_res = self._run_programs()
             self._judge_run_result = judge_res
