@@ -17,7 +17,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 import os
-import psutil
 import tempfile
 import time
 from typing import Optional, Any, Union, Callable
