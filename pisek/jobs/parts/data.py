@@ -22,7 +22,7 @@ from pisek.env import Env
 from pisek.jobs.parts.task_job import (
     TaskJob,
     TaskJobManager,
-    GENERATED_SUBDIR,
+    GENERATOR_MAN_CODE,
     INPUTS_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
@@ -66,9 +66,7 @@ class DataManager(TaskJobManager):
         self._generated_inputs = list(
             map(
                 self._generated_input,
-                self.globs_to_files(
-                    self._env.config.subtasks.all_globs, self._data(GENERATED_SUBDIR)
-                ),
+                self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"],
             )
         )
 

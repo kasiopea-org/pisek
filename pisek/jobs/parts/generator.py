@@ -18,7 +18,7 @@ import glob
 import random
 import os
 import shutil
-from typing import Optional
+from typing import Any
 
 import pisek.util as util
 from pisek.env import Env
@@ -85,6 +85,17 @@ class GeneratorManager(TaskJobManager):
             gen2.add_prerequisite(compile)
 
         return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        res = {}
+        if self._env.config.contest_type == "kasiopea":
+            res["inputs"] = self._inputs
+        else:
+            res["inputs"] = self.globs_to_files(
+                self._env.config.subtasks.all_globs, self._data(GENERATED_SUBDIR)
+            )
+
+        return res
 
 
 class RunOnlineGeneratorMan(TaskJobManager):
