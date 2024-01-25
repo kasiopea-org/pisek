@@ -16,8 +16,8 @@
 
 from abc import ABC, abstractmethod
 from collections import deque
+from colorama import Cursor, ansi
 import sys
-import ansi.cursor as cur
 import time
 
 from pisek.env import Env
@@ -99,7 +99,7 @@ class JobPipeline(ABC):
 
     def _clear_print_tmp(self):
         for _ in range(self._tmp_lines):
-            print(f"{cur.up()}{cur.erase_line()}", end="")
+            print(f"{Cursor.UP()}{ansi.clear_line()}", end="")
         self._tmp_lines = 0
 
     def _print_active_item(self, p_item: PipelineItem, env: Env):

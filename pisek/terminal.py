@@ -16,7 +16,7 @@
 from functools import partial
 import sys
 
-from ansi.color import fg, fx
+from colorama import Fore
 from typing import Callable
 
 from pisek.env import Env
@@ -57,6 +57,6 @@ no_jumps_variant = partial(_plain_variant, attr="no_jumps")
 @no_color_variant
 def colored(msg: str, color: str) -> str:
     # Recolors all white text to given color
-    col = getattr(fg, color)
-    msg = msg.replace(f"{fx.reset}", f"{fx.reset}{col}")
-    return f"{col}{msg}{fx.reset}"
+    col = getattr(Fore, color.upper())
+    msg = msg.replace(f"{Fore.RESET}", f"{Fore.RESET}{col}")
+    return f"{col}{msg}{Fore.RESET}"

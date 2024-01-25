@@ -20,7 +20,7 @@ from math import ceil
 import os
 import re
 import sys
-from ansi.color import fg, fx
+from colorama import Fore
 from typing import Optional, Union, Iterable, Callable
 
 from pisek import util
@@ -42,7 +42,7 @@ TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "poin
 
 
 def red(msg: str) -> str:
-    return f"{fg.red}{msg}{fx.reset}"
+    return f"{Fore.RED}{msg}{Fore.RESET}"
 
 
 def group_by_subtask(
