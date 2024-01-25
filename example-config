@@ -151,7 +151,7 @@ subtasks=X10
 # and LIMIT is one of:
 #   time_limit  Execution time limit [seconds]
 #   clock_limit Wall clock time limit [seconds]
-#   mem_limit   Memory limit [MB]
+#   mem_limit   Memory limit [KB]
 #   process_limit   Maximum number of processes -- at the moment,
 #           limits greater than 1 are interpreted as "unlimited".
 #           Please keep in mind that killing of multiple processes
