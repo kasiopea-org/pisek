@@ -144,7 +144,6 @@ class OnlineGeneratorJob(ProgramsJob):
             raise PipelineItemFailure(f"Seed {seed} is negative.")
 
         input_dir = os.path.dirname(input_file)
-        os.makedirs(input_dir, exist_ok=True)
 
         difficulty = str(subtask)
         hexa_seed = f"{seed:x}"
@@ -274,7 +273,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
             shutil.rmtree(self._generated_input("."))
         except FileNotFoundError:
             pass
-        os.makedirs(self._generated_input("."))
+        self.makedirs(self._generated_input("."), exist_ok=False)
 
         gen_dir = self._generated_input(".")
         run_result = self._run_program(

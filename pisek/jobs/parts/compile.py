@@ -71,7 +71,7 @@ class Compile(ProgramsJob):
     def _run(self):
         """Compiles program."""
         program = self._resolve_extension(self.program)
-        os.makedirs(self._executable("."), exist_ok=True)
+        self.makedirs(self._executable("."))
 
         _, ext = os.path.splitext(program)
 

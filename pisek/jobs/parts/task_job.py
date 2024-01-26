@@ -164,6 +164,16 @@ class TaskHelper:
 
         return "\n".join(short_text)
 
+    @staticmethod
+    def makedirs(direname: str, exist_ok: bool = True):
+        os.makedirs(direname, exist_ok=exist_ok)
+
+    @staticmethod
+    def make_filedirs(filename: str, exist_ok: bool = True):
+        TaskHelper.makedirs(
+            os.path.normpath(os.path.dirname(filename)), exist_ok=exist_ok
+        )
+
 
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
@@ -207,7 +217,7 @@ class TaskJob(Job, TaskHelper):
     @_file_access(1)
     def _open_file(self, filename: str, mode="r", **kwargs):
         if "w" in mode:
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            self.make_filedirs(filename)
         return open(filename, mode, **kwargs)
 
     @_file_access(1)
@@ -226,12 +236,12 @@ class TaskJob(Job, TaskHelper):
 
     @_file_access(2)
     def _copy_file(self, filename: str, dst: str):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        self.make_filedirs(dst)
         return shutil.copy(filename, dst)
 
     @_file_access(2)
     def _link_file(self, filename: str, dst: str, overwrite: bool = False):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        self.make_filedirs(dst)
         if overwrite and os.path.exists(dst):
             os.remove(dst)
         return os.link(filename, dst)

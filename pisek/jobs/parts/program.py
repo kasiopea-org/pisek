@@ -218,9 +218,10 @@ class ProgramsJob(TaskJob):
         if isinstance(stdin, str):
             self._access_file(stdin)
         if isinstance(stdout, str):
+            self.make_filedirs(stdout)
             self._access_file(stdout)
         if isinstance(stderr, str):
-            os.makedirs(os.path.dirname(stderr), exist_ok=True)
+            self.make_filedirs(stderr)
             self._access_file(stderr)
 
         self._program_pool.append(
