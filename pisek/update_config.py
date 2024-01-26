@@ -45,7 +45,7 @@ def update(path) -> Optional[str]:
 
     # Renames
     rename(config, "task", "samples_subdir", "static_subdir")
-    rename(config, "tests", "solution_manager", "headers")
+    rename(config, "tests", "solution_manager", "stub")
 
     subtask_points = []
     for section in sorted(config.sections()):
