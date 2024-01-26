@@ -3,6 +3,7 @@ A module for testing pisek itself. The strategy is to take a functioning
 fixture of a task and then break it in various small ways to see whether
 pisek catches the problem.
 """
+
 import unittest
 import shutil
 import os
