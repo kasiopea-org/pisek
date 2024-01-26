@@ -204,7 +204,8 @@ class Compile(ProgramsJob):
 
         for header in self.headers:
             self._access_file(header)
-            flags += [f"-I{os.path.dirname(header)}"]
+            directory = os.path.normpath(os.path.dirname(header))
+            flags += [f"-I{directory}"]
 
         return flags
 
