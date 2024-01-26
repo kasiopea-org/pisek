@@ -1,8 +1,7 @@
+#include <guess.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-
-int think;
-int queries = 0;
 
 int ask(int x) {
     printf("? %d\n", x);
@@ -10,8 +9,6 @@ int ask(int x) {
     scanf(" %d", &x);
     return x;
 }
-
-int guessNumber();
 
 int main() {
     int ans = guessNumber();

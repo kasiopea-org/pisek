@@ -1,4 +1,4 @@
-#include "stub.h"
+#include "guess.h"
 
 int guessNumber() {
     for (int i=1; i<10; i++) {
