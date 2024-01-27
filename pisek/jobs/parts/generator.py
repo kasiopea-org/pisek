@@ -18,7 +18,7 @@ import glob
 import random
 import os
 import shutil
-from typing import Optional
+from typing import Any
 
 import pisek.util as util
 from pisek.env import Env
@@ -86,6 +86,17 @@ class GeneratorManager(TaskJobManager):
 
         return jobs
 
+    def _compute_result(self) -> dict[str, Any]:
+        res = {}
+        if self._env.config.contest_type == "kasiopea":
+            res["inputs"] = self._inputs
+        else:
+            res["inputs"] = self.globs_to_files(
+                self._env.config.subtasks.all_globs, self._data(GENERATED_SUBDIR)
+            )
+
+        return res
+
 
 class RunOnlineGeneratorMan(TaskJobManager):
     def __init__(self, subtask: int, seed: int, file: str):
@@ -133,7 +144,6 @@ class OnlineGeneratorJob(ProgramsJob):
             raise PipelineItemFailure(f"Seed {seed} is negative.")
 
         input_dir = os.path.dirname(input_file)
-        os.makedirs(input_dir, exist_ok=True)
 
         difficulty = str(subtask)
         hexa_seed = f"{seed:x}"
@@ -263,7 +273,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
             shutil.rmtree(self._generated_input("."))
         except FileNotFoundError:
             pass
-        os.makedirs(self._generated_input("."))
+        self.makedirs(self._generated_input("."), exist_ok=False)
 
         gen_dir = self._generated_input(".")
         run_result = self._run_program(

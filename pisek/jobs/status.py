@@ -38,7 +38,7 @@ class StatusJobManager(JobManager):
         bar_len = min(terminal_width - len(msg) - len(progress_msg), MAX_BAR_LEN)
         filled = bar_len * part // full
 
-        return f"{msg}{colored(filled*'━', self._env, color)}{colored((bar_len-filled)*'━', self._env, 'grey')}{progress_msg}"
+        return f"{msg}{colored(filled*'━', self._env, color)}{colored((bar_len-filled)*'━', self._env, 'white')}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""

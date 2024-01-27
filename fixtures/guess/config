@@ -21,6 +21,7 @@ in_gen=src/gen
 
 # The important line:
 stub=src/stub
+headers=src/guess.h
 
 out_check=judge
 out_judge=src/judge

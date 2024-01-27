@@ -1,4 +1,4 @@
-#include "stub.h"
+#include "guess.h"
 
 int guessNumber() {
     while (ask(1) == 0) {}

@@ -158,7 +158,7 @@ class ProgramPoolItem:
         minibox_args = []
         minibox_args.append(f"--time={self.time_limit}")
         minibox_args.append(f"--wall-time={self.clock_limit}")
-        minibox_args.append(f"--mem={self.mem_limit}")
+        minibox_args.append(f"--mem={self.mem_limit*1024}")
         minibox_args.append(f"--processes={self.process_limit}")
 
         for std in ("stdin", "stdout", "stderr"):
@@ -220,9 +220,10 @@ class ProgramsJob(TaskJob):
         if isinstance(stdin, str):
             self._access_file(stdin)
         if isinstance(stdout, str):
+            self.make_filedirs(stdout)
             self._access_file(stdout)
         if isinstance(stderr, str):
-            os.makedirs(os.path.dirname(stderr), exist_ok=True)
+            self.make_filedirs(stderr)
             self._access_file(stderr)
 
         self._program_pool.append(

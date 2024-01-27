@@ -124,5 +124,10 @@ class TestGuess(TestFixtureVariant):
         return "../../fixtures/guess/"
 
 
+class TestStub(TestFixtureVariant):
+    def fixture_path(self):
+        return "../../fixtures/odd_stub/"
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

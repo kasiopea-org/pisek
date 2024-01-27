@@ -212,9 +212,11 @@ class BaseEnv:
             f"<{self.__class__.__name__} "
             + ", ".join(
                 [
-                    f"{name}=<{var.__class__.__name__}>"
-                    if isinstance(var, BaseEnv)
-                    else f"{name}={var}"
+                    (
+                        f"{name}=<{var.__class__.__name__}>"
+                        if isinstance(var, BaseEnv)
+                        else f"{name}={var}"
+                    )
                     for name, var in self._vars.items()
                 ]
             )

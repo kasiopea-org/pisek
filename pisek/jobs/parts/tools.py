@@ -33,6 +33,7 @@ class ToolsManager(TaskJobManager):
         super().__init__("Preparing tools")
 
     def _get_jobs(self) -> list[Job]:
+        self.makedirs(self._executable("."))
         jobs: list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
@@ -50,7 +51,6 @@ class PrepareMinibox(TaskJob):
         source = files("pisek").joinpath("tools/minibox.c")
         executable = self._executable("minibox")
         self._access_file(executable)
-        os.makedirs(self._executable("."), exist_ok=True)
         gcc = subprocess.run(
             [
                 "gcc",
@@ -81,7 +81,6 @@ class PrepareTextPreprocessor(TaskJob):
         source = files("pisek").joinpath("tools/text-preproc.c")
         executable = self._executable("text-preproc")
         self._access_file(executable)
-        os.makedirs(self._executable("."), exist_ok=True)
         gcc = subprocess.run(
             [
                 "gcc",
@@ -104,7 +103,6 @@ class SanitizeAbstract(ProgramsJob):
     """Abstract job that has method for file sanitization."""
 
     def _sanitize(self, input_: str, output: str) -> None:
-        os.makedirs(os.path.dirname(output), exist_ok=True)
         result = self._run_program(
             ProgramType.tool, "text-preproc", stdin=input_, stdout=output
         )

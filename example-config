@@ -16,7 +16,7 @@ version=v2
 name=blecha
 
 contest_type=cms
-# Enviroment for which is task developed
+# Environment for which is task developed
 # kasiopea (default) / cms
 
 task_type=communication
@@ -49,7 +49,7 @@ checker=check
 
 out_check=diff
 # Describes how to check outputs
-#   - diff: checks that contestant output equals correct output (ignores whitespace) (deafault)
+#   - diff: checks that contestant output equals correct output (ignores whitespace) (default)
 #   - judge: if there can be multiple solutions, checks with program (called 'judge')
 # In communication, only judge is allowed
 
@@ -92,18 +92,18 @@ in_globs=01*.in
 file_name = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
-predeccessors =
+predecessors =
 # Space separated list of subtasks easier than this subtask
 # Inputs from these subtasks are included into this subtask as well
-# Defaults to previous subtask (or nohting if subtask has number <= 1)
+# Defaults to previous subtask (or nothing if subtask has number <= 1)
 
 [test00]
 # Section for samples subtasks
-# Can be ommited and has the following defaults
+# Can be omitted and has the following defaults
 name=Samples
 points=0
 in_globs=sample*.in
-predeccessors=
+predecessors=
 
 [solution_correct]
 # Section for each solution

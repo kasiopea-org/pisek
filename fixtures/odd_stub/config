@@ -1,0 +1,26 @@
+# Pisek fixture
+# Source: $(Písek)/example-config for more information
+
+[task]
+name=sum-cms
+contest_type=cms
+version=v2
+
+[tests]
+in_gen=gen
+out_check=diff
+stub=stubs/grader
+headers=stubs/odd.h
+
+[test01]
+points=10
+in_globs=*.in
+
+[limits]
+solve_time_limit=1
+
+[solution_solve]
+source=solve
+primary=yes
+points=10
+subtasks=11
