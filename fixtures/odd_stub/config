@@ -2,7 +2,7 @@
 # Source: $(Písek)/example-config for more information
 
 [task]
-name=sum-cms
+name=odd-stub
 contest_type=cms
 version=v2
 
