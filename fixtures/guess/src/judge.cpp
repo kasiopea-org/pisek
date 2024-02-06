@@ -15,8 +15,8 @@ int main(int argc, char **argv) {
     if (argc < 3)
         return 1;
 
-    std::ifstream recv(argv[1], std::ios::in);
     std::ofstream send(argv[2], std::ios::out);
+    std::ifstream recv(argv[1], std::ios::in);
 
     int target;
     std::cin >> target;
