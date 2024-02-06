@@ -1,6 +1,6 @@
 from cms.db.session import Session
 
-from pisek.cms.task import create_task
+from pisek.cms.task import add_dataset, create_task, get_task
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.pipeline_tools import PATH, run_pipeline
@@ -22,5 +22,16 @@ def create(args):
     session = Session()
 
     create_task(session, config)
+
+    session.commit()
+
+
+def add(args):
+    config = TaskConfig(".")
+    prepare_files(config)
+
+    session = Session()
+
+    add_dataset(session, config)
 
     session.commit()

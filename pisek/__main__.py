@@ -272,6 +272,9 @@ def main(argv):
     )
 
     parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
+    parser_cms_add = subparsers_cms.add_parser(
+        "add", help="Add a dataset to an existing task"
+    )
 
     args = parser.parse_args(argv)
 
@@ -302,6 +305,8 @@ def main(argv):
 
         if args.cms_subcommand == "create":
             cms.create(args)
+        elif args.cms_subcommand == "add":
+            cms.add(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 

@@ -3,6 +3,7 @@ from cms.db.task import Task, Dataset
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
 import re
+import datetime
 
 from pisek.cms.testcase import create_testcase, get_testcases
 from pisek.task_config import TaskConfig
@@ -11,10 +12,11 @@ TASK_TYPES = {"batch": "Batch", "communication": "Communication"}
 
 
 def create_dataset(session: Session, config: TaskConfig, task: Task) -> Dataset:
+    description = create_description()
     score_params = get_group_score_parameters(config)
 
     dataset = Dataset(
-        description="Default",
+        description=description,
         autojudge=True,
         task_type=TASK_TYPES[config.task_type],
         task_type_parameters=("alone", ("", ""), "diff"),
@@ -32,7 +34,7 @@ def create_dataset(session: Session, config: TaskConfig, task: Task) -> Dataset:
     return dataset
 
 
-def get_group_score_parameters(config: TaskConfig) -> list[tuple[str, int]]:
+def get_group_score_parameters(config: TaskConfig) -> list[tuple[int, str]]:
     params = []
 
     for _name, subtask in config.subtasks.subenvs():
@@ -40,6 +42,11 @@ def get_group_score_parameters(config: TaskConfig) -> list[tuple[str, int]]:
         params.append((subtask.score, globs_to_regex(globs)))
 
     return params
+
+
+def create_description() -> str:
+    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return date
 
 
 def strip_input_extention(file: str) -> str:

@@ -1,12 +1,13 @@
-from cms.db.task import Task
+from cms.db.task import Task, Dataset
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 import re
 
 from pisek.cms.dataset import create_dataset
 from pisek.task_config import TaskConfig
 
 
-def create_task(session: Session, config: TaskConfig):
+def create_task(session: Session, config: TaskConfig) -> Task:
     name = config.task_name
 
     task = Task(name=name, title=name, submission_format=[get_default_file_name(name)])
@@ -15,7 +16,16 @@ def create_task(session: Session, config: TaskConfig):
     task.active_dataset = dataset
 
     session.add(task)
-    session.add(dataset)
+    return task
+
+
+def add_dataset(session: Session, config: TaskConfig) -> Dataset:
+    task = get_task(session, config)
+    return create_dataset(session, config, task)
+
+
+def get_task(session: Session, config: TaskConfig):
+    return session.query(Task).filter(Task.name == config.task_name).one()
 
 
 def get_default_file_name(name: str):
