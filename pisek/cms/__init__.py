@@ -12,7 +12,8 @@ def prepare_files(config):
     if contest_type != "cms":
         raise RuntimeError(f"Cannot upload {contest_type}-type task to CMS")
 
-    run_pipeline(PATH, TaskPipeline, solutions=[config.primary_solution])
+    if run_pipeline(PATH, TaskPipeline, solutions=[config.primary_solution]) != 0:
+        raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
 
 
 def create(args):
