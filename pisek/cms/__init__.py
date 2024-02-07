@@ -61,6 +61,9 @@ def submit(args):
 
     task = get_task(session, config)
     participation = get_participation(session, task, username)
-    submit_all(session, config, task, participation)
+    submissions = submit_all(session, config, task, participation)
 
     session.commit()
+
+    for solution, submission in submissions:
+        print(f"Submitted {solution} with id {submission.id}")

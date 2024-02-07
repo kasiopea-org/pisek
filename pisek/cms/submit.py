@@ -24,11 +24,15 @@ def get_participation(session: Session, task: Task, username: str) -> Participat
 
 def submit_all(
     session: Session, config: TaskConfig, task: Task, participation: Participation
-):
+) -> list[tuple[str, Submission]]:
     files = FileCacher()
+    submissions = []
 
-    for _name, solution in config.solutions.subenvs():
-        submit(session, files, config, solution, task, participation)
+    for name, solution in config.solutions.subenvs():
+        submission = submit(session, files, config, solution, task, participation)
+        submissions.append((name, submission))
+
+    return submissions
 
 
 def submit(
@@ -38,13 +42,26 @@ def submit(
     solution: SolutionConfig,
     task: Task,
     participation: Participation,
-):
+) -> Submission:
     file_path, language = resolve_solution(task.contest, config, solution)
 
     if len(task.submission_format) != 1:
         raise RuntimeError(
             "Cannot submit solutions to tasks that require multiple files"
         )
+
+    digest = files.put_file_from_path(file_path, f"Solution to task {task}")
+
+    submission = (
+        session.query(Submission)
+        .join(File)
+        .filter(Submission.task == task)
+        .filter(File.digest == digest)
+        .one_or_none()
+    )
+
+    if submission is not None:
+        return submission
 
     submission = Submission(
         timestamp=datetime.now(),
@@ -55,9 +72,9 @@ def submit(
     session.add(submission)
 
     filename = task.submission_format[0]
-    digest = files.put_file_from_path(file_path, f"Solution to task {task}")
-
     session.add(File(filename=filename, digest=digest, submission=submission))
+
+    return submission
 
 
 def resolve_solution(
