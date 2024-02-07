@@ -19,13 +19,6 @@ def create_task(session: Session, config: TaskConfig, description: str) -> Task:
     return task
 
 
-def add_dataset(
-    session: Session, config: TaskConfig, description: str, autojudge: bool
-) -> Dataset:
-    task = get_task(session, config)
-    return create_dataset(session, config, task, description, autojudge)
-
-
 def get_task(session: Session, config: TaskConfig):
     return session.query(Task).filter(Task.name == config.task_name).one()
 

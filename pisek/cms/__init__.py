@@ -1,6 +1,8 @@
 from cms.db.session import Session
+from pisek.cms.dataset import create_dataset
 
-from pisek.cms.task import add_dataset, create_task
+from pisek.cms.submit import get_participation, submit_all
+from pisek.cms.task import create_task, get_task
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.pipeline_tools import PATH, run_pipeline
@@ -43,8 +45,22 @@ def add(args):
     description = args.description
     autojudge = not args.no_autojudge
 
-    dataset = add_dataset(session, config, description, autojudge)
+    task = get_task(session, config)
+    dataset = create_dataset(session, config, task, description, autojudge)
 
     session.commit()
 
     print(f'Added dataset "{dataset.description}" (id {dataset.id})')
+
+
+def submit(args):
+    config = TaskConfig(".")
+    session = Session()
+
+    username = args.username
+
+    task = get_task(session, config)
+    participation = get_participation(session, task, username)
+    submit_all(session, config, task, participation)
+
+    session.commit()

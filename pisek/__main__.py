@@ -292,6 +292,17 @@ def main(argv):
         help="Disable background judging for the new dataset",
     )
 
+    parser_cms_submit = subparsers_cms.add_parser(
+        "submit", help="Submit reference solutions for evaluation using CMS"
+    )
+    parser_cms_submit.add_argument(
+        "--username",
+        "-u",
+        type=str,
+        required=True,
+        help="Username of user to submit as",
+    )
+
     args = parser.parse_args(argv)
 
     result = None
@@ -323,6 +334,8 @@ def main(argv):
             cms.create(args)
         elif args.cms_subcommand == "add":
             cms.add(args)
+        elif args.cms_subcommand == "submit":
+            cms.submit(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 
