@@ -6,7 +6,7 @@ from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.pipeline_tools import PATH, run_pipeline
 
 
-def prepare_files(config: TaskConfig, args):
+def prepare_files(config: TaskConfig):
     contest_type = config.contest_type
 
     if contest_type != "cms":
