@@ -29,7 +29,7 @@ DATA_SUBDIR = "data/"
 
 
 ProgramType = Enum(
-    "Program_type", ["tool", "in_gen", "checker", "solve", "sec_solve", "judge"]
+    "Program_type", ["tool", "in_gen", "checker", "solve", "sec_solve", "judge", "cms"]
 )
 
 
@@ -492,7 +492,7 @@ class LimitsConfig(BaseEnv):
                     key = f"{program_type.name}_{limit}"
                     if key in config["limits"]:
                         limits[limit] = config.get("limits", key, type_=type_)
-                    elif program_type.name == "sec_solve":
+                    elif program_type.name in ("sec_solve", "cms"):
                         limits[limit] = self.solve[limit]
             self[program_type.name] = ProgramLimits(**limits)
 
