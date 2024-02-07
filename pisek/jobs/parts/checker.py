@@ -156,6 +156,7 @@ class CheckerJob(ProgramsJob):
         self.subtask = subtask
         self.input_name = input_name
         self.input_file = self._input(input_name)
+        self.log_file = self._log_file(input_name, self.checker)
         self.expected = expected
 
     def _check(self) -> RunResult:
@@ -164,6 +165,7 @@ class CheckerJob(ProgramsJob):
             self.checker,
             args=[str(self.subtask)],
             stdin=self.input_file,
+            stderr=self.log_file,
         )
 
     def _run(self) -> RunResult:
