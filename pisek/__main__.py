@@ -216,6 +216,14 @@ def main(argv):
             help="Number of  segments until limit.",
         )
 
+    def add_argument_description(parser):
+        parser.add_argument(
+            "--description",
+            "-d",
+            type=str,
+            help="Description of the created dataset",
+        )
+
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
@@ -272,8 +280,16 @@ def main(argv):
     )
 
     parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
+    add_argument_description(parser_cms_create)
+
     parser_cms_add = subparsers_cms.add_parser(
         "add", help="Add a dataset to an existing task"
+    )
+    add_argument_description(parser_cms_add)
+    parser_cms_add.add_argument(
+        "--no-autojudge",
+        action="store_true",
+        help="Disable background judging for the new dataset",
     )
 
     args = parser.parse_args(argv)

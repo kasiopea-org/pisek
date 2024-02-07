@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
@@ -10,12 +10,21 @@ from pisek.cms.testcase import create_testcase, get_testcases
 from pisek.task_config import TaskConfig
 from pisek.jobs.parts.task_job import BUILD_DIR
 
-TASK_TYPES = {"batch": "Batch", "communication": "Communication"}
 
+def create_dataset(
+    session: Session,
+    config: TaskConfig,
+    task: Task,
+    description: Optional[str],
+    autojudge: bool = True,
+) -> Dataset:
+    if description is None:
+        description = create_description()
 
-def create_dataset(session: Session, config: TaskConfig, task: Task) -> Dataset:
-    description = create_description()
     score_params = get_group_score_parameters(config)
+
+    task_type: str
+    task_params: Any
 
     if config.task_type == "batch":
         task_type = "Batch"
@@ -32,7 +41,7 @@ def create_dataset(session: Session, config: TaskConfig, task: Task) -> Dataset:
 
     dataset = Dataset(
         description=description,
-        autojudge=True,
+        autojudge=autojudge,
         task_type=task_type,
         task_type_parameters=task_params,
         score_type="GroupMin",
