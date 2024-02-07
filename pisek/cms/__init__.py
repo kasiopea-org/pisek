@@ -24,9 +24,14 @@ def create(args):
 
     description = args.description
 
-    create_task(session, config, description)
+    task = create_task(session, config, description)
+    dataset = task.active_dataset
 
     session.commit()
+
+    print(
+        f'Created task {task.name} (id {task.id}) with dataset "{dataset.description}" (id {dataset.id})'
+    )
 
 
 def add(args):
@@ -38,6 +43,8 @@ def add(args):
     description = args.description
     autojudge = not args.no_autojudge
 
-    add_dataset(session, config, description, autojudge)
+    dataset = add_dataset(session, config, description, autojudge)
 
     session.commit()
+
+    print(f'Added dataset "{dataset.description}" (id {dataset.id})')
