@@ -1,7 +1,8 @@
 from cms.db.session import Session
-from pisek.cms.dataset import create_dataset
+from pisek.cms.dataset import create_dataset, get_dataset
+from pisek.cms.result import create_testing_log
 
-from pisek.cms.submit import get_participation, submit_all
+from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
 from pisek.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
@@ -19,7 +20,7 @@ def prepare_files(config: TaskConfig):
 
 
 def create(args):
-    config = TaskConfig(".")
+    config = TaskConfig(PATH)
     prepare_files(config)
 
     session = Session()
@@ -37,7 +38,7 @@ def create(args):
 
 
 def add(args):
-    config = TaskConfig(".")
+    config = TaskConfig(PATH)
     prepare_files(config)
 
     session = Session()
@@ -54,7 +55,7 @@ def add(args):
 
 
 def submit(args):
-    config = TaskConfig(".")
+    config = TaskConfig(PATH)
     session = Session()
 
     username = args.username
@@ -67,3 +68,14 @@ def submit(args):
 
     for solution, submission in submissions:
         print(f"Submitted {solution} with id {submission.id}")
+
+
+def testing_log(args):
+    config = TaskConfig(PATH)
+    session = Session()
+
+    description = args.dataset
+
+    task = get_task(session, config)
+    dataset = get_dataset(session, task, description)
+    create_testing_log(session, config, dataset)

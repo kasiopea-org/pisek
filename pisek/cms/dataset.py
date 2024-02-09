@@ -193,6 +193,15 @@ def add_headers(
         session.add(Manager(dataset=dataset, filename=basename, digest=header))
 
 
+def get_dataset(session: Session, task: Task, description: str) -> Dataset:
+    return (
+        session.query(Dataset)
+        .filter(Dataset.task == task)
+        .filter(Dataset.description == description)
+        .one()
+    )
+
+
 def create_description() -> str:
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return date

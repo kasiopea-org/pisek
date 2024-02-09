@@ -1,3 +1,4 @@
+from typing import Optional
 from cms.db.contest import Contest
 from cms.db.task import Task
 from cms.db.user import Participation, User
@@ -50,15 +51,8 @@ def submit(
             "Cannot submit solutions to tasks that require multiple files"
         )
 
-    digest = files.put_file_from_path(file_path, f"Solution to task {task}")
-
-    submission = (
-        session.query(Submission)
-        .join(File)
-        .filter(Submission.task == task)
-        .filter(File.digest == digest)
-        .one_or_none()
-    )
+    digest = files.put_file_from_path(file_path, f"Solution to task {task.id}")
+    submission = get_submission_of_digest(session, digest, language, task)
 
     if submission is not None:
         return submission
@@ -75,6 +69,36 @@ def submit(
     session.add(File(filename=filename, digest=digest, submission=submission))
 
     return submission
+
+
+def get_submission(
+    session: Session,
+    files: FileCacher,
+    config: TaskConfig,
+    solution: SolutionConfig,
+    task: Task,
+) -> Optional[Submission]:
+    file_path, language = resolve_solution(task.contest, config, solution)
+    digest = files.put_file_from_path(file_path, f"Solution to task {task.name}")
+
+    return get_submission_of_digest(session, digest, language, task)
+
+
+def get_submission_of_digest(
+    session: Session,
+    digest: str,
+    language: Language,
+    task: Task,
+) -> Optional[Submission]:
+    return (
+        session.query(Submission)
+        .join(File)
+        .filter(Submission.task == task)
+        .filter(Submission.language == language.name)
+        .filter(File.digest == digest)
+        .order_by(Submission.timestamp.desc())
+        .first()
+    )
 
 
 def resolve_solution(

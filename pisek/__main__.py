@@ -224,6 +224,15 @@ def main(argv):
             help="Description of the created dataset",
         )
 
+    def add_argument_dataset(parser):
+        parser.add_argument(
+            "--dataset",
+            "-d",
+            type=str,
+            required=True,
+            help="The description of the dataset for which to fetch results",
+        )
+
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
@@ -300,8 +309,14 @@ def main(argv):
         "-u",
         type=str,
         required=True,
-        help="Username of user to submit as",
+        help="The username of user to submit as",
     )
+
+    parser_cms_testing_log = subparsers_cms.add_parser(
+        "testing-log",
+        help="Generate a testing log for reference solutions submitted to CMS",
+    )
+    add_argument_dataset(parser_cms_testing_log)
 
     args = parser.parse_args(argv)
 
@@ -336,6 +351,8 @@ def main(argv):
             cms.add(args)
         elif args.cms_subcommand == "submit":
             cms.submit(args)
+        elif args.cms_subcommand == "testing-log":
+            cms.testing_log(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 
