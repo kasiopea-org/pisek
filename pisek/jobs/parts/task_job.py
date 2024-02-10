@@ -25,18 +25,11 @@ from typing import Optional, Any, Callable, Iterable
 import pisek.util as util
 import subprocess
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
-BUILD_DIR = "build/"
-
-GENERATED_SUBDIR = "generated/"
-INPUTS_SUBDIR = "inputs/"
-INVALID_OUTPUTS_SUBDIR = "invalid/"
-OUTPUTS_SUBDIR = "outputs/"
-SANITIZED_SUBDIR = "sanitized/"
-LOG_SUBDIR = "log/"
 
 TOOLS_MAN_CODE = "tools"
 GENERATOR_MAN_CODE = "generator"
@@ -49,72 +42,6 @@ DATA_MAN_CODE = "data"
 
 class TaskHelper:
     _env: Env
-
-    def _get_build_dir(self) -> str:
-        return BUILD_DIR
-
-    def _replace_file_suffix(self, what: str, from_: str, to: str) -> str:
-        return re.sub(f"{re.escape(from_)}$", to, what)
-
-    def _resolve_path(self, *path: str) -> str:
-        """Like os.path.join but adds current task directory."""
-        return os.path.normpath(os.path.join(self._env.task_dir, *path))
-
-    def _executable(self, name: str) -> str:
-        """Path to executable with given basename."""
-        return self._resolve_path(self._get_build_dir(), name)
-
-    def _data(self, *path: str) -> str:
-        """Path to data file."""
-        return self._resolve_path(self._env.config.data_subdir, *path)
-
-    def _log_dir_file(self, name: str) -> str:
-        """Path to file in log directory."""
-        return self._data(LOG_SUBDIR, name)
-
-    def _points_file(self, name: str) -> str:
-        """Path to points file."""
-        name_without_suffix = os.path.splitext(name)[0]
-        return self._log_dir_file(f"{name_without_suffix}.points")
-
-    def _log_file(self, name: str, program: str) -> str:
-        """Path to log file."""
-        name_without_suffix = os.path.splitext(name)[0]
-        return self._log_dir_file(
-            f"{name_without_suffix}.{os.path.basename(program)}.log"
-        )
-
-    def _static(self, name: str) -> str:
-        """Path to generated input."""
-        return self._resolve_path(self._env.config.static_subdir, name)
-
-    def _generated_input(self, name: str) -> str:
-        """Path to generated input."""
-        return self._data(GENERATED_SUBDIR, name)
-
-    def _input(self, name: str) -> str:
-        """Path to input."""
-        return self._data(INPUTS_SUBDIR, name)
-
-    def _invalid_output(self, name: str) -> str:
-        """Path to input."""
-        return self._data(INVALID_OUTPUTS_SUBDIR, name)
-
-    def _sanitized(self, name: str) -> str:
-        """Path to input."""
-        return self._data(SANITIZED_SUBDIR, name)
-
-    def _output(self, name: str):
-        """Path to output from given input and solution."""
-        return self._data(OUTPUTS_SUBDIR, name)
-
-    def _output_from_input(self, input_name: str, solution: str):
-        """Path to output from given input and solution."""
-        return self._data(OUTPUTS_SUBDIR, util.get_output_name(input_name, solution))
-
-    def _solution(self, name: str) -> str:
-        """Path to solution with given basename."""
-        return self._resolve_path(self._env.config.solutions_subdir, name)
 
     def _get_seed(self, input_name: str):
         """Get seed from input name."""
@@ -215,43 +142,43 @@ class TaskJob(Job, TaskHelper):
         return dec
 
     @_file_access(1)
-    def _open_file(self, filename: str, mode="r", **kwargs):
+    def _open_file(self, filename: TaskPath, mode="r", **kwargs):
         if "w" in mode:
             self.make_filedirs(filename)
         return open(filename, mode, **kwargs)
 
     @_file_access(1)
-    def _file_exists(self, filename: str):
+    def _file_exists(self, filename: TaskPath):
         return os.path.isfile(os.path.join(filename))
 
     @_file_access(1)
-    def _file_size(self, filename: str):
+    def _file_size(self, filename: TaskPath):
         return os.path.getsize(filename)
 
     @_file_access(1)
-    def _file_not_empty(self, filename: str):
+    def _file_not_empty(self, filename: TaskPath):
         with self._open_file(filename) as f:
             content = f.read()
         return len(content.strip()) > 0
 
     @_file_access(2)
-    def _copy_file(self, filename: str, dst: str):
+    def _copy_file(self, filename: TaskPath, dst: TaskPath):
         self.make_filedirs(dst)
         return shutil.copy(filename, dst)
 
     @_file_access(2)
-    def _link_file(self, filename: str, dst: str, overwrite: bool = False):
+    def _link_file(self, filename: TaskPath, dst: str, overwrite: bool = False):
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst):
             os.remove(dst)
         return os.link(filename, dst)
 
     @_file_access(2)
-    def _files_equal(self, file_a: str, file_b: str) -> bool:
+    def _files_equal(self, file_a: TaskPath, file_b: TaskPath) -> bool:
         return filecmp.cmp(file_a, file_b)
 
     @_file_access(2)
-    def _diff_files(self, file_a: str, file_b: str) -> str:
+    def _diff_files(self, file_a: TaskPath, file_b: TaskPath) -> str:
         diff = subprocess.run(
             ["diff", file_a, file_b, "-Bb", "-u2"], stdout=subprocess.PIPE
         )

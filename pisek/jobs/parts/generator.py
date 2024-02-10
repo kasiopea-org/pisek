@@ -22,9 +22,10 @@ from typing import Any
 
 import pisek.util as util
 from pisek.env import Env
+from pisek.paths import TaskPath, GENERATED_SUBDIR
 from pisek.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager, GENERATED_SUBDIR
+from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 

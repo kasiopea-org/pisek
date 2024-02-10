@@ -26,6 +26,7 @@ import yaml
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env import Env
+from pisek.paths import TaskPath
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
 
@@ -136,10 +137,9 @@ class Job(PipelineItem, CaptureInitParams):
         self._terminal_output.append((msg + end, stderr))
         return super()._print(msg, end, stderr)
 
-    def _access_file(self, filename: str) -> None:
+    def _access_file(self, filename: TaskPath) -> None:
         """Add file this job depends on."""
-        filename = os.path.normpath(filename)
-        self._accessed_files.add(filename)
+        self._accessed_files.add(filename.relpath)
 
     def _signature(
         self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
