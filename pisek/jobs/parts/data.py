@@ -78,7 +78,7 @@ class DataManager(TaskJobManager):
             if (
                 len(
                     self.filter_by_globs(
-                        [glob], map(lambda p: p.name, self._all_input_files)
+                        [glob], self._all_input_files
                     )
                 )
                 == 0

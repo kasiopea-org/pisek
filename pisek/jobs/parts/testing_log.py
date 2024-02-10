@@ -16,6 +16,7 @@
 import json
 from typing import Any
 
+from pisek.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import (
@@ -67,5 +68,5 @@ class CreateTestingLog(TaskJobManager):
             else:
                 self._print(colored(MSG, self._env, "yellow"))
 
-        with open(self._resolve_path(TESTING_LOG), "w") as f:
+        with open(TaskPath.base_path(self._env, TESTING_LOG).fullpath, "w") as f:
             json.dump(log, f, indent=4)

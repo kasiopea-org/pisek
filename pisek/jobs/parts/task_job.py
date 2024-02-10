@@ -67,17 +67,16 @@ class TaskHelper:
         }
 
     @staticmethod
-    def filter_by_globs(globs: Iterable[str], files: Iterable[str]):
-        return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
+    def filter_by_globs(globs: Iterable[str], files: Iterable[TaskPath]) -> list[TaskPath]:
+        return [file for file in files if any(fnmatch.fnmatch(file.name, g) for g in globs)]
 
     def globs_to_files(
-        self, globs: list[str], directory: Optional[TaskPath] = None
+        self, globs: list[str], directory: TaskPath
     ) -> list[TaskPath]:
-        dir_path = directory.fullpath if directory else None
         files: list[str] = list(
-            sorted(set(sum((glob.glob(g, root_dir=dir_path) for g in globs), start=[])))
+            sorted(set(sum((glob.glob(g, root_dir=directory.fullpath) for g in globs), start=[])))
         )
-        return [TaskPath.from_abspath(self._env, dir_path, file) for file in files]
+        return [TaskPath.from_abspath(self._env, directory.fullpath, file) for file in files]
 
     @staticmethod
     def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
@@ -105,21 +104,21 @@ class TaskHelper:
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
 
-    def _get_samples(self) -> list[tuple[str, str]]:
+    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._subtask_inputs(self._env.config.subtasks["0"])
-        outs = map(lambda x: self._replace_file_suffix(x, ".in", ".out"), ins)
+        outs = (inp.replace_suffix(".out") for inp in ins)
         return list(zip(ins, outs))
 
-    def _all_inputs(self) -> list[str]:
+    def _all_inputs(self) -> list[TaskPath]:
         """Get all input files"""
         return self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
 
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[str]:
+    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
         """Get all inputs of given subtask."""
         return self.filter_by_globs(subtask.all_globs, self._all_inputs())
 
-    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[str]:
+    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
         """Get new inputs of given subtask."""
         return self.filter_by_globs(subtask.in_globs, self._all_inputs())
 

@@ -53,8 +53,11 @@ class TaskPath:
                     f"Invalid format specifier '{__format_spec}' for object of type '{self.__class__.__name__}'"
                 )
 
-    def __eq__(self, other_path: "TaskPath") -> bool:
-        return self.relpath == other_path.relpath
+    def __eq__(self, other_path) -> bool:
+        if isinstance(other_path, TaskPath):
+            return self.relpath == other_path.relpath
+        else:
+            return False
 
     def replace_suffix(self, new_suffix: str) -> "TaskPath":
         path = os.path.splitext(self.relpath)[0] + new_suffix

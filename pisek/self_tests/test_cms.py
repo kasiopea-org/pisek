@@ -3,9 +3,9 @@ import shutil
 
 import unittest
 
+from pisek.paths import GENERATED_SUBDIR
 from pisek.self_tests.util import TestFixtureVariant, overwrite_file
 from pisek.task_config import TaskConfig
-from pisek.jobs.parts.task_job import GENERATED_SUBDIR
 
 
 class TestSumCMS(TestFixtureVariant):

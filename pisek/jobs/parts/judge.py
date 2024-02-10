@@ -22,6 +22,7 @@ from typing import Optional, Union, Callable
 import subprocess
 
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.task_config import ProgramType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
@@ -45,7 +46,7 @@ class JudgeManager(TaskJobManager):
         jobs: list[Job] = []
         if self._env.config.judge_type != "diff":
             jobs.append(
-                comp := Compile(self._env, self._resolve_path(self._env.config.judge))
+                comp := Compile(self._env, TaskPath.base_path(self._env, self._env.config.judge))
             )
 
         samples = self._get_samples()
@@ -313,10 +314,10 @@ class RunBatchJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
-        input_name: str,
-        output_name: str,
-        correct_output: str,
+        judge: TaskPath,
+        input_name: TaskPath,
+        output_name: TaskPath,
+        correct_output: TaskPath,
         expected_points: Optional[float],
         **kwargs,
     ) -> None:
@@ -422,10 +423,10 @@ class RunKasiopeaJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
-        input_name: str,
-        output_name: str,
-        correct_output: str,
+        judge: TaskPath,
+        input_name: TaskPath,
+        output_name: TaskPath,
+        correct_output: TaskPath,
         subtask: int,
         seed: str,
         expected_points: Optional[float],
@@ -491,10 +492,10 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
-        input_name: str,
-        output_name: str,
-        correct_output: str,
+        judge: TaskPath,
+        input_name: TaskPath,
+        output_name: TaskPath,
+        correct_output: TaskPath,
         expected_points: Optional[float],
         **kwargs,
     ) -> None:
@@ -528,9 +529,9 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
 
 def judge_job(
     judge: str,
-    input_name: str,
-    output_name: str,
-    correct_output: str,
+    input_name: TaskPath,
+    output_name: TaskPath,
+    correct_output: TaskPath,
     subtask: int,
     get_seed: Callable[[], str],
     expected_points: Optional[float],
