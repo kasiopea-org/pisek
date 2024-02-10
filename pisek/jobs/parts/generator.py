@@ -95,7 +95,8 @@ class GeneratorManager(TaskJobManager):
             res["inputs"] = self._inputs
         else:
             res["inputs"] = self.globs_to_files(
-                self._env.config.subtasks.all_globs, TaskPath.generated_path(self._env, ".").fullpath
+                self._env.config.subtasks.all_globs,
+                TaskPath.generated_path(self._env, "."),
             )
 
         return res
@@ -215,7 +216,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
         )
 
     def _run(self) -> None:
-        copy_file = TaskPath.base_path(self._env, self.input_.relpath + "2")
+        copy_file = self.input_.replace_suffix(".in2")
         self._gen(copy_file, self.seed, self.subtask)
         if not self._files_equal(self.input_, copy_file):
             raise PipelineItemFailure(
@@ -263,7 +264,8 @@ class OfflineGeneratorGenerate(ProgramsJob):
 
     def _subtask_inputs(self, subtask: str):
         return self.globs_to_files(
-            self._env.config.subtasks[subtask].in_globs, TaskPath.generated_path(self._env, ".").fullpath
+            self._env.config.subtasks[subtask].in_globs,
+            TaskPath.generated_path(self._env, "."),
         )
 
     def _gen(self) -> None:
@@ -276,7 +278,10 @@ class OfflineGeneratorGenerate(ProgramsJob):
         self.makedirs(gen_dir, exist_ok=False)
 
         run_result = self._run_program(
-            ProgramType.in_gen, self.generator, args=[gen_dir.fullpath], print_first_stderr=True
+            ProgramType.in_gen,
+            self.generator,
+            args=[gen_dir.fullpath],
+            print_first_stderr=True,
         )
         self._access_file(gen_dir)
 

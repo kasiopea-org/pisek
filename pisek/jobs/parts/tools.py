@@ -105,7 +105,10 @@ class SanitizeAbstract(ProgramsJob):
 
     def _sanitize(self, input_: TaskPath, output: TaskPath) -> None:
         result = self._run_program(
-            ProgramType.tool, "text-preproc", stdin=input_, stdout=output
+            ProgramType.tool,
+            TaskPath.executable_path(self._env, "text-preproc"),
+            stdin=input_,
+            stdout=output,
         )
         if result.returncode == 43:
             raise self._create_program_failure(
@@ -120,9 +123,11 @@ class Sanitize(SanitizeAbstract):
         self, env: Env, input_: TaskPath, output: Optional[TaskPath] = None, **kwargs
     ) -> None:
         self.input = input_
-        self.output = output if output else TaskPath.sanitized_file(input_)
+        self.output = (
+            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
+        )
         super().__init__(
-            env=env, name=f"Sanitize {self.input_:n} -> {self.output:n}", **kwargs
+            env=env, name=f"Sanitize {self.input:n} -> {self.output:n}", **kwargs
         )
 
     def _run(self):
@@ -136,8 +141,10 @@ class IsClean(SanitizeAbstract):
         self, env: Env, input_: TaskPath, output: Optional[TaskPath] = None, **kwargs
     ) -> None:
         self.input = input_
-        self.output = output if output else TaskPath.sanitized_file(input_)
-        super().__init__(env=env, name=f"{input_:n} is clean", **kwargs)
+        self.output = (
+            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
+        )
+        super().__init__(env=env, name=f"{self.input:n} is clean", **kwargs)
 
     def _run(self):
         self._sanitize(self.input, self.output)

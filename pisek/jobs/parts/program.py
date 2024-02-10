@@ -181,7 +181,10 @@ class ProgramPoolItem:
         minibox_args.append(f"--meta={meta_file}")
 
         result["args"] = (
-            [minibox] + minibox_args + ["--run", "--", self.executable.fullpath] + self.args
+            [minibox]
+            + minibox_args
+            + ["--run", "--", self.executable.fullpath]
+            + self.args
         )
         return result
 
@@ -221,10 +224,10 @@ class ProgramsJob(TaskJob):
         if isinstance(stdin, TaskPath):
             self._access_file(stdin)
         if isinstance(stdout, TaskPath):
-            self.makedirs(stdout)
+            self.make_filedirs(stdout)
             self._access_file(stdout)
         if isinstance(stderr, TaskPath):
-            self.makedirs(stderr)
+            self.make_filedirs(stderr)
             self._access_file(stderr)
 
         self._program_pool.append(

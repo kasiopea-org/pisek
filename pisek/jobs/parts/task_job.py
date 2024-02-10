@@ -70,12 +70,14 @@ class TaskHelper:
     def filter_by_globs(globs: Iterable[str], files: Iterable[str]):
         return [file for file in files if any(fnmatch.fnmatch(file, g) for g in globs)]
 
-    @staticmethod
-    def globs_to_files(globs: list[str], directory: Optional[str] = None) -> list[str]:
-        files: list[str] = sum(
-            (glob.glob(g, root_dir=directory) for g in globs), start=[]
+    def globs_to_files(
+        self, globs: list[str], directory: Optional[TaskPath] = None
+    ) -> list[TaskPath]:
+        dir_path = directory.fullpath if directory else None
+        files: list[str] = list(
+            sorted(set(sum((glob.glob(g, root_dir=dir_path) for g in globs), start=[])))
         )
-        return list(sorted(set(files)))
+        return [TaskPath.from_abspath(self._env, dir_path, file) for file in files]
 
     @staticmethod
     def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
@@ -93,10 +95,11 @@ class TaskHelper:
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):
-        dirs = path.fullpath
-        if os.path.isfile(dirs):
-            dirs = os.path.dirname(dirs)
-        os.makedirs(dirs, exist_ok=exist_ok)
+        os.makedirs(path.fullpath, exist_ok=exist_ok)
+
+    @staticmethod
+    def make_filedirs(path: TaskPath, exist_ok: bool = True):
+        os.makedirs(os.path.dirname(path.fullpath), exist_ok=exist_ok)
 
 
 class TaskJobManager(StatusJobManager, TaskHelper):

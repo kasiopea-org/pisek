@@ -19,6 +19,7 @@ from typing import Any, Callable
 
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.jobs.parts.task_job import (
     TaskJob,
     TaskJobManager,
@@ -33,42 +34,22 @@ from pisek.jobs.parts.tools import IsClean
 class DataManager(TaskJobManager):
     """Moves data to correct folders."""
 
-    def __init__(self):
-        self._static_inputs = []
-        self._generated_inputs = []
-        self._static_outputs = []
+    def __init__(self) -> None:
+        self._static_inputs: list[TaskPath] = []
+        self._generated_inputs: list[TaskPath] = []
+        self._static_outputs: list[TaskPath] = []
         super().__init__("Moving data")
 
     def _get_jobs(self) -> list[Job]:
-        self._static_inputs = list(
-            map(
-                self._static,
-                self.globs_to_files(
-                    self._env.config.subtasks[0].all_globs,
-                    self._resolve_path(self._env.config.static_subdir),
-                ),
-            )
+        self._static_inputs = self.globs_to_files(
+            self._env.config.subtasks.all_globs, TaskPath.static_path(self._env, ".")
         )
-        self._static_outputs = list(
-            map(
-                self._static,
-                self.globs_to_files(
-                    list(
-                        map(
-                            lambda x: self._replace_file_suffix(x, ".in", ".out"),
-                            self._env.config.subtasks[0].all_globs,
-                        )
-                    ),
-                    self._resolve_path(self._env.config.static_subdir),
-                ),
-            )
-        )
-        self._generated_inputs = list(
-            map(
-                self._generated_input,
-                self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"],
-            )
-        )
+        self._static_outputs = [
+            inp.replace_suffix(".out") for inp in self._static_inputs
+        ]
+        self._generated_inputs = self.prerequisites_results[GENERATOR_MAN_CODE][
+            "inputs"
+        ]
 
         self._all_input_files = self._static_inputs + self._generated_inputs
         self._all_output_files = self._static_outputs
@@ -76,10 +57,10 @@ class DataManager(TaskJobManager):
 
         if self._env.config.task_type != "communication":
             for static_inp in self._static_inputs:
-                static_out = self._replace_file_suffix(static_inp, ".in", ".out")
+                static_out = static_inp.replace_suffix(".out")
                 if static_out not in self._static_outputs:
                     raise PipelineItemFailure(
-                        f"Missing matching output '{os.path.basename(static_out)}' for static input '{os.path.basename(static_inp)}'."
+                        f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
         for fname in self._all_input_files:
@@ -97,7 +78,7 @@ class DataManager(TaskJobManager):
             if (
                 len(
                     self.filter_by_globs(
-                        [glob], map(os.path.basename, self._all_input_files)
+                        [glob], map(lambda p: p.name, self._all_input_files)
                     )
                 )
                 == 0
@@ -112,14 +93,12 @@ class DataManager(TaskJobManager):
             "outputs": self._all_output_files,
             "all": self._all_input_files + self._all_output_files,
         }
-        for key in ("inputs", "outputs", "all"):
-            res[key] = list(map(os.path.basename, res[key]))
 
         return res
 
 
 class DataJob(TaskJob):
-    def __init__(self, env: Env, name: str, data: str, **kwargs) -> None:
+    def __init__(self, env: Env, name: str, data: TaskPath, **kwargs) -> None:
         super().__init__(
             env=env,
             name=name,
@@ -131,10 +110,10 @@ class DataJob(TaskJob):
 class DataIsNotEmpty(DataJob):
     """Check that input file is not empty."""
 
-    def __init__(self, env: Env, data: str, **kwargs) -> None:
+    def __init__(self, env: Env, data: TaskPath, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Input/Output {os.path.basename(data)} is not empty.",
+            name=f"Input/Output {data:n} is not empty.",
             data=data,
             **kwargs,
         )
@@ -148,31 +127,31 @@ class LinkData(DataJob):
     """Copy data to into dest folder."""
 
     def __init__(
-        self, env: Env, data: str, dest: Callable[[str], str], **kwargs
+        self, env: Env, data: TaskPath, dest: TaskPath, **kwargs
     ) -> None:
         super().__init__(
-            env=env, name=f"Copy {data} to {dest('.')}", data=data, **kwargs
+            env=env, name=f"Copy {data:p} to {dest:p}", data=data, **kwargs
         )
         self._dest = dest
 
     def _run(self):
         self._link_file(
-            self.data, self._dest(os.path.basename(self.data)), overwrite=True
+            self.data, TaskPath.base_path(self._env, self._dest.relpath, self.data.name), overwrite=True
         )
 
 
 class LinkInput(LinkData):
     """Copy input to its place."""
 
-    def __init__(self, env: Env, input_: str, **kwargs) -> None:
-        super().__init__(env=env, data=input_, dest=self._input, **kwargs)
+    def __init__(self, env: Env, input_: TaskPath, **kwargs) -> None:
+        super().__init__(env=env, data=input_, dest=TaskPath.input_path(self._env, "."), **kwargs)
 
 
 class LinkOutput(LinkData):
     """Copy output to its place."""
 
-    def __init__(self, env: Env, output: str, **kwargs) -> None:
-        super().__init__(env=env, data=output, dest=self._output, **kwargs)
+    def __init__(self, env: Env, output: TaskPath, **kwargs) -> None:
+        super().__init__(env=env, data=output, dest=TaskPath.output_path(self._env, "."), **kwargs)
 
 
 MB = 1024 * 1024
@@ -197,12 +176,12 @@ class DataCheckingManager(TaskJobManager):
                     + outs[Verdict.partial]
                     + outs[Verdict.wrong_answer]
                 )
-        for inp in map(self._input, inputs):
+        for inp in inputs:
             jobs.append(IsClean(self._env, inp))
             if self._env.config.contest_type == "kasiopea":
                 jobs.append(InputSmall(self._env, inp))
 
-        for out in map(self._output, outputs):
+        for out in outputs:
             jobs.append(IsClean(self._env, out))
             if self._env.config.contest_type == "kasiopea":
                 jobs.append(OutputSmall(self._env, out))
@@ -213,28 +192,28 @@ class DataCheckingManager(TaskJobManager):
 class InputSmall(DataJob):
     """Checks that input is small enough to download."""
 
-    def __init__(self, env: Env, input_file: str, **kwargs) -> None:
+    def __init__(self, env: Env, input_: TaskPath, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Input {os.path.basename(input_file)} is smaller than {env.config.limits.input_max_size}MB",
-            data=input_file,
+            name=f"Input {input_:n} is smaller than {env.config.limits.input_max_size}MB",
+            data=input_,
             **kwargs,
         )
 
     def _run(self):
         max_size = self._env.config.limits.input_max_size
         if self._file_size(self.data) > max_size * MB:
-            raise PipelineItemFailure(f"Input {self.data} is bigger than {max_size}MB.")
+            raise PipelineItemFailure(f"Input {self.data:p} is bigger than {max_size}MB.")
 
 
 class OutputSmall(DataJob):
     """Checks that output is small enough to upload."""
 
-    def __init__(self, env: Env, output_file: str, **kwargs) -> None:
+    def __init__(self, env: Env, output: TaskPath, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Output {os.path.basename(output_file)} is smaller than {env.config.limits.output_max_size}MB",
-            data=output_file,
+            name=f"Output {output:n} is smaller than {env.config.limits.output_max_size}MB",
+            data=output,
             **kwargs,
         )
 

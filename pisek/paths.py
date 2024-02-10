@@ -33,6 +33,7 @@ class TaskPath:
 
     def __init__(self, task_path, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
+        self._task_path = task_path
         self.fullpath = os.path.join(task_path, joined_path)
         self.relpath = joined_path
         self.name = os.path.basename(joined_path)
@@ -52,13 +53,24 @@ class TaskPath:
                     f"Invalid format specifier '{__format_spec}' for object of type '{self.__class__.__name__}'"
                 )
 
+    def __eq__(self, other_path: "TaskPath") -> bool:
+        return self.relpath == other_path.relpath
+
+    def replace_suffix(self, new_suffix: str) -> "TaskPath":
+        path = os.path.splitext(self.relpath)[0] + new_suffix
+        return TaskPath(self._task_path, path)
+
     @staticmethod
     def base_path(env: Env, *path: str) -> "TaskPath":
         return TaskPath(env.task_dir, *path)
 
     @staticmethod
-    def from_abspath(env: Env, path: str) -> "TaskPath":
-        return TaskPath.base_path(env, os.path.relpath(path, env.task_dir))
+    def from_abspath(env: Env, *path: str) -> "TaskPath":
+        return TaskPath.base_path(env, os.path.relpath(os.path.join(*path), env.task_dir))
+
+    @staticmethod
+    def static_path(env: Env, *path: str) -> "TaskPath":
+        return TaskPath(env.task_dir, env.config.static_subdir, *path)
 
     @staticmethod
     def solution_path(env: Env, *path: str) -> "TaskPath":
