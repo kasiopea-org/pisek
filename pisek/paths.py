@@ -32,10 +32,33 @@ class TaskPath:
     """Class representing a path to task file."""
 
     def __init__(self, task_path, *path: str):
-        path = os.path.normpath(os.path.join(*path))
-        self.fullpath = os.path.join(task_path, path)
-        self.relpath = path
-        self.name = os.path.basename(path)
+        joined_path = os.path.normpath(os.path.join(*path))
+        self.fullpath = os.path.join(task_path, joined_path)
+        self.relpath = joined_path
+        self.name = os.path.basename(joined_path)
+
+    def __format__(self, __format_spec: str) -> str:
+        match __format_spec:
+            case "f":
+                return self.fullpath
+            case "p":
+                return self.relpath
+            case "n":
+                return self.name
+            case "":
+                return self.relpath
+            case _:
+                raise ValueError(
+                    f"Invalid format specifier '{__format_spec}' for object of type '{self.__class__.__name__}'"
+                )
+
+    @staticmethod
+    def base_path(env: Env, *path: str) -> "TaskPath":
+        return TaskPath(env.task_dir, *path)
+
+    @staticmethod
+    def from_abspath(env: Env, path: str) -> "TaskPath":
+        return TaskPath.base_path(env, os.path.relpath(path, env.task_dir))
 
     @staticmethod
     def solution_path(env: Env, *path: str) -> "TaskPath":
@@ -46,12 +69,21 @@ class TaskPath:
         return TaskPath(env.task_dir, BUILD_DIR, *path)
 
     @staticmethod
+    def executable_file(env: Env, program: str) -> "TaskPath":
+        program = os.path.splitext(os.path.basename(program))[0]
+        return TaskPath.executable_path(env, program)
+
+    @staticmethod
     def data_path(env: Env, *path: str) -> "TaskPath":
         return TaskPath(env.task_dir, env.config.data_subdir, *path)
 
     @staticmethod
     def generated_path(env: Env, *path: str) -> "TaskPath":
         return TaskPath.data_path(env, GENERATED_SUBDIR, *path)
+
+    @staticmethod
+    def generated_input_file(env: Env, subtask: int, seed: str) -> "TaskPath":
+        return TaskPath(env, f"{subtask:02}_{seed:x}.in")
 
     @staticmethod
     def input_path(env: Env, *path: str) -> "TaskPath":

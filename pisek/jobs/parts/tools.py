@@ -34,7 +34,7 @@ class ToolsManager(TaskJobManager):
         super().__init__("Preparing tools")
 
     def _get_jobs(self) -> list[Job]:
-        self.makedirs(TaskPath.executable_path(self._env, ".").relpath)
+        self.makedirs(TaskPath.executable_path(self._env, "."))
         jobs: list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
@@ -57,7 +57,7 @@ class PrepareMinibox(TaskJob):
                 "gcc",
                 source,
                 "-o",
-                executable.relpath,
+                executable.fullpath,
                 "-std=gnu11",
                 "-D_GNU_SOURCE",
                 "-O2",
@@ -87,7 +87,7 @@ class PrepareTextPreprocessor(TaskJob):
                 "gcc",
                 source,
                 "-o",
-                executable.relpath,
+                executable.fullpath,
                 "-std=gnu11",
                 "-O2",
                 "-Wall",
@@ -109,7 +109,7 @@ class SanitizeAbstract(ProgramsJob):
         )
         if result.returncode == 43:
             raise self._create_program_failure(
-                f"Text preprocessor failed on file: {input_.relpath}", result
+                f"Text preprocessor failed on file: {input_:p}", result
             )
 
 
@@ -122,7 +122,7 @@ class Sanitize(SanitizeAbstract):
         self.input = input_
         self.output = output if output else TaskPath.sanitized_file(input_)
         super().__init__(
-            env=env, name=f"Sanitize {self.input_.name} -> {self.output.name}", **kwargs
+            env=env, name=f"Sanitize {self.input_:n} -> {self.output:n}", **kwargs
         )
 
     def _run(self):
@@ -137,11 +137,11 @@ class IsClean(SanitizeAbstract):
     ) -> None:
         self.input = input_
         self.output = output if output else TaskPath.sanitized_file(input_)
-        super().__init__(env=env, name=f"{input_.name} is clean", **kwargs)
+        super().__init__(env=env, name=f"{input_:n} is clean", **kwargs)
 
     def _run(self):
         self._sanitize(self.input, self.output)
         if not self._files_equal(self.input, self.output):
             raise PipelineItemFailure(
-                f"File {self.input.name} is not clean. Check encoding, missing newline at the end or \\r."
+                f"File {self.input:n} is not clean. Check encoding, missing newline at the end or \\r."
             )

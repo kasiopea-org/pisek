@@ -26,6 +26,7 @@ import yaml
 
 from pisek.task_config import ProgramType
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskHelper, TaskJob
@@ -50,8 +51,8 @@ class RunResult:
         returncode: int,
         time: float,
         wall_time: float,
-        stdout_file: Optional[Union[str, int]] = None,
-        stderr_file: Optional[str] = None,
+        stdout_file: Optional[Union[TaskPath, int]] = None,
+        stderr_file: Optional[TaskPath] = None,
         stderr_text: Optional[str] = None,
         status: str = "",
     ):
@@ -140,15 +141,15 @@ yaml.add_constructor("!RunResult", run_result_constructor)
 
 @dataclass
 class ProgramPoolItem:
-    executable: str
+    executable: TaskPath
     args: list[str]
     time_limit: float
     clock_limit: float
     mem_limit: int
     process_limit: int
-    stdin: Optional[Union[str, int]]
-    stdout: Optional[Union[str, int]]
-    stderr: Optional[str]
+    stdin: Optional[Union[TaskPath, int]]
+    stdout: Optional[Union[TaskPath, int]]
+    stderr: Optional[TaskPath]
     env: dict[str, str] = field(default_factory=lambda: {})
 
     def to_popen(self, minibox: str, meta_file: str) -> dict[str, Any]:
@@ -163,8 +164,8 @@ class ProgramPoolItem:
 
         for std in ("stdin", "stdout", "stderr"):
             attr = getattr(self, std)
-            if isinstance(attr, str):
-                minibox_args.append(f"--{std}={attr}")
+            if isinstance(attr, TaskPath):
+                minibox_args.append(f"--{std}={attr.fullpath}")
             elif getattr(self, std) is None and std != "stderr":
                 minibox_args.append(f"--{std}=/dev/null")
 
@@ -180,7 +181,7 @@ class ProgramPoolItem:
         minibox_args.append(f"--meta={meta_file}")
 
         result["args"] = (
-            [minibox] + minibox_args + ["--run", "--", self.executable] + self.args
+            [minibox] + minibox_args + ["--run", "--", self.executable.fullpath] + self.args
         )
         return result
 
@@ -193,12 +194,12 @@ class ProgramsJob(TaskJob):
         self._program_pool: list[ProgramPoolItem] = []
         self._callback: Optional[Callable[[subprocess.Popen], None]] = None
 
-    def _load_compiled(self, program: str) -> str:
+    def _load_compiled(self, program: TaskPath) -> TaskPath:
         """Loads name of compiled program."""
-        executable = self._executable(os.path.basename(program))
+        executable = TaskPath.executable_file(self._env, program.relpath)
         if not self._file_exists(executable):
             raise PipelineItemFailure(
-                f"Program {executable} does not exist, "
+                f"Program {executable.relpath} does not exist, "
                 f"although it should have been compiled already."
             )
         return executable
@@ -206,24 +207,24 @@ class ProgramsJob(TaskJob):
     def _load_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: TaskPath,
         args: list[str] = [],
-        stdin: Optional[Union[str, int]] = None,
-        stdout: Optional[Union[str, int]] = None,
-        stderr: Optional[str] = None,
+        stdin: Optional[Union[TaskPath, int]] = None,
+        stdout: Optional[Union[TaskPath, int]] = None,
+        stderr: Optional[TaskPath] = None,
         env={},
     ) -> None:
         """Adds program to execution pool."""
         executable = self._load_compiled(program)
 
         self._access_file(executable)
-        if isinstance(stdin, str):
+        if isinstance(stdin, TaskPath):
             self._access_file(stdin)
-        if isinstance(stdout, str):
-            self.make_filedirs(stdout)
+        if isinstance(stdout, TaskPath):
+            self.makedirs(stdout)
             self._access_file(stdout)
-        if isinstance(stderr, str):
-            self.make_filedirs(stderr)
+        if isinstance(stderr, TaskPath):
+            self.makedirs(stderr)
             self._access_file(stderr)
 
         self._program_pool.append(
@@ -247,11 +248,12 @@ class ProgramsJob(TaskJob):
         """Runs all programs in execution pool."""
         running_pool = []
         meta_files = []
+        minibox = TaskPath.executable_path(self._env, "minibox").fullpath
         for pool_item in self._program_pool:
             meta_files.append(tempfile.mkstemp()[1])
             running_pool.append(
                 subprocess.Popen(
-                    **pool_item.to_popen(self._executable("minibox"), meta_files[-1]),
+                    **pool_item.to_popen(minibox, meta_files[-1]),
                 )
             )
 
@@ -347,7 +349,7 @@ class ProgramsJob(TaskJob):
     def _run_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: TaskPath,
         print_first_stderr=False,
         **kwargs,
     ) -> RunResult:
