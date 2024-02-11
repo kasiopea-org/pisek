@@ -164,7 +164,7 @@ class Job(PipelineItem, CaptureInitParams):
             else:
                 for dir_, _, dir_files in os.walk(path):
                     for file in dir_files:
-                        expanded_files.append((os.path.join(dir_, file)))
+                        expanded_files.append(os.path.join(dir_, file))
 
         for file in sorted(expanded_files):
             if not os.path.exists(file):

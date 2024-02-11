@@ -204,7 +204,7 @@ class ProgramsJob(TaskJob):
         executable = TaskPath.executable_file(self._env, program.relpath)
         if not self._file_exists(executable):
             raise PipelineItemFailure(
-                f"Program {executable.relpath} does not exist, "
+                f"Program {executable:p} does not exist, "
                 f"although it should have been compiled already."
             )
         return executable

@@ -77,16 +77,11 @@ class TaskHelper:
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
-        files: list[str] = list(
-            sorted(
-                set(
-                    sum(
-                        (glob.glob(g, root_dir=directory.fullpath) for g in globs),
-                        start=[],
-                    )
-                )
-            )
+        files: list[str] = sum(
+            (glob.glob(g, root_dir=directory.fullpath) for g in globs),
+            start=[],
         )
+        files = list(sorted(set(files)))
         return [
             TaskPath.from_abspath(self._env, directory.fullpath, file) for file in files
         ]

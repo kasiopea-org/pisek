@@ -32,7 +32,7 @@ LOG_SUBDIR = "log/"
 class TaskPath:
     """Class representing a path to task file."""
 
-    def __init__(self, task_path, *path: str):
+    def __init__(self, task_path: str, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
         self._task_path = task_path
         self.fullpath = os.path.join(task_path, joined_path)

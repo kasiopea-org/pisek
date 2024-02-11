@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import re
 from typing import Any, Callable
 
 from pisek.jobs.jobs import Job, PipelineItemFailure
@@ -46,7 +46,8 @@ class DataManager(TaskJobManager):
         )
         self._static_outputs = self.globs_to_files(
             map(
-                lambda g: g.replace(".in", ".out"), self._env.config.subtasks.all_globs
+                lambda g: re.sub(r"\.in$", ".out", g),
+                self._env.config.subtasks.all_globs,
             ),
             TaskPath.static_path(self._env, "."),
         )
