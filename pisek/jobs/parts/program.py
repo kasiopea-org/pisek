@@ -70,28 +70,30 @@ class RunResult:
         res = tab(TaskHelper._short_text(text, max_lines, max_chars))
         return colored(res, env, "yellow")
 
-    def raw_stdout(self):
-        if isinstance(self.stdout_file, str):
-            return open(self.stdout_file).read()
+    def raw_stdout(self, access_file: Callable[[TaskPath], None]):
+        if isinstance(self.stdout_file, TaskPath):
+            access_file(self.stdout_file)
+            return open(self.stdout_file.fullpath).read()
         else:
             return None
 
-    def raw_stderr(self):
-        if self.stderr_file:
-            return open(self.stderr_file).read()
+    def raw_stderr(self, access_file: Callable[[TaskPath], None]):
+        if isinstance(self.stderr_file, TaskPath):
+            access_file(self.stderr_file)
+            return open(self.stderr_file.fullpath).read()
         else:
             return self.stderr_text
 
-    def stdout(self, env: Env):
+    def stdout(self, env: Env, access_file: Callable[[TaskPath], None]):
         if isinstance(self.stdout_file, str):
             return f" in file {self.stdout_file}:\n" + self._format(
-                self.raw_stdout(), env
+                self.raw_stdout(access_file), env
             )
         else:
             return " has been discarded"
 
-    def stderr(self, env: Env):
-        text = self._format(self.raw_stderr(), env)
+    def stderr(self, env: Env, access_file: Callable[[TaskPath], None]):
+        text = self._format(self.raw_stderr(access_file), env)
         if self.stderr_file:
             return f" in file {self.stderr_file}:\n{text}"
         else:
@@ -368,5 +370,5 @@ class ProgramsJob(TaskJob):
         """Quotes program's stdout and stderr."""
         program_msg = f"status: {res.status}\n"
         for std in ("stdout", "stderr"):
-            program_msg += f"{std}{getattr(res, std)(self._env)}\n"
+            program_msg += f"{std}{getattr(res, std)(self._env, self._access_file)}\n"
         return program_msg[:-1]

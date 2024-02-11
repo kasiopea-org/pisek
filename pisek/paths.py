@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import yaml
 
 from pisek.env import Env
 
@@ -109,6 +110,11 @@ class TaskPath:
         return TaskPath.data_path(env, INVALID_OUTPUTS_SUBDIR, *path)
 
     @staticmethod
+    def invalid_file(env: Env, name: str, seed: int) -> "TaskPath":
+        name = os.path.splitext(name)[0]
+        return TaskPath.invalid_path(env, f"{name}.{seed:x}.invalid")
+
+    @staticmethod
     def output_path(env: Env, *path: str) -> "TaskPath":
         return TaskPath.data_path(env, OUTPUTS_SUBDIR, *path)
 
@@ -141,3 +147,16 @@ class TaskPath:
         name = os.path.splitext(os.path.basename(name))[0]
         program = os.path.basename(program)
         return TaskPath.log_path(env, f"{name}.{program}.log")
+
+
+def task_path_representer(dumper, task_path: TaskPath):
+    return dumper.represent_sequence("!TaskPath", [task_path._task_path, task_path.relpath])
+
+
+def task_path_constructor(loader, value):
+    (task_dir, path) = loader.construct_sequence(value)
+    return TaskPath(task_dir, path)
+
+
+yaml.add_representer(TaskPath, task_path_representer)
+yaml.add_constructor("!TaskPath", task_path_constructor)

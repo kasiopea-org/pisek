@@ -18,6 +18,7 @@ import random
 import string
 
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.jobs.parts.task_job import TaskJob
 
 
@@ -47,18 +48,18 @@ class Invalidate(TaskJob):
     """Abstract Job for Invalidating an output."""
 
     def __init__(
-        self, env: Env, name: str, from_file: str, to_file: str, seed: int
+        self, env: Env, name: str, from_file: TaskPath, to_file: TaskPath, seed: int
     ) -> None:
         super().__init__(env, name)
         self.seed = seed
-        self.from_file = self._output(from_file)
-        self.to_file = self._invalid_output(to_file)
+        self.from_file = from_file
+        self.to_file = to_file
 
 
 class Incomplete(Invalidate):
     """Makes an incomplete output."""
 
-    def __init__(self, env: Env, from_file: str, to_file: str, seed: int) -> None:
+    def __init__(self, env: Env, from_file: TaskPath, to_file: TaskPath, seed: int) -> None:
         super().__init__(
             env,
             f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
@@ -81,7 +82,7 @@ class Incomplete(Invalidate):
 class ChaosMonkey(Invalidate):
     """Tries to break judge by generating nasty output."""
 
-    def __init__(self, env, from_file: str, to_file: str, seed: int) -> None:
+    def __init__(self, env, from_file: TaskPath, to_file: TaskPath, seed: int) -> None:
         super().__init__(
             env,
             f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",

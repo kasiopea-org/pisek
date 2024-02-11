@@ -117,8 +117,8 @@ class Compile(ProgramsJob):
             return "-fdiagnostics-color=never"
 
     def _compile_pas(self, program: TaskPath):
-        dir = self._get_build_dir()
-        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target.fullpath, "-FE" + dir]
+        build_dir = TaskPath.executable_path(self._env, ".")
+        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target.fullpath, "-FE" + build_dir.fullpath]
 
         return self._run_compilation(["fpc"] + pas_flags + [program.fullpath], program)
 

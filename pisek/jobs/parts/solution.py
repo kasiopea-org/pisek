@@ -422,7 +422,7 @@ class RunCommunication(RunCMSJudge, RunSolution):
             judge=judge,
             input_name=input_name,
             expected_points=expected_points,
-            judge_log_file_name=os.path.basename(
+            judge_log_file=os.path.basename(
                 self._output_from_input(input_name, solution)
             ),
             solution=solution,
@@ -481,4 +481,4 @@ class RunCommunication(RunCMSJudge, RunSolution):
         return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
-        return f"solution {os.path.basename(self.solution)} on input {self.input_name}"
+        return f"solution {os.path.basename(self.solution)} on input {self.input}"
