@@ -18,6 +18,7 @@ from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.task_config import ProgramType
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
@@ -33,8 +34,7 @@ class CheckerManager(TaskJobManager):
         super().__init__("Running checker")
 
     def _get_jobs(self) -> list[Job]:
-        checker = self._env.config.checker
-        if checker is None:
+        if self._env.config.checker is None:
             if self._env.strict:
                 raise PipelineItemFailure("No checker specified in config.")
             else:
@@ -46,7 +46,7 @@ class CheckerManager(TaskJobManager):
                 )
             return []
 
-        checker = self._resolve_path(checker)
+        checker = TaskPath.base_path(self._env, self._env.config.checker)
 
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 
@@ -118,7 +118,7 @@ class LooseCheckJobGroup:
                 return (
                     f"Checker is not strict enough:\n"
                     f"All inputs of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
-                    f"but on input {job.input_name} did not."
+                    f"but on input {job.input} did not."
                 )
             if fail_mode == "any" and RunResultKind.RUNTIME_ERROR not in results:
                 return (
@@ -128,7 +128,7 @@ class LooseCheckJobGroup:
                 )
             if RunResultKind.TIMEOUT in results:
                 to_job = self._index_job(pred, results, RunResultKind.TIMEOUT)
-                return f"Checker timeouted on input {to_job.input_name}, subtask {self.num}."
+                return f"Checker timeouted on input {to_job.input}, subtask {self.num}."
         return None
 
     def _index_job(
@@ -143,20 +143,19 @@ class CheckerJob(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        checker: str,
-        input_name: str,
+        checker: TaskPath,
+        input_: TaskPath,
         subtask: int,
         expected: Optional[RunResultKind],
         **kwargs,
     ):
         super().__init__(
-            env=env, name=f"Check {input_name} on subtask {subtask}", **kwargs
+            env=env, name=f"Check {input_:n} on subtask {subtask}", **kwargs
         )
         self.checker = checker
         self.subtask = subtask
-        self.input_name = input_name
-        self.input_file = self._input(input_name)
-        self.log_file = self._log_file(input_name, self.checker)
+        self.input = input_
+        self.log_file = TaskPath.log_file(self._env, input_.name, self.checker.name)
         self.expected = expected
 
     def _check(self) -> RunResult:
@@ -164,7 +163,7 @@ class CheckerJob(ProgramsJob):
             ProgramType.checker,
             self.checker,
             args=[str(self.subtask)],
-            stdin=self.input_file,
+            stdin=self.input,
             stderr=self.log_file,
         )
 
@@ -172,12 +171,12 @@ class CheckerJob(ProgramsJob):
         result = self._check()
         if self.expected == RunResultKind.OK != result.kind:
             raise self._create_program_failure(
-                f"Checker failed on {self.input_name} (subtask {self.subtask}) but should have succeeded.",
+                f"Checker failed on {self.input:p} (subtask {self.subtask}) but should have succeeded.",
                 result,
             )
         elif self.expected == RunResultKind.RUNTIME_ERROR != result.kind:
             raise self._create_program_failure(
-                f"Checker succeeded on {self.input_name} (subtask {self.subtask}) but should have failed.",
+                f"Checker succeeded on {self.input:p} (subtask {self.subtask}) but should have failed.",
                 result,
             )
         return result

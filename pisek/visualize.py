@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import namedtuple
+import fnmatch
 import json
 from math import ceil
 import os
@@ -59,7 +60,7 @@ def group_by_subtask(
 
 
 def in_subtask(name: str, subtask: SubtaskConfig):
-    return len(TaskHelper.filter_by_globs(subtask.all_globs, [name + ".in"])) == 1
+    return any(fnmatch.fnmatch(f"{name}.in", g) for g in subtask.all_globs)
 
 
 def evaluate_solution(

@@ -26,6 +26,7 @@ import yaml
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env import Env
+from pisek.paths import TaskPath
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
 
@@ -136,10 +137,9 @@ class Job(PipelineItem, CaptureInitParams):
         self._terminal_output.append((msg + end, stderr))
         return super()._print(msg, end, stderr)
 
-    def _access_file(self, filename: str) -> None:
+    def _access_file(self, filename: TaskPath) -> None:
         """Add file this job depends on."""
-        filename = os.path.normpath(filename)
-        self._accessed_files.add(filename)
+        self._accessed_files.add(filename.relpath)
 
     def _signature(
         self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
@@ -157,7 +157,8 @@ class Job(PipelineItem, CaptureInitParams):
             sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
 
         expanded_files = []
-        for path in sorted(files):
+        for file in sorted(files):
+            path = os.path.join(self._env.task_dir, file)
             if os.path.isfile(path):
                 expanded_files.append(path)
             else:
@@ -170,7 +171,8 @@ class Job(PipelineItem, CaptureInitParams):
                 return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+            relfile = os.path.relpath(file, self._env.task_dir)
+            sign.update(f"{relfile}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
             sign.update(f"{name}={yaml.dump(result)}".encode())
