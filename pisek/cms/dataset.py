@@ -2,6 +2,7 @@ from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 from os import path, listdir
 import re
 import datetime
@@ -194,12 +195,17 @@ def add_headers(
 
 
 def get_dataset(session: Session, task: Task, description: str) -> Dataset:
-    return (
-        session.query(Dataset)
-        .filter(Dataset.task == task)
-        .filter(Dataset.description == description)
-        .one()
-    )
+    try:
+        return (
+            session.query(Dataset)
+            .filter(Dataset.task == task)
+            .filter(Dataset.description == description)
+            .one()
+        )
+    except NoResultFound as e:
+        raise RuntimeError(
+            f'The task has no dataset with the description "{description}"'
+        ) from e
 
 
 def create_description() -> str:

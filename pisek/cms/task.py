@@ -1,5 +1,6 @@
-from cms.db.task import Task, Dataset
+from cms.db.task import Task
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import select
 import re
 
@@ -20,7 +21,10 @@ def create_task(session: Session, config: TaskConfig, description: str) -> Task:
 
 
 def get_task(session: Session, config: TaskConfig):
-    return session.query(Task).filter(Task.name == config.task_name).one()
+    try:
+        return session.query(Task).filter(Task.name == config.task_name).one()
+    except NoResultFound as e:
+        raise RuntimeError("This task has not been imported into CMS yet") from e
 
 
 def get_default_file_name(name: str):

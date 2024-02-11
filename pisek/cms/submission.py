@@ -6,6 +6,7 @@ from cms.db.submission import Submission, File
 from cms.db.filecacher import FileCacher
 from cms.grading.language import Language
 from cms.grading.languagemanager import get_language
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import Session
 from os import path
 from datetime import datetime
@@ -14,13 +15,21 @@ from pisek.task_config import SolutionConfig, TaskConfig
 
 
 def get_participation(session: Session, task: Task, username: str) -> Participation:
-    return (
-        session.query(Participation)
-        .join(User)
-        .filter(Participation.contest_id == task.contest_id)
-        .filter(User.username == username)
-        .one()
-    )
+    if task.contest_id is None:
+        raise RuntimeError("The task is not part of any contest")
+
+    try:
+        return (
+            session.query(Participation)
+            .join(User)
+            .filter(Participation.contest_id == task.contest_id)
+            .filter(User.username == username)
+            .one()
+        )
+    except NoResultFound as e:
+        raise RuntimeError(
+            f'There is no user named "{username}" in the given contest'
+        ) from e
 
 
 def submit_all(

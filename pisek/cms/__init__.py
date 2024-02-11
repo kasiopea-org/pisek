@@ -1,7 +1,8 @@
 from cms.db.session import Session
+from sqlalchemy.exc import IntegrityError
+
 from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log
-
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
 from pisek.task_config import TaskConfig
@@ -30,7 +31,12 @@ def create(args):
     task = create_task(session, config, description)
     dataset = task.active_dataset
 
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as e:
+        raise RuntimeError(
+            "Failed to commit transaction, does the task already exist?"
+        ) from e
 
     print(
         f'Created task {task.name} (id {task.id}) with dataset "{dataset.description}" (id {dataset.id})'
@@ -49,7 +55,12 @@ def add(args):
     task = get_task(session, config)
     dataset = create_dataset(session, config, task, description, autojudge)
 
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as e:
+        raise RuntimeError(
+            "Failed to commit transaction, does a dataset with this description exist already?"
+        ) from e
 
     print(f'Added dataset "{dataset.description}" (id {dataset.id})')
 
