@@ -44,15 +44,18 @@ class DataManager(TaskJobManager):
         self._static_inputs = self.globs_to_files(
             self._env.config.subtasks.all_globs, TaskPath.static_path(self._env, ".")
         )
-        self._static_outputs = [
-            inp.replace_suffix(".out") for inp in self._static_inputs
-        ]
+        self._static_outputs = self.globs_to_files(
+            map(
+                lambda g: g.replace(".in", ".out"), self._env.config.subtasks.all_globs
+            ),
+            TaskPath.static_path(self._env, "."),
+        )
         self._generated_inputs = self.prerequisites_results[GENERATOR_MAN_CODE][
             "inputs"
         ]
 
-        self._all_input_files = self._static_inputs + self._generated_inputs
-        self._all_output_files = self._static_outputs
+        all_input_files = self._static_inputs + self._generated_inputs
+        all_output_files = self._static_outputs
         jobs: list[Job] = []
 
         if self._env.config.task_type != "communication":
@@ -63,35 +66,33 @@ class DataManager(TaskJobManager):
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
-        for fname in self._all_input_files:
+        self._inputs: list[TaskPath] = []
+        self._outputs: list[TaskPath] = []
+        link: LinkData
+        for fname in all_input_files:
             jobs += [
                 DataIsNotEmpty(self._env, fname),
-                LinkInput(self._env, fname),
+                link := LinkInput(self._env, fname),
             ]
-        for fname in self._all_output_files:
+            self._inputs.append(link.dest)
+        for fname in all_output_files:
             jobs += [
                 DataIsNotEmpty(self._env, fname),
-                LinkOutput(self._env, fname),
+                link := LinkOutput(self._env, fname),
             ]
+            self._outputs.append(link.dest)
 
         for glob in self._env.config.subtasks.all_globs:
-            if (
-                len(
-                    self.filter_by_globs(
-                        [glob], self._all_input_files
-                    )
-                )
-                == 0
-            ):
+            if len(self.filter_by_globs([glob], all_input_files)) == 0:
                 raise PipelineItemFailure(f"No inputs for glob '{glob}'.")
 
         return jobs
 
     def _compute_result(self) -> dict[str, Any]:
         res = {
-            "inputs": self._all_input_files,
-            "outputs": self._all_output_files,
-            "all": self._all_input_files + self._all_output_files,
+            "inputs": self._inputs,
+            "outputs": self._outputs,
+            "all": self._inputs + self._outputs,
         }
 
         return res
@@ -126,32 +127,32 @@ class DataIsNotEmpty(DataJob):
 class LinkData(DataJob):
     """Copy data to into dest folder."""
 
-    def __init__(
-        self, env: Env, data: TaskPath, dest: TaskPath, **kwargs
-    ) -> None:
+    def __init__(self, env: Env, data: TaskPath, dest: TaskPath, **kwargs) -> None:
         super().__init__(
-            env=env, name=f"Copy {data:p} to {dest:p}", data=data, **kwargs
+            env=env, name=f"Copy {data:p} to {dest:p}/", data=data, **kwargs
         )
-        self._dest = dest
+        self.dest = TaskPath.base_path(self._env, dest.relpath, self.data.name)
 
     def _run(self):
-        self._link_file(
-            self.data, TaskPath.base_path(self._env, self._dest.relpath, self.data.name), overwrite=True
-        )
+        self._link_file(self.data, self.dest, overwrite=True)
 
 
 class LinkInput(LinkData):
     """Copy input to its place."""
 
     def __init__(self, env: Env, input_: TaskPath, **kwargs) -> None:
-        super().__init__(env=env, data=input_, dest=TaskPath.input_path(self._env, "."), **kwargs)
+        super().__init__(
+            env=env, data=input_, dest=TaskPath.input_path(self._env, "."), **kwargs
+        )
 
 
 class LinkOutput(LinkData):
     """Copy output to its place."""
 
     def __init__(self, env: Env, output: TaskPath, **kwargs) -> None:
-        super().__init__(env=env, data=output, dest=TaskPath.output_path(self._env, "."), **kwargs)
+        super().__init__(
+            env=env, data=output, dest=TaskPath.output_path(self._env, "."), **kwargs
+        )
 
 
 MB = 1024 * 1024
@@ -203,7 +204,9 @@ class InputSmall(DataJob):
     def _run(self):
         max_size = self._env.config.limits.input_max_size
         if self._file_size(self.data) > max_size * MB:
-            raise PipelineItemFailure(f"Input {self.data:p} is bigger than {max_size}MB.")
+            raise PipelineItemFailure(
+                f"Input {self.data:p} is bigger than {max_size}MB."
+            )
 
 
 class OutputSmall(DataJob):

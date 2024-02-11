@@ -22,6 +22,7 @@ from typing import Any, Optional, Callable, Iterable
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env import Env
+from pisek.paths import TaskPath
 from pisek.task_config import ProgramType
 from pisek.terminal import pad, pad_left, tab, MSG_LEN
 from pisek.jobs.status import MAX_BAR_LEN
@@ -41,77 +42,77 @@ from pisek.jobs.parts.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJud
 class SolutionManager(TaskJobManager):
     """Runs a solution and checks if it works as expected."""
 
-    def __init__(self, solution: str):
-        self.solution = solution
+    def __init__(self, solution_label: str) -> None:
+        self.solution_label: str = solution_label
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
-        self._outputs: list[tuple[str, RunJudge]] = []
-        super().__init__(f"Solution {solution} Manager")
+        self._outputs: list[tuple[TaskPath, RunJudge]] = []
+        super().__init__(f"Solution {solution_label} Manager")
 
     def _get_jobs(self) -> list[Job]:
-        self.is_primary = self._env.config.solutions[self.solution].primary
-        self._solution_file = self._solution(
-            self._env.config.solutions[self.solution].source
+        self.is_primary: bool = self._env.config.solutions[self.solution_label].primary
+        self._solution = TaskPath.solution_path(
+            self._env, self._env.config.solutions[self.solution_label].source
         )
-        self._judge = self._executable(self._env.config.judge)
+        self._judge = TaskPath.base_path(self._env, self._env.config.judge)
 
         jobs: list[Job] = []
 
-        jobs.append(compile_ := Compile(self._env, self._solution_file, True))
+        jobs.append(compile_ := Compile(self._env, self._solution, True))
         self._compile_job = compile_
 
         self._judges: dict[str, RunJudge] = {}
         for sub_num, sub in self._env.config.subtasks.subenvs():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp not in self._judges:
+                if inp.relpath not in self._judges:
                     run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
                         run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
                         jobs += [run_sol, run_judge]
-                        self._outputs.append((run_judge.output_name, run_judge))
+                        self._outputs.append((run_judge.output, run_judge))
 
                     elif self._env.config.task_type == "communication":
                         run_sol = run_judge = self._create_communication_jobs(inp)
                         jobs.append(run_sol)
 
-                    self._judges[inp] = run_judge
+                    self._judges[inp.relpath] = run_judge
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
+                    self.subtasks[-1].previous_jobs.append(self._judges[inp.relpath])
 
         return jobs
 
     def _create_batch_jobs(
-        self, sub_num: int, inp: str
+        self, sub_num: int, inp: TaskPath
     ) -> tuple["RunSolution", RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
         run_solution = RunBatchSolution(
             self._env,
-            self._solution_file,
+            self._solution,
             self.is_primary,
             inp,
         )
         run_solution.add_prerequisite(self._compile_job)
 
         if sub_num == "0":
-            c_out = self._replace_file_suffix(inp, ".in", ".out")
+            c_out = TaskPath.output_static_file(self._env, inp.name)
         else:
             primary_sol = self._env.config.solutions[
                 self._env.config.primary_solution
             ].source
-            c_out = util.get_output_name(inp, primary_sol)
+            c_out = TaskPath.output_file(self._env, inp.name, primary_sol)
 
-        out = util.get_output_name(inp, self._solution_file)
+        out = TaskPath.output_file(self._env, inp.name, self._solution.name)
         run_judge = judge_job(
             self._judge,
             inp,
             out,
             c_out,
             sub_num,
-            lambda: self._get_seed(inp),
+            lambda: self._get_seed(inp.name),
             None,
             self._env,
         )
@@ -119,22 +120,22 @@ class SolutionManager(TaskJobManager):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: str) -> "RunCommunication":
+    def _create_communication_jobs(self, inp: TaskPath) -> "RunCommunication":
         """Create RunCommunication job for communication task type."""
         return RunCommunication(
-            self._env, self._solution_file, self.is_primary, self._judge, inp
+            self._env, self._solution, self.is_primary, self._judge, inp
         )
 
     def _update(self):
         """Cancel running on inputs that can't change anything."""
-        expected = self._env.config.solutions[self.solution].subtasks
+        expected = self._env.config.solutions[self.solution_label].subtasks
 
         for subtask in self.subtasks:
             if subtask.definitive(expected[subtask.num]):
                 subtask.cancel()
 
     def _get_status(self) -> str:
-        msg = f"Testing {self.solution} "
+        msg = f"Testing {self.solution_label} "
         if self.state == State.canceled:
             return self._job_bar(msg)
         msg = pad(msg, MSG_LEN)
@@ -153,7 +154,7 @@ class SolutionManager(TaskJobManager):
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
         self.solution_points = 0
-        solution_conf = self._env.config.solutions[self.solution]
+        solution_conf = self._env.config.solutions[self.solution_label]
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
@@ -166,15 +167,15 @@ class SolutionManager(TaskJobManager):
 
         if points is not None and self.solution_points != points:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten {points} but got {self.solution_points} points."
+                f"Solution {self.solution_label} should have gotten {points} but got {self.solution_points} points."
             )
         elif above is not None and self.solution_points < above:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten at least {above} but got {self.solution_points} points."
+                f"Solution {self.solution_label} should have gotten at least {above} but got {self.solution_points} points."
             )
         elif below is not None and self.solution_points > below:
             raise PipelineItemFailure(
-                f"Solution {self.solution} should have gotten at most {below} but got {self.solution_points} points."
+                f"Solution {self.solution_label} should have gotten at most {below} but got {self.solution_points} points."
             )
 
     def _compute_result(self) -> dict[str, Any]:
@@ -188,7 +189,7 @@ class SolutionManager(TaskJobManager):
         }
         for output, job in self._outputs:
             if job.result is not None:
-                result["outputs"][job.result.verdict].append(os.path.basename(output))
+                result["outputs"][job.result.verdict].append(output)
 
         result["results"] = {}
         for inp in self._judges:
@@ -323,13 +324,14 @@ class SubtaskJobGroup:
 
 class RunPrimarySolutionMan(TaskJobManager):
     def __init__(self, input_: str, output: Optional[str]):
-        self._input_file = input_
-        self._output_file = output
+        self._input = input_
+        self._output = output
         super().__init__("Running primary solution")
 
     def _get_jobs(self) -> list[Job]:
-        solution = self._solution(
-            self._env.config.solutions[self._env.config.primary_solution].source
+        solution = TaskPath.solution_path(
+            self._env,
+            self._env.config.solutions[self._env.config.primary_solution].source,
         )
 
         jobs: list[Job] = [
@@ -338,8 +340,8 @@ class RunPrimarySolutionMan(TaskJobManager):
                 self._env,
                 solution,
                 True,
-                self._input_file,
-                self._output_file,
+                TaskPath.base_path(self._env, self._input),
+                TaskPath.base_path(self._env, self._output) if self._output else None,
             ),
         ]
         run_solution.add_prerequisite(compile)
@@ -357,7 +359,7 @@ class RunSolution(ProgramsJob):
         self,
         env: Env,
         name: str,
-        solution: str,
+        solution: TaskPath,
         is_primary: bool,
         **kwargs,
     ) -> None:
@@ -373,32 +375,32 @@ class RunBatchSolution(RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: TaskPath,
         is_primary: bool,
-        input_name: str,
-        output_name: Optional[str] = None,
+        input_: TaskPath,
+        output: Optional[TaskPath] = None,
         **kwargs,
     ) -> None:
-        name = RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
-            r"(.*)", input_name, 1
+        name = RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
+            r"(.*)", input_.name, 1
         )
         super().__init__(
             env=env, name=name, solution=solution, is_primary=is_primary, **kwargs
         )
-        self.input_name = self._input(input_name)
-        self.output_name = (
-            self._output(output_name)
-            if output_name
-            else self._output_from_input(self.input_name, solution)
+        self.input = input_
+        self.output = (
+            output
+            if output
+            else TaskPath.output_file(self._env, self.input.name, solution.name)
         )
-        self.log_file = self._log_file(input_name, self.solution)
+        self.log_file = TaskPath.log_file(self._env, input_.name, self.solution.name)
 
     def _run(self) -> RunResult:
         return self._run_program(
             program_type=self._solution_type(),
             program=self.solution,
-            stdin=self.input_name,
-            stdout=self.output_name,
+            stdin=self.input,
+            stdout=self.output,
             stderr=self.log_file,
         )
 
@@ -407,30 +409,30 @@ class RunCommunication(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: TaskPath,
         is_primary: bool,
-        judge: str,
-        input_name: str,
+        judge: TaskPath,
+        input_: TaskPath,
         expected_points: Optional[float] = None,
         **kwargs,
     ):
         super().__init__(
             env=env,
-            name=RUN_JOB_NAME.replace(r"(.*)", os.path.basename(solution), 1).replace(
-                r"(.*)", input_name, 1
+            name=RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
+                r"(.*)", input_.name, 1
             ),
             judge=judge,
-            input_name=input_name,
+            input_=input_,
             expected_points=expected_points,
-            judge_log_file=os.path.basename(
-                self._output_from_input(input_name, solution)
-            ),
+            judge_log_file=TaskPath.log_file(self._env, input_.name, solution.name),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
         )
         self.solution = solution
-        self.sol_log_file = self._log_file(os.path.basename(self.input), self.solution)
+        self.sol_log_file = TaskPath.log_file(
+            self._env, self.input.name, self.solution.name
+        )
 
     def _get_solution_run_res(self) -> RunResult:
         with tempfile.TemporaryDirectory() as fifo_dir:
@@ -481,4 +483,4 @@ class RunCommunication(RunCMSJudge, RunSolution):
         return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
-        return f"solution {os.path.basename(self.solution)} on input {self.input}"
+        return f"solution {self.solution:p} on input {self.input:p}"

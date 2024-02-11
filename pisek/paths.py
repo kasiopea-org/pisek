@@ -70,7 +70,9 @@ class TaskPath:
 
     @staticmethod
     def from_abspath(env: Env, *path: str) -> "TaskPath":
-        return TaskPath.base_path(env, os.path.relpath(os.path.join(*path), env.task_dir))
+        return TaskPath.base_path(
+            env, os.path.relpath(os.path.join(*path), env.task_dir)
+        )
 
     @staticmethod
     def static_path(env: Env, *path: str) -> "TaskPath":
@@ -98,8 +100,8 @@ class TaskPath:
         return TaskPath.data_path(env, GENERATED_SUBDIR, *path)
 
     @staticmethod
-    def generated_input_file(env: Env, subtask: int, seed: str) -> "TaskPath":
-        return TaskPath(env, f"{subtask:02}_{seed:x}.in")
+    def generated_input_file(env: Env, subtask: int, seed: int) -> "TaskPath":
+        return TaskPath.generated_path(env, f"{subtask:02}_{seed:x}.in")
 
     @staticmethod
     def input_path(env: Env, *path: str) -> "TaskPath":
@@ -123,6 +125,11 @@ class TaskPath:
         input_name = os.path.splitext(os.path.basename(input_name))[0]
         solution = os.path.basename(solution)
         return TaskPath.output_path(env, f"{input_name}.{solution}.out")
+
+    @staticmethod
+    def output_static_file(env: Env, name: str) -> "TaskPath":
+        name = os.path.splitext(name)[0]
+        return TaskPath.output_path(env, f"{name}.out")
 
     @staticmethod
     def sanitized_path(env: Env, *path: str) -> "TaskPath":
@@ -150,7 +157,9 @@ class TaskPath:
 
 
 def task_path_representer(dumper, task_path: TaskPath):
-    return dumper.represent_sequence("!TaskPath", [task_path._task_path, task_path.relpath])
+    return dumper.represent_sequence(
+        "!TaskPath", [task_path._task_path, task_path.relpath]
+    )
 
 
 def task_path_constructor(loader, value):

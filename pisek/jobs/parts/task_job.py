@@ -67,16 +67,29 @@ class TaskHelper:
         }
 
     @staticmethod
-    def filter_by_globs(globs: Iterable[str], files: Iterable[TaskPath]) -> list[TaskPath]:
-        return [file for file in files if any(fnmatch.fnmatch(file.name, g) for g in globs)]
+    def filter_by_globs(
+        globs: Iterable[str], files: Iterable[TaskPath]
+    ) -> list[TaskPath]:
+        return [
+            file for file in files if any(fnmatch.fnmatch(file.name, g) for g in globs)
+        ]
 
     def globs_to_files(
-        self, globs: list[str], directory: TaskPath
+        self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
         files: list[str] = list(
-            sorted(set(sum((glob.glob(g, root_dir=directory.fullpath) for g in globs), start=[])))
+            sorted(
+                set(
+                    sum(
+                        (glob.glob(g, root_dir=directory.fullpath) for g in globs),
+                        start=[],
+                    )
+                )
+            )
         )
-        return [TaskPath.from_abspath(self._env, directory.fullpath, file) for file in files]
+        return [
+            TaskPath.from_abspath(self._env, directory.fullpath, file) for file in files
+        ]
 
     @staticmethod
     def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
@@ -107,7 +120,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = self._subtask_inputs(self._env.config.subtasks["0"])
-        outs = (inp.replace_suffix(".out") for inp in ins)
+        outs = (TaskPath.output_static_file(self._env, inp.name) for inp in ins)
         return list(zip(ins, outs))
 
     def _all_inputs(self) -> list[TaskPath]:

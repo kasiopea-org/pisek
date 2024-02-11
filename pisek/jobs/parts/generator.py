@@ -52,7 +52,7 @@ class GeneratorManager(TaskJobManager):
                 for i, seed in enumerate(seeds):
                     self._inputs.append(
                         input_ := TaskPath.generated_input_file(
-                            self._env, seed, sub_num
+                            self._env, int(sub_num), seed
                         )
                     )
 
@@ -103,7 +103,7 @@ class GeneratorManager(TaskJobManager):
 
 
 class RunOnlineGeneratorMan(TaskJobManager):
-    def __init__(self, subtask: int, seed: int, file: TaskPath):
+    def __init__(self, subtask: int, seed: int, file: str):
         self._subtask = subtask
         self._seed = seed
         self._file = file
@@ -115,7 +115,11 @@ class RunOnlineGeneratorMan(TaskJobManager):
         jobs: list[Job] = [
             compile := Compile(self._env, generator),
             gen := OnlineGeneratorGenerate(
-                self._env, generator, self._file, self._subtask, self._seed
+                self._env,
+                generator,
+                TaskPath.base_path(self._env, self._file),
+                self._subtask,
+                self._seed,
             ),
         ]
         gen.add_prerequisite(compile)

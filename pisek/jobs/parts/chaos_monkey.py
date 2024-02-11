@@ -59,10 +59,12 @@ class Invalidate(TaskJob):
 class Incomplete(Invalidate):
     """Makes an incomplete output."""
 
-    def __init__(self, env: Env, from_file: TaskPath, to_file: TaskPath, seed: int) -> None:
+    def __init__(
+        self, env: Env, from_file: TaskPath, to_file: TaskPath, seed: int
+    ) -> None:
         super().__init__(
             env,
-            f"Incomplete {from_file} -> {to_file} (seed {seed:x})",
+            f"Incomplete {from_file:n} -> {to_file:n} (seed {seed:x})",
             from_file,
             to_file,
             seed,
@@ -85,7 +87,7 @@ class ChaosMonkey(Invalidate):
     def __init__(self, env, from_file: TaskPath, to_file: TaskPath, seed: int) -> None:
         super().__init__(
             env,
-            f"ChaosMonkey {from_file} -> {to_file} (seed {seed:x})",
+            f"ChaosMonkey {from_file:n} -> {to_file:n} (seed {seed:x})",
             from_file,
             to_file,
             seed,

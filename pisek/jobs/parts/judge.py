@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from functools import cache
+from functools import cache, partial
 import os
 import random
 from typing import Optional, Union, Callable
@@ -46,9 +46,7 @@ class JudgeManager(TaskJobManager):
         jobs: list[Job] = []
         judge = TaskPath.base_path(self._env, self._env.config.judge)
         if self._env.config.judge_type != "diff":
-            jobs.append(
-                comp := Compile(self._env, judge)
-            )
+            jobs.append(comp := Compile(self._env, judge))
 
         samples = self._get_samples()
         if self._env.config.task_type == "communication":
@@ -101,26 +99,35 @@ class JudgeManager(TaskJobManager):
 
 class RunKasiopeaJudgeMan(TaskJobManager):
     def __init__(
-        self, subtask: int, seed: int, input_: TaskPath, output: TaskPath, correct_output: TaskPath 
+        self,
+        subtask: int,
+        seed: int,
+        input_: str,
+        output: str,
+        correct_output: str,
     ) -> None:
         self._subtask = subtask
         self._seed = seed
-        self._input_file = input_
-        self._output_file = output
+        self._input = input_
+        self._output = output
         self._correct_output = correct_output
         super().__init__("Running judge")
 
     def _get_jobs(self) -> list[Job]:
         judge_program = TaskPath.base_path(self._env, self._env.config.judge)
-        clean_output = TaskPath.sanitized_file(self._env, self._output_file.name)
+        input_, output, correct_output = map(
+            partial(TaskPath.base_path, self._env),
+            (self._input, self._output, self._correct_output),
+        )
+        clean_output = TaskPath.sanitized_file(self._env, output.name)
 
         jobs: list[Job] = [
-            sanitize := Sanitize(self._env, self._output_file, clean_output),
+            sanitize := Sanitize(self._env, output, clean_output),
             judge := judge_job(
                 judge_program,
-                self._input_file,
+                input_,
                 clean_output,
-                self._correct_output,
+                correct_output,
                 self._subtask,
                 lambda: f"{self._seed:x}",
                 None,
@@ -340,7 +347,7 @@ class RunBatchJudge(RunJudge):
             return RunResult(RunResultKind.OK, 0, 0.0, 0.0)
 
     def _judging_message(self) -> str:
-        return f"output {self.output:n} for input {self.input}"
+        return f"output {self.output:p} for input {self.input:p}"
 
     def _nice_diff(self) -> str:
         """Create a nice diff between output and correct output."""
@@ -510,7 +517,11 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
         result = self._run_program(
             ProgramType.judge,
             self.judge,
-            args=[self.input.fullpath, self.correct_output.fullpath, self.output.fullpath],
+            args=[
+                self.input.fullpath,
+                self.correct_output.fullpath,
+                self.output.fullpath,
+            ],
             stdout=self.points_file,
             stderr=self.judge_log_file,
         )
@@ -533,9 +544,7 @@ def judge_job(
 ) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.judge_type == "diff":
-        return RunDiffJudge(
-            env, judge, input_, output, correct_output, expected_points
-        )
+        return RunDiffJudge(env, judge, input_, output, correct_output, expected_points)
     elif env.config.contest_type == "cms":
         return RunCMSBatchJudge(
             env, judge, input_, output, correct_output, expected_points

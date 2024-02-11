@@ -150,7 +150,7 @@ class CheckerJob(ProgramsJob):
         **kwargs,
     ):
         super().__init__(
-            env=env, name=f"Check {input_} on subtask {subtask}", **kwargs
+            env=env, name=f"Check {input_:n} on subtask {subtask}", **kwargs
         )
         self.checker = checker
         self.subtask = subtask
@@ -171,12 +171,12 @@ class CheckerJob(ProgramsJob):
         result = self._check()
         if self.expected == RunResultKind.OK != result.kind:
             raise self._create_program_failure(
-                f"Checker failed on {self.input} (subtask {self.subtask}) but should have succeeded.",
+                f"Checker failed on {self.input:p} (subtask {self.subtask}) but should have succeeded.",
                 result,
             )
         elif self.expected == RunResultKind.RUNTIME_ERROR != result.kind:
             raise self._create_program_failure(
-                f"Checker succeeded on {self.input} (subtask {self.subtask}) but should have failed.",
+                f"Checker succeeded on {self.input:p} (subtask {self.subtask}) but should have failed.",
                 result,
             )
         return result

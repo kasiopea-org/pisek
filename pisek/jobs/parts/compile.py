@@ -118,7 +118,13 @@ class Compile(ProgramsJob):
 
     def _compile_pas(self, program: TaskPath):
         build_dir = TaskPath.executable_path(self._env, ".")
-        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target.fullpath, "-FE" + build_dir.fullpath]
+        pas_flags = [
+            "-gl",
+            "-O3",
+            "-Sg",
+            "-o" + self.target.fullpath,
+            "-FE" + build_dir.fullpath,
+        ]
 
         return self._run_compilation(["fpc"] + pas_flags + [program.fullpath], program)
 
@@ -198,13 +204,13 @@ class Compile(ProgramsJob):
         flags = []
 
         if self.stub is not None:
-            filename = f"{self.stub}.{extension}"
+            filename = TaskPath.base_path(self._env, f"{self.stub:p}.{extension}")
             self._access_file(filename)
-            flags += [filename]
+            flags += [filename.fullpath]
 
         for header in self.headers:
             self._access_file(header)
-            directory = os.path.normpath(os.path.dirname(header))
+            directory = os.path.normpath(os.path.dirname(header.fullpath))
             flags += [f"-I{directory}"]
 
         return flags
