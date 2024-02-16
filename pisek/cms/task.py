@@ -1,7 +1,6 @@
 from cms.db.task import Task
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import select
 import re
 
 from pisek.cms.dataset import create_dataset
@@ -28,5 +27,5 @@ def get_task(session: Session, config: TaskConfig):
 
 
 def get_default_file_name(name: str):
-    name = re.sub("[^a-zA-Z0-9]+", "_", name)
+    name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
     return f"{name}.%l"

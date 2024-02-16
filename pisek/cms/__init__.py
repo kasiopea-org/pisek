@@ -2,7 +2,7 @@ from cms.db.session import Session
 from sqlalchemy.exc import IntegrityError
 
 from pisek.cms.dataset import create_dataset, get_dataset
-from pisek.cms.result import create_testing_log
+from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
 from pisek.task_config import TaskConfig
@@ -90,3 +90,14 @@ def testing_log(args):
     task = get_task(session, config)
     dataset = get_dataset(session, task, description)
     create_testing_log(session, config, dataset)
+
+
+def check(args):
+    config = TaskConfig(PATH)
+    session = Session()
+
+    description = args.dataset
+
+    task = get_task(session, config)
+    dataset = get_dataset(session, task, description)
+    check_results(session, config, dataset)

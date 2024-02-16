@@ -3,6 +3,7 @@ from cms.db.task import Dataset
 from cms.db.submission import SubmissionResult, Evaluation
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
+from colorama import Fore
 import json
 
 from pisek.cms.submission import get_submission
@@ -22,7 +23,7 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
         try:
             result = get_submission_result(session, files, config, solution, dataset)
         except SubmissionResultError as e:
-            print(f"Skipping {name}: {e}")
+            print(f"{Fore.YELLOW}Skipping {name}: {e}{Fore.RESET}")
             continue
 
         evaluation: Evaluation
@@ -55,6 +56,38 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
 
     with open(TESTING_LOG, "w") as file:
         json.dump(payload, file, indent=4)
+
+
+def check_results(session: Session, config: TaskConfig, dataset: Dataset):
+    files = FileCacher()
+
+    for name, solution in config.solutions.subenvs():
+        try:
+            result = get_submission_result(session, files, config, solution, dataset)
+
+            if not result.scored():
+                raise SubmissionResultError("This submission has not been scored yet")
+        except SubmissionResultError as e:
+            print(f"{Fore.YELLOW}Skipping {name}: {e}{Fore.RESET}")
+            continue
+
+        score = result.score
+
+        score_missed_target = None
+
+        if solution.points is not None and score != solution.points:
+            score_missed_target = f"{solution.points}"
+        elif solution.points_above is not None and score < solution.points_above:
+            score_missed_target = f"above {solution.points_above}"
+        elif solution.points_below is not None and score > solution.points_below:
+            score_missed_target = f"below {solution.points_below}"
+
+        if score_missed_target is not None:
+            print(
+                f"{Fore.RED}{name}: {score} points (should be {score_missed_target}){Fore.RESET}"
+            )
+        else:
+            print(f"{name}: {score} points")
 
 
 def get_submission_result(

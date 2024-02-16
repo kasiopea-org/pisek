@@ -318,6 +318,12 @@ def main(argv):
     )
     add_argument_dataset(parser_cms_testing_log)
 
+    parser_cms_check = subparsers_cms.add_parser(
+        "check",
+        help="Check if reference solutions scored as expected in CMS",
+    )
+    add_argument_dataset(parser_cms_check)
+
     args = parser.parse_args(argv)
 
     result = None
@@ -353,6 +359,8 @@ def main(argv):
             cms.submit(args)
         elif args.cms_subcommand == "testing-log":
             cms.testing_log(args)
+        elif args.cms_subcommand == "check":
+            cms.check(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 
