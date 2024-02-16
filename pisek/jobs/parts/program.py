@@ -265,14 +265,11 @@ class ProgramsJob(TaskJob):
         stderr_raw = ""
         callback_exec = False
         while True:
-            states = [process is not None for process in running_pool]
+            states = [process.poll() is not None for process in running_pool]
             if not callback_exec and any(states):
                 callback_exec = True
                 if self._callback is not None:
                     self._callback(running_pool[states.index(True)])
-
-            if all(states):
-                break
 
             if print_first_stderr:
                 assert running_pool[0].stderr is not None  # To make mypy happy
@@ -280,6 +277,9 @@ class ProgramsJob(TaskJob):
                 if line:
                     stderr_raw += line
                     self._print(colored(line, self._env, "yellow"), end="", stderr=True)
+
+            if all(states):
+                break
 
             time.sleep(0.1)
 
