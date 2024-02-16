@@ -48,6 +48,7 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
                 {
                     "time": evaluation.execution_time,
                     "wall_clock_time": evaluation.execution_wall_clock_time,
+                    "memory": evaluation.execution_memory / (1024 * 1024),
                     "test": f"{evaluation.codename}.in",
                     "points": points,
                     "result": result_type,
