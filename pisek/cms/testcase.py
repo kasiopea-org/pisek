@@ -43,7 +43,8 @@ def get_testcases(config: TaskConfig) -> list[tuple[str, str, str | None]]:
 
     sample_globs = config.subtasks["0"].in_globs
     test_globs = config.subtasks.all_globs
-    solution = config.primary_solution
+    solution = config.solutions[config.primary_solution].source
+    solution = path.basename(solution)
 
     outputs_needed = config.task_type == "batch" and config.judge_needs_out
 
