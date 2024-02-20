@@ -211,6 +211,9 @@ class SubtaskJobGroup:
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
 
+    def _finished_jobs(self, jobs: list[RunJudge]) -> list[RunJudge]:
+        return list(filter(lambda j: j.result is not None, jobs))
+
     def _finished_job_results(self, jobs: list[RunJudge]) -> list[SolutionResult]:
         filtered = []
         for res in self._job_results(jobs):
@@ -292,6 +295,8 @@ class SubtaskJobGroup:
         """
         mode_quantifier = self._get_quant()
         jobs = self.new_jobs + ([] if mode_quantifier == all else self.previous_jobs)
+
+        finished_jobs = self._finished_jobs(jobs)
         verdicts = self._finished_job_results(jobs)
 
         result = True
@@ -309,7 +314,7 @@ class SubtaskJobGroup:
                 or (SUBTASK_SPEC[expected_str][i] == solution_res_true)
             )
             if quant == all and ok == False:
-                breaker = jobs[oks.index(False)]
+                breaker = finished_jobs[oks.index(False)]
                 break
 
         return result, definitive, breaker
