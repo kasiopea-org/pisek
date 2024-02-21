@@ -20,7 +20,7 @@ setuptools.setup(
     version="0.1",
     description="Nástroj na kontrolování úloh",
     packages=setuptools.find_packages(),
-    install_requires=["PyYAML", "colorama"],
+    install_requires=["PyYAML", "colorama", "pydantic"],
     extras_require={"dev": ["black", "mypy"]},
     entry_points={"console_scripts": ["pisek=pisek.__main__:main_wrapped"]},
     include_package_data=True,
