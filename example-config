@@ -64,8 +64,13 @@ judge_needs_out=0
 # Defaults to 1
 
 stub=src/stub
-# Only for C++ CMS tasks
+# Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix)
+# Used commonly for interactive tasks
+
+headers=src/blecha.h
+# Only for C/C++ CMS tasks
+# Allow each solution to include the given headers
 # Used commonly for interactive tasks
 
 in_mode = ??? (ignored)
