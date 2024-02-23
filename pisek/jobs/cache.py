@@ -20,7 +20,7 @@ from typing import Optional
 import yaml
 
 from pisek.terminal import eprint, colored
-from pisek.env import Env
+from pisek.config.env import Env
 
 CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5

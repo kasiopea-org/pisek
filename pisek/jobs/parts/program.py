@@ -24,8 +24,8 @@ import signal
 import subprocess
 import yaml
 
-from pisek.task_config import ProgramType
-from pisek.env import Env
+from pisek.config.task_config import ProgramType
+from pisek.config.env import Env
 from pisek.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.terminal import tab, colored

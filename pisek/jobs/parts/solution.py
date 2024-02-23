@@ -21,9 +21,9 @@ from typing import Any, Optional, Callable, Iterable
 
 import pisek.util as util
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
-from pisek.task_config import ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.terminal import pad, pad_left, tab, MSG_LEN
 from pisek.jobs.status import MAX_BAR_LEN
 from pisek.jobs.parts.task_job import TaskJobManager

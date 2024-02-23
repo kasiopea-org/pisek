@@ -19,7 +19,7 @@ import shutil
 import subprocess
 import sys
 
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
 from pisek.jobs.jobs import State, PipelineItemFailure
 from pisek.jobs.parts.program import ProgramsJob

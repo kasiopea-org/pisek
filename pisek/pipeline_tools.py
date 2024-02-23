@@ -20,8 +20,8 @@ import sys
 from typing import Callable, Optional, Any
 
 from pisek.terminal import eprint, tab, colored
-from pisek.task_config import load_config
-from pisek.env import Env
+from pisek.config.task_config import load_config
+from pisek.config.env import Env
 from pisek.jobs.cache import Cache
 
 PATH = "."

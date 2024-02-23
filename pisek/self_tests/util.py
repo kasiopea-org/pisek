@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from pisek import task_config
+from pisek.config import task_config
 from pisek.__main__ import test_task_path
 from pisek.util import quote_output, clean_task_dir
 

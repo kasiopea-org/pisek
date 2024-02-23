@@ -17,9 +17,9 @@
 from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
-from pisek.task_config import ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob

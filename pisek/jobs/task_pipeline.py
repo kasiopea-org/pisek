@@ -17,7 +17,7 @@
 from collections import deque
 
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.env import Env
+from pisek.config.env import Env
 
 from pisek.jobs.parts.task_job import (
     TOOLS_MAN_CODE,

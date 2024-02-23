@@ -25,7 +25,7 @@ import yaml
 
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])

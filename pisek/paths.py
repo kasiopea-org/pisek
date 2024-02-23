@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass
 import os
 import yaml
 
-from pisek.env import Env
+from pisek.config.env import Env
 
 BUILD_DIR = "build/"
 
@@ -29,8 +30,13 @@ SANITIZED_SUBDIR = "sanitized/"
 LOG_SUBDIR = "log/"
 
 
+@dataclass
 class TaskPath:
     """Class representing a path to task file."""
+
+    fullpath: str
+    relpath: str
+    name: str
 
     def __init__(self, task_path: str, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))

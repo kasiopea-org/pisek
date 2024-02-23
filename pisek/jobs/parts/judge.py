@@ -21,9 +21,9 @@ import random
 from typing import Optional, Union, Callable
 import subprocess
 
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
-from pisek.task_config import ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.terminal import tab, colored
 from pisek.jobs.parts.task_job import TaskJobManager

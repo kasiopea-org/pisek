@@ -20,7 +20,7 @@ import sys
 from colorama import Fore
 from typing import Callable
 
-from pisek.env import Env
+from pisek.config.env import Env
 
 MSG_LEN = 25
 

@@ -24,9 +24,9 @@ from typing import Optional, Any, Callable, Iterable
 
 import pisek.util as util
 import subprocess
-from pisek.env import Env
+from pisek.config.env import Env
 from pisek.paths import TaskPath
-from pisek.task_config import SubtaskConfig, ProgramType
+from pisek.config.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 

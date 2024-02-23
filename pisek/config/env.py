@@ -18,6 +18,8 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 from pydantic import BaseModel, Field
 
+from pisek.config.context import ContextModel
+
 
 class TestingTarget(Enum):
     all = 1
@@ -25,20 +27,24 @@ class TestingTarget(Enum):
     solution = 3
 
 
-class BaseEnv(BaseModel):
+class BaseEnv(ContextModel):
     """
     Collection of enviroment variables which logs whether each variable was accessed.
     """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._locked: bool = False
         self._accessed: set[str] = set([])
+        self._locked: bool = False
 
     if not TYPE_CHECKING:
-        def __getattr__(self, item: str) -> Any:
-            self._accessed.add(item)
-            return super().__getattr__(item)
+
+        def __getattribute__(self, item: str) -> Any:
+            # Implementing this method is kind of magical and dangerous. Beware!
+            if not item.startswith("_") and item != "model_fields":
+                if "_accessed" in self.__dict__ and item in self.model_fields:
+                    self._accessed.add(item)
+            return super().__getattribute__(item)
 
     def fork(self):
         """
@@ -78,7 +84,9 @@ class BaseEnv(BaseModel):
         for key in self._accessed:
             item = getattr(self, key)
             if isinstance(item, BaseEnv):
-                accessed += [(f"{key}.{subkey}", val) for subkey, val in item.get_accessed()]
+                accessed += [
+                    (f"{key}.{subkey}", val) for subkey, val in item.get_accessed()
+                ]
             else:
                 accessed.append((key, item))
 
@@ -104,6 +112,7 @@ class Env(BaseEnv):
         all_inputs: Finish testing all inputs of a solution
         inputs: Number of inputs generated (Only for task_type=kasiopea)
     """
+
     task_dir: str
     target: TestingTarget
     # TODO config: Config
@@ -117,6 +126,3 @@ class Env(BaseEnv):
     skip_on_timeout: bool
     all_inputs: bool
     inputs: int = Field(ge=1)
-
-
-    pass
