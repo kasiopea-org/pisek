@@ -21,7 +21,9 @@ from pydantic import BaseModel
 from typing import Any, Iterator
 
 
-_init_context_var = ContextVar("_init_context_var", default=None)
+_init_context_var: ContextVar[dict[str, Any]] = ContextVar(
+    "_init_context_var", default={}
+)
 
 
 @contextmanager

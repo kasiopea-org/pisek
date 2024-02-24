@@ -49,10 +49,10 @@ def group_by_subtask(
     results: list[TestCaseResult], config: TaskConfig
 ) -> dict[int, list[TestCaseResult]]:
     subtasks: dict[int, list[TestCaseResult]] = {
-        num: [] for num, _ in config.subtasks.values()
+        num: [] for num, _ in config.subtasks.items()
     }
     for result in results:
-        for i, subtask in config.subtasks.values():
+        for i, subtask in config.subtasks.items():
             if in_subtask(result.name, subtask):
                 subtasks[i].append(result)
     return subtasks
@@ -149,7 +149,7 @@ def visualize(
 
     if limit is None:
         if measured_stat == "time":
-            limit = config.get_timeout(True)
+            limit = config.limits.solve.time_limit
         else:  # TODO: Fix when implementing additional stats
             limit = 1
 
@@ -222,9 +222,9 @@ def visualize_solution(
     results_evaluate = group_by_subtask(results_extracted, config)
 
     if by_subtask:
-        results_filtered: dict[int, Union[str, list[TestCaseResult]]] = {}
+        results_filtered: dict[str, Union[str, list[TestCaseResult]]] = {}
         for key in results_evaluate:
-            results_filtered[key] = mode_func(results_evaluate[key])
+            results_filtered[str(key)] = mode_func(results_evaluate[key])
     else:
         results_filtered = {"all": mode_func(results_extracted)}
 
@@ -262,9 +262,10 @@ def visualize_solution(
     for subtask_num in sorted(results_filtered.keys()):
         if by_subtask:
             subtask_score = evaluate_subtask(
-                results_evaluate[subtask_num], config.subtasks[subtask_num].points
+                results_evaluate[int(subtask_num)],
+                config.subtasks[int(subtask_num)].points,
             )
-            print(f"{config.subtasks[subtask_num].name} ({subtask_score}b)")
+            print(f"{config.subtasks[int(subtask_num)].name} ({subtask_score}b)")
 
         subtask_results = results_filtered[subtask_num]
         if isinstance(subtask_results, str):

@@ -21,7 +21,8 @@ from functools import partial
 
 import pisek.utils.util as util
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.utils.pipeline_tools import load_env, run_pipeline
+from pisek.utils.pipeline_tools import run_pipeline
+from pisek.config.env import Env
 from pisek.config.task_config import DATA_SUBDIR
 from pisek.jobs.cache import Cache
 
@@ -82,7 +83,7 @@ class KasiopeaInputCase:
         input_: Optional[str] = None,
         correct_output: Optional[str] = None,
     ):
-        env = load_env(self.path)
+        env = Env.load(self.path)
 
         self.input = input_ or self.input
         if env.config.judge_needs_in:
@@ -100,7 +101,7 @@ class KasiopeaInputCase:
         else:
             self.correct_output = "/dev/null"
 
-        env = load_env(self.path)
+        env = Env.load(self.path)
         if env is None:
             return 1
         pipeline = ServerJudgeKasiopea(

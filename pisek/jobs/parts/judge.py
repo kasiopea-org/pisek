@@ -140,7 +140,16 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         ]
         judge.add_prerequisite(sanitize)
         if self._env.config.out_check == JudgeType.judge:
-            jobs.insert(0, compile := Compile(self._env, judge_program))
+            if self._env.config.out_judge is None:
+                raise RuntimeError(
+                    f"Unset judge for out_check={self._env.config.out_check.name}"
+                )
+            jobs.insert(
+                0,
+                compile := Compile(
+                    self._env, TaskPath.base_path(self._env, self._env.config.out_judge)
+                ),
+            )
             judge.add_prerequisite(compile)
 
         self._judge_job = judge
@@ -270,11 +279,12 @@ class RunCMSJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge_log_file: TaskPath,
+        judge: TaskPath,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, judge_log_file=judge_log_file, **kwargs)
-        self.points_file = TaskPath.points_file(self._env, judge_log_file.name)
+        super().__init__(env=env, judge_name=judge.name, **kwargs)
+        self.judge = judge
+        self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
 
     def _load_points(self, result: RunResult) -> float:
         points_str = result.raw_stdout(self._access_file).split("\n")[0]
@@ -491,7 +501,7 @@ class RunKasiopeaJudge(RunBatchJudge):
             )
 
 
-class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
+class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
     """Judges solution output using judge with CMS interface."""
 
     def __init__(
@@ -506,14 +516,13 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge_name=judge.name,
+            judge=judge,
             input_=input_,
             output=output,
             correct_output=correct_output,
             expected_points=expected_points,
             **kwargs,
         )
-        self.judge = judge
 
     def _judge(self) -> SolutionResult:
         self._access_file(self.input)

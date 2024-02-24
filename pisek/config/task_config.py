@@ -115,8 +115,6 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
-    # TODO: construct all_globs
-
     @staticmethod
     def load(configs: ConfigHierarchy) -> "TaskConfig":
         KEYS = [
@@ -243,7 +241,7 @@ class SubtaskConfig(BaseEnv):
             if glob == "@ith":
                 glob = f"{info.data['num']:02}*.in"
             if not glob.endswith(".in"):
-                raise ValidationError("")  # TODO
+                raise TaskConfigError(f"In_globs must end with '.in': {glob}")
             globs.append(glob)
 
         return globs
@@ -403,4 +401,5 @@ class LimitsConfig(BaseEnv):
 
 
 def load_config(path: str) -> Optional[TaskConfig]:
+    # TODO: Check unused keys and env
     return TaskConfig.load(ConfigHierarchy(path))

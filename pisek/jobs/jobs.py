@@ -143,7 +143,7 @@ class Job(PipelineItem, CaptureInitParams):
         self._accessed_files.add(filename.relpath)
 
     def _signature(
-        self, envs: list[str], files: AbstractSet[str], results: dict[str, Any]
+        self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
@@ -197,7 +197,9 @@ class Job(PipelineItem, CaptureInitParams):
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
         sign, err = self._signature(
-            self._env.get_accessed(), self._accessed_files, self.prerequisites_results
+            set(self._env.get_accessed()),
+            self._accessed_files,
+            self.prerequisites_results,
         )
         if err == "File nonexistent":
             raise RuntimeError(

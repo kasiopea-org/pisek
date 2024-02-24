@@ -25,7 +25,7 @@ from pisek.config.task_config import load_config
 from pisek.config.env import Env
 from pisek.jobs.cache import Cache
 
-PATH = "./fixtures/sum_cms"
+PATH = "."
 
 LOCKED = False
 LOCK_FILE = ".pisek_lock"

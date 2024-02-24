@@ -14,94 +14,69 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import configparser
+from configparser import ConfigParser
 from importlib.resources import files
 import os
 
 from pisek.config.config_errors import TaskConfigError
 from pisek.utils.text import tab
 
-DEFAULTS_CONFIG = files("pisek").joinpath("defaults-config")
+DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
 
 
 # TODO: Version update
 
 
-class TaskConfigParser(configparser.RawConfigParser):
-    """
-    https://stackoverflow.com/questions/57305229/python-configparser-get-list-of-unused-entries
-    ConfigParser that tracks unused keys.
-    """
+# def check_unused_keys(self, config: TaskConfigParser) -> None:
+#     """Verify that there are no unused keys in the config, raise otherwise."""
 
-    used_vars: dict[str, set] = {}
+#     accepted_section_names = (
+#         self._subtask_section_names
+#         | self._solution_section_names
+#         | {
+#             "task",
+#             "tests",
+#             "limits",
+#         }
+#     )
 
-    def get_unused_keys(self, section):
-        all_options = self.options(section)
+#     # These keys are accepted for backwards compatibility reasons because the config
+#     # format is based on KSP's opendata tool.
+#     ignored_keys = {
+#         "task": {"tests"},
+#         "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
+#         "limits": {},
+#         # Any subtask section like "test01", "test02"...
+#         "subtask": {"file_name"},
+#         # Any solution section like solution_solve, solution_slow, ...
+#         "solution": {},
+#     }
 
-        # We need the default in case the section is not present at all.
-        section_used_vars = self.used_vars.get(section, [])
+#     for section_name in config.sections():
+#         if not section_name in accepted_section_names:
+#             raise TaskConfigError(f"Unexpected section [{section_name}] in config")
 
-        unused_options = [x for x in all_options if x not in section_used_vars]
-        return unused_options
+#         if section_name in self._subtask_section_names:
+#             section_ignored_keys = ignored_keys["subtask"]
+#         elif section_name in self._solution_section_names:
+#             section_ignored_keys = ignored_keys["solution"]
+#         else:
+#             section_ignored_keys = ignored_keys[section_name]
 
-    def get(self, section: str, option: str, *args, **kwargs):
-        if section not in self.used_vars:
-            self.used_vars[section] = set([option])
-        else:
-            self.used_vars[section].add(option)
+#         for key in config.get_unused_keys(section_name):
+#             if key not in section_ignored_keys:
+#                 raise TaskConfigError(
+#                     f"Unexpected key '{key}' in section [{section_name}] of config."
+#                 )
 
-        return super().get(section, option, *args, **kwargs)
-
-    # def check_unused_keys(self, config: TaskConfigParser) -> None:
-    #     """Verify that there are no unused keys in the config, raise otherwise."""
-
-    #     accepted_section_names = (
-    #         self._subtask_section_names
-    #         | self._solution_section_names
-    #         | {
-    #             "task",
-    #             "tests",
-    #             "limits",
-    #         }
-    #     )
-
-    #     # These keys are accepted for backwards compatibility reasons because the config
-    #     # format is based on KSP's opendata tool.
-    #     ignored_keys = {
-    #         "task": {"tests"},
-    #         "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
-    #         "limits": {},
-    #         # Any subtask section like "test01", "test02"...
-    #         "subtask": {"file_name"},
-    #         # Any solution section like solution_solve, solution_slow, ...
-    #         "solution": {},
-    #     }
-
-    #     for section_name in config.sections():
-    #         if not section_name in accepted_section_names:
-    #             raise TaskConfigError(f"Unexpected section [{section_name}] in config")
-
-    #         if section_name in self._subtask_section_names:
-    #             section_ignored_keys = ignored_keys["subtask"]
-    #         elif section_name in self._solution_section_names:
-    #             section_ignored_keys = ignored_keys["solution"]
-    #         else:
-    #             section_ignored_keys = ignored_keys[section_name]
-
-    #         for key in config.get_unused_keys(section_name):
-    #             if key not in section_ignored_keys:
-    #                 raise TaskConfigError(
-    #                     f"Unexpected key '{key}' in section [{section_name}] of config."
-    #                 )
-
-    #     return None
+#     return None
 
 
 class ConfigHierarchy:
     def __init__(self, task_path: str) -> None:
         self._config_path = os.path.join(task_path, "config")
         config_paths = [DEFAULTS_CONFIG, self._config_path]
-        self._configs = [TaskConfigParser() for _ in config_paths]
+        self._configs = [ConfigParser() for _ in config_paths]
         for config, path in zip(self._configs, config_paths):
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
