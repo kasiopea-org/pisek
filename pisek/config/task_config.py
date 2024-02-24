@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import configparser
 from enum import StrEnum, auto
 from functools import cached_property
 from pydantic import (
@@ -29,9 +28,8 @@ from pydantic import (
 import re
 from typing import Optional, Any, Annotated, Iterator
 
-from pisek.terminal import tab, eprint
-from pisek.paths import TaskPath
-from pisek.config.env import BaseEnv
+from pisek.utils.text import tab
+from pisek.config.base_env import BaseEnv
 from pisek.config.config_errors import TaskConfigError
 from pisek.config.config_hierarchy import ConfigHierarchy
 from pisek.config.context import init_context
@@ -47,11 +45,6 @@ MaybeInt = Annotated[
     Optional[int], BeforeValidator(lambda i: (None if i == "X" else i))
 ]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
-
-# XXX: Clean this up when reworking TaskPath
-task_path = ""
-TaskPathFromStr = Annotated[TaskPath, BeforeValidator(lambda p: TaskPath(task_path, p))]
-
 
 
 class ProgramType(StrEnum):
@@ -79,14 +72,14 @@ class TaskConfig(BaseEnv):
     task_type: str
     fail_mode: FailMode
 
-    solutions_subdir: TaskPathFromStr
-    static_subdir: TaskPathFromStr
-    data_subdir: TaskPathFromStr
+    solutions_subdir: str
+    static_subdir: str
+    data_subdir: str
 
-    in_gen: TaskPathFromStr
-    checker: TaskPathFromStr
+    in_gen: str
+    checker: str
     out_check: JudgeType
-    out_judge: Optional[TaskPathFromStr]
+    out_judge: Optional[str]
     judge_needs_in: bool
     judge_needs_out: bool
 
@@ -383,19 +376,7 @@ class LimitsConfig(BaseEnv):
         return LimitsConfig(**args)
 
 
-
 def load_config(path: str) -> Optional[TaskConfig]:
-    try:
-        return TaskConfig(path)
-    except TaskConfigError as err:
-        eprint(f"Error while loading config:\n{tab(str(err))}")
-        return None
-
-
-def load(path: str) -> Optional[TaskConfig]:
     global task_path
     task_path = path
-    config = TaskConfig.load(ConfigHierarchy(path))
-
-
-load("fixtures/sum_cms")
+    return TaskConfig.load(ConfigHierarchy(path))

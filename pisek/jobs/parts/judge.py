@@ -25,7 +25,8 @@ from pisek.config.env import Env
 from pisek.paths import TaskPath
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.terminal import tab, colored
+from pisek.utils.text import tab
+from pisek.utils.terminal import colored
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile

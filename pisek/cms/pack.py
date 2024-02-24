@@ -2,7 +2,7 @@ import os
 import sys
 from . import check, info
 from pisek.config.task_config import TaskConfig
-import pisek.util as util
+import pisek.utils.util as util
 import zipfile
 
 TESTS_ZIP = "tests.zip"

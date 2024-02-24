@@ -19,7 +19,7 @@ from importlib.resources import files
 import os
 
 from pisek.config.config_errors import TaskConfigError
-from pisek.terminal import tab
+from pisek.utils.text import tab
 
 DEFAULTS_CONFIG = files("pisek").joinpath("defaults-config")
 

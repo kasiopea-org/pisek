@@ -151,10 +151,10 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for variable in sorted(envs):
+        for variable, value in sorted(envs, key=lambda x: x[0]):
             if variable not in self._env:
                 return (None, "Env nonexistent")
-            sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
+            sign.update(f"{variable}={value}\n".encode())
 
         expanded_files = []
         for file in sorted(files):

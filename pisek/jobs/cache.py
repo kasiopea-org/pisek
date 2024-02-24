@@ -19,7 +19,7 @@ import os
 from typing import Optional
 import yaml
 
-from pisek.terminal import eprint, colored
+from pisek.utils.terminal import eprint, colored
 from pisek.config.env import Env
 
 CACHE_FILENAME = ".pisek_cache"

@@ -20,7 +20,6 @@ import os
 import shutil
 from typing import Any
 
-import pisek.util as util
 from pisek.config.env import Env
 from pisek.paths import TaskPath, GENERATED_SUBDIR
 from pisek.config.task_config import ProgramType

@@ -22,7 +22,6 @@ import re
 import shutil
 from typing import Optional, Any, Callable, Iterable
 
-import pisek.util as util
 import subprocess
 from pisek.config.env import Env
 from pisek.paths import TaskPath

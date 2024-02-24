@@ -14,83 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
-from typing import Any, TYPE_CHECKING
-from pydantic import BaseModel, Field
+from enum import StrEnum, auto
+from pydantic import Field
+from typing import Any, TYPE_CHECKING, Optional
 
-from pisek.config.context import ContextModel
-
-
-class TestingTarget(Enum):
-    all = 1
-    generator = 2
-    solution = 3
+from pisek.config.base_env import BaseEnv
+from pisek.config.task_config import TaskConfig
+from pisek.config.config_hierarchy import ConfigHierarchy
 
 
-class BaseEnv(ContextModel):
-    """
-    Collection of enviroment variables which logs whether each variable was accessed.
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._accessed: set[str] = set([])
-        self._locked: bool = False
-
-    if not TYPE_CHECKING:
-
-        def __getattribute__(self, item: str) -> Any:
-            # Implementing this method is kind of magical and dangerous. Beware!
-            if not item.startswith("_") and item != "model_fields":
-                if "_accessed" in self.__dict__ and item in self.model_fields:
-                    self._accessed.add(item)
-            return super().__getattribute__(item)
-
-    def fork(self):
-        """
-        Make copy of this env overriding variables specified in **kwargs.
-
-        Accesses to env's variables (to this point) are logged in forked env as well.
-        Subsequent accesses are logged only to respective BaseEnv.
-        """
-        if self._locked:
-            raise RuntimeError("Locked BaseEnv cannot be forked.")
-
-        model = self.model_copy(deep=True)
-        model._clear_accesses()
-        return model
-
-    def _clear_accesses(self):
-        """Removes all logged accesses."""
-        self._accessed = set([])
-        for key in self.model_fields():
-            item = getattr(self, key)
-            if isinstance(item, BaseEnv):
-                item._clear_accesses()
-
-    def lock(self) -> "BaseEnv":
-        """Lock this BaseEnv and all subenvs so they cannot be forked."""
-        self._locked = True
-        for key in self.model_fields():
-            item = getattr(self, key)
-            if isinstance(item, BaseEnv):
-                item.lock()
-
-        return self
-
-    def get_accessed(self) -> list[tuple[str, Any]]:
-        """Get all accessed variables in this env and all subenvs with their values."""
-        accessed = []
-        for key in self._accessed:
-            item = getattr(self, key)
-            if isinstance(item, BaseEnv):
-                accessed += [
-                    (f"{key}.{subkey}", val) for subkey, val in item.get_accessed()
-                ]
-            else:
-                accessed.append((key, item))
-
-        return accessed
+class TestingTarget(StrEnum):
+    all = auto()
+    generator = auto()
+    solution = auto()
 
 
 class Env(BaseEnv):
@@ -115,14 +51,57 @@ class Env(BaseEnv):
 
     task_dir: str
     target: TestingTarget
-    # TODO config: Config
+    config: TaskConfig
     full: bool
     no_colors: bool
     no_jumps: bool
     strict: bool
     testing_log: bool
     solutions: list[str]
-    timeout: float = Field(ge=0)
+    timeout: Optional[float] = Field(ge=0)
     skip_on_timeout: bool
     all_inputs: bool
     inputs: int = Field(ge=1)
+
+    @staticmethod
+    def load(
+        task_dir: str,
+        target: str,
+        full: bool,
+        all_inputs: bool,
+        skip_on_timeout: bool,
+        plain: bool,
+        no_jumps: bool,
+        no_colors: bool,
+        strict: bool,
+        testing_log: bool,
+        solutions: Optional[list[str]],
+        timeout: Optional[float],
+        inputs: int,
+        **_
+    ) -> "Env":
+        config = TaskConfig.load(ConfigHierarchy(task_dir))
+
+        if solutions is None:
+            expanded_solutions = list(config.solutions)
+        else:
+            expanded_solutions = solutions[:]
+            if config.primary_solution not in expanded_solutions:
+                expanded_solutions.append(config.primary_solution)
+
+        # TODO: Expand solutions
+        return Env(
+            task_dir=task_dir,
+            target=TestingTarget(target),
+            config=config,
+            full=full,
+            no_jumps=plain or no_jumps,
+            no_colors=plain or no_colors,
+            strict=strict,
+            testing_log=testing_log,
+            solutions=expanded_solutions,
+            timeout=timeout,
+            skip_on_timeout=skip_on_timeout,
+            all_inputs=all_inputs,
+            inputs=inputs,
+        )

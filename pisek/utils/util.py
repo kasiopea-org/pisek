@@ -21,7 +21,7 @@ import shutil
 from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
-from .config.task_config import TaskConfig, load_config
+from ..config.task_config import TaskConfig, load_config
 
 BUILD_DIR = "build/"
 
@@ -86,7 +86,7 @@ def clean_task_dir(task_dir: str) -> bool:
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory
 
-    from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
+    from ..cms.pack import SAMPLES_ZIP, TESTS_ZIP
 
     rm_f(os.path.join(task_dir, SAMPLES_ZIP))
     rm_f(os.path.join(task_dir, TESTS_ZIP))

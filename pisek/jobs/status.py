@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 
-from pisek.terminal import tab, pad, colored, MSG_LEN
+from pisek.utils.text import tab, pad
+from pisek.utils.terminal import colored, MSG_LEN
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
 try:

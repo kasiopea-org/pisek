@@ -29,18 +29,6 @@ def eprint(msg, *args, **kwargs):
     print(msg, *args, file=sys.stderr, **kwargs)
 
 
-def pad(text: str, length: int, pad_char: str = " "):
-    return text + (length - len(text)) * pad_char
-
-
-def pad_left(text: str, length: int, pad_char: str = " "):
-    return pad(text[::-1], length, pad_char)[::-1]
-
-
-def tab(text: str, tab_str: str = "  "):
-    return tab_str + text.replace("\n", f"\n{tab_str}")
-
-
 def _plain_variant(f: Callable, attr: str) -> Callable:
     def g(msg: str, env: Env, *args, **kwargs):
         if getattr(env, attr):

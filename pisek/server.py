@@ -19,9 +19,9 @@ import os
 from typing import Optional
 from functools import partial
 
-import pisek.util as util
+import pisek.utils.util as util
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.pipeline_tools import load_env, run_pipeline
+from pisek.utils.pipeline_tools import load_env, run_pipeline
 from pisek.config.task_config import DATA_SUBDIR
 from pisek.jobs.cache import Cache
 
