@@ -72,13 +72,13 @@ class TaskPipeline(JobPipeline):
                 )
                 solutions.append(primary_solution)
 
-        for solution in env.solutions:
-            if solution == env.config.primary_solution:
+        for sol_name in env.solutions:
+            if sol_name == env.config.primary_solution:
                 continue
             named_pipeline.append(
                 solution := (
-                    SolutionManager(solution),
-                    f"{SOLUTION_MAN_CODE}{solution}",
+                    SolutionManager(sol_name),
+                    f"{SOLUTION_MAN_CODE}{sol_name}",
                 )
             )
             if env.config.judge_needs_out:

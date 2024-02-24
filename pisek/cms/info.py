@@ -10,14 +10,14 @@ def subtask_formula(subtask):
 def scoring_formula(config: TaskConfig):
     fls = []
     fls.append(r'[0, "^sample"]')
-    for i, subtask in sorted(config.subtasks.subenvs()):
+    for i, subtask in sorted(config.subtasks.items()):
         fls.append(subtask_formula(subtask))
     return "[\n " + ",\n ".join(f for f in fls) + "\n]"
 
 
 def time_limits(config: TaskConfig):
-    model = config.timeout_model_solution
-    other = config.timeout_other_solutions
+    model = config.limits.solve.time_limit
+    other = config.limits.sec_solve.time_limit
     if model == other:
         return model, None
     else:

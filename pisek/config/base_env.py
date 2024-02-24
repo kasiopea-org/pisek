@@ -16,9 +16,14 @@
 
 from enum import StrEnum, auto
 from pydantic import Field
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Callable, TypeVar
+
 
 from pisek.config.context import ContextModel
+
+
+T = TypeVar("T")
+TFunc = Callable[..., T]
 
 
 class TestingTarget(StrEnum):
@@ -34,16 +39,22 @@ class BaseEnv(ContextModel):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._accessed: set[str] = set([])
+        self._accessed: set[str] = set()
+        self._logging: bool = True
         self._locked: bool = False
 
     if not TYPE_CHECKING:
 
-        def __getattribute__(self, item: str) -> Any:
+        def __getattribute__(self, item: str, log: bool = True) -> Any:
             # Implementing this method is kind of magical and dangerous. Beware!
-            if not item.startswith("_") and item != "model_fields":
-                if "_accessed" in self.__dict__ and item in self.model_fields:
-                    self._accessed.add(item)
+            if (
+                not item.startswith("_")
+                and (item != "model_fields" and item != "model_computed_fields")
+                and "_accessed" in self.__dict__
+                and self._logging
+                and (item in self.model_fields or item in self.model_computed_fields)
+            ):
+                self._accessed.add(item)
             return super().__getattribute__(item)
 
     def fork(self):
@@ -60,34 +71,54 @@ class BaseEnv(ContextModel):
         model._clear_accesses()
         return model
 
-    def _clear_accesses(self):
-        """Removes all logged accesses."""
-        self._accessed = set([])
-        for key in self.model_fields:
-            item = getattr(self, key)
-            if isinstance(item, BaseEnv):
-                item._clear_accesses()
+    @staticmethod
+    def _recursive_call(
+        function: Callable[["BaseEnv"], None]
+    ) -> Callable[["BaseEnv"], None]:
+        def recursive(self: "BaseEnv") -> None:
+            self._logging = False
+            for key in self.model_fields:
+                item = getattr(self, key)
+                if isinstance(item, BaseEnv):
+                    recursive(item)
+            self._logging = True
+            function(self)
 
-    def lock(self) -> "BaseEnv":
+        return recursive
+
+    @_recursive_call
+    def _clear_accesses(self) -> None:
+        """Removes all logged accesses."""
+        self._accessed = set()
+
+    @_recursive_call
+    def lock(self) -> None:
         """Lock this BaseEnv and all subenvs so they cannot be forked."""
         self._locked = True
-        for key in self.model_fields:
-            item = getattr(self, key)
-            if isinstance(item, BaseEnv):
-                item.lock()
 
-        return self
-
-    def get_accessed(self) -> list[tuple[str, Any]]:
+    def get_accessed(self) -> list[str]:
         """Get all accessed variables in this env and all subenvs with their values."""
         accessed = []
+        self._logging = False
         for key in self._accessed:
             item = getattr(self, key)
             if isinstance(item, BaseEnv):
-                accessed += [
-                    (f"{key}.{subkey}", val) for subkey, val in item.get_accessed()
-                ]
+                accessed += [(f"{key}.{subkey}") for subkey in item.get_accessed()]
             else:
-                accessed.append((key, item))
+                accessed.append(key)
+            # TODO: Env dict
+        self._logging = True
 
         return accessed
+
+    def get_compound(self, key: str) -> Any:
+        """Get attribute that may be nested deeper and indexed."""
+        obj = self
+        for key_part in key.split("."):
+            if "[" in key_part:
+                var, index = key_part.split("[")
+                index[:-1]
+                obj = getattr(obj, var)[index]
+            else:
+                obj = getattr(obj, key_part)
+        return obj

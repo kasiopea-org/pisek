@@ -117,10 +117,10 @@ class ConfigHierarchy:
                     break
                 elif value is not None:
                     return value
-        
+
         def msg(section_key: tuple[str, str]) -> str:
             return f"key '{section_key[1]}' in section [{section_key[0]}]"
-        
+
         candidates_str = "or \n".join(map(msg, candidates))
         raise TaskConfigError(f"Unset value for:\n{tab(candidates_str)}")
 

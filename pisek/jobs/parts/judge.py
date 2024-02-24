@@ -23,7 +23,7 @@ import subprocess
 
 from pisek.config.env import Env
 from pisek.paths import TaskPath
-from pisek.config.task_config import ProgramType
+from pisek.config.task_config import ProgramType, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.utils.terminal import colored
@@ -45,9 +45,16 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
-        judge = TaskPath.base_path(self._env, self._env.config.judge)
-        if self._env.config.judge_type != "diff":
-            jobs.append(comp := Compile(self._env, judge))
+        if self._env.config.out_check == JudgeType.judge:
+            if self._env.config.out_judge is None:
+                raise RuntimeError(
+                    f"Unset judge for out_check={self._env.config.out_check.name}"
+                )
+            jobs.append(
+                comp := Compile(
+                    self._env, TaskPath.base_path(self._env, self._env.config.out_judge)
+                )
+            )
 
         samples = self._get_samples()
         if self._env.config.task_type == "communication":
@@ -56,7 +63,6 @@ class JudgeManager(TaskJobManager):
         for inp, out in samples:
             jobs.append(
                 judge_j := judge_job(
-                    judge,
                     inp,
                     out,
                     out,
@@ -66,7 +72,7 @@ class JudgeManager(TaskJobManager):
                     self._env,
                 )
             )
-            if self._env.config.judge_type != "diff":
+            if self._env.config.out_check == JudgeType.judge:
                 judge_j.add_prerequisite(comp)
 
             JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
@@ -82,7 +88,6 @@ class JudgeManager(TaskJobManager):
                     jobs += [
                         invalidate := job(self._env, out, inv_out, seed),
                         run_judge := judge_job(
-                            judge,
                             inp,
                             inv_out,
                             out,
@@ -92,7 +97,7 @@ class JudgeManager(TaskJobManager):
                             self._env,
                         ),
                     ]
-                    if self._env.config.judge_type != "diff":
+                    if self._env.config.out_check == JudgeType.judge:
                         run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
@@ -115,7 +120,6 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         super().__init__("Running judge")
 
     def _get_jobs(self) -> list[Job]:
-        judge_program = TaskPath.base_path(self._env, self._env.config.judge)
         input_, output, correct_output = map(
             partial(TaskPath.base_path, self._env),
             (self._input, self._output, self._correct_output),
@@ -125,7 +129,6 @@ class RunKasiopeaJudgeMan(TaskJobManager):
         jobs: list[Job] = [
             sanitize := Sanitize(self._env, output, clean_output),
             judge := judge_job(
-                judge_program,
                 input_,
                 clean_output,
                 correct_output,
@@ -136,7 +139,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
             ),
         ]
         judge.add_prerequisite(sanitize)
-        if self._env.config.judge_type != "diff":
+        if self._env.config.out_check == JudgeType.judge:
             jobs.insert(0, compile := Compile(self._env, judge_program))
             judge.add_prerequisite(compile)
 
@@ -162,15 +165,15 @@ class RunJudge(ProgramsJob):
         self,
         env: Env,
         name: str,
-        judge: TaskPath,
+        judge_name: str,
         input_: TaskPath,
         judge_log_file: TaskPath,
         expected_points: Optional[float],
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
-        self.judge = judge
         self.input = input_
+        self.judge_name = judge_name
         self.judge_log_file = judge_log_file
         self.expected_points = expected_points
 
@@ -244,11 +247,11 @@ class RunJudge(ProgramsJob):
 
         judging = self._judging_message()
         if self.result.verdict == Verdict.ok:
-            head = f"{self.judge:n} accepted {judging}"
+            head = f"{self.judge_name} accepted {judging}"
         elif self.result.verdict == Verdict.wrong_answer:
-            head = f"{self.judge:n} rejected {judging}"
+            head = f"{self.judge_name} rejected {judging}"
         elif self.result.verdict == Verdict.partial:
-            head = f"{self.judge:n} partially accepted {judging}"
+            head = f"{self.judge_name} partially accepted {judging}"
         elif self.result.verdict == Verdict.error:
             head = f"Solution failed on input {self.input}"
         elif self.result.verdict == Verdict.timeout:
@@ -319,7 +322,7 @@ class RunBatchJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: TaskPath,
+        judge_name: str,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
@@ -329,9 +332,9 @@ class RunBatchJudge(RunJudge):
         super().__init__(
             env=env,
             name=JUDGE_JOB_NAME.replace(r"(\w+)", output.name, 1),
-            judge=judge,
+            judge_name=judge_name,
             input_=input_,
-            judge_log_file=TaskPath.log_file(self._env, output.name, judge.name),
+            judge_log_file=TaskPath.log_file(self._env, output.name, judge_name),
             expected_points=expected_points,
             **kwargs,
         )
@@ -362,7 +365,6 @@ class RunDiffJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: TaskPath,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
@@ -370,7 +372,7 @@ class RunDiffJudge(RunBatchJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge=judge,
+            judge_name="diff",
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -436,13 +438,14 @@ class RunKasiopeaJudge(RunBatchJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge=judge,
+            judge_name=judge.name,
             input_=input_,
             output=output,
             correct_output=correct_output,
             expected_points=expected_points,
             **kwargs,
         )
+        self.judge = judge
         self.subtask = subtask
         self.seed = seed
 
@@ -503,13 +506,14 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge=judge,
+            judge_name=judge.name,
             input_=input_,
             output=output,
             correct_output=correct_output,
             expected_points=expected_points,
             **kwargs,
         )
+        self.judge = judge
 
     def _judge(self) -> SolutionResult:
         self._access_file(self.input)
@@ -534,7 +538,6 @@ class RunCMSBatchJudge(RunBatchJudge, RunCMSJudge):
 
 
 def judge_job(
-    judge: TaskPath,
     input_: TaskPath,
     output: TaskPath,
     correct_output: TaskPath,
@@ -544,9 +547,14 @@ def judge_job(
     env: Env,
 ) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
-    if env.config.judge_type == "diff":
-        return RunDiffJudge(env, judge, input_, output, correct_output, expected_points)
-    elif env.config.contest_type == "cms":
+    if env.config.out_check == JudgeType.diff:
+        return RunDiffJudge(env, input_, output, correct_output, expected_points)
+
+    if env.config.out_judge is None:
+        raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
+    judge = TaskPath.base_path(env, env.config.out_judge)
+
+    if env.config.contest_type == "cms":
         return RunCMSBatchJudge(
             env, judge, input_, output, correct_output, expected_points
         )

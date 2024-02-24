@@ -51,7 +51,7 @@ class CheckerManager(TaskJobManager):
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 
         self.loose_subtasks = []
-        for sub_num, sub in self._env.config.subtasks.subenvs():
+        for sub_num, sub in self._env.config.subtasks.items():
             if sub_num == "0":
                 continue  # Skip samples
             for inp in self._subtask_inputs(sub):

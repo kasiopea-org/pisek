@@ -42,12 +42,12 @@ class DataManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         self._static_inputs = self.globs_to_files(
-            self._env.config.subtasks.all_globs, TaskPath.static_path(self._env, ".")
+            self._env.config.input_globs, TaskPath.static_path(self._env, ".")
         )
         self._static_outputs = self.globs_to_files(
             map(
                 lambda g: re.sub(r"\.in$", ".out", g),
-                self._env.config.subtasks.all_globs,
+                self._env.config.input_globs,
             ),
             TaskPath.static_path(self._env, "."),
         )
@@ -83,7 +83,7 @@ class DataManager(TaskJobManager):
             ]
             self._outputs.append(link.dest)
 
-        for glob in self._env.config.subtasks.all_globs:
+        for glob in self._env.config.input_globs:
             if len(self.filter_by_globs([glob], all_input_files)) == 0:
                 raise PipelineItemFailure(f"No inputs for glob '{glob}'.")
 

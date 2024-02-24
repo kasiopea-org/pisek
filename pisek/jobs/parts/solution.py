@@ -54,7 +54,6 @@ class SolutionManager(TaskJobManager):
         self._solution = TaskPath.solution_path(
             self._env, self._env.config.solutions[self.solution_label].source
         )
-        self._judge = TaskPath.base_path(self._env, self._env.config.judge)
 
         jobs: list[Job] = []
 
@@ -62,7 +61,7 @@ class SolutionManager(TaskJobManager):
         self._compile_job = compile_
 
         self._judges: dict[str, RunJudge] = {}
-        for sub_num, sub in self._env.config.subtasks.subenvs():
+        for sub_num, sub in self._env.config.subtasks.items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
                 if inp.relpath not in self._judges:
@@ -107,7 +106,6 @@ class SolutionManager(TaskJobManager):
 
         out = TaskPath.output_file(self._env, inp.name, self._solution.name)
         run_judge = judge_job(
-            self._judge,
             inp,
             out,
             c_out,
@@ -122,9 +120,11 @@ class SolutionManager(TaskJobManager):
 
     def _create_communication_jobs(self, inp: TaskPath) -> "RunCommunication":
         """Create RunCommunication job for communication task type."""
-        return RunCommunication(
-            self._env, self._solution, self.is_primary, self._judge, inp
-        )
+        if self._env.config.out_judge is None:
+            raise RuntimeError("Unset judge for communication.")
+
+        judge = TaskPath.base_path(self._env, self._env.config.out_judge)
+        return RunCommunication(self._env, self._solution, self.is_primary, judge, inp)
 
     def _update(self):
         """Cancel running on inputs that can't change anything."""
@@ -158,8 +158,8 @@ class SolutionManager(TaskJobManager):
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
             subtask = self._env.config.subtasks[sub_job.num]
-            points = sub_job.points(expected[sub_job.num])
-            self.solution_points += subtask.score * points
+            sub_points = sub_job.points(expected[sub_job.num])
+            self.solution_points += subtask.points * sub_points
 
         points = solution_conf.points
         above = solution_conf.points_above

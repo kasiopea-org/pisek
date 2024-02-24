@@ -90,18 +90,28 @@ class TaskConfig(BaseEnv):
 
     solutions: dict[str, "SolutionConfig"]
 
-    limits: 'LimitsConfig'
+    limits: "LimitsConfig"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def total_points(self) -> int:
         return sum(sub.points for sub in self.subtasks.values())
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
-    def primary_solution(self) -> Optional[str]:
+    def subtasks_count(self) -> int:
+        return len(self.subtasks)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def input_globs(self) -> list[str]:
+        return sum((sub.all_globs for sub in self.subtasks.values()), start=[])
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def primary_solution(self) -> str:
         if len(self.solutions) == 0:
-            return None
+            raise RuntimeError("No solutions exist.")
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
@@ -122,7 +132,7 @@ class TaskConfig(BaseEnv):
             ("tests", "stub"),
             ("tests", "headers"),
         ]
-        args = {key: configs.get(section, key) for section, key in KEYS}
+        args: dict[str, Any] = {key: configs.get(section, key) for section, key in KEYS}
 
         args["fail_mode"] = "any" if args["contest_type"] == "cms" else "all"
 
@@ -142,7 +152,7 @@ class TaskConfig(BaseEnv):
 
         # Load subtasks
         args["subtasks"] = subtasks = {}
-        for section_name in section_names:
+        for section_name in sorted(section_names):
             if m := re.match(r"test(\d{2})", section_name):
                 num = int(m[1])
                 subtasks[num] = SubtaskConfig.load(num, configs)
@@ -150,8 +160,8 @@ class TaskConfig(BaseEnv):
         args["solutions"] = solutions = {}
         for section_name in section_names:
             if m := re.match(r"solution_(.+)", section_name):
-                solutions[m[1]] = SolutionConfig.load(m[1], max(subtasks)+1, configs)
-        
+                solutions[m[1]] = SolutionConfig.load(m[1], max(subtasks) + 1, configs)
+
         args["limits"] = LimitsConfig.load(configs)
 
         return TaskConfig(**args)
@@ -174,9 +184,33 @@ class TaskConfig(BaseEnv):
             if i not in self.subtasks:
                 raise TaskConfigError(f"Missing section for subtask {i}.")
 
-        subtasks = max(self.subtasks.keys()) + 1
+        self._compute_all_globs()
 
         return self
+
+    def _compute_all_globs(self) -> None:
+        visited = set()
+        computed = set()
+
+        def compute_subtask(num: int) -> list[str]:
+            subtask = self.subtasks[num]
+            if num in computed:
+                return subtask.all_globs
+            elif num in visited:
+                raise TaskConfigError("Cyclic predecessors subtasks.")
+
+            visited.add(num)
+            all_globs = sum(
+                (compute_subtask(p) for p in subtask.predecessors),
+                start=subtask.in_globs,
+            )
+            subtask.all_globs = list(sorted(set(all_globs)))
+            computed.add(num)
+
+            return subtask.all_globs
+
+        for i in range(self.subtasks_count):
+            compute_subtask(i)
 
 
 class SubtaskConfig(BaseEnv):
@@ -184,12 +218,14 @@ class SubtaskConfig(BaseEnv):
     name: str
     points: int = Field(ge=0)
     in_globs: ListStr
+    all_globs: list[str] = []
     predecessors: list[int]
 
     @staticmethod
     def load(number: int, configs: ConfigHierarchy) -> "SubtaskConfig":
         KEYS = ["name", "points", "in_globs", "predecessors"]
         section = f"test{number:02}"
+        args: dict[str, Any]
         if number == 0:
             args = {key: configs.get(section, key) for key in KEYS}
         else:
@@ -224,28 +260,9 @@ class SubtaskConfig(BaseEnv):
                     continue
                 predecessors.append(number - 1)
             else:
-                predecessors.append(int(number))
+                predecessors.append(int(pred))
 
         return list(sorted(set(predecessors)))
-
-
-class SubtaskConfigOld(BaseEnv):
-    def construct_globs(self, subtasks) -> list[str]:
-        if self._constructing:
-            raise TaskConfigError("Cyclic predecessors subtasks.")
-        self["_constructing"] = True
-        if "all_globs" not in self._vars:
-            all_globs = set(self.in_globs)
-            for prev in self.predecessors:
-                if str(prev) not in subtasks:
-                    raise TaskConfigError(f"No predecessor subtask with number {prev}")
-                prev_globs = subtasks[str(prev)].construct_globs(subtasks)
-                for glob in prev_globs:
-                    all_globs.add(glob)
-            self["all_globs"] = tuple(sorted(all_globs))
-
-        self["_constructing"] = False
-        return self.all_globs
 
 
 class SolutionConfig(BaseEnv):
@@ -301,6 +318,8 @@ class SolutionConfig(BaseEnv):
 
     @field_validator("subtasks", mode="after")
     def validate_subtasks(cls, value, info: ValidationInfo):
+        if info.context is None:
+            raise RuntimeError("Missing validation context.")
         subtask_cnt = info.context.get("subtask_count")
         primary = info.data.get("primary")
         if value == "@auto":
@@ -310,7 +329,7 @@ class SolutionConfig(BaseEnv):
         elif value == "@any":
             value = "0" * subtask_cnt
 
-        if len(value ) != subtask_cnt:
+        if len(value) != subtask_cnt:
             raise TaskConfigError(
                 f"There are {subtask_cnt} subtasks but subtask string has {len(value)} characters: '{value}'"
             )
@@ -321,7 +340,7 @@ class SolutionConfig(BaseEnv):
                     f"Not allowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}"
                 )
 
-        if primary and value != "1"*subtask_cnt:
+        if primary and value != "1" * subtask_cnt:
             raise TaskConfigError(
                 f"Primary solution must have: subtasks={'1'*subtask_cnt}"
             )
@@ -346,11 +365,18 @@ class ProgramLimits(BaseEnv):
     process_limit: int = Field(ge=0)
 
     @classmethod
-    def load(cls, part: ProgramType, configs: ConfigHierarchy) -> "LimitsConfig":
-        return ProgramLimits(**{
-            limit: configs.get("limits", f"{part.name}_{limit}")
-            for limit in cls.model_fields
-        })
+    def load(cls, part: ProgramType, configs: ConfigHierarchy) -> "ProgramLimits":
+        def get_limit(limit: str) -> str:
+            if part == ProgramType.sec_solve:
+                return configs.get_from_candidates(
+                    [("limits", f"{part.name}_{limit}"), ("limits", f"solve_{limit}")]
+                )
+            else:
+                return configs.get("limits", f"{part.name}_{limit}")
+
+        args: dict[str, Any] = {limit: get_limit(limit) for limit in cls.model_fields}
+
+        return ProgramLimits(**args)
 
 
 class LimitsConfig(BaseEnv):
@@ -365,18 +391,16 @@ class LimitsConfig(BaseEnv):
 
     @classmethod
     def load(cls, configs: ConfigHierarchy) -> "LimitsConfig":
-        args = {}
+        args: dict[str, Any] = {}
         for part in ProgramType:
             args[part.name] = ProgramLimits.load(part, configs)
 
         for file_type in ("input", "output"):
             key = f"{file_type}_max_size"
             args[key] = configs.get("limits", key)
-        
+
         return LimitsConfig(**args)
 
 
 def load_config(path: str) -> Optional[TaskConfig]:
-    global task_path
-    task_path = path
     return TaskConfig.load(ConfigHierarchy(path))

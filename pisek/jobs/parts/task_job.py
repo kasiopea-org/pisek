@@ -24,6 +24,7 @@ from typing import Optional, Any, Callable, Iterable
 
 import subprocess
 from pisek.config.env import Env
+from pisek.config.task_config import ProgramLimits
 from pisek.paths import TaskPath
 from pisek.config.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
@@ -51,7 +52,7 @@ class TaskHelper:
             return parts[-1]
 
     def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
-        limits = self._env.config.limits[program_type.name]
+        limits: ProgramLimits = getattr(self._env.config.limits, program_type.name)
         time_limit = limits.time_limit
 
         if program_type in (ProgramType.solve, ProgramType.sec_solve):
@@ -113,7 +114,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._subtask_inputs(self._env.config.subtasks["0"])
+        ins = self._subtask_inputs(self._env.config.subtasks[0])
         outs = (TaskPath.output_static_file(self._env, inp.name) for inp in ins)
         return list(zip(ins, outs))
 

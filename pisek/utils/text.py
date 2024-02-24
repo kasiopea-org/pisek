@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 def tab(text: str, tab_str: str = "  "):
     return tab_str + text.replace("\n", f"\n{tab_str}")
 

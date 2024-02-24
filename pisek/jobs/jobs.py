@@ -52,7 +52,8 @@ class CaptureInitParams:
                 self._args = args
                 self._kwargs = kwargs
                 self._initialized = True
-                self._env = env.fork().lock()
+                self._env = env.fork()
+                self._env.lock()
             real_init(self, self._env, *args, **kwargs)
 
         cls.__init__ = wrapped_init
@@ -142,7 +143,7 @@ class Job(PipelineItem, CaptureInitParams):
         self._accessed_files.add(filename.relpath)
 
     def _signature(
-        self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
+        self, envs: list[str], files: AbstractSet[str], results: dict[str, Any]
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
@@ -151,10 +152,12 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for variable, value in sorted(envs, key=lambda x: x[0]):
-            if variable not in self._env:
-                return (None, "Env nonexistent")
-            sign.update(f"{variable}={value}\n".encode())
+        for key in sorted(envs, key=lambda x: x[0]):
+            try:
+                value = self._env.get_compound(key)
+            except (AttributeError, TypeError):
+                return (None, f"Key nonexistent: {key}")
+            sign.update(f"{key}={value}\n".encode())
 
         expanded_files = []
         for file in sorted(files):
