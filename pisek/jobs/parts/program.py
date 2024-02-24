@@ -280,8 +280,6 @@ class ProgramsJob(TaskJob):
             if all(states):
                 break
 
-            time.sleep(0.1)
-
         run_results = []
         for pool_item, (process, meta_file) in zip(
             self._program_pool, zip(running_pool, meta_files)
