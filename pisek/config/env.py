@@ -79,7 +79,7 @@ class Env(BaseEnv):
         inputs: int = 5,
         **_
     ) -> "Env":
-        config = load_config(task_dir, strict)
+        config = load_config(task_dir, strict, plain or no_colors)
 
         if solutions is None:
             expanded_solutions = list(config.solutions)

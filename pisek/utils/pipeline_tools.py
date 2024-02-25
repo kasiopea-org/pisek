@@ -18,7 +18,7 @@ from datetime import datetime
 import os
 import sys
 
-from pisek.utils.terminal import eprint
+from pisek.utils.text import eprint
 from pisek.config.env import Env
 from pisek.jobs.cache import Cache
 

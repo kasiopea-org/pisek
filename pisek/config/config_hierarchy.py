@@ -25,53 +25,7 @@ from pisek.utils.text import tab
 
 DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
 
-
 # TODO: Version update
-
-
-# def check_unused_keys(self, config: TaskConfigParser) -> None:
-#     """Verify that there are no unused keys in the config, raise otherwise."""
-
-#     accepted_section_names = (
-#         self._subtask_section_names
-#         | self._solution_section_names
-#         | {
-#             "task",
-#             "tests",
-#             "limits",
-#         }
-#     )
-
-#     # These keys are accepted for backwards compatibility reasons because the config
-#     # format is based on KSP's opendata tool.
-#     ignored_keys = {
-#         "task": {"tests"},
-#         "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
-#         "limits": {},
-#         # Any subtask section like "test01", "test02"...
-#         "subtask": {"file_name"},
-#         # Any solution section like solution_solve, solution_slow, ...
-#         "solution": {},
-#     }
-
-#     for section_name in config.sections():
-#         if not section_name in accepted_section_names:
-#             raise TaskConfigError(f"Unexpected section [{section_name}] in config")
-
-#         if section_name in self._subtask_section_names:
-#             section_ignored_keys = ignored_keys["subtask"]
-#         elif section_name in self._solution_section_names:
-#             section_ignored_keys = ignored_keys["solution"]
-#         else:
-#             section_ignored_keys = ignored_keys[section_name]
-
-#         for key in config.get_unused_keys(section_name):
-#             if key not in section_ignored_keys:
-#                 raise TaskConfigError(
-#                     f"Unexpected key '{key}' in section [{section_name}] of config."
-#                 )
-
-#     return None
 
 
 class ConfigHierarchy:

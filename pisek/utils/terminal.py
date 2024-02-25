@@ -14,38 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
-import sys
-
-from colorama import Fore
-from typing import Callable
-
+from pisek.utils.text import colored
 from pisek.config.env import Env
 
 MSG_LEN = 25
 
 
-def eprint(msg, *args, **kwargs):
-    print(msg, *args, file=sys.stderr, **kwargs)
-
-
-def _plain_variant(f: Callable, attr: str) -> Callable:
-    def g(msg: str, env: Env, *args, **kwargs):
-        if getattr(env, attr):
-            return msg
-        else:
-            return f(msg, *args, **kwargs)
-
-    return g
-
-
-no_color_variant = partial(_plain_variant, attr="no_colors")
-no_jumps_variant = partial(_plain_variant, attr="no_jumps")
-
-
-@no_color_variant
-def colored(msg: str, color: str) -> str:
-    # Recolors all white text to given color
-    col = getattr(Fore, color.upper())
-    msg = msg.replace(f"{Fore.RESET}", f"{Fore.RESET}{col}")
-    return f"{col}{msg}{Fore.RESET}"
+def colored_env(msg: str, color: str, env: Env) -> str:
+    """Recolors all white text to given color."""
+    return colored(msg, color, env.no_colors)

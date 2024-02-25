@@ -26,11 +26,13 @@ from pydantic import (
     model_validator,
 )
 import re
-from typing import Optional, Any, Annotated, Iterator
+import sys
+from typing import Optional, Any, Annotated
 
 from pisek.utils.text import tab
+from pisek.utils.text import eprint, colored, warn
 from pisek.config.base_env import BaseEnv
-from pisek.config.config_errors import TaskConfigError
+from pisek.config.config_errors import TaskConfigError, TaskConfigInvalidValue
 from pisek.config.config_hierarchy import ConfigHierarchy
 from pisek.config.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
@@ -115,8 +117,16 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
+    def __init__(self, **kwargs):
+        with init_context({"subtask_count": max(kwargs["subtasks"]) + 1}):
+            super().__init__(**kwargs)
+
     @staticmethod
     def load(configs: ConfigHierarchy) -> "TaskConfig":
+        return TaskConfig(**TaskConfig.load_dict(configs))
+
+    @staticmethod
+    def load_dict(configs: ConfigHierarchy) -> dict[str, Any]:
         KEYS = [
             ("task", "name"),
             ("task", "contest_type"),
@@ -153,16 +163,18 @@ class TaskConfig(BaseEnv):
         for section_name in sorted(section_names):
             if m := re.match(r"test(\d{2})", section_name):
                 num = int(m[1])
-                subtasks[num] = SubtaskConfig.load(num, configs)
+                subtasks[num] = SubtaskConfig.load_dict(num, configs)
 
         args["solutions"] = solutions = {}
         for section_name in section_names:
             if m := re.match(r"solution_(.+)", section_name):
-                solutions[m[1]] = SolutionConfig.load(m[1], max(subtasks) + 1, configs)
+                solutions[m[1]] = SolutionConfig.load_dict(
+                    m[1], max(subtasks) + 1, configs
+                )
 
-        args["limits"] = LimitsConfig.load(configs)
+        args["limits"] = LimitsConfig.load_dict(configs)
 
-        return TaskConfig(**args)
+        return args
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -195,7 +207,7 @@ class TaskConfig(BaseEnv):
             if num in computed:
                 return subtask.all_globs
             elif num in visited:
-                raise TaskConfigError("Cyclic predecessors subtasks.")
+                raise TaskConfigInvalidValue("Cyclic predecessors subtasks.")
 
             visited.add(num)
             all_globs = sum(
@@ -220,7 +232,7 @@ class SubtaskConfig(BaseEnv):
     predecessors: list[int]
 
     @staticmethod
-    def load(number: int, configs: ConfigHierarchy) -> "SubtaskConfig":
+    def load_dict(number: int, configs: ConfigHierarchy) -> dict[str, Any]:
         KEYS = ["name", "points", "in_globs", "predecessors"]
         section = f"test{number:02}"
         args: dict[str, Any]
@@ -231,7 +243,7 @@ class SubtaskConfig(BaseEnv):
                 key: configs.get_from_candidates([(section, key), ("all_tests", key)])
                 for key in KEYS
             }
-        return SubtaskConfig(num=number, **args)
+        return {"num": number, **args}
 
     @field_validator("in_globs", mode="after")
     @classmethod
@@ -241,7 +253,7 @@ class SubtaskConfig(BaseEnv):
             if glob == "@ith":
                 glob = f"{info.data['num']:02}*.in"
             if not glob.endswith(".in"):
-                raise TaskConfigError(f"In_globs must end with '.in': {glob}")
+                raise TaskConfigInvalidValue(f"In_globs must end with '.in': {glob}")
             globs.append(glob)
 
         return globs
@@ -266,7 +278,7 @@ class SubtaskConfig(BaseEnv):
 class SolutionConfig(BaseEnv):
     name: str
     primary: bool
-    source: str  # TODO: Change this to TaskPath
+    source: str
     points: MaybeInt
     points_above: MaybeInt
     points_below: MaybeInt
@@ -276,9 +288,9 @@ class SolutionConfig(BaseEnv):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def load(
+    def load_dict(
         cls, name: str, subtask_count: int, configs: ConfigHierarchy
-    ) -> "SolutionConfig":
+    ) -> dict[str, Any]:
         KEYS = [
             "primary",
             "source",
@@ -293,8 +305,7 @@ class SolutionConfig(BaseEnv):
             )
             for key in KEYS
         }
-        with init_context({"subtask_count": subtask_count}):
-            return SolutionConfig(name=name, **args)
+        return {"name": name, **args}
 
     @field_validator("primary", mode="before")
     @classmethod
@@ -303,7 +314,7 @@ class SolutionConfig(BaseEnv):
             return True
         elif value == "no":
             return False
-        raise TaskConfigError(
+        raise TaskConfigInvalidValue(
             f"Key 'primary' of solution {info.data['name']} should be one of (yes, no): {value}"
         )
 
@@ -328,18 +339,18 @@ class SolutionConfig(BaseEnv):
             value = "0" * subtask_cnt
 
         if len(value) != subtask_cnt:
-            raise TaskConfigError(
+            raise TaskConfigInvalidValue(
                 f"There are {subtask_cnt} subtasks but subtask string has {len(value)} characters: '{value}'"
             )
 
         for char in value:
             if char not in SUBTASK_SPEC:
-                raise TaskConfigError(
+                raise TaskConfigInvalidValue(
                     f"Not allowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}"
                 )
 
         if primary and value != "1" * subtask_cnt:
-            raise TaskConfigError(
+            raise TaskConfigInvalidValue(
                 f"Primary solution must have: subtasks={'1'*subtask_cnt}"
             )
 
@@ -363,7 +374,7 @@ class ProgramLimits(BaseEnv):
     process_limit: int = Field(ge=0)
 
     @classmethod
-    def load(cls, part: ProgramType, configs: ConfigHierarchy) -> "ProgramLimits":
+    def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> dict[str, Any]:
         def get_limit(limit: str) -> str:
             if part == ProgramType.sec_solve:
                 return configs.get_from_candidates(
@@ -374,7 +385,7 @@ class ProgramLimits(BaseEnv):
 
         args: dict[str, Any] = {limit: get_limit(limit) for limit in cls.model_fields}
 
-        return ProgramLimits(**args)
+        return args
 
 
 class LimitsConfig(BaseEnv):
@@ -388,21 +399,27 @@ class LimitsConfig(BaseEnv):
     output_max_size: int
 
     @classmethod
-    def load(cls, configs: ConfigHierarchy) -> "LimitsConfig":
+    def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
         args: dict[str, Any] = {}
         for part in ProgramType:
-            args[part.name] = ProgramLimits.load(part, configs)
+            args[part.name] = ProgramLimits.load_dict(part, configs)
 
         for file_type in ("input", "output"):
             key = f"{file_type}_max_size"
             args[key] = configs.get("limits", key)
 
-        return LimitsConfig(**args)
+        return args
 
 
-def load_config(path: str, strict: bool = False) -> TaskConfig:
-    # TODO: TODOs and error handling
-    config_hierarchy = ConfigHierarchy(path)
-    config = TaskConfig.load(config_hierarchy)
-    config_hierarchy.check_unused_keys()
-    return config
+def load_config(path: str, strict: bool = False, no_colors: bool = False) -> TaskConfig:
+    try:
+        config_hierarchy = ConfigHierarchy(path)
+        config = TaskConfig.load(config_hierarchy)
+        config_hierarchy.check_unused_keys()
+        if config_hierarchy.check_todos():
+            warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
+        return config
+    except TaskConfigError as err:
+        eprint(colored(str(err), "red", no_colors))
+    # TODO: Validation errors
+    sys.exit(1)

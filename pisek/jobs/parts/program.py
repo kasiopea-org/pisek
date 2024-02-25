@@ -29,7 +29,7 @@ from pisek.config.env import Env
 from pisek.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored
+from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskHelper, TaskJob
 
 
@@ -67,7 +67,7 @@ class RunResult:
     @staticmethod
     def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
         res = tab(TaskHelper._short_text(text, max_lines, max_chars))
-        return colored(res, env, "yellow")
+        return colored_env(res, "yellow", env)
 
     def raw_stdout(self, access_file: Callable[[TaskPath], None]):
         if isinstance(self.stdout_file, TaskPath):
@@ -275,7 +275,9 @@ class ProgramsJob(TaskJob):
                 line = running_pool[0].stderr.read().decode()
                 if line:
                     stderr_raw += line
-                    self._print(colored(line, self._env, "yellow"), end="", stderr=True)
+                    self._print(
+                        colored_env(line, "yellow", self._env), end="", stderr=True
+                    )
 
             if all(states):
                 break

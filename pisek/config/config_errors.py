@@ -17,3 +17,7 @@
 
 class TaskConfigError(Exception):
     pass
+
+
+class TaskConfigInvalidValue(TaskConfigError, ValueError):
+    pass

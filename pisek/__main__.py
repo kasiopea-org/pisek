@@ -24,7 +24,7 @@ from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 
 from pisek.utils.util import clean_task_dir
-from pisek.utils.terminal import eprint
+from pisek.utils.text import eprint
 from pisek.license import license, license_gnu
 import pisek.cms as cms
 from pisek.update_config import update

@@ -26,7 +26,7 @@ from pisek.paths import TaskPath
 from pisek.config.task_config import ProgramType, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored
+from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
@@ -366,7 +366,7 @@ class RunBatchJudge(RunJudge):
     def _nice_diff(self) -> str:
         """Create a nice diff between output and correct output."""
         diff = self._short_text(self._diff_files(self.correct_output, self.output))
-        return colored(diff, self._env, "yellow")
+        return colored_env(diff, "yellow", self._env)
 
 
 class RunDiffJudge(RunBatchJudge):
