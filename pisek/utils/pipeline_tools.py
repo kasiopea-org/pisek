@@ -17,11 +17,8 @@
 from datetime import datetime
 import os
 import sys
-from typing import Callable, Optional, Any
 
-from pisek.utils.text import tab
 from pisek.utils.terminal import eprint
-from pisek.config.task_config import load_config
 from pisek.config.env import Env
 from pisek.jobs.cache import Cache
 

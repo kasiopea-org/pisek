@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import defaultdict
 from configparser import ConfigParser
 from importlib.resources import files
 import os
+import re
 
 from pisek.config.config_errors import TaskConfigError
 from pisek.utils.text import tab
@@ -81,10 +83,15 @@ class ConfigHierarchy:
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
+        self._used_keys: dict[str, set[str]] = defaultdict(lambda: set())
+
     def get(self, section: str, key: str) -> str:
         return self.get_from_candidates([(section, key)])
 
     def get_from_candidates(self, candidates: list[tuple[str, str]]):
+        for section, key in candidates:
+            self._used_keys[section].add(key)
+
         for config in reversed(self._configs):
             for section, key in candidates:
                 value = config.get(section, key, fallback=None)
@@ -99,6 +106,36 @@ class ConfigHierarchy:
         candidates_str = "or \n".join(map(msg, candidates))
         raise TaskConfigError(f"Unset value for:\n{tab(candidates_str)}")
 
+    def sections(self):
+        sections = {
+            section: True for config in self._configs for section in config.sections()
+        }
+        return list(sections.keys())
+
+    def check_unused_keys(self) -> None:
+        IGNORED_KEYS = defaultdict(
+            lambda: set(),
+            {
+                "task": {"tests", "version"},  # TODO: Version updates
+                "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
+            },
+        )
+        IGNORED_TEST_KEYS = {"file_name"}
+        for section in self._configs[-1].sections():
+            if section not in self._used_keys:
+                raise TaskConfigError(f"Unexpected section [{section}] in config")
+            for key in self._configs[-1][section].keys():
+                if key in IGNORED_KEYS[section]:
+                    continue
+                if (
+                    section == "all_tests" or re.match(r"test\d{2}", section)
+                ) and key in IGNORED_TEST_KEYS:
+                    continue
+                if key not in self._used_keys[section]:
+                    raise TaskConfigError(
+                        f"Unexpected key '{key}' in section [{section}] of config."
+                    )
+
     def check_todos(self) -> bool:
         """Check whether config contains TODO in comments."""
         with open(self._config_path) as config:
@@ -107,9 +144,3 @@ class ConfigHierarchy:
                     return True
 
         return False
-
-    def sections(self):
-        sections = {
-            section: True for config in self._configs for section in config.sections()
-        }
-        return list(sections.keys())

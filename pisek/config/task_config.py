@@ -166,7 +166,7 @@ class TaskConfig(BaseEnv):
 
     @model_validator(mode="after")
     def validate_model(self):
-        if self.task_type == "communication" and self.judge_type != JudgeType.judge:
+        if self.task_type == "communication" and self.out_check != JudgeType.judge:
             raise TaskConfigError(
                 f"For communication task 'out_check' must be 'judge'."
             )
@@ -400,6 +400,9 @@ class LimitsConfig(BaseEnv):
         return LimitsConfig(**args)
 
 
-def load_config(path: str) -> Optional[TaskConfig]:
-    # TODO: Check unused keys and env
-    return TaskConfig.load(ConfigHierarchy(path))
+def load_config(path: str, strict: bool = False) -> TaskConfig:
+    # TODO: TODOs and error handling
+    config_hierarchy = ConfigHierarchy(path)
+    config = TaskConfig.load(config_hierarchy)
+    config_hierarchy.check_unused_keys()
+    return config

@@ -96,7 +96,7 @@ class SolutionManager(TaskJobManager):
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        if sub_num == "0":
+        if sub_num == 0:
             c_out = TaskPath.output_static_file(self._env, inp.name)
         else:
             primary_sol = self._env.config.solutions[

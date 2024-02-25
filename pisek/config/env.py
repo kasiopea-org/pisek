@@ -16,11 +16,10 @@
 
 from enum import StrEnum, auto
 from pydantic import Field
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Optional
 
 from pisek.config.base_env import BaseEnv
-from pisek.config.task_config import TaskConfig
-from pisek.config.config_hierarchy import ConfigHierarchy
+from pisek.config.task_config import load_config, TaskConfig
 
 
 class TestingTarget(StrEnum):
@@ -80,7 +79,7 @@ class Env(BaseEnv):
         inputs: int = 5,
         **_
     ) -> "Env":
-        config = TaskConfig.load(ConfigHierarchy(task_dir))
+        config = load_config(task_dir, strict)
 
         if solutions is None:
             expanded_solutions = list(config.solutions)

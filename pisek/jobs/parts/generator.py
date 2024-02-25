@@ -45,7 +45,7 @@ class GeneratorManager(TaskJobManager):
             random.seed(4)  # Reproducibility!
             seeds = random.sample(range(0, 16**4), self._env.inputs)
             for sub_num, _ in self._env.config.subtasks.items():
-                if sub_num == "0":
+                if sub_num == 0:
                     continue  # skip samples
                 last_gen: OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
