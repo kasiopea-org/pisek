@@ -23,7 +23,7 @@ import re
 import shutil
 from typing import Optional
 
-from pisek.config.task_config import CONFIG_FILENAME
+from pisek.config.config_hierarchy import CONFIG_FILENAME
 
 
 def update(path) -> Optional[str]:

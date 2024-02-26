@@ -78,8 +78,10 @@ class Env(BaseEnv):
         timeout: Optional[float] = None,
         inputs: int = 5,
         **_
-    ) -> "Env":
+    ) -> Optional["Env"]:
         config = load_config(task_dir, strict, plain or no_colors)
+        if config is None:
+            return None
 
         if solutions is None:
             expanded_solutions = list(config.solutions)

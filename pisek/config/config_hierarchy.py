@@ -20,17 +20,21 @@ from importlib.resources import files
 import os
 import re
 
-from pisek.config.config_errors import TaskConfigError
 from pisek.utils.text import tab
 
 DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
+CONFIG_FILENAME = "config"
 
 # TODO: Version update
 
 
+class TaskConfigError(Exception):
+    pass
+
+
 class ConfigHierarchy:
     def __init__(self, task_path: str) -> None:
-        self._config_path = os.path.join(task_path, "config")
+        self._config_path = os.path.join(task_path, CONFIG_FILENAME)
         config_paths = [DEFAULTS_CONFIG, self._config_path]
         self._configs = [ConfigParser() for _ in config_paths]
         for config, path in zip(self._configs, config_paths):

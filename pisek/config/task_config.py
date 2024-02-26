@@ -16,6 +16,7 @@
 
 from enum import StrEnum, auto
 from functools import cached_property
+from pydantic_core import PydanticCustomError, ErrorDetails
 from pydantic import (
     Field,
     computed_field,
@@ -32,15 +33,9 @@ from typing import Optional, Any, Annotated
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.config.base_env import BaseEnv
-from pisek.config.config_errors import TaskConfigError, TaskConfigInvalidValue
-from pisek.config.config_hierarchy import ConfigHierarchy
+from pisek.config.config_hierarchy import TaskConfigError, ConfigHierarchy
 from pisek.config.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
-
-
-DEFAULT_TIMEOUT: float = 360.0
-CONFIG_FILENAME = "config"
-DATA_SUBDIR = "data/"
 
 
 MaybeInt = Annotated[
@@ -49,13 +44,9 @@ MaybeInt = Annotated[
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 
 
-class ProgramType(StrEnum):
-    tool = auto()
-    in_gen = auto()
-    checker = auto()
-    solve = auto()
-    sec_solve = auto()
-    judge = auto()
+class TaskType(StrEnum):
+    batch = auto()
+    communication = auto()
 
 
 class JudgeType(StrEnum):
@@ -68,10 +59,39 @@ class FailMode(StrEnum):
     any = auto()
 
 
+class ProgramType(StrEnum):
+    tool = auto()
+    in_gen = auto()
+    checker = auto()
+    solve = auto()
+    sec_solve = auto()
+    judge = auto()
+
+
+GLOBAL_KEYS = [
+    ("task", "name"),
+    ("task", "contest_type"),
+    ("task", "task_type"),
+    ("task", "solutions_subdir"),
+    ("task", "static_subdir"),
+    ("task", "data_subdir"),
+    ("tests", "in_gen"),
+    ("tests", "checker"),
+    ("tests", "out_check"),
+    ("tests", "stub"),
+    ("tests", "headers"),
+]
+JUDGE_KEYS = [
+    ("out_judge", None),
+    ("judge_needs_in", "0"),
+    ("judge_needs_out", "1"),
+]
+
+
 class TaskConfig(BaseEnv):
     name: str
     contest_type: str
-    task_type: str
+    task_type: TaskType
     fail_mode: FailMode
 
     solutions_subdir: str
@@ -127,29 +147,13 @@ class TaskConfig(BaseEnv):
 
     @staticmethod
     def load_dict(configs: ConfigHierarchy) -> dict[str, Any]:
-        KEYS = [
-            ("task", "name"),
-            ("task", "contest_type"),
-            ("task", "task_type"),
-            ("task", "solutions_subdir"),
-            ("task", "static_subdir"),
-            ("task", "data_subdir"),
-            ("tests", "in_gen"),
-            ("tests", "checker"),
-            ("tests", "out_check"),
-            ("tests", "stub"),
-            ("tests", "headers"),
-        ]
-        args: dict[str, Any] = {key: configs.get(section, key) for section, key in KEYS}
+        args: dict[str, Any] = {
+            key: configs.get(section, key) for section, key in GLOBAL_KEYS
+        }
 
         args["fail_mode"] = "any" if args["contest_type"] == "cms" else "all"
 
         # Load judge specific keys
-        JUDGE_KEYS = [
-            ("out_judge", None),
-            ("judge_needs_in", "0"),
-            ("judge_needs_out", "1"),
-        ]
         for key, default in JUDGE_KEYS:
             if args["out_check"] == "judge":
                 args[key] = configs.get("tests", key)
@@ -168,31 +172,57 @@ class TaskConfig(BaseEnv):
         args["solutions"] = solutions = {}
         for section_name in section_names:
             if m := re.match(r"solution_(.+)", section_name):
-                solutions[m[1]] = SolutionConfig.load_dict(
-                    m[1], max(subtasks) + 1, configs
-                )
+                solutions[m[1]] = SolutionConfig.load_dict(m[1], configs)
 
         args["limits"] = LimitsConfig.load_dict(configs)
 
         return args
 
+    @field_validator("contest_type", mode="after")
+    @classmethod
+    def convert_yesno(cls, value: str, info: ValidationInfo) -> str:
+        # TODO: Redo to general task types
+        ALLOWED = ["kasiopea", "cms"]
+        if value not in ALLOWED:
+            raise PydanticCustomError(
+                "contest_type_invalid",
+                f"Must be one of ({', '.join(ALLOWED)})",
+            )
+        return value
+
     @model_validator(mode="after")
     def validate_model(self):
-        if self.task_type == "communication" and self.out_check != JudgeType.judge:
-            raise TaskConfigError(
-                f"For communication task 'out_check' must be 'judge'."
+        if (
+            self.task_type == TaskType.communication
+            and self.out_check != JudgeType.judge
+        ):
+            raise PydanticCustomError(
+                "communication_must_have_judge",
+                f"For communication task 'out_check' must be 'judge'",
+                {"task_type": self.task_type, "out_check": self.out_check},
             )
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
         if len(primary) > 2:
-            primary_sols_list = tab("\n".join(primary))
-            raise TaskConfigError(f"Multiple primary solutions:\n{primary_sols_list}")
+            raise PydanticCustomError(
+                "multiple_primary_solutions",
+                "Multiple primary solutions",
+                {"primary_solutions": primary},
+            )
         if len(self.solutions) > 0 and len(primary) == 0:
-            raise TaskConfigError("No primary solution set.")
+            raise PydanticCustomError(
+                "no_primary_solution",
+                "No primary solution set",
+                {},
+            )
 
         for i in range(len(self.subtasks)):
             if i not in self.subtasks:
-                raise TaskConfigError(f"Missing section for subtask {i}.")
+                raise PydanticCustomError(
+                    "missing_subtask",
+                    f"Missing section for subtask {i}.",
+                    {},
+                )
 
         self._compute_all_globs()
 
@@ -207,7 +237,9 @@ class TaskConfig(BaseEnv):
             if num in computed:
                 return subtask.all_globs
             elif num in visited:
-                raise TaskConfigInvalidValue("Cyclic predecessors subtasks.")
+                raise PydanticCustomError(
+                    "cyclic_predecessor_subtasks", "Cyclic predecessor subtasks.", {}
+                )
 
             visited.add(num)
             all_globs = sum(
@@ -253,7 +285,9 @@ class SubtaskConfig(BaseEnv):
             if glob == "@ith":
                 glob = f"{info.data['num']:02}*.in"
             if not glob.endswith(".in"):
-                raise TaskConfigInvalidValue(f"In_globs must end with '.in': {glob}")
+                raise PydanticCustomError(
+                    "in_globs_end_in", "In_globs must end with '.in'"
+                )
             globs.append(glob)
 
         return globs
@@ -270,7 +304,12 @@ class SubtaskConfig(BaseEnv):
                     continue
                 predecessors.append(number - 1)
             else:
-                predecessors.append(int(pred))
+                try:
+                    predecessors.append(int(pred))
+                except ValueError:
+                    raise PydanticCustomError(
+                        "predecessors_must_be_int", "Predecessors must be int"
+                    )
 
         return list(sorted(set(predecessors)))
 
@@ -288,9 +327,7 @@ class SolutionConfig(BaseEnv):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def load_dict(
-        cls, name: str, subtask_count: int, configs: ConfigHierarchy
-    ) -> dict[str, Any]:
+    def load_dict(cls, name: str, configs: ConfigHierarchy) -> dict[str, Any]:
         KEYS = [
             "primary",
             "source",
@@ -314,8 +351,9 @@ class SolutionConfig(BaseEnv):
             return True
         elif value == "no":
             return False
-        raise TaskConfigInvalidValue(
-            f"Key 'primary' of solution {info.data['name']} should be one of (yes, no): {value}"
+        raise PydanticCustomError(
+            "primary_invalid",
+            f"Must be one of (yes, no)",
         )
 
     @field_validator("source", mode="before")
@@ -339,19 +377,22 @@ class SolutionConfig(BaseEnv):
             value = "0" * subtask_cnt
 
         if len(value) != subtask_cnt:
-            raise TaskConfigInvalidValue(
-                f"There are {subtask_cnt} subtasks but subtask string has {len(value)} characters: '{value}'"
+            raise PydanticCustomError(
+                "subtasks_str_invalid_len",
+                f"There are {subtask_cnt} subtasks but subtask string has {len(value)} characters",
             )
 
         for char in value:
             if char not in SUBTASK_SPEC:
-                raise TaskConfigInvalidValue(
-                    f"Not allowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}"
+                raise PydanticCustomError(
+                    "subtasks_str_invalid_char",
+                    f"Not allowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}",
                 )
 
         if primary and value != "1" * subtask_cnt:
-            raise TaskConfigInvalidValue(
-                f"Primary solution must have: subtasks={'1'*subtask_cnt}"
+            raise PydanticCustomError(
+                "primary_sol_must_succeed",
+                f"Primary solution must have: subtasks={'1'*subtask_cnt}",
             )
 
         return value
@@ -360,8 +401,10 @@ class SolutionConfig(BaseEnv):
     def validate_model(self):
         for points_limit in ["points_above", "points_below"]:
             if self.points is not None and getattr(self, points_limit) is not None:
-                raise TaskConfigError(
-                    f"Both 'points' and '{points_limit}' are set at once."
+                raise PydanticCustomError(
+                    "points_double_set",
+                    f"Both 'points' and '{points_limit}' are set at once",
+                    {"points": self.points, points_limit: getattr(self, points_limit)},
                 )
 
         return self
@@ -411,7 +454,61 @@ class LimitsConfig(BaseEnv):
         return args
 
 
-def load_config(path: str, strict: bool = False, no_colors: bool = False) -> TaskConfig:
+def get_section_and_key(location: tuple[Any, ...]) -> str:
+    def take_ith(l: list, i: int) -> list:
+        return list(map(lambda x: x[i], l))
+
+    GLOBAL_KEYS_F = take_ith(GLOBAL_KEYS, 1)
+    JUDGE_KEYS_F = take_ith(JUDGE_KEYS, 0)
+
+    loc = tuple(map(str, location))
+
+    match loc:
+        case ("subtasks", num, *rest):
+            return f"[test{int(num):02}] " + ".".join(rest)
+        case ("solutions", name, *rest):
+            return f"[solution_{name}] " + ".".join(rest)
+        case ("limits", program, *rest):
+            return f"[limits] {program}_{'.'.join(rest)}"
+        case (key,):
+            if key in GLOBAL_KEYS_F:
+                return f"[{GLOBAL_KEYS[GLOBAL_KEYS_F.index(key)][0]}] {key}"
+            elif key in JUDGE_KEYS_F:
+                return f"[tests] {key}"
+            return key
+        case ():
+            return "Config"
+        case _:
+            return ".".join(map(str, loc))
+
+
+def format_message(err: ErrorDetails) -> str:
+    inp = err["input"]
+    ctx = err["ctx"] if "ctx" in err else None
+    if isinstance(inp, dict) and ctx is not None:
+        if ctx == {}:
+            return f"{err['msg']}."
+        return f"{err['msg']}:\n" + tab(
+            "\n".join(f"{key}={val}" for key, val in ctx.items())
+        )
+    return f"{err['msg']}: '{inp}'"
+
+
+CUSTOM_MESSAGES: dict[str, str] = {}
+
+
+def convert_errors(e: ValidationError) -> list[str]:
+    error_msgs: list[str] = []
+    for error in e.errors():
+        error_msgs.append(
+            f"{get_section_and_key(error['loc'])}\n{tab(format_message(error))}"
+        )
+    return error_msgs
+
+
+def load_config(
+    path: str, strict: bool = False, no_colors: bool = False
+) -> Optional[TaskConfig]:
     try:
         config_hierarchy = ConfigHierarchy(path)
         config = TaskConfig.load(config_hierarchy)
@@ -421,5 +518,12 @@ def load_config(path: str, strict: bool = False, no_colors: bool = False) -> Tas
         return config
     except TaskConfigError as err:
         eprint(colored(str(err), "red", no_colors))
-    # TODO: Validation errors
-    sys.exit(1)
+    except ValidationError as err:
+        eprint(
+            colored(
+                "Invalid config:\n\n" + "\n\n".join(convert_errors(err)),
+                "red",
+                no_colors,
+            )
+        )
+    return None

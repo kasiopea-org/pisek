@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from pisek.config import task_config
+from pisek.config import config_hierarchy
 from pisek.__main__ import test_task_path
 from pisek.utils.util import quote_output, clean_task_dir
 
@@ -147,7 +147,7 @@ def modify_config(task_dir: str, modification_fn):
     """
 
     config = configparser.ConfigParser()
-    config_path = os.path.join(task_dir, task_config.CONFIG_FILENAME)
+    config_path = os.path.join(task_dir, config_hierarchy.CONFIG_FILENAME)
     read_files = config.read(config_path)
     if not read_files:
         raise FileNotFoundError(f"Chybí konfigurační soubor {config_path}.")
