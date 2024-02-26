@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pisek.utils.text import colored
-from pisek.config.env import Env
+from pisek.env.env import Env
 
 MSG_LEN = 25
 

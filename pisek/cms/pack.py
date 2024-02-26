@@ -1,7 +1,7 @@
 import os
 import sys
 from . import check, info
-from pisek.config.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 import pisek.utils.util as util
 import zipfile
 

@@ -3,7 +3,7 @@ import glob
 import os
 import tempfile
 import pisek.utils.util as util
-from pisek.config.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 from . import check
 
 

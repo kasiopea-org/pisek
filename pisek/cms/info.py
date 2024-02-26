@@ -1,4 +1,4 @@
-from pisek.config.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 
 
 def subtask_formula(subtask):

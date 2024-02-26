@@ -18,7 +18,7 @@ import re
 from typing import Any, Callable
 
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath
 from pisek.jobs.parts.task_job import (
     TaskJob,

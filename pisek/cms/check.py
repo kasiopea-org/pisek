@@ -4,7 +4,7 @@ from . import git, util
 from pisek import __main__ as pisek_main
 
 ### TODO: Nevolat main, je to strašná prasárna!
-from pisek.config.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 
 
 def assert_git():

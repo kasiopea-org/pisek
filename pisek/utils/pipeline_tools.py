@@ -19,7 +19,7 @@ import os
 import sys
 
 from pisek.utils.text import eprint
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 PATH = "."

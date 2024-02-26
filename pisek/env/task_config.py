@@ -32,9 +32,9 @@ from typing import Optional, Any, Annotated
 
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
-from pisek.config.base_env import BaseEnv
-from pisek.config.config_hierarchy import TaskConfigError, ConfigHierarchy
-from pisek.config.context import init_context
+from pisek.env.base_env import BaseEnv
+from pisek.env.config_hierarchy import TaskConfigError, ConfigHierarchy
+from pisek.env.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
 

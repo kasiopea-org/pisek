@@ -22,7 +22,7 @@ from functools import partial
 import pisek.utils.util as util
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.utils.pipeline_tools import run_pipeline
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 from pisek.jobs.parts.tools import ToolsManager

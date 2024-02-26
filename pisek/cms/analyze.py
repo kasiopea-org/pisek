@@ -2,7 +2,7 @@ import subprocess
 import os, sys
 import tempfile
 import json
-from pisek.config.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 
 
 def download_data(args):

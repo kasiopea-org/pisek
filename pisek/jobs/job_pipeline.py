@@ -20,7 +20,7 @@ from colorama import Cursor, ansi
 import sys
 import time
 
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
 from pisek.jobs.cache import Cache
 

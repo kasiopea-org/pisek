@@ -21,7 +21,7 @@ import shutil
 from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
-from ..config.task_config import TaskConfig, load_config
+from pisek.env.task_config import TaskConfig, load_config
 
 BUILD_DIR = "build/"
 

@@ -19,7 +19,7 @@ from pydantic import Field
 from typing import Any, TYPE_CHECKING, Callable, TypeVar
 
 
-from pisek.config.context import ContextModel
+from pisek.env.context import ContextModel
 
 
 T = TypeVar("T")

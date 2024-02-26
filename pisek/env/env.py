@@ -18,8 +18,8 @@ from enum import StrEnum, auto
 from pydantic import Field
 from typing import Optional
 
-from pisek.config.base_env import BaseEnv
-from pisek.config.task_config import load_config, TaskConfig
+from pisek.env.base_env import BaseEnv
+from pisek.env.task_config import load_config, TaskConfig
 
 
 class TestingTarget(StrEnum):

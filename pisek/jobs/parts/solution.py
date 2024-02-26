@@ -20,9 +20,9 @@ import time
 from typing import Any, Optional, Callable, Iterable
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath
-from pisek.config.task_config import ProgramType
+from pisek.env.task_config import ProgramType
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN
 from pisek.jobs.status import MAX_BAR_LEN

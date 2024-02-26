@@ -24,7 +24,7 @@ import sys
 from colorama import Fore
 from typing import Optional, Union, Iterable, Callable
 
-from .config.task_config import load_config, TaskConfig, SubtaskConfig
+from pisek.env.task_config import load_config, TaskConfig, SubtaskConfig
 from pisek.jobs.parts.task_job import TaskHelper
 
 VERDICTS = {

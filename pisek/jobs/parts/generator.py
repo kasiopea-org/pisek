@@ -20,9 +20,9 @@ import os
 import shutil
 from typing import Any
 
-from pisek.config.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath, GENERATED_SUBDIR
-from pisek.config.task_config import ProgramType
+from pisek.env.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob

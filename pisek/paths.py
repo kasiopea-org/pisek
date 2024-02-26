@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import os
 import yaml
 
-from pisek.config.env import Env
+from pisek.env.env import Env
 
 BUILD_DIR = "build/"
 
