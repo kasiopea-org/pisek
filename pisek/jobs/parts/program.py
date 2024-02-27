@@ -251,15 +251,16 @@ class ProgramsJob(TaskJob):
 
     def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
         """Runs all programs in execution pool."""
-        running_pool = []
-        meta_files = []
+        running_pool: list[subprocess.Popen] = []
+        meta_files: list[str] = []
         minibox = TaskPath.executable_path(self._env, "minibox").fullpath
         for pool_item in self._program_pool:
-            meta_files.append(tempfile.mkstemp()[1])
+            fd, meta_file = tempfile.mkstemp()
+            os.close(fd)
+            meta_files.append(meta_file)
+
             running_pool.append(
-                subprocess.Popen(
-                    **pool_item.to_popen(minibox, meta_files[-1]),
-                )
+                subprocess.Popen(**pool_item.to_popen(minibox, meta_file))
             )
 
         stderr_raw = ""
@@ -292,6 +293,10 @@ class ProgramsJob(TaskJob):
 
             with open(meta_file) as f:
                 meta_raw = f.read().strip().split("\n")
+
+            assert meta_file.startswith("/tmp")  # Better safe then sorry
+            os.remove(meta_file)
+
             meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
             if not print_first_stderr:
                 stderr_raw = process.stderr.read().decode()
