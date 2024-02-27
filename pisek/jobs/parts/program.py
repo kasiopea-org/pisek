@@ -18,18 +18,19 @@ from dataclasses import dataclass, field
 from enum import Enum
 import os
 import tempfile
-from typing import Optional, Any, Union
+import time
+from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
 import yaml
 
-from pisek.task_config import ProgramType
-from pisek.env import Env
+from pisek.env.task_config import ProgramType
+from pisek.env.env import Env
+from pisek.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
-from pisek.terminal import tab, colored
+from pisek.utils.text import tab
+from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskHelper, TaskJob
-
-import pisek.util as util
 
 
 class RunResultKind(Enum):
@@ -49,8 +50,8 @@ class RunResult:
         returncode: int,
         time: float,
         wall_time: float,
-        stdout_file: Optional[Union[str, int]] = None,
-        stderr_file: Optional[str] = None,
+        stdout_file: Optional[Union[TaskPath, int]] = None,
+        stderr_file: Optional[TaskPath] = None,
         stderr_text: Optional[str] = None,
         status: str = "",
     ):
@@ -66,30 +67,32 @@ class RunResult:
     @staticmethod
     def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
         res = tab(TaskHelper._short_text(text, max_lines, max_chars))
-        return colored(res, env, "yellow")
+        return colored_env(res, "yellow", env)
 
-    def raw_stdout(self):
-        if isinstance(self.stdout_file, str):
-            return open(self.stdout_file).read()
+    def raw_stdout(self, access_file: Callable[[TaskPath], None]):
+        if isinstance(self.stdout_file, TaskPath):
+            access_file(self.stdout_file)
+            return open(self.stdout_file.fullpath).read()
         else:
             return None
 
-    def raw_stderr(self):
-        if self.stderr_file:
-            return open(self.stderr_file).read()
+    def raw_stderr(self, access_file: Callable[[TaskPath], None]):
+        if isinstance(self.stderr_file, TaskPath):
+            access_file(self.stderr_file)
+            return open(self.stderr_file.fullpath).read()
         else:
             return self.stderr_text
 
-    def stdout(self, env: Env):
+    def stdout(self, env: Env, access_file: Callable[[TaskPath], None]):
         if isinstance(self.stdout_file, str):
             return f" in file {self.stdout_file}:\n" + self._format(
-                self.raw_stdout(), env
+                self.raw_stdout(access_file), env
             )
         else:
             return " has been discarded"
 
-    def stderr(self, env: Env):
-        text = self._format(self.raw_stderr(), env)
+    def stderr(self, env: Env, access_file: Callable[[TaskPath], None]):
+        text = self._format(self.raw_stderr(access_file), env)
         if self.stderr_file:
             return f" in file {self.stderr_file}:\n{text}"
         else:
@@ -139,15 +142,15 @@ yaml.add_constructor("!RunResult", run_result_constructor)
 
 @dataclass
 class ProgramPoolItem:
-    executable: str
+    executable: TaskPath
     args: list[str]
     time_limit: float
     clock_limit: float
     mem_limit: int
     process_limit: int
-    stdin: Optional[Union[str, int]]
-    stdout: Optional[Union[str, int]]
-    stderr: Optional[str]
+    stdin: Optional[Union[TaskPath, int]]
+    stdout: Optional[Union[TaskPath, int]]
+    stderr: Optional[TaskPath]
     env: dict[str, str] = field(default_factory=lambda: {})
 
     def to_popen(self, minibox: str, meta_file: str) -> dict[str, Any]:
@@ -162,8 +165,8 @@ class ProgramPoolItem:
 
         for std in ("stdin", "stdout", "stderr"):
             attr = getattr(self, std)
-            if isinstance(attr, str):
-                minibox_args.append(f"--{std}={attr}")
+            if isinstance(attr, TaskPath):
+                minibox_args.append(f"--{std}={attr.fullpath}")
             elif getattr(self, std) is None and std != "stderr":
                 minibox_args.append(f"--{std}=/dev/null")
 
@@ -179,7 +182,10 @@ class ProgramPoolItem:
         minibox_args.append(f"--meta={meta_file}")
 
         result["args"] = (
-            [minibox] + minibox_args + ["--run", "--", self.executable] + self.args
+            [minibox]
+            + minibox_args
+            + ["--run", "--", self.executable.fullpath]
+            + self.args
         )
         return result
 
@@ -190,13 +196,14 @@ class ProgramsJob(TaskJob):
     def __init__(self, env: Env, name: str, **kwargs) -> None:
         super().__init__(env=env, name=name, **kwargs)
         self._program_pool: list[ProgramPoolItem] = []
+        self._callback: Optional[Callable[[subprocess.Popen], None]] = None
 
-    def _load_compiled(self, program: str) -> str:
+    def _load_compiled(self, program: TaskPath) -> TaskPath:
         """Loads name of compiled program."""
-        executable = self._executable(os.path.basename(program))
+        executable = TaskPath.executable_file(self._env, program.relpath)
         if not self._file_exists(executable):
             raise PipelineItemFailure(
-                f"Program {executable} does not exist, "
+                f"Program {executable:p} does not exist, "
                 f"although it should have been compiled already."
             )
         return executable
@@ -204,23 +211,23 @@ class ProgramsJob(TaskJob):
     def _load_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: TaskPath,
         args: list[str] = [],
-        stdin: Optional[Union[str, int]] = None,
-        stdout: Optional[Union[str, int]] = None,
-        stderr: Optional[str] = None,
+        stdin: Optional[Union[TaskPath, int]] = None,
+        stdout: Optional[Union[TaskPath, int]] = None,
+        stderr: Optional[TaskPath] = None,
         env={},
     ) -> None:
         """Adds program to execution pool."""
         executable = self._load_compiled(program)
 
         self._access_file(executable)
-        if isinstance(stdin, str):
+        if isinstance(stdin, TaskPath):
             self._access_file(stdin)
-        if isinstance(stdout, str):
+        if isinstance(stdout, TaskPath):
             self.make_filedirs(stdout)
             self._access_file(stdout)
-        if isinstance(stderr, str):
+        if isinstance(stderr, TaskPath):
             self.make_filedirs(stderr)
             self._access_file(stderr)
 
@@ -236,27 +243,45 @@ class ProgramsJob(TaskJob):
             )
         )
 
+    def _load_callback(self, callback: Callable[[subprocess.Popen], None]) -> None:
+        if self._callback is not None:
+            raise RuntimeError("Callback already loaded.")
+        self._callback = callback
+
     def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
         """Runs all programs in execution pool."""
-        running_pool = []
-        meta_files = []
+        running_pool: list[subprocess.Popen] = []
+        meta_files: list[str] = []
+        minibox = TaskPath.executable_path(self._env, "minibox").fullpath
         for pool_item in self._program_pool:
-            meta_files.append(tempfile.mkstemp()[1])
+            fd, meta_file = tempfile.mkstemp()
+            os.close(fd)
+            meta_files.append(meta_file)
+
             running_pool.append(
-                subprocess.Popen(
-                    **pool_item.to_popen(self._executable("minibox"), meta_files[-1]),
-                )
+                subprocess.Popen(**pool_item.to_popen(minibox, meta_file))
             )
 
-        if print_first_stderr:
-            stderr_raw = ""
-            while True:
+        stderr_raw = ""
+        callback_exec = False
+        while True:
+            states = [process.poll() is not None for process in running_pool]
+            if not callback_exec and any(states):
+                callback_exec = True
+                if self._callback is not None:
+                    self._callback(running_pool[states.index(True)])
+
+            if print_first_stderr:
                 assert running_pool[0].stderr is not None  # To make mypy happy
                 line = running_pool[0].stderr.read().decode()
-                if not line:
-                    break
-                stderr_raw += line
-                self._print(colored(line, self._env, "yellow"), end="", stderr=True)
+                if line:
+                    stderr_raw += line
+                    self._print(
+                        colored_env(line, "yellow", self._env), end="", stderr=True
+                    )
+
+            if all(states):
+                break
 
         run_results = []
         for pool_item, (process, meta_file) in zip(
@@ -267,6 +292,10 @@ class ProgramsJob(TaskJob):
 
             with open(meta_file) as f:
                 meta_raw = f.read().strip().split("\n")
+
+            assert meta_file.startswith("/tmp")  # Better safe then sorry
+            os.remove(meta_file)
+
             meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
             if not print_first_stderr:
                 stderr_raw = process.stderr.read().decode()
@@ -329,7 +358,7 @@ class ProgramsJob(TaskJob):
     def _run_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: TaskPath,
         print_first_stderr=False,
         **kwargs,
     ) -> RunResult:
@@ -345,5 +374,5 @@ class ProgramsJob(TaskJob):
         """Quotes program's stdout and stderr."""
         program_msg = f"status: {res.status}\n"
         for std in ("stdout", "stderr"):
-            program_msg += f"{std}{getattr(res, std)(self._env)}\n"
+            program_msg += f"{std}{getattr(res, std)(self._env, self._access_file)}\n"
         return program_msg[:-1]

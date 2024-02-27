@@ -21,7 +21,7 @@ import shutil
 from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
-from .task_config import TaskConfig, load_config
+from pisek.env.task_config import TaskConfig, load_config
 
 BUILD_DIR = "build/"
 
@@ -65,20 +65,6 @@ def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
             pass
 
 
-def clean_data_dir(task_config: TaskConfig, leave_inputs=False) -> None:
-    """
-    `leave_inputs` retains non-sample `.in` files.
-    """
-    data_dir = task_config.get_data_dir()
-
-    try:
-        for file in os.listdir(data_dir):
-            if not leave_inputs or ("sample" in file) or (not file.endswith(".in")):
-                os.remove(os.path.join(data_dir, file))
-    except FileNotFoundError:
-        pass
-
-
 def clean_task_dir(task_dir: str) -> bool:
     config = load_config(task_dir)
     if config is None:
@@ -86,7 +72,7 @@ def clean_task_dir(task_dir: str) -> bool:
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
     # directory
 
-    from .cms.pack import SAMPLES_ZIP, TESTS_ZIP
+    from ..cms.pack import SAMPLES_ZIP, TESTS_ZIP
 
     rm_f(os.path.join(task_dir, SAMPLES_ZIP))
     rm_f(os.path.join(task_dir, TESTS_ZIP))
@@ -109,7 +95,7 @@ def get_expected_score(solution_name: str, config: TaskConfig) -> Optional[int]:
         score = int(match[1])
         return score
     else:
-        return config.get_maximum_score()
+        return config.total_points
 
 
 def quote_output(s, max_length=1500, max_lines=20):

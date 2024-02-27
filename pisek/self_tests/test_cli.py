@@ -11,7 +11,7 @@ from unittest import mock
 from pisek.self_tests.util import TestFixture
 
 from pisek.__main__ import main
-from pisek import util
+from pisek.utils import util
 
 
 def quote_test_suite_output(l):

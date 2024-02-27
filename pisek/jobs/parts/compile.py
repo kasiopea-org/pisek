@@ -19,8 +19,9 @@ import shutil
 import subprocess
 import sys
 
+from pisek.env.env import Env
+from pisek.paths import TaskPath
 from pisek.jobs.jobs import State, PipelineItemFailure
-from pisek.env import Env
 from pisek.jobs.parts.program import ProgramsJob
 
 
@@ -30,26 +31,27 @@ class Compile(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        program: str,
+        program: TaskPath,
         use_stub: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Compile {os.path.basename(program)}", **kwargs)
+        super().__init__(env=env, name=f"Compile {program:n}", **kwargs)
         self.program = program
         self.use_stub = use_stub
-        self.target = self._executable(os.path.basename(program))
+        self.target = TaskPath.executable_file(self._env, program.name)
 
         self.stub = None
         self.headers = []
 
         if use_stub and self._env.config.stub:
-            self.stub = self._resolve_path(self._env.config.stub)
+            self.stub = TaskPath.base_path(self._env, self._env.config.stub)
         if use_stub and self._env.config.headers:
             self.headers = [
-                self._resolve_path(header) for header in self._env.config.headers
+                TaskPath.base_path(self._env, header)
+                for header in self._env.config.headers
             ]
 
-    def _resolve_extension(self, name: str) -> str:
+    def _resolve_extension(self, name: TaskPath) -> TaskPath:
         """
         Given `name`, finds a file named `name`.[ext],
         where [ext] is a file extension for one of the supported languages.
@@ -58,56 +60,54 @@ class Compile(ProgramsJob):
         """
         extensions = supported_extensions()
         candidates = []
+        path = name.fullpath
         for ext in extensions:
-            if os.path.isfile(name + ext):
-                candidates.append(name + ext)
-            if name.endswith(ext) and os.path.isfile(name):
+            if os.path.isfile(path + ext):
+                candidates.append(path + ext)
+            if path.endswith(ext) and os.path.isfile(path):
                 # Extension already present in `name`
-                candidates.append(name)
+                candidates.append(path)
 
         if len(candidates) == 0:
-            raise PipelineItemFailure(f"No program with given name exists: {name}")
+            raise PipelineItemFailure(f"No program with given name exists: {path}")
         if len(candidates) > 1:
             raise PipelineItemFailure(
                 f"Multiple programs with same name exist: {', '.join(candidates)}"
             )
 
-        return candidates[0]
+        return TaskPath.from_abspath(self._env, candidates[0])
 
     def _run(self):
         """Compiles program."""
         program = self._resolve_extension(self.program)
-        self.makedirs(self._executable("."))
+        self.makedirs(TaskPath.executable_path(self._env, "."))
 
-        _, ext = os.path.splitext(program)
+        _, ext = os.path.splitext(program.fullpath)
 
         if ext in COMPILE_RULES:
             COMPILE_RULES[ext](self, program)
         else:
-            raise PipelineItemFailure(f"No rule for compiling {program}.")
-
-        if self.state == State.failed:
-            return None
+            raise PipelineItemFailure(f"No rule for compiling {program:p}.")
 
         self._access_file(program)
         self._access_file(self._load_compiled(self.program))
 
-    def _compile_cpp(self, program: str):
+    def _compile_cpp(self, program: TaskPath):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
-            ["g++", program, "-o", self.target] + cpp_flags, program
+            ["g++", program.fullpath, "-o", self.target.fullpath] + cpp_flags, program
         )
 
-    def _compile_c(self, program: str):
+    def _compile_c(self, program: TaskPath):
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         c_flags += self._add_stub("c")
 
         return self._run_compilation(
-            ["gcc", program, "-o", self.target] + c_flags, program
+            ["gcc", program.fullpath, "-o", self.target.fullpath] + c_flags, program
         )
 
     def _c_colors(self):
@@ -116,18 +116,24 @@ class Compile(ProgramsJob):
         else:
             return "-fdiagnostics-color=never"
 
-    def _compile_pas(self, program: str):
-        dir = self._get_build_dir()
-        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target, "-FE" + dir]
+    def _compile_pas(self, program: TaskPath):
+        build_dir = TaskPath.executable_path(self._env, ".")
+        pas_flags = [
+            "-gl",
+            "-O3",
+            "-Sg",
+            "-o" + self.target.fullpath,
+            "-FE" + build_dir.fullpath,
+        ]
 
-        return self._run_compilation(["fpc"] + pas_flags + [program], program)
+        return self._run_compilation(["fpc"] + pas_flags + [program.fullpath], program)
 
-    def _compile_rust(self, program: str):
+    def _compile_rust(self, program: TaskPath):
         return self._run_compilation(
-            ["rustc", "-O", "-o", self.target, program], program
+            ["rustc", "-O", "-o", self.target.fullpath, program.fullpath], program
         )
 
-    def _run_compilation(self, args, program, **kwargs) -> None:
+    def _run_compilation(self, args: list[str], program: TaskPath, **kwargs) -> None:
         self._check_tool(args[0])
 
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
@@ -139,9 +145,9 @@ class Compile(ProgramsJob):
 
         comp.wait()
         if comp.returncode != 0:
-            raise PipelineItemFailure(f"Compilation of {program} failed.")
+            raise PipelineItemFailure(f"Compilation of {program:p} failed.")
 
-    def _check_tool(self, tool) -> None:
+    def _check_tool(self, tool: str) -> None:
         """Checks that a tool exists."""
         try:
             subprocess.run(
@@ -152,7 +158,7 @@ class Compile(ProgramsJob):
         except FileNotFoundError:
             raise PipelineItemFailure(f"Missing tool: {tool}")
 
-    def _compile_script(self, program: str) -> None:
+    def _compile_script(self, program: TaskPath) -> None:
         if not self.valid_shebang(program):
             raise PipelineItemFailure(
                 f"{program} has invalid shebang. "
@@ -160,18 +166,18 @@ class Compile(ProgramsJob):
                 "Check also that you are using linux eol."
             )
 
-        with open(program, "r", newline="\n") as f:
+        with open(program.fullpath, "r", newline="\n") as f:
             interpreter = f.readline().strip().lstrip("#!")
         self._check_tool(interpreter)
 
-        shutil.copyfile(program, self.target)
+        shutil.copyfile(program.fullpath, self.target.fullpath)
         self._chmod_exec(self.target)
 
     @staticmethod
-    def valid_shebang(filepath: str) -> bool:
+    def valid_shebang(program: TaskPath) -> bool:
         """Check if file has shebang and if the shebang is valid"""
 
-        with open(filepath, "r", newline="\n") as f:
+        with open(program.fullpath, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
@@ -180,7 +186,7 @@ class Compile(ProgramsJob):
         if first_line.endswith("\r\n"):
             return False
 
-        if os.path.splitext(filepath)[1] == ".py":
+        if os.path.splitext(program.fullpath)[1] == ".py":
             return any(
                 first_line == f"#!/usr/bin/env {interpreter}\n"
                 for interpreter in VALID_PYTHON_INTERPRETERS
@@ -190,21 +196,21 @@ class Compile(ProgramsJob):
             return True
 
     @staticmethod
-    def _chmod_exec(filepath: str) -> None:
-        st = os.stat(filepath)
-        os.chmod(filepath, st.st_mode | 0o111)
+    def _chmod_exec(filepath: TaskPath) -> None:
+        st = os.stat(filepath.fullpath)
+        os.chmod(filepath.fullpath, st.st_mode | 0o111)
 
     def _add_stub(self, extension):
         flags = []
 
         if self.stub is not None:
-            filename = f"{self.stub}.{extension}"
+            filename = TaskPath.base_path(self._env, f"{self.stub:p}.{extension}")
             self._access_file(filename)
-            flags += [filename]
+            flags += [filename.fullpath]
 
         for header in self.headers:
             self._access_file(header)
-            directory = os.path.normpath(os.path.dirname(header))
+            directory = os.path.normpath(os.path.dirname(header.fullpath))
             flags += [f"-I{directory}"]
 
         return flags

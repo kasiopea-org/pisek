@@ -1,8 +1,8 @@
 import os
 import sys
 from . import check, info
-from pisek.task_config import TaskConfig
-import pisek.util as util
+from pisek.env.task_config import TaskConfig
+import pisek.utils.util as util
 import zipfile
 
 TESTS_ZIP = "tests.zip"

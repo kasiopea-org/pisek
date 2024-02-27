@@ -16,8 +16,9 @@
 import json
 from typing import Any
 
+from pisek.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.terminal import colored
+from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import (
     TaskJobManager,
     SOLUTION_MAN_CODE,
@@ -65,7 +66,7 @@ class CreateTestingLog(TaskJobManager):
             if self._env.strict:
                 raise PipelineItemFailure(MSG)
             else:
-                self._print(colored(MSG, self._env, "yellow"))
+                self._print(colored_env(MSG, "yellow", self._env))
 
-        with open(self._resolve_path(TESTING_LOG), "w") as f:
+        with open(TaskPath.base_path(self._env, TESTING_LOG).fullpath, "w") as f:
             json.dump(log, f, indent=4)
