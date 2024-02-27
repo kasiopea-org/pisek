@@ -36,8 +36,10 @@ class ConfigHierarchy:
     def __init__(self, task_path: str) -> None:
         self._config_path = os.path.join(task_path, CONFIG_FILENAME)
         config_paths = [DEFAULTS_CONFIG, self._config_path]
-        self._configs = [ConfigParser() for _ in config_paths]
-        for config, path in zip(self._configs, config_paths):
+
+        self._configs = []
+        for path in config_paths:
+            self._configs.append(config := ConfigParser())
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
