@@ -50,13 +50,17 @@ class ConfigHierarchy:
         for section, key in candidates:
             self._used_keys[section].add(key)
 
+        unset: bool = False
         for config in reversed(self._configs):
             for section, key in candidates:
                 value = config.get(section, key, fallback=None)
                 if value == "!unset":
+                    unset = True
                     break
                 elif value is not None:
                     return value
+            if unset:
+                break
 
         def msg(section_key: tuple[str, str]) -> str:
             return f"key '{section_key[1]}' in section [{section_key[0]}]"
