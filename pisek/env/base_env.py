@@ -81,6 +81,11 @@ class BaseEnv(ContextModel):
                 item = getattr(self, key)
                 if isinstance(item, BaseEnv):
                     recursive(item)
+                elif isinstance(item, dict):
+                    for subitem in item.values():
+                        if isinstance(subitem, BaseEnv):
+                            recursive(subitem)
+
             self._logging = True
             function(self)
 
@@ -104,9 +109,16 @@ class BaseEnv(ContextModel):
             item = getattr(self, key)
             if isinstance(item, BaseEnv):
                 accessed += [(f"{key}.{subkey}") for subkey in item.get_accessed()]
+            elif isinstance(item, dict) and all(
+                isinstance(val, BaseEnv) for val in item.values()
+            ):
+                accessed += [
+                    (f"{key}[{dict_key}].{subkey}")
+                    for dict_key, subenv in item.items()
+                    for subkey in subenv.get_accessed()
+                ]
             else:
                 accessed.append(key)
-            # TODO: Env dict
         self._logging = True
 
         return accessed
@@ -116,9 +128,9 @@ class BaseEnv(ContextModel):
         obj = self
         for key_part in key.split("."):
             if "[" in key_part:
-                var, index = key_part.split("[")
-                index[:-1]
-                obj = getattr(obj, var)[index]
+                var, index = key_part[:-1].split("[")
+                dict_ = getattr(obj, var)
+                obj = dict_[type(list(dict_.keys())[0])(index)]
             else:
                 obj = getattr(obj, key_part)
         return obj
