@@ -45,7 +45,7 @@ class BaseEnv(ContextModel):
 
     if not TYPE_CHECKING:
 
-        def __getattribute__(self, item: str, log: bool = True) -> Any:
+        def __getattribute__(self, item: str) -> Any:
             # Implementing this method is kind of magical and dangerous. Beware!
             if (
                 not item.startswith("_")

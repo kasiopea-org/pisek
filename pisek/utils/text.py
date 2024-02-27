@@ -46,7 +46,7 @@ def eprint(msg, *args, **kwargs):
 
 
 def warn(msg: str, err: type, strict: bool = False, no_colors: bool = False) -> None:
-    """Warn strict is False, otherwise raise error."""
+    """Warn if strict is False, otherwise raise error."""
     if strict:
         raise err(msg)
     eprint(colored(f"Warning: {msg}", "yellow", no_colors))

@@ -41,7 +41,7 @@ class ConfigHierarchy:
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
-        self._used_keys: dict[str, set[str]] = defaultdict(lambda: set())
+        self._used_keys: dict[str, set[str]] = defaultdict(set)
 
     def get(self, section: str, key: str) -> str:
         return self.get_from_candidates([(section, key)])
@@ -61,18 +61,18 @@ class ConfigHierarchy:
         def msg(section_key: tuple[str, str]) -> str:
             return f"key '{section_key[1]}' in section [{section_key[0]}]"
 
-        candidates_str = "or \n".join(map(msg, candidates))
+        candidates_str = " or\n".join(map(msg, candidates))
         raise TaskConfigError(f"Unset value for:\n{tab(candidates_str)}")
 
     def sections(self):
         sections = {
             section: True for config in self._configs for section in config.sections()
-        }
+        }  # We need to use dictionary here because order matters
         return list(sections.keys())
 
     def check_unused_keys(self) -> None:
         IGNORED_KEYS = defaultdict(
-            lambda: set(),
+            set,
             {
                 "task": {"tests", "version"},  # TODO: Version updates
                 "tests": {"in_mode", "out_mode", "out_format", "online_validity"},

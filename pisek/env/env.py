@@ -35,7 +35,7 @@ class Env(BaseEnv):
     Attributes:
         task_dir: Directory of the task being tested
         target: What is being tested
-        config: environment variables defined by task config
+        config: Environment variables defined by task config
         full: Whether to stop after the first failure
         no_colors: If not to use ansi colors
         no_jumps: If not to use ansi control sequences

@@ -170,6 +170,9 @@ subtasks=X10
 #           limits greater than 1 are interpreted as "unlimited".
 #           Please keep in mind that killing of multiple processes
 #           upon errors is inherently unreliable.
+#
+# Setting limit to 0 means unlimited
+#
 # Defaults:
 #   time_limit     360s
 #   clock_limit    360s

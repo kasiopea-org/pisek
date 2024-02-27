@@ -99,7 +99,7 @@ class TaskConfig(BaseEnv):
     data_subdir: str
 
     in_gen: str
-    checker: str
+    checker: Optional[str]
     out_check: JudgeType
     out_judge: Optional[str]
     judge_needs_in: bool
@@ -180,7 +180,7 @@ class TaskConfig(BaseEnv):
 
     @field_validator("contest_type", mode="after")
     @classmethod
-    def convert_yesno(cls, value: str, info: ValidationInfo) -> str:
+    def validate_contest_type(cls, value: str) -> str:
         # TODO: Redo to general task types
         ALLOWED = ["kasiopea", "cms"]
         if value not in ALLOWED:
@@ -189,6 +189,11 @@ class TaskConfig(BaseEnv):
                 f"Must be one of ({', '.join(ALLOWED)})",
             )
         return value
+
+    @field_validator("checker", mode="before")
+    @classmethod
+    def convert_checker(cls, value: str) -> Optional[str]:
+        return value or None
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -411,10 +416,11 @@ class SolutionConfig(BaseEnv):
 
 
 class ProgramLimits(BaseEnv):
-    time_limit: float = Field(ge=0)
-    clock_limit: float = Field(ge=0)
-    mem_limit: int = Field(ge=0)
+    time_limit: float = Field(ge=0)  # [seconds]
+    clock_limit: float = Field(ge=0)  # [seconds]
+    mem_limit: int = Field(ge=0)  # [KB]
     process_limit: int = Field(ge=0)
+    # limit=0 means unlimited
 
     @classmethod
     def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> dict[str, Any]:
@@ -492,9 +498,6 @@ def format_message(err: ErrorDetails) -> str:
             "\n".join(f"{key}={val}" for key, val in ctx.items())
         )
     return f"{err['msg']}: '{inp}'"
-
-
-CUSTOM_MESSAGES: dict[str, str] = {}
 
 
 def convert_errors(e: ValidationError) -> list[str]:

@@ -34,7 +34,7 @@ class CheckerManager(TaskJobManager):
         super().__init__("Running checker")
 
     def _get_jobs(self) -> list[Job]:
-        if self._env.config.checker == "":
+        if self._env.config.checker is None:
             if self._env.strict:
                 raise PipelineItemFailure("No checker specified in config.")
             else:
