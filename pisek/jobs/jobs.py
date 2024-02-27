@@ -152,7 +152,7 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for key in sorted(envs, key=lambda x: x[0]):
+        for key in sorted(envs):
             try:
                 value = self._env.get_compound(key)
             except (AttributeError, TypeError):
