@@ -128,6 +128,7 @@ class BaseEnv(ContextModel):
         obj = self
         for key_part in key.split("."):
             if "[" in key_part:
+                assert key_part[-1] == "]"
                 var, index = key_part[:-1].split("[")
                 dict_ = getattr(obj, var)
                 obj = dict_[type(list(dict_.keys())[0])(index)]
