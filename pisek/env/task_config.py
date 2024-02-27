@@ -349,6 +349,17 @@ class SolutionConfig(BaseEnv):
         }
         return {"name": name, **args}
 
+    @field_validator("name", mode="after")
+    @classmethod
+    def convert_checker(cls, value: str) -> str:
+        for banned_char in ".[]":
+            if banned_char in value:
+                raise PydanticCustomError(
+                    "invalid_solution_name",
+                    f"Solution name must not contain '{banned_char}'",
+                )
+        return value
+
     @field_validator("primary", mode="before")
     @classmethod
     def convert_yesno(cls, value: str, info: ValidationInfo) -> bool:
@@ -365,7 +376,7 @@ class SolutionConfig(BaseEnv):
     @classmethod
     def convert_auto(cls, value: str, info: ValidationInfo) -> str:
         if value == "@auto":
-            return info.data["name"]
+            return info.data.get("name", "")
         return value
 
     @field_validator("subtasks", mode="after")
