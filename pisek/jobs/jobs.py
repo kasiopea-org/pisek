@@ -25,7 +25,7 @@ import yaml
 
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
-from pisek.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
@@ -52,7 +52,8 @@ class CaptureInitParams:
                 self._args = args
                 self._kwargs = kwargs
                 self._initialized = True
-                self._env = env.fork().lock()
+                self._env = env.fork()
+                self._env.lock()
             real_init(self, self._env, *args, **kwargs)
 
         cls.__init__ = wrapped_init
@@ -151,10 +152,12 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for variable in sorted(envs):
-            if variable not in self._env:
-                return (None, "Env nonexistent")
-            sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
+        for key in sorted(envs):
+            try:
+                value = self._env.get_compound(key)
+            except (AttributeError, TypeError):
+                return (None, f"Key nonexistent: {key}")
+            sign.update(f"{key}={value}\n".encode())
 
         expanded_files = []
         for file in sorted(files):
@@ -194,7 +197,9 @@ class Job(PipelineItem, CaptureInitParams):
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
         sign, err = self._signature(
-            self._env.get_accessed(), self._accessed_files, self.prerequisites_results
+            set(self._env.get_accessed()),
+            self._accessed_files,
+            self.prerequisites_results,
         )
         if err == "File nonexistent":
             raise RuntimeError(

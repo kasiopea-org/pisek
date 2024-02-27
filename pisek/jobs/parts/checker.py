@@ -17,10 +17,10 @@
 from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath
-from pisek.task_config import ProgramType
-from pisek.terminal import colored
+from pisek.env.task_config import ProgramType
+from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
 from pisek.jobs.parts.compile import Compile
@@ -38,11 +38,11 @@ class CheckerManager(TaskJobManager):
             if self._env.strict:
                 raise PipelineItemFailure("No checker specified in config.")
             else:
-                self.skipped_checker = colored(
+                self.skipped_checker = colored_env(
                     "Warning: No checker specified in config.\n"
                     "It is recommended to set `checker` is section [tests]",
-                    self._env,
                     "yellow",
+                    self._env,
                 )
             return []
 
@@ -51,8 +51,8 @@ class CheckerManager(TaskJobManager):
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 
         self.loose_subtasks = []
-        for sub_num, sub in self._env.config.subtasks.subenvs():
-            if sub_num == "0":
+        for sub_num, sub in self._env.config.subtasks.items():
+            if sub_num == 0:
                 continue  # Skip samples
             for inp in self._subtask_inputs(sub):
                 jobs.append(

@@ -2,8 +2,8 @@ import subprocess
 import glob
 import os
 import tempfile
-import pisek.util as util
-from pisek.task_config import TaskConfig
+import pisek.utils.util as util
+from pisek.env.task_config import TaskConfig
 from . import check
 
 

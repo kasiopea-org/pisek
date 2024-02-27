@@ -1,9 +1,10 @@
-# pisek  - Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž Kasiopea.
+# pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 # Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 # Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,16 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import setuptools
+from pisek.utils.text import colored
+from pisek.env.env import Env
 
-setuptools.setup(
-    name="pisek",
-    version="0.1",
-    description="Nástroj na kontrolování úloh",
-    packages=setuptools.find_packages(),
-    install_requires=["PyYAML", "colorama", "pydantic"],
-    extras_require={"dev": ["black", "mypy"]},
-    entry_points={"console_scripts": ["pisek=pisek.__main__:main_wrapped"]},
-    include_package_data=True,
-    package_data={"pisek": ["default-config", "tools/*"]},
-)
+MSG_LEN = 25
+
+
+def colored_env(msg: str, color: str, env: Env) -> str:
+    """Recolors all white text to given color."""
+    return colored(msg, color, env.no_colors)

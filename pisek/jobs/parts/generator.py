@@ -20,10 +20,9 @@ import os
 import shutil
 from typing import Any
 
-import pisek.util as util
-from pisek.env import Env
+from pisek.env.env import Env
 from pisek.paths import TaskPath, GENERATED_SUBDIR
-from pisek.task_config import ProgramType
+from pisek.env.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
@@ -38,15 +37,15 @@ class GeneratorManager(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath.base_path(self._env, self._env.config.generator)
+        generator = TaskPath.base_path(self._env, self._env.config.in_gen)
 
         jobs: list[Job] = [compile := Compile(self._env, generator)]
 
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
             seeds = random.sample(range(0, 16**4), self._env.inputs)
-            for sub_num, _ in self._env.config.subtasks.subenvs():
-                if sub_num == "0":
+            for sub_num, _ in self._env.config.subtasks.items():
+                if sub_num == 0:
                     continue  # skip samples
                 last_gen: OnlineGeneratorGenerate
                 for i, seed in enumerate(seeds):
@@ -95,7 +94,7 @@ class GeneratorManager(TaskJobManager):
             res["inputs"] = self._inputs
         else:
             res["inputs"] = self.globs_to_files(
-                self._env.config.subtasks.all_globs,
+                self._env.config.input_globs,
                 TaskPath.generated_path(self._env, "."),
             )
 
@@ -110,7 +109,7 @@ class RunOnlineGeneratorMan(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath.base_path(self._env.config.generator)
+        generator = TaskPath.base_path(self._env, self._env.config.in_gen)
 
         jobs: list[Job] = [
             compile := Compile(self._env, generator),
@@ -265,12 +264,6 @@ class OfflineGeneratorGenerate(ProgramsJob):
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env=env, name="Generate inputs", **kwargs)
         self.generator = generator
-
-    def _subtask_inputs(self, subtask: str):
-        return self.globs_to_files(
-            self._env.config.subtasks[subtask].in_globs,
-            TaskPath.generated_path(self._env, "."),
-        )
 
     def _gen(self) -> None:
         """Generates all inputs."""

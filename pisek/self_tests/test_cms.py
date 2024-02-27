@@ -5,7 +5,7 @@ import unittest
 
 from pisek.paths import GENERATED_SUBDIR
 from pisek.self_tests.util import TestFixtureVariant, overwrite_file
-from pisek.task_config import TaskConfig
+from pisek.env.task_config import load_config
 
 
 class TestSumCMS(TestFixtureVariant):
@@ -44,8 +44,10 @@ class TestOldInputsDeleted(TestSumCMS):
         return False
 
     def modify_task(self):
-        task_config = TaskConfig(self.task_dir)
-        self.inputs_dir = os.path.join(task_config.get_data_dir(), GENERATED_SUBDIR)
+        task_config = load_config(self.task_dir)
+        self.inputs_dir = os.path.join(
+            self.task_dir, task_config.data_subdir, GENERATED_SUBDIR
+        )
 
         # We only care about the generation part, so remove solve.py to stop the tests
         # right after the generator finishes.

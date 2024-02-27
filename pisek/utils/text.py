@@ -14,19 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
+from colorama import Fore
 import sys
 
-from colorama import Fore
-from typing import Callable
 
-from pisek.env import Env
-
-MSG_LEN = 25
-
-
-def eprint(msg, *args, **kwargs):
-    print(msg, *args, file=sys.stderr, **kwargs)
+def tab(text: str, tab_str: str = "  "):
+    return tab_str + text.replace("\n", f"\n{tab_str}")
 
 
 def pad(text: str, length: int, pad_char: str = " "):
@@ -37,27 +30,23 @@ def pad_left(text: str, length: int, pad_char: str = " "):
     return pad(text[::-1], length, pad_char)[::-1]
 
 
-def tab(text: str, tab_str: str = "  "):
-    return tab_str + text.replace("\n", f"\n{tab_str}")
+def colored(msg: str, color: str, no_colors: bool = False) -> str:
+    """Recolors all white text to given color."""
+    if no_colors:
+        return msg
 
-
-def _plain_variant(f: Callable, attr: str) -> Callable:
-    def g(msg: str, env: Env, *args, **kwargs):
-        if getattr(env, attr):
-            return msg
-        else:
-            return f(msg, *args, **kwargs)
-
-    return g
-
-
-no_color_variant = partial(_plain_variant, attr="no_colors")
-no_jumps_variant = partial(_plain_variant, attr="no_jumps")
-
-
-@no_color_variant
-def colored(msg: str, color: str) -> str:
-    # Recolors all white text to given color
     col = getattr(Fore, color.upper())
     msg = msg.replace(f"{Fore.RESET}", f"{Fore.RESET}{col}")
     return f"{col}{msg}{Fore.RESET}"
+
+
+def eprint(msg, *args, **kwargs):
+    """Prints to sys.stderr."""
+    print(msg, *args, file=sys.stderr, **kwargs)
+
+
+def warn(msg: str, err: type, strict: bool = False, no_colors: bool = False) -> None:
+    """Warn if strict is False, otherwise raise error."""
+    if strict:
+        raise err(msg)
+    eprint(colored(f"Warning: {msg}", "yellow", no_colors))

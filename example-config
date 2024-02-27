@@ -5,6 +5,10 @@
 # Move 'config' into a task folder 
 
 
+# Values begining with ! or @ are reserved and have special meaning:
+# - Only ! value is !unset, which is always invalid
+# - @ values autoexpand depending on context
+
 [task]
 
 # Task version
@@ -47,7 +51,7 @@ checker=check
 # Program (without suffix) that validates inputs
 # No value means no checking
 
-out_check=diff
+out_check=judge
 # Describes how to check outputs
 #   - diff: checks that contestant output equals correct output (ignores whitespace) (default)
 #   - judge: if there can be multiple solutions, checks with program (called 'judge')
@@ -64,8 +68,13 @@ judge_needs_out=0
 # Defaults to 1
 
 stub=src/stub
-# Only for C++ CMS tasks
+# Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix)
+# Used commonly for interactive tasks
+
+headers=src/blecha.h
+# Only for C/C++ CMS tasks
+# Allow each solution to include the given headers
 # Used commonly for interactive tasks
 
 in_mode = ??? (ignored)
@@ -87,7 +96,8 @@ points=3
 in_globs=01*.in
 # Which new inputs are introduced in this subtask.
 # Supports expansion of * and ? as in shell
-# Defaults to {subtask_number:02}*.in
+# @ith expands to {subtask_number:02}*.in
+# Defaults to @ith
 
 file_name = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
@@ -95,7 +105,8 @@ file_name = ??? (ignored)
 predecessors =
 # Space separated list of subtasks easier than this subtask
 # Inputs from these subtasks are included into this subtask as well
-# Defaults to previous subtask (or nothing if subtask has number <= 1)
+# @previous expands to previous subtask (or nothing if subtask has number <= 1)
+# Defaults to @previous
 
 [test00]
 # Section for samples subtasks
@@ -138,7 +149,10 @@ subtasks=X10
 # T - timeout
 # X - any result
 #
-# Defaults to 11... for primary solution or XX... otherwise
+# @all - string of 11...
+# @any - string of XX...
+# @auto - @all if this is primary solution, @any otherwise
+# Defaults to @auto
 
 [limits]
 # Resource limits for various programs: all of them are called KEY_LIMIT,
@@ -156,6 +170,9 @@ subtasks=X10
 #           limits greater than 1 are interpreted as "unlimited".
 #           Please keep in mind that killing of multiple processes
 #           upon errors is inherently unreliable.
+#
+# Setting limit to 0 means unlimited
+#
 # Defaults:
 #   time_limit     360s
 #   clock_limit    360s
