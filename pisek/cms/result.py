@@ -3,13 +3,14 @@ from cms.db.task import Dataset
 from cms.db.submission import SubmissionResult, Evaluation
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from colorama import Fore
 import json
 
 from pisek.cms.submission import get_submission
 from pisek.env.env import Env
 from pisek.jobs.parts.testing_log import TESTING_LOG
-from pisek.env.task_config import SolutionConfig, TaskConfig, SubtaskConfig
+from pisek.env.task_config import SolutionConfig, SubtaskConfig
+from pisek.utils.terminal import colored_env
+from pisek.utils.text import eprint, tab
 
 
 def create_testing_log(session: Session, env: Env, dataset: Dataset):
@@ -25,7 +26,7 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset):
         try:
             result = get_submission_result(session, files, env, solution, dataset)
         except SubmissionResultError as e:
-            print(f"{Fore.YELLOW}Skipping {name}: {e}{Fore.RESET}")
+            eprint(colored_env(f"Skipping {name}: {e}", "yellow", env))
             continue
 
         evaluation: Evaluation
@@ -73,7 +74,7 @@ def check_results(session: Session, env: Env, dataset: Dataset):
             if not result.scored():
                 raise SubmissionResultError("This submission has not been scored yet")
         except SubmissionResultError as e:
-            print(f"{Fore.YELLOW}Skipping {name}: {e}{Fore.RESET}")
+            print(colored_env(f"Skipping {name}: {e}", "yellow", env))
             continue
 
         score = result.score
@@ -87,20 +88,21 @@ def check_results(session: Session, env: Env, dataset: Dataset):
         elif solution.points_below is not None and score > solution.points_below:
             score_missed_target = f"below {solution.points_below}"
 
+        message = f"{name}: {score} points"
+
         if score_missed_target is not None:
-            print(
-                f"{Fore.RED}{name}: {score} points (should be {score_missed_target}){Fore.RESET}"
-            )
-        else:
-            print(f"{name}: {score} points")
+            message += f" (should be {score_missed_target})"
+            message = colored_env(message, "red", env)
+
+        print(message)
 
         subtasks: list[tuple[int, SubtaskConfig]] = list(config.subtasks.items())
         fractions = get_subtask_score_fractions(result.score_details)
 
         if fractions is None or len(fractions) != len(subtasks):
-            print(
-                f"  {Fore.YELLOW}The task seems to use an unsupported score type, skipping checking subtasks{Fore.RESET}"
-            )
+            message = "The task seems to use an unsupported score type, skipping checking subtasks"
+            print(tab(colored_env(message, "red", env)))
+
             continue
 
         target: str
@@ -121,12 +123,13 @@ def check_results(session: Session, env: Env, dataset: Dataset):
                 target_name = "wrong"
                 correct = fraction == 0.0
 
-            if correct:
-                print(f"  {name}: {fraction}")
-            else:
-                print(
-                    f"  {Fore.RED}{name}: {fraction} (should be {target_name}){Fore.RESET}"
-                )
+            message = f"{name}: {fraction}"
+
+            if not correct:
+                message += f" (should be {target_name})"
+                message = colored_env(message, "red", env)
+
+            print(tab(message))
 
 
 def get_subtask_score_fractions(score_details: Any) -> Optional[list[float]]:
