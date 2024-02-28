@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
-from pisek.cms.task import create_task, get_task
+from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
@@ -45,6 +45,18 @@ def create(args):
     print(
         f'Created task {task.name} (id {task.id}) with dataset "{dataset.description}" (id {dataset.id})'
     )
+
+
+def update(args):
+    env = Env.load(PATH, **vars(args))
+    session = Session()
+
+    task = get_task(session, env.config)
+    set_task_settings(task, env.config)
+
+    session.commit()
+
+    print(f"Updated task {task.name} (id {task.id})")
 
 
 def add(args):

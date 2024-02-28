@@ -193,11 +193,11 @@ output_max_size=5
 # See CMS docs (https://cms.readthedocs.io/en/latest/) for details
 
 title=Blecha
-# A nice, user visible name of the task
+# The name of the task shown on the task description page 
 # Defaults to the task name
-submission_format=blechinator.%l
+submission_format=blechinator.%%l
 # The name of the submitted file
-# .%l will be replaced with the language's file extension
+# .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
 # Defaults to the task name with .%l appended
 
 time_limit=1
@@ -219,4 +219,4 @@ score_mode=max_subtask
 # May be 'max', 'max_subtask' (default) or 'max_tokened_last'
 feedback_level=restricted
 # Specifies how much information is given to the contestants about their submission
-# May be 'full', 'restricted' (default)
+# May be 'full' or 'restricted' (default)

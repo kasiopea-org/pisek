@@ -291,6 +291,10 @@ def main(argv):
     parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
     add_argument_description(parser_cms_create)
 
+    parser_cms_update = subparsers_cms.add_parser(
+        "update", help="Update the basic properties of an existing task"
+    )
+
     parser_cms_add = subparsers_cms.add_parser(
         "add", help="Add a dataset to an existing task"
     )
@@ -353,6 +357,8 @@ def main(argv):
 
         if args.cms_subcommand == "create":
             cms.create(args)
+        elif args.cms_subcommand == "update":
+            cms.update(args)
         elif args.cms_subcommand == "add":
             cms.add(args)
         elif args.cms_subcommand == "submit":
