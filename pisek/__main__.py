@@ -356,17 +356,17 @@ def main(argv):
             raise
 
         if args.cms_subcommand == "create":
-            cms.create(args)
+            result = cms.create(args)
         elif args.cms_subcommand == "update":
-            cms.update(args)
+            result = cms.update(args)
         elif args.cms_subcommand == "add":
-            cms.add(args)
+            result = cms.add(args)
         elif args.cms_subcommand == "submit":
-            cms.submit(args)
+            result = cms.submit(args)
         elif args.cms_subcommand == "testing-log":
-            cms.testing_log(args)
+            result = cms.testing_log(args)
         elif args.cms_subcommand == "check":
-            cms.check(args)
+            result = cms.check(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 

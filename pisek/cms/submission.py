@@ -91,6 +91,9 @@ def get_submission(
     solution: SolutionConfig,
     task: Task,
 ) -> Optional[Submission]:
+    if task.contest is None:
+        raise RuntimeError("The task is not part of any contest")
+
     file_path, language = resolve_solution(task.contest, env, solution)
     digest = files.put_file_from_path(
         file_path.fullpath, f"Solution to task {task.name}"

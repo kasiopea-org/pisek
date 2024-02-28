@@ -1,3 +1,4 @@
+from typing import Any, Callable
 from cms.db.session import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -24,8 +25,20 @@ def prepare_files(env: Env):
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
 
 
-def create(args):
-    env = Env.load(PATH, **vars(args))
+def with_env(fun: Callable[[Env, Any], int]) -> Callable[[Any], int]:
+    def wrap(args) -> int:
+        env = Env.load(PATH, **vars(args))
+
+        if env is None:
+            return 1
+
+        return fun(env, args)
+
+    return wrap
+
+
+@with_env
+def create(env: Env, args) -> int:
     prepare_files(env)
 
     session = Session()
@@ -45,10 +58,11 @@ def create(args):
     print(
         f'Created task {task.name} (id {task.id}) with dataset "{dataset.description}" (id {dataset.id})'
     )
+    return 0
 
 
-def update(args):
-    env = Env.load(PATH, **vars(args))
+@with_env
+def update(env: Env, args) -> int:
     session = Session()
 
     task = get_task(session, env.config)
@@ -57,10 +71,11 @@ def update(args):
     session.commit()
 
     print(f"Updated task {task.name} (id {task.id})")
+    return 0
 
 
-def add(args):
-    env = Env.load(PATH, **vars(args))
+@with_env
+def add(env: Env, args) -> int:
     prepare_files(env)
 
     session = Session()
@@ -79,10 +94,11 @@ def add(args):
         ) from e
 
     print(f'Added dataset "{dataset.description}" (id {dataset.id})')
+    return 0
 
 
-def submit(args):
-    env = Env.load(PATH, **vars(args))
+@with_env
+def submit(env: Env, args) -> int:
     session = Session()
 
     username = args.username
@@ -95,25 +111,30 @@ def submit(args):
 
     for solution, submission in submissions:
         print(f"Submitted {solution} with id {submission.id}")
+    return 0
 
 
-def testing_log(args):
-    env = Env.load(PATH, **vars(args))
+@with_env
+def testing_log(env: Env, args) -> int:
     session = Session()
 
     description = args.dataset
 
     task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    create_testing_log(session, env, dataset)
+    success = create_testing_log(session, env, dataset)
+
+    return 0 if success else 1
 
 
-def check(args):
-    env = Env.load(PATH, **vars(args))
+@with_env
+def check(env: Env, args) -> int:
     session = Session()
 
     description = args.dataset
 
     task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    check_results(session, env, dataset)
+    success = check_results(session, env, dataset)
+
+    return 0 if success else 1

@@ -13,11 +13,12 @@ from pisek.utils.terminal import colored_env
 from pisek.utils.text import eprint, tab
 
 
-def create_testing_log(session: Session, env: Env, dataset: Dataset):
+def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
     config = env.config
     files = FileCacher()
 
     payload: dict[str, Any] = {"source": "cms"}
+    success = True
 
     for name, solution in config.solutions.items():
         results: list[Any] = []
@@ -27,6 +28,7 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset):
             result = get_submission_result(session, files, env, solution, dataset)
         except SubmissionResultError as e:
             eprint(colored_env(f"Skipping {name}: {e}", "yellow", env))
+            success = False
             continue
 
         evaluation: Evaluation
@@ -61,10 +63,14 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset):
     with open(TESTING_LOG, "w") as file:
         json.dump(payload, file, indent=4)
 
+    return success
 
-def check_results(session: Session, env: Env, dataset: Dataset):
+
+def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
     config = env.config
     files = FileCacher()
+
+    success = True
 
     solution: SolutionConfig
     for name, solution in config.solutions.items():
@@ -75,6 +81,7 @@ def check_results(session: Session, env: Env, dataset: Dataset):
                 raise SubmissionResultError("This submission has not been scored yet")
         except SubmissionResultError as e:
             print(colored_env(f"Skipping {name}: {e}", "yellow", env))
+            success = False
             continue
 
         score = result.score
@@ -93,6 +100,7 @@ def check_results(session: Session, env: Env, dataset: Dataset):
         if score_missed_target is not None:
             message += f" (should be {score_missed_target})"
             message = colored_env(message, "red", env)
+            success = False
 
         print(message)
 
@@ -103,6 +111,7 @@ def check_results(session: Session, env: Env, dataset: Dataset):
             message = "The task seems to use an unsupported score type, skipping checking subtasks"
             print(tab(colored_env(message, "red", env)))
 
+            success = False
             continue
 
         target: str
@@ -128,8 +137,11 @@ def check_results(session: Session, env: Env, dataset: Dataset):
             if not correct:
                 message += f" (should be {target_name})"
                 message = colored_env(message, "red", env)
+                success = False
 
             print(tab(message))
+
+    return success
 
 
 def get_subtask_score_fractions(score_details: Any) -> Optional[list[float]]:
