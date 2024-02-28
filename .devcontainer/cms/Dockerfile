@@ -39,7 +39,8 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER cms
 
-RUN git clone --recurse-submodules https://github.com/cms-dev/cms /home/cms/cms/
+RUN git clone --recurse-submodules https://github.com/cms-dev/cms /home/cms/cms/ && \
+    git -C /home/cms/cms/ checkout b77c87b4d60fbe7df60dc5e03d2be632a25992fe
 
 WORKDIR /home/cms/cms
 
