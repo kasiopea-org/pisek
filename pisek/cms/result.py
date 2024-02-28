@@ -8,7 +8,7 @@ import json
 
 from pisek.cms.submission import get_submission
 from pisek.jobs.parts.testing_log import TESTING_LOG
-from pisek.task_config import SolutionConfig, TaskConfig, SubtaskConfig
+from pisek.env.task_config import SolutionConfig, TaskConfig, SubtaskConfig
 
 
 def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
@@ -16,7 +16,7 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
 
     payload: dict[str, Any] = {"source": "cms"}
 
-    for name, solution in config.solutions.subenvs():
+    for name, solution in config.solutions.items():
         results: list[Any] = []
         payload[name] = {"results": results}
 
@@ -63,7 +63,7 @@ def check_results(session: Session, config: TaskConfig, dataset: Dataset):
     files = FileCacher()
 
     solution: SolutionConfig
-    for name, solution in config.solutions.subenvs():
+    for name, solution in config.solutions.items():
         try:
             result = get_submission_result(session, files, config, solution, dataset)
 
@@ -91,7 +91,7 @@ def check_results(session: Session, config: TaskConfig, dataset: Dataset):
         else:
             print(f"{name}: {score} points")
 
-        subtasks: list[tuple[str, SubtaskConfig]] = list(config.subtasks.subenvs())
+        subtasks: list[tuple[int, SubtaskConfig]] = list(config.subtasks.items())
         fractions = get_subtask_score_fractions(result.score_details)
 
         if fractions is None or len(fractions) != len(subtasks):

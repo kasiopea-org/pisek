@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from os import path
 from datetime import datetime
 
-from pisek.task_config import SolutionConfig, TaskConfig
+from pisek.env.task_config import SolutionConfig, TaskConfig
 
 
 def get_participation(session: Session, task: Task, username: str) -> Participation:
@@ -38,7 +38,7 @@ def submit_all(
     files = FileCacher()
     submissions = []
 
-    for name, solution in config.solutions.subenvs():
+    for name, solution in config.solutions.items():
         submission = submit(session, files, config, solution, task, participation)
         submissions.append((name, submission))
 

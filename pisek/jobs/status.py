@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 
-from pisek.terminal import tab, pad, colored, MSG_LEN
+from pisek.utils.text import tab, pad
+from pisek.utils.terminal import colored_env, MSG_LEN
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
 try:
@@ -38,13 +39,13 @@ class StatusJobManager(JobManager):
         bar_len = min(terminal_width - len(msg) - len(progress_msg), MAX_BAR_LEN)
         filled = bar_len * part // full
 
-        return f"{msg}{colored(filled*'━', self._env, color)}{colored((bar_len-filled)*'━', self._env, 'white')}{progress_msg}"
+        return f"{msg}{colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
         if self.state == State.canceled:
-            return f"{pad(msg, MSG_LEN)}{colored('canceled', self._env, 'yellow')}"
+            return f"{pad(msg, MSG_LEN)}{colored_env('canceled', 'yellow', self._env)}"
         elif self.state == State.succeeded:
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():
@@ -76,4 +77,4 @@ class StatusJobManager(JobManager):
             fails.append(self._fail_message(self))
 
         msg = line_sepatator + line_sepatator.join(fails) + line_sepatator
-        return colored(msg, self._env, "red")
+        return colored_env(msg, "red", self._env)

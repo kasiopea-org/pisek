@@ -8,8 +8,8 @@ import re
 import datetime
 
 from pisek.cms.testcase import create_testcase, get_testcases
-from pisek.task_config import TaskConfig
-from pisek.jobs.parts.task_job import BUILD_DIR
+from pisek.env.task_config import JudgeType, TaskConfig
+from pisek.paths import BUILD_DIR
 
 
 def create_dataset(
@@ -32,7 +32,7 @@ def create_dataset(
         task_params = (
             "grader" if config.stub is not None else "alone",
             ("", ""),
-            "comparator" if config.judge_type == "judge" else "diff",
+            "comparator" if config.out_check == JudgeType.judge else "diff",
         )
     elif config.task_type == "communication":
         task_type = "Communication"
@@ -47,10 +47,10 @@ def create_dataset(
         task_type_parameters=task_params,
         score_type="GroupMin",
         score_type_parameters=score_params,
-        time_limit=config.limits.cms.time_limit,
+        time_limit=config.limits.solve.time_limit,
         memory_limit=(
-            config.limits.cms.mem_limit * 1024 * 1024
-            if config.limits.cms.mem_limit > 0
+            config.limits.solve.mem_limit * 1024 * 1024
+            if config.limits.solve.mem_limit > 0
             else None
         ),
         task=task,
@@ -73,9 +73,9 @@ def create_dataset(
 def get_group_score_parameters(config: TaskConfig) -> list[tuple[int, str]]:
     params = []
 
-    for _name, subtask in config.subtasks.subenvs():
+    for _name, subtask in config.subtasks.items():
         globs = map(strip_input_extention, subtask.all_globs)
-        params.append((subtask.score, globs_to_regex(globs)))
+        params.append((subtask.points, globs_to_regex(globs)))
 
     return params
 
@@ -109,8 +109,10 @@ def globs_to_regex(globs: Iterator[str]) -> str:
 def add_judge(
     session: Session, files: FileCacher, config: TaskConfig, dataset: Dataset
 ):
-    if config.judge_type != "judge":
+    if config.out_check != JudgeType.judge:
         return
+
+    assert config.out_judge is not None
 
     if config.task_type == "batch":
         judge_name = "checker"
@@ -118,8 +120,8 @@ def add_judge(
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        path.join(BUILD_DIR, path.basename(config.judge)),
-        f"{judge_name} for {config.task_name}",
+        path.join(BUILD_DIR, path.basename(config.out_judge)),
+        f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
 
@@ -162,7 +164,7 @@ def add_stubs(
 
         stub = files.put_file_from_path(
             path.join(directory, filename),
-            f"{stub_basename}{ext} for {config.task_name}",
+            f"{stub_basename}{ext} for {config.name}",
         )
         session.add(
             Manager(dataset=dataset, filename=f"{stub_basename}{ext}", digest=stub)
@@ -175,7 +177,7 @@ def add_stubs(
             continue
 
         stub = files.put_file_content(
-            content.encode(), f"{stub_basename}{ext} for {config.task_name}"
+            content.encode(), f"{stub_basename}{ext} for {config.name}"
         )
         session.add(
             Manager(dataset=dataset, filename=f"{stub_basename}{ext}", digest=stub)
@@ -189,7 +191,7 @@ def add_headers(
         basename = path.basename(header)
 
         header = files.put_file_from_path(
-            header, f"Header {basename} for {config.task_name}"
+            header, f"Header {basename} for {config.name}"
         )
         session.add(Manager(dataset=dataset, filename=basename, digest=header))
 

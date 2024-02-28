@@ -5,8 +5,8 @@ from os import path
 from glob import glob
 from itertools import chain
 
-from pisek.task_config import TaskConfig
-from pisek.jobs.parts.task_job import GENERATED_SUBDIR, OUTPUTS_SUBDIR
+from pisek.env.task_config import TaskConfig
+from pisek.paths import GENERATED_SUBDIR, OUTPUTS_SUBDIR
 
 
 def create_testcase(
@@ -41,8 +41,8 @@ def get_testcases(config: TaskConfig) -> list[tuple[str, str, str | None]]:
     output_dir = path.join(config.data_subdir, OUTPUTS_SUBDIR)
     sample_dir = config.static_subdir
 
-    sample_globs = config.subtasks["0"].in_globs
-    test_globs = config.subtasks.all_globs
+    sample_globs = config.subtasks[0].in_globs
+    test_globs = config.input_globs
     solution = config.solutions[config.primary_solution].source
     solution = path.basename(solution)
 

@@ -20,8 +20,9 @@ from typing import Optional
 
 import subprocess
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
-from pisek.env import Env
-from pisek.task_config import ProgramType
+from pisek.env.env import Env
+from pisek.paths import TaskPath
+from pisek.env.task_config import ProgramType
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramsJob
 
@@ -33,7 +34,7 @@ class ToolsManager(TaskJobManager):
         super().__init__("Preparing tools")
 
     def _get_jobs(self) -> list[Job]:
-        self.makedirs(self._executable("."))
+        self.makedirs(TaskPath.executable_path(self._env, "."))
         jobs: list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
@@ -49,14 +50,14 @@ class PrepareMinibox(TaskJob):
 
     def _run(self):
         source = files("pisek").joinpath("tools/minibox.c")
-        executable = self._executable("minibox")
+        executable = TaskPath.executable_path(self._env, "minibox")
         self._access_file(executable)
         gcc = subprocess.run(
             [
                 "gcc",
                 source,
                 "-o",
-                executable,
+                executable.fullpath,
                 "-std=gnu11",
                 "-D_GNU_SOURCE",
                 "-O2",
@@ -79,14 +80,14 @@ class PrepareTextPreprocessor(TaskJob):
 
     def _run(self):
         source = files("pisek").joinpath("tools/text-preproc.c")
-        executable = self._executable("text-preproc")
+        executable = TaskPath.executable_path(self._env, "text-preproc")
         self._access_file(executable)
         gcc = subprocess.run(
             [
                 "gcc",
                 source,
                 "-o",
-                executable,
+                executable.fullpath,
                 "-std=gnu11",
                 "-O2",
                 "-Wall",
@@ -102,13 +103,16 @@ class PrepareTextPreprocessor(TaskJob):
 class SanitizeAbstract(ProgramsJob):
     """Abstract job that has method for file sanitization."""
 
-    def _sanitize(self, input_: str, output: str) -> None:
+    def _sanitize(self, input_: TaskPath, output: TaskPath) -> None:
         result = self._run_program(
-            ProgramType.tool, "text-preproc", stdin=input_, stdout=output
+            ProgramType.tool,
+            TaskPath.executable_path(self._env, "text-preproc"),
+            stdin=input_,
+            stdout=output,
         )
         if result.returncode == 43:
             raise self._create_program_failure(
-                f"Text preprocessor failed on file: {input_}", result
+                f"Text preprocessor failed on file: {input_:p}", result
             )
 
 
@@ -116,11 +120,15 @@ class Sanitize(SanitizeAbstract):
     """Sanitize text file using Text Preprocessor."""
 
     def __init__(
-        self, env: Env, input_: str, output: Optional[str] = None, **kwargs
+        self, env: Env, input_: TaskPath, output: Optional[TaskPath] = None, **kwargs
     ) -> None:
-        super().__init__(env=env, name=f"Sanitize {input_} -> {output}", **kwargs)
-        self.input = self._data(input_)
-        self.output = self._data(output if output is not None else input_ + ".clean")
+        self.input = input_
+        self.output = (
+            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
+        )
+        super().__init__(
+            env=env, name=f"Sanitize {self.input:n} -> {self.output:n}", **kwargs
+        )
 
     def _run(self):
         return self._sanitize(self.input, self.output)
@@ -130,20 +138,17 @@ class IsClean(SanitizeAbstract):
     """Check that file is same after sanitizing with Text Preprocessor."""
 
     def __init__(
-        self, env: Env, input_: str, output: Optional[str] = None, **kwargs
+        self, env: Env, input_: TaskPath, output: Optional[TaskPath] = None, **kwargs
     ) -> None:
-        super().__init__(env=env, name=f"{os.path.basename(input_)} is clean", **kwargs)
         self.input = input_
-        self.output = self._sanitized(
-            output if output is not None else os.path.basename(input_) + ".clean"
+        self.output = (
+            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
         )
+        super().__init__(env=env, name=f"{self.input:n} is clean", **kwargs)
 
     def _run(self):
         self._sanitize(self.input, self.output)
-        if self.state == State.failed:
-            return None
-
         if not self._files_equal(self.input, self.output):
             raise PipelineItemFailure(
-                f"File {self.input} is not clean. Check encoding, missing newline at the end or \\r."
+                f"File {self.input:n} is not clean. Check encoding, missing newline at the end or \\r."
             )

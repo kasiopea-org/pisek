@@ -25,7 +25,8 @@ import yaml
 
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
-from pisek.env import Env
+from pisek.env.env import Env
+from pisek.paths import TaskPath
 
 State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
 
@@ -51,7 +52,8 @@ class CaptureInitParams:
                 self._args = args
                 self._kwargs = kwargs
                 self._initialized = True
-                self._env = env.fork().lock()
+                self._env = env.fork()
+                self._env.lock()
             real_init(self, self._env, *args, **kwargs)
 
         cls.__init__ = wrapped_init
@@ -136,10 +138,9 @@ class Job(PipelineItem, CaptureInitParams):
         self._terminal_output.append((msg + end, stderr))
         return super()._print(msg, end, stderr)
 
-    def _access_file(self, filename: str) -> None:
+    def _access_file(self, filename: TaskPath) -> None:
         """Add file this job depends on."""
-        filename = os.path.normpath(filename)
-        self._accessed_files.add(filename)
+        self._accessed_files.add(filename.relpath)
 
     def _signature(
         self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
@@ -151,13 +152,16 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for variable in sorted(envs):
-            if variable not in self._env:
-                return (None, "Env nonexistent")
-            sign.update(f"{variable}={self._env.get_without_log(variable)}\n".encode())
+        for key in sorted(envs):
+            try:
+                value = self._env.get_compound(key)
+            except (AttributeError, TypeError):
+                return (None, f"Key nonexistent: {key}")
+            sign.update(f"{key}={value}\n".encode())
 
         expanded_files = []
-        for path in sorted(files):
+        for file in sorted(files):
+            path = os.path.join(self._env.task_dir, file)
             if os.path.isfile(path):
                 expanded_files.append(path)
             else:
@@ -170,7 +174,8 @@ class Job(PipelineItem, CaptureInitParams):
                 return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+            relfile = os.path.relpath(file, self._env.task_dir)
+            sign.update(f"{relfile}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
             sign.update(f"{name}={yaml.dump(result)}".encode())
@@ -192,7 +197,9 @@ class Job(PipelineItem, CaptureInitParams):
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
         sign, err = self._signature(
-            self._env.get_accessed(), self._accessed_files, self.prerequisites_results
+            set(self._env.get_accessed()),
+            self._accessed_files,
+            self.prerequisites_results,
         )
         if err == "File nonexistent":
             raise RuntimeError(

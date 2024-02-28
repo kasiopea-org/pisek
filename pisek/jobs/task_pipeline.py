@@ -17,7 +17,7 @@
 from collections import deque
 
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.env import Env
+from pisek.env.env import Env
 
 from pisek.jobs.parts.task_job import (
     TOOLS_MAN_CODE,
@@ -60,40 +60,43 @@ class TaskPipeline(JobPipeline):
         if env.solutions:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
             judge[0].add_prerequisite(*inputs)
-            named_pipeline.append(
-                primary_solution := (
-                    SolutionManager(env.config.primary_solution),
-                    f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
-                )
-            )
-            solutions.append(primary_solution)
 
-        for solution in env.solutions:
-            if solution == env.config.primary_solution:
+            if env.config.judge_needs_out or (
+                env.config.primary_solution in env.solutions
+            ):
+                named_pipeline.append(
+                    primary_solution := (
+                        SolutionManager(env.config.primary_solution),
+                        f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
+                    )
+                )
+                solutions.append(primary_solution)
+
+        for sol_name in env.solutions:
+            if sol_name == env.config.primary_solution:
                 continue
             named_pipeline.append(
                 solution := (
-                    SolutionManager(solution),
-                    f"{SOLUTION_MAN_CODE}{solution}",
+                    SolutionManager(sol_name),
+                    f"{SOLUTION_MAN_CODE}{sol_name}",
                 )
             )
-            solution[0].add_prerequisite(*primary_solution)
+            if env.config.judge_needs_out:
+                solution[0].add_prerequisite(*primary_solution)
             solutions.append(solution)
 
         for solution in solutions:
             solution[0].add_prerequisite(*inputs)
             solution[0].add_prerequisite(*judge)
 
-        if env.solutions:
-            named_pipeline.append(data_check := (DataCheckingManager(), DATA_MAN_CODE))
+        named_pipeline.append(data_check := (DataCheckingManager(), DATA_MAN_CODE))
+        data_check[0].add_prerequisite(*inputs)
+        for solution in solutions:
+            data_check[0].add_prerequisite(*solution)
 
-            data_check[0].add_prerequisite(*inputs)
+        if env.testing_log:
+            named_pipeline.append(testing_log := (CreateTestingLog(), ""))
             for solution in solutions:
-                data_check[0].add_prerequisite(*solution)
-
-            if env.testing_log:
-                named_pipeline.append(testing_log := (CreateTestingLog(), ""))
-                for solution in solutions:
-                    testing_log[0].add_prerequisite(*solution)
+                testing_log[0].add_prerequisite(*solution)
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))

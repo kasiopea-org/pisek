@@ -19,10 +19,10 @@ import os
 from typing import Optional
 from functools import partial
 
-import pisek.util as util
+import pisek.utils.util as util
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.pipeline_tools import load_env, run_pipeline
-from pisek.task_config import DATA_SUBDIR
+from pisek.utils.pipeline_tools import run_pipeline
+from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 from pisek.jobs.parts.tools import ToolsManager
@@ -82,7 +82,9 @@ class KasiopeaInputCase:
         input_: Optional[str] = None,
         correct_output: Optional[str] = None,
     ):
-        env = load_env(self.path)
+        env = Env.load(self.path)
+        if env is None:
+            return 1
 
         self.input = input_ or self.input
         if env.config.judge_needs_in:
@@ -100,9 +102,6 @@ class KasiopeaInputCase:
         else:
             self.correct_output = "/dev/null"
 
-        env = load_env(self.path)
-        if env is None:
-            return 1
         pipeline = ServerJudgeKasiopea(
             env.fork(),
             subtask=self.subtask,
@@ -120,9 +119,7 @@ class KasiopeaInputCase:
         return judging_res.points, judging_res.judge_stderr
 
     def _needs_generating(self, put: Optional[str]):
-        return put is None or not os.path.exists(
-            os.path.join(self.path, DATA_SUBDIR, put)
-        )
+        return put is None or not os.path.exists(os.path.join(self.path, "data/", put))
 
 
 class ServerGenKasiopea(JobPipeline):

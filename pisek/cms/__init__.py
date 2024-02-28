@@ -5,9 +5,9 @@ from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
-from pisek.task_config import TaskConfig
+from pisek.env.task_config import TaskConfig
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.pipeline_tools import PATH, run_pipeline
+from pisek.utils.pipeline_tools import PATH, run_pipeline
 
 
 def prepare_files(config: TaskConfig):
