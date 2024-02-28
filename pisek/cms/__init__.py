@@ -5,30 +5,35 @@ from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
+from pisek.env.env import Env
 from pisek.env.task_config import TaskConfig
+from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import PATH, run_pipeline
 
 
-def prepare_files(config: TaskConfig):
-    contest_type = config.contest_type
+def prepare_files(env: Env):
+    contest_type = env.config.contest_type
 
     if contest_type != "cms":
         raise RuntimeError(f"Cannot upload {contest_type}-type task to CMS")
+    
+    env = env.fork()
+    env.solutions = [env.config.primary_solution]
 
-    if run_pipeline(PATH, TaskPipeline, solutions=[config.primary_solution]) != 0:
+    if TaskPipeline(env).run_jobs(Cache(env), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
 
 
 def create(args):
-    config = TaskConfig(PATH)
-    prepare_files(config)
+    env = Env.load(PATH, **vars(args))
+    prepare_files(env)
 
     session = Session()
 
     description = args.description
 
-    task = create_task(session, config, description)
+    task = create_task(session, env.config, description)
     dataset = task.active_dataset
 
     try:
@@ -44,16 +49,16 @@ def create(args):
 
 
 def add(args):
-    config = TaskConfig(PATH)
-    prepare_files(config)
+    env = Env.load(PATH, **vars(args))
+    prepare_files(env)
 
     session = Session()
 
     description = args.description
     autojudge = not args.no_autojudge
 
-    task = get_task(session, config)
-    dataset = create_dataset(session, config, task, description, autojudge)
+    task = get_task(session, env.config)
+    dataset = create_dataset(session, env.config, task, description, autojudge)
 
     try:
         session.commit()
@@ -66,14 +71,14 @@ def add(args):
 
 
 def submit(args):
-    config = TaskConfig(PATH)
+    env = Env.load(PATH, **vars(args))
     session = Session()
 
     username = args.username
 
-    task = get_task(session, config)
+    task = get_task(session, env.config)
     participation = get_participation(session, task, username)
-    submissions = submit_all(session, config, task, participation)
+    submissions = submit_all(session, env.config, task, participation)
 
     session.commit()
 
@@ -82,22 +87,22 @@ def submit(args):
 
 
 def testing_log(args):
-    config = TaskConfig(PATH)
+    env = Env.load(PATH, **vars(args))
     session = Session()
 
     description = args.dataset
 
-    task = get_task(session, config)
+    task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    create_testing_log(session, config, dataset)
+    create_testing_log(session, env.config, dataset)
 
 
 def check(args):
-    config = TaskConfig(PATH)
+    env = Env.load(PATH, **vars(args))
     session = Session()
 
     description = args.dataset
 
-    task = get_task(session, config)
+    task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    check_results(session, config, dataset)
+    check_results(session, env.config, dataset)
