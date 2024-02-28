@@ -50,12 +50,8 @@ def create_dataset(
         task_type_parameters=task_params,
         score_type="GroupMin",
         score_type_parameters=score_params,
-        time_limit=config.limits.solve.time_limit,
-        memory_limit=(
-            config.limits.solve.mem_limit * 1024 * 1024
-            if config.limits.solve.mem_limit > 0
-            else None
-        ),
+        time_limit=config.cms.time_limit,
+        memory_limit=config.cms.mem_limit * 1024 * 1024,
         task=task,
     )
 

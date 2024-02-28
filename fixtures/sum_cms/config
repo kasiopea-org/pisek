@@ -63,3 +63,8 @@ source=solve_0b
 points=0
 subtasks=WWWW
 
+[cms]
+title=Sum
+time_limit=2
+min_submission_interval=30
+feedback_level=full
