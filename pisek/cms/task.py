@@ -4,14 +4,16 @@ from sqlalchemy.orm.exc import NoResultFound
 import re
 
 from pisek.cms.dataset import create_dataset
+from pisek.env.env import Env
 from pisek.env.task_config import TaskConfig
 
 
-def create_task(session: Session, config: TaskConfig, description: str) -> Task:
+def create_task(session: Session, env: Env, description: str) -> Task:
+    config = env.config
     name = config.name
 
     task = Task(name=name, title=name, submission_format=[get_default_file_name(name)])
-    dataset = create_dataset(session, config, task, description)
+    dataset = create_dataset(session, env, task, description)
 
     task.active_dataset = dataset
 

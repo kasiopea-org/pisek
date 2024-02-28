@@ -6,10 +6,9 @@ from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task
 from pisek.env.env import Env
-from pisek.env.task_config import TaskConfig
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.pipeline_tools import PATH, run_pipeline
+from pisek.utils.pipeline_tools import PATH
 
 
 def prepare_files(env: Env):
@@ -17,7 +16,7 @@ def prepare_files(env: Env):
 
     if contest_type != "cms":
         raise RuntimeError(f"Cannot upload {contest_type}-type task to CMS")
-    
+
     env = env.fork()
     env.solutions = [env.config.primary_solution]
 
@@ -33,7 +32,7 @@ def create(args):
 
     description = args.description
 
-    task = create_task(session, env.config, description)
+    task = create_task(session, env, description)
     dataset = task.active_dataset
 
     try:
@@ -58,7 +57,7 @@ def add(args):
     autojudge = not args.no_autojudge
 
     task = get_task(session, env.config)
-    dataset = create_dataset(session, env.config, task, description, autojudge)
+    dataset = create_dataset(session, env, task, description, autojudge)
 
     try:
         session.commit()
@@ -78,7 +77,7 @@ def submit(args):
 
     task = get_task(session, env.config)
     participation = get_participation(session, task, username)
-    submissions = submit_all(session, env.config, task, participation)
+    submissions = submit_all(session, env, task, participation)
 
     session.commit()
 
@@ -94,7 +93,7 @@ def testing_log(args):
 
     task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    create_testing_log(session, env.config, dataset)
+    create_testing_log(session, env, dataset)
 
 
 def check(args):
@@ -105,4 +104,4 @@ def check(args):
 
     task = get_task(session, env.config)
     dataset = get_dataset(session, task, description)
-    check_results(session, env.config, dataset)
+    check_results(session, env, dataset)

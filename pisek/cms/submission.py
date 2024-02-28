@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 from os import path
 from datetime import datetime
 
+from pisek.env.env import Env
 from pisek.env.task_config import SolutionConfig, TaskConfig
+from pisek.paths import TaskPath
 
 
 def get_participation(session: Session, task: Task, username: str) -> Participation:
@@ -33,13 +35,15 @@ def get_participation(session: Session, task: Task, username: str) -> Participat
 
 
 def submit_all(
-    session: Session, config: TaskConfig, task: Task, participation: Participation
+    session: Session, env: Env, task: Task, participation: Participation
 ) -> list[tuple[str, Submission]]:
+    config = env.config
+
     files = FileCacher()
     submissions = []
 
     for name, solution in config.solutions.items():
-        submission = submit(session, files, config, solution, task, participation)
+        submission = submit(session, files, env, solution, task, participation)
         submissions.append((name, submission))
 
     return submissions
@@ -48,19 +52,19 @@ def submit_all(
 def submit(
     session: Session,
     files: FileCacher,
-    config: TaskConfig,
+    env: Env,
     solution: SolutionConfig,
     task: Task,
     participation: Participation,
 ) -> Submission:
-    file_path, language = resolve_solution(task.contest, config, solution)
+    file_path, language = resolve_solution(task.contest, env, solution)
 
     if len(task.submission_format) != 1:
         raise RuntimeError(
             "Cannot submit solutions to tasks that require multiple files"
         )
 
-    digest = files.put_file_from_path(file_path, f"Solution to task {task.id}")
+    digest = files.put_file_from_path(file_path.fullpath, f"Solution to task {task.id}")
     submission = get_submission_of_digest(session, digest, language, task)
 
     if submission is not None:
@@ -83,12 +87,14 @@ def submit(
 def get_submission(
     session: Session,
     files: FileCacher,
-    config: TaskConfig,
+    env: Env,
     solution: SolutionConfig,
     task: Task,
 ) -> Optional[Submission]:
-    file_path, language = resolve_solution(task.contest, config, solution)
-    digest = files.put_file_from_path(file_path, f"Solution to task {task.name}")
+    file_path, language = resolve_solution(task.contest, env, solution)
+    digest = files.put_file_from_path(
+        file_path.fullpath, f"Solution to task {task.name}"
+    )
 
     return get_submission_of_digest(session, digest, language, task)
 
@@ -111,9 +117,8 @@ def get_submission_of_digest(
 
 
 def resolve_solution(
-    contest: Contest, config: TaskConfig, solution: SolutionConfig
-) -> tuple[str, Language]:
-    subdir = config.solutions_subdir
+    contest: Contest, env: Env, solution: SolutionConfig
+) -> tuple[TaskPath, Language]:
     source: str = solution.source
 
     for language_name in contest.languages:
@@ -121,12 +126,12 @@ def resolve_solution(
 
         for ext in language.source_extensions:
             if source.endswith(ext):
-                file_path = path.join(subdir, source)
+                file_path = TaskPath.solution_path(env, source)
                 return file_path, language
 
-            file_path = path.join(subdir, source + ext)
+            file_path = TaskPath.solution_path(env, source + ext)
 
-            if path.isfile(file_path):
+            if path.isfile(file_path.fullpath):
                 return file_path, language
 
     raise RuntimeError(f"Solution {source} isn't available in any enabled language")

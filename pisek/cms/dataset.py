@@ -8,19 +8,22 @@ import re
 import datetime
 
 from pisek.cms.testcase import create_testcase, get_testcases
+from pisek.env.env import Env
 from pisek.env.task_config import JudgeType, TaskConfig
-from pisek.paths import BUILD_DIR
+from pisek.paths import TaskPath
 
 
 def create_dataset(
     session: Session,
-    config: TaskConfig,
+    env: Env,
     task: Task,
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
     if description is None:
         description = create_description()
+
+    config = env.config
 
     score_params = get_group_score_parameters(config)
 
@@ -60,12 +63,12 @@ def create_dataset(
 
     files = FileCacher()
 
-    for testcase in get_testcases(config):
+    for testcase in get_testcases(env):
         create_testcase(session, files, dataset, *testcase)
 
-    add_judge(session, files, config, dataset)
-    add_stubs(session, files, config, dataset)
-    add_headers(session, files, config, dataset)
+    add_judge(session, files, env, dataset)
+    add_stubs(session, files, env, dataset)
+    add_headers(session, files, env, dataset)
 
     return dataset
 
@@ -73,7 +76,7 @@ def create_dataset(
 def get_group_score_parameters(config: TaskConfig) -> list[tuple[int, str]]:
     params = []
 
-    for _name, subtask in config.subtasks.items():
+    for subtask in config.subtasks.values():
         globs = map(strip_input_extention, subtask.all_globs)
         params.append((subtask.points, globs_to_regex(globs)))
 
@@ -106,9 +109,9 @@ def globs_to_regex(globs: Iterator[str]) -> str:
     return f"^{'|'.join(patterns)}$"
 
 
-def add_judge(
-    session: Session, files: FileCacher, config: TaskConfig, dataset: Dataset
-):
+def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
+    config = env.config
+
     if config.out_check != JudgeType.judge:
         return
 
@@ -120,7 +123,7 @@ def add_judge(
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        path.join(BUILD_DIR, path.basename(config.out_judge)),
+        TaskPath.executable_path(env, path.basename(config.out_judge)).fullpath,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
@@ -140,9 +143,9 @@ ERROR_STUBS = {
 }
 
 
-def add_stubs(
-    session: Session, files: FileCacher, config: TaskConfig, dataset: Dataset
-):
+def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
+    config = env.config
+
     if config.stub is None:
         return
 
@@ -151,7 +154,9 @@ def add_stubs(
     elif config.task_type == "communication":
         stub_basename = "stub"
 
-    directory, target_basename = path.split(config.stub)
+    directory, target_basename = path.split(
+        TaskPath.base_path(env, config.stub).fullpath
+    )
     directory = path.normpath(directory)
 
     exts = set()
@@ -184,10 +189,11 @@ def add_stubs(
         )
 
 
-def add_headers(
-    session: Session, files: FileCacher, config: TaskConfig, dataset: Dataset
-):
+def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset):
+    config = env.config
+
     for header in config.headers:
+        header = TaskPath.base_path(env, header).fullpath
         basename = path.basename(header)
 
         header = files.put_file_from_path(

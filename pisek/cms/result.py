@@ -7,11 +7,13 @@ from colorama import Fore
 import json
 
 from pisek.cms.submission import get_submission
+from pisek.env.env import Env
 from pisek.jobs.parts.testing_log import TESTING_LOG
 from pisek.env.task_config import SolutionConfig, TaskConfig, SubtaskConfig
 
 
-def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
+def create_testing_log(session: Session, env: Env, dataset: Dataset):
+    config = env.config
     files = FileCacher()
 
     payload: dict[str, Any] = {"source": "cms"}
@@ -21,7 +23,7 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
         payload[name] = {"results": results}
 
         try:
-            result = get_submission_result(session, files, config, solution, dataset)
+            result = get_submission_result(session, files, env, solution, dataset)
         except SubmissionResultError as e:
             print(f"{Fore.YELLOW}Skipping {name}: {e}{Fore.RESET}")
             continue
@@ -59,13 +61,14 @@ def create_testing_log(session: Session, config: TaskConfig, dataset: Dataset):
         json.dump(payload, file, indent=4)
 
 
-def check_results(session: Session, config: TaskConfig, dataset: Dataset):
+def check_results(session: Session, env: Env, dataset: Dataset):
+    config = env.config
     files = FileCacher()
 
     solution: SolutionConfig
     for name, solution in config.solutions.items():
         try:
-            result = get_submission_result(session, files, config, solution, dataset)
+            result = get_submission_result(session, files, env, solution, dataset)
 
             if not result.scored():
                 raise SubmissionResultError("This submission has not been scored yet")
@@ -152,11 +155,11 @@ def get_subtask_score_fractions(score_details: Any) -> Optional[list[float]]:
 def get_submission_result(
     session: Session,
     files: FileCacher,
-    config: TaskConfig,
+    env: Env,
     solution: SolutionConfig,
     dataset: Dataset,
 ) -> SubmissionResult:
-    submission = get_submission(session, files, config, solution, dataset.task)
+    submission = get_submission(session, files, env, solution, dataset.task)
 
     if submission is None:
         raise SubmissionResultError("This solution has not been submitted yet")
