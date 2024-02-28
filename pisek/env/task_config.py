@@ -42,6 +42,7 @@ MaybeInt = Annotated[
     Optional[int], BeforeValidator(lambda i: (None if i == "X" else i))
 ]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
+OptionalFile = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
 
 class TaskType(StrEnum):
@@ -99,13 +100,13 @@ class TaskConfig(BaseEnv):
     data_subdir: str
 
     in_gen: str
-    checker: Optional[str]
+    checker: OptionalFile
     out_check: JudgeType
     out_judge: Optional[str]
     judge_needs_in: bool
     judge_needs_out: bool
 
-    stub: Optional[str]
+    stub: OptionalFile
     headers: ListStr
 
     subtasks: dict[int, "SubtaskConfig"]
@@ -189,11 +190,6 @@ class TaskConfig(BaseEnv):
                 f"Must be one of ({', '.join(ALLOWED)})",
             )
         return value
-
-    @field_validator("checker", mode="before")
-    @classmethod
-    def convert_checker(cls, value: str) -> Optional[str]:
-        return value or None
 
     @model_validator(mode="after")
     def validate_model(self):
