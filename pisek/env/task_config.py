@@ -42,7 +42,7 @@ MaybeInt = Annotated[
     Optional[int], BeforeValidator(lambda i: (None if i == "X" else i))
 ]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
-OptionalFile = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
+OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
 
 class TaskType(StrEnum):
@@ -67,6 +67,17 @@ class ProgramType(StrEnum):
     solve = auto()
     sec_solve = auto()
     judge = auto()
+
+
+class CmsFeedbackLevel(StrEnum):
+    full = auto()
+    restricted = auto()
+
+
+class CmsScoreMode(StrEnum):
+    max = auto()
+    max_subtask = auto()
+    max_tokened_last = auto()
 
 
 GLOBAL_KEYS = [
@@ -100,13 +111,13 @@ class TaskConfig(BaseEnv):
     data_subdir: str
 
     in_gen: str
-    checker: OptionalFile
+    checker: OptionalStr
     out_check: JudgeType
     out_judge: Optional[str]
     judge_needs_in: bool
     judge_needs_out: bool
 
-    stub: OptionalFile
+    stub: OptionalStr
     headers: ListStr
 
     subtasks: dict[int, "SubtaskConfig"]
@@ -114,6 +125,8 @@ class TaskConfig(BaseEnv):
     solutions: dict[str, "SolutionConfig"]
 
     limits: "LimitsConfig"
+
+    cms: "CmsConfig"
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -176,6 +189,7 @@ class TaskConfig(BaseEnv):
                 solutions[m[1]] = SolutionConfig.load_dict(m[1], configs)
 
         args["limits"] = LimitsConfig.load_dict(configs)
+        args["cms"] = CmsConfig.load_dict(configs)
 
         return args
 
@@ -465,6 +479,44 @@ class LimitsConfig(BaseEnv):
             args[key] = configs.get("limits", key)
 
         return args
+
+
+class CmsConfig(BaseEnv):
+    title: OptionalStr
+    submission_format: Optional[ListStr]
+
+    time_limit: float = Field(gt=0)  # [seconds]
+    mem_limit: int = Field(gt=0)  # [KB]
+
+    max_submissions: MaybeInt = Field(gt=0)
+    min_submission_interval: MaybeInt = Field(gt=0)  # [seconds]
+
+    score_precision: int = Field(ge=0)
+    score_mode: CmsScoreMode
+    feedback_level: CmsFeedbackLevel
+
+    @classmethod
+    def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
+        KEYS = [
+            "title",
+            "submission_format",
+            "time_limit",
+            "mem_limit",
+            "max_submissions",
+            "min_submission_interval",
+            "score_precision",
+            "score_mode",
+            "feedback_level",
+        ]
+
+        return {key: configs.get("cms", key) for key in KEYS}
+
+    @field_validator("submission_format", mode="before")
+    @classmethod
+    def convert_format(
+        cls, value: list[str], info: ValidationInfo
+    ) -> Optional[list[str]]:
+        return value or None
 
 
 def get_section_and_key(location: tuple[Any, ...]) -> str:
