@@ -10,6 +10,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# The CMS module imports and calls internal CMS libraries,
+# as well as dependencies of CMS (sqlalchemy).
+# Since these dependencies aren't declared anywhere, importing this module
+# will cause an exception on most installations.
+# It is therefore important not to import this module unless a cms command has actually been called.
+
+# The implementation uses CMS's sqlalchemy types to make changes to the database.
+# It also uses some other APIs, like session creation.
+# If CMS changes its database schema or some of its internal APIs,
+# this module will likely break.
+
+# This module obviously also uses internal methods of pisek,
+# mostly config parsing and some general utilities.
+# Large refactors in pisek will also require changes to this module.
+
+# Some functionality is duplicated, most notably enumerating all inputs
+# and finding the file extensions of solutions.
+# All of this functionality is implemented inside private methods of pipeline jobs,
+# making it inaccessible to part of Pisek that don't use the pipeline.
+
+# The pipeline is called when creating a dataset, in order to generate inputs and outputs
+# and to compile the judge.
+# It is called as if the user requested the primary solution to be tested.
+
+# One small thing to note is that which automatic submission corresponds
+# to which solution isn't explicitly stored anywhere.
+# Instead, the check and testing-log commands simply search the database for
+# a matching (task, file hash, language) triple.
+
 from typing import Any, Callable
 from cms.db.session import Session
 from sqlalchemy.exc import IntegrityError

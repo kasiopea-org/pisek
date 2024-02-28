@@ -16,7 +16,7 @@ or you can install both onto a separate computer.
 Installing Pisek and CMS together is no easy feat.
 CMS only supports Python up to version 3.9, while Pisek requires Python 3.11.
 Getting CMS to work in Python 3.11 requires updating some dependencies
-and making a few small changes to it's source code to work around
+and making a few small changes to its source code to work around
 breaking changes in Python's standard libraries.
 For details, refer to the provided Dev Container Dockerfile.
 
