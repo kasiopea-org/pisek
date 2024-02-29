@@ -17,7 +17,9 @@
 from datetime import datetime
 import os
 import sys
+from typing import Callable
 
+from pisek.jobs.job_pipeline import JobPipeline
 from pisek.utils.text import eprint
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
@@ -27,12 +29,25 @@ PATH = "."
 LOCK_FILE = ".pisek_lock"
 
 
-def run_pipeline(path, pipeline, **env_args):
-    env = Env.load(path, **env_args)
-    if env is None:
-        return 1
-    pipeline = pipeline(env.fork())
-    return pipeline.run_jobs(Cache(env), env)
+def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_args):
+    with ChangedCWD(path):
+        env = Env.load(**env_args)
+        if env is None:
+            return 1
+        pipeline = pipeline_class(env.fork())
+        return pipeline.run_jobs(Cache(env), env)
+
+
+class ChangedCWD:
+    def __init__(self, path):
+        self._path = path
+
+    def __enter__(self):
+        self._orig_path = os.getcwd()
+        os.chdir(self._path)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        os.chdir(self._orig_path)
 
 
 class Lock:

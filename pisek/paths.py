@@ -34,27 +34,22 @@ LOG_SUBDIR = "log/"
 class TaskPath:
     """Class representing a path to task file."""
 
-    fullpath: str
-    relpath: str
+    path: str
     name: str
 
-    def __init__(self, task_path: str, *path: str):
+    def __init__(self, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
-        self._task_path = task_path
-        self.fullpath = os.path.join(task_path, joined_path)
-        self.relpath = joined_path
+        self.path = joined_path
         self.name = os.path.basename(joined_path)
 
     def __format__(self, __format_spec: str) -> str:
         match __format_spec:
-            case "f":
-                return self.fullpath
+            case "":
+                return self.path
             case "p":
-                return self.relpath
+                return self.path
             case "n":
                 return self.name
-            case "":
-                return self.relpath
             case _:
                 raise ValueError(
                     f"Invalid format specifier '{__format_spec}' for object of type '{self.__class__.__name__}'"
@@ -62,35 +57,29 @@ class TaskPath:
 
     def __eq__(self, other_path) -> bool:
         if isinstance(other_path, TaskPath):
-            return self.relpath == other_path.relpath
+            return self.path == other_path.path
         else:
             return False
 
     def replace_suffix(self, new_suffix: str) -> "TaskPath":
-        path = os.path.splitext(self.relpath)[0] + new_suffix
-        return TaskPath(self._task_path, path)
+        path = os.path.splitext(self.path)[0] + new_suffix
+        return TaskPath(path)
 
     @staticmethod
-    def base_path(env: Env, *path: str) -> "TaskPath":
-        return TaskPath(env.task_dir, *path)
-
-    @staticmethod
-    def from_abspath(env: Env, *path: str) -> "TaskPath":
-        return TaskPath.base_path(
-            env, os.path.relpath(os.path.join(*path), env.task_dir)
-        )
+    def from_abspath(*path: str) -> "TaskPath":
+        return TaskPath(os.path.relpath(os.path.join(*path), "."))
 
     @staticmethod
     def static_path(env: Env, *path: str) -> "TaskPath":
-        return TaskPath(env.task_dir, env.config.static_subdir, *path)
+        return TaskPath(env.config.static_subdir, *path)
 
     @staticmethod
     def solution_path(env: Env, *path: str) -> "TaskPath":
-        return TaskPath(env.task_dir, env.config.solutions_subdir, *path)
+        return TaskPath(env.config.solutions_subdir, *path)
 
     @staticmethod
     def executable_path(env: Env, *path: str) -> "TaskPath":
-        return TaskPath(env.task_dir, BUILD_DIR, *path)
+        return TaskPath(BUILD_DIR, *path)
 
     @staticmethod
     def executable_file(env: Env, program: str) -> "TaskPath":
@@ -99,7 +88,7 @@ class TaskPath:
 
     @staticmethod
     def data_path(env: Env, *path: str) -> "TaskPath":
-        return TaskPath(env.task_dir, env.config.data_subdir, *path)
+        return TaskPath(env.config.data_subdir, *path)
 
     @staticmethod
     def generated_path(env: Env, *path: str) -> "TaskPath":
@@ -163,14 +152,12 @@ class TaskPath:
 
 
 def task_path_representer(dumper, task_path: TaskPath):
-    return dumper.represent_sequence(
-        "!TaskPath", [task_path._task_path, task_path.relpath]
-    )
+    return dumper.represent_sequence("!TaskPath", [task_path.path])
 
 
 def task_path_constructor(loader, value):
-    (task_dir, path) = loader.construct_sequence(value)
-    return TaskPath(task_dir, path)
+    path = loader.construct_sequence(value)
+    return TaskPath(path)
 
 
 yaml.add_representer(TaskPath, task_path_representer)

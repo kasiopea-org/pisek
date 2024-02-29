@@ -89,7 +89,6 @@ class Cache:
     """Object representing all cached jobs."""
 
     def __init__(self, env: Env) -> None:
-        self.cache_path = os.path.join(env.task_dir, CACHE_FILENAME)
         self.broken_seal: Optional[CacheSeal] = None
         self._load(env)
 
@@ -99,7 +98,7 @@ class Cache:
             self.cache[cache_entry.name] = []
         self.cache[cache_entry.name].append(cache_entry)
 
-        with open(self.cache_path, "a", encoding="utf-8") as f:
+        with open(CACHE_FILENAME, "a", encoding="utf-8") as f:
             f.write(cache_entry.yaml_export())
 
     def __contains__(self, name: str) -> bool:
@@ -117,10 +116,10 @@ class Cache:
     def _load(self, env: Env) -> None:
         """Load cache file."""
         self.cache: dict[str, list[CacheEntry]] = {}
-        if not os.path.exists(self.cache_path):
+        if not os.path.exists(CACHE_FILENAME):
             return
 
-        with open(self.cache_path, encoding="utf-8") as f:
+        with open(CACHE_FILENAME, encoding="utf-8") as f:
             try:
                 entries = yaml.full_load(f)
             except (TypeError, ValueError):
@@ -160,12 +159,12 @@ class Cache:
 
     def export(self) -> None:
         """Export cache into a file. Remove unnecessary entries and add seal."""
-        with open(self.cache_path, "w", encoding="utf-8") as f:
+        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
             for job, entries in self.cache.items():
                 for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
                     f.write(cache_entry.yaml_export())
 
     def seal(self, success):
         self.export()
-        with open(self.cache_path, "a", encoding="utf-8") as f:
+        with open(CACHE_FILENAME, "a", encoding="utf-8") as f:
             f.write(CacheSeal(success).yaml_export())
