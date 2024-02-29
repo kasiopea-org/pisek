@@ -24,7 +24,6 @@ from pisek.jobs.cache import Cache
 
 PATH = "."
 
-LOCKED = False
 LOCK_FILE = ".pisek_lock"
 
 
