@@ -57,7 +57,7 @@ class PrepareMinibox(TaskJob):
                 "gcc",
                 source,
                 "-o",
-                executable.fullpath,
+                executable.path,
                 "-std=gnu11",
                 "-D_GNU_SOURCE",
                 "-O2",
@@ -87,7 +87,7 @@ class PrepareTextPreprocessor(TaskJob):
                 "gcc",
                 source,
                 "-o",
-                executable.fullpath,
+                executable.path,
                 "-std=gnu11",
                 "-O2",
                 "-Wall",
@@ -124,7 +124,7 @@ class Sanitize(SanitizeAbstract):
     ) -> None:
         self.input = input_
         self.output = (
-            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
+            output if output else TaskPath.sanitized_file(self._env, input_.path)
         )
         super().__init__(
             env=env, name=f"Sanitize {self.input:n} -> {self.output:n}", **kwargs
@@ -142,7 +142,7 @@ class IsClean(SanitizeAbstract):
     ) -> None:
         self.input = input_
         self.output = (
-            output if output else TaskPath.sanitized_file(self._env, input_.relpath)
+            output if output else TaskPath.sanitized_file(self._env, input_.path)
         )
         super().__init__(env=env, name=f"{self.input:n} is clean", **kwargs)
 

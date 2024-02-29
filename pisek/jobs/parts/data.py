@@ -132,7 +132,7 @@ class LinkData(DataJob):
         super().__init__(
             env=env, name=f"Copy {data:p} to {dest:p}/", data=data, **kwargs
         )
-        self.dest = TaskPath.base_path(self._env, dest.relpath, self.data.name)
+        self.dest = TaskPath(dest.path, self.data.name)
 
     def _run(self):
         self._link_file(self.data, self.dest, overwrite=True)

@@ -68,5 +68,5 @@ class CreateTestingLog(TaskJobManager):
             else:
                 self._print(colored_env(MSG, "yellow", self._env))
 
-        with open(TaskPath.base_path(self._env, TESTING_LOG).fullpath, "w") as f:
+        with open(TaskPath(TESTING_LOG).path, "w") as f:
             json.dump(log, f, indent=4)

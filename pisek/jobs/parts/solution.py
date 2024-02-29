@@ -64,7 +64,7 @@ class SolutionManager(TaskJobManager):
         for sub_num, sub in self._env.config.subtasks.items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp.relpath not in self._judges:
+                if inp.path not in self._judges:
                     run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
@@ -76,11 +76,11 @@ class SolutionManager(TaskJobManager):
                         run_sol = run_judge = self._create_communication_jobs(inp)
                         jobs.append(run_sol)
 
-                    self._judges[inp.relpath] = run_judge
+                    self._judges[inp.path] = run_judge
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp.relpath])
+                    self.subtasks[-1].previous_jobs.append(self._judges[inp.path])
 
         return jobs
 
@@ -123,7 +123,7 @@ class SolutionManager(TaskJobManager):
         if self._env.config.out_judge is None:
             raise RuntimeError("Unset judge for communication.")
 
-        judge = TaskPath.base_path(self._env, self._env.config.out_judge)
+        judge = TaskPath(self._env.config.out_judge)
         return RunCommunication(self._env, self._solution, self.is_primary, judge, inp)
 
     def _update(self):
@@ -345,8 +345,8 @@ class RunPrimarySolutionMan(TaskJobManager):
                 self._env,
                 solution,
                 True,
-                TaskPath.base_path(self._env, self._input),
-                TaskPath.base_path(self._env, self._output) if self._output else None,
+                TaskPath(self._input),
+                TaskPath(self._output) if self._output else None,
             ),
         ]
         run_solution.add_prerequisite(compile)

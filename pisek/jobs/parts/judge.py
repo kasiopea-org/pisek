@@ -51,9 +51,7 @@ class JudgeManager(TaskJobManager):
                     f"Unset judge for out_check={self._env.config.out_check.name}"
                 )
             jobs.append(
-                comp := Compile(
-                    self._env, TaskPath.base_path(self._env, self._env.config.out_judge)
-                )
+                comp := Compile(self._env, TaskPath(self._env.config.out_judge))
             )
 
         samples = self._get_samples()
@@ -121,7 +119,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         input_, output, correct_output = map(
-            partial(TaskPath.base_path, self._env),
+            TaskPath,
             (self._input, self._output, self._correct_output),
         )
         clean_output = TaskPath.sanitized_file(self._env, output.name)
@@ -146,9 +144,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 )
             jobs.insert(
                 0,
-                compile := Compile(
-                    self._env, TaskPath.base_path(self._env, self._env.config.out_judge)
-                ),
+                compile := Compile(self._env, TaskPath(self._env.config.out_judge)),
             )
             judge.add_prerequisite(compile)
 
@@ -393,7 +389,7 @@ class RunDiffJudge(RunBatchJudge):
         self._access_file(self.output)
         self._access_file(self.correct_output)
         diff = subprocess.run(
-            ["diff", "-Bbq", self.output.fullpath, self.correct_output.fullpath],
+            ["diff", "-Bbq", self.output.path, self.correct_output.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -462,10 +458,10 @@ class RunKasiopeaJudge(RunBatchJudge):
     def _judge(self) -> SolutionResult:
         envs = {}
         if self._env.config.judge_needs_in:
-            envs["TEST_INPUT"] = self.input.fullpath
+            envs["TEST_INPUT"] = self.input.path
             self._access_file(self.input)
         if self._env.config.judge_needs_out:
-            envs["TEST_OUTPUT"] = self.correct_output.fullpath
+            envs["TEST_OUTPUT"] = self.correct_output.path
             self._access_file(self.correct_output)
 
         result = self._run_program(
@@ -532,9 +528,9 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
             ProgramType.judge,
             self.judge,
             args=[
-                self.input.fullpath,
-                self.correct_output.fullpath,
-                self.output.fullpath,
+                self.input.path,
+                self.correct_output.path,
+                self.output.path,
             ],
             stdout=self.points_file,
             stderr=self.judge_log_file,
@@ -561,7 +557,7 @@ def judge_job(
 
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
-    judge = TaskPath.base_path(env, env.config.out_judge)
+    judge = TaskPath(env.config.out_judge)
 
     if env.config.contest_type == "cms":
         return RunCMSBatchJudge(

@@ -46,7 +46,7 @@ class CheckerManager(TaskJobManager):
                 )
             return []
 
-        checker = TaskPath.base_path(self._env, self._env.config.checker)
+        checker = TaskPath(self._env.config.checker)
 
         jobs: list[Job] = [compile := Compile(self._env, checker)]
 

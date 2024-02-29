@@ -72,14 +72,14 @@ class RunResult:
     def raw_stdout(self, access_file: Callable[[TaskPath], None]):
         if isinstance(self.stdout_file, TaskPath):
             access_file(self.stdout_file)
-            return open(self.stdout_file.fullpath).read()
+            return open(self.stdout_file.path).read()
         else:
             return None
 
     def raw_stderr(self, access_file: Callable[[TaskPath], None]):
         if isinstance(self.stderr_file, TaskPath):
             access_file(self.stderr_file)
-            return open(self.stderr_file.fullpath).read()
+            return open(self.stderr_file.path).read()
         else:
             return self.stderr_text
 
@@ -166,7 +166,7 @@ class ProgramPoolItem:
         for std in ("stdin", "stdout", "stderr"):
             attr = getattr(self, std)
             if isinstance(attr, TaskPath):
-                minibox_args.append(f"--{std}={attr.fullpath}")
+                minibox_args.append(f"--{std}={attr.path}")
             elif getattr(self, std) is None and std != "stderr":
                 minibox_args.append(f"--{std}=/dev/null")
 
@@ -182,10 +182,7 @@ class ProgramPoolItem:
         minibox_args.append(f"--meta={meta_file}")
 
         result["args"] = (
-            [minibox]
-            + minibox_args
-            + ["--run", "--", self.executable.fullpath]
-            + self.args
+            [minibox] + minibox_args + ["--run", "--", self.executable.path] + self.args
         )
         return result
 
@@ -200,7 +197,7 @@ class ProgramsJob(TaskJob):
 
     def _load_compiled(self, program: TaskPath) -> TaskPath:
         """Loads name of compiled program."""
-        executable = TaskPath.executable_file(self._env, program.relpath)
+        executable = TaskPath.executable_file(self._env, program.path)
         if not self._file_exists(executable):
             raise PipelineItemFailure(
                 f"Program {executable:p} does not exist, "
@@ -252,7 +249,7 @@ class ProgramsJob(TaskJob):
         """Runs all programs in execution pool."""
         running_pool: list[subprocess.Popen] = []
         meta_files: list[str] = []
-        minibox = TaskPath.executable_path(self._env, "minibox").fullpath
+        minibox = TaskPath.executable_path(self._env, "minibox").path
         for pool_item in self._program_pool:
             fd, meta_file = tempfile.mkstemp()
             os.close(fd)
