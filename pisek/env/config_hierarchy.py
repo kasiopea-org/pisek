@@ -21,19 +21,15 @@ import os
 import re
 
 from pisek.utils.text import tab
+from pisek.env.config_errors import TaskConfigError
+from pisek.env.update_config import update_config
 
 DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
 CONFIG_FILENAME = "config"
 
-# TODO: Version update
-
-
-class TaskConfigError(Exception):
-    pass
-
 
 class ConfigHierarchy:
-    def __init__(self, task_path: str) -> None:
+    def __init__(self, task_path: str, no_colors: bool = False) -> None:
         self._config_path = os.path.join(task_path, CONFIG_FILENAME)
         config_paths = [DEFAULTS_CONFIG, self._config_path]
 
@@ -42,6 +38,9 @@ class ConfigHierarchy:
             self._configs.append(config := ConfigParser())
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
+
+        for config in self._configs:
+            update_config(config, task_path, no_colors)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
 

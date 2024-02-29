@@ -1,4 +1,5 @@
 [task]
+version=v2
 contest_type=kasiopea
 task_type=batch
 solutions_subdir=.
