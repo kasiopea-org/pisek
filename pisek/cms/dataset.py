@@ -131,7 +131,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        TaskPath.executable_path(env, path.basename(config.out_judge)).fullpath,
+        TaskPath.executable_path(env, path.basename(config.out_judge)).path,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
@@ -162,9 +162,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     elif config.task_type == "communication":
         stub_basename = "stub"
 
-    directory, target_basename = path.split(
-        TaskPath.base_path(env, config.stub).fullpath
-    )
+    directory, target_basename = path.split(config.stub)
     directory = path.normpath(directory)
 
     exts = set()
@@ -201,7 +199,6 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     config = env.config
 
     for header in config.headers:
-        header = TaskPath.base_path(env, header).fullpath
         basename = path.basename(header)
 
         header = files.put_file_from_path(

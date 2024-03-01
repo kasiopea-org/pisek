@@ -76,7 +76,7 @@ def submit(
             "Cannot submit solutions to tasks that require multiple files"
         )
 
-    digest = files.put_file_from_path(file_path.fullpath, f"Solution to task {task.id}")
+    digest = files.put_file_from_path(file_path.path, f"Solution to task {task.id}")
     submission = get_submission_of_digest(session, digest, language, task)
 
     if submission is not None:
@@ -107,9 +107,7 @@ def get_submission(
         raise RuntimeError("The task is not part of any contest")
 
     file_path, language = resolve_solution(task.contest, env, solution)
-    digest = files.put_file_from_path(
-        file_path.fullpath, f"Solution to task {task.name}"
-    )
+    digest = files.put_file_from_path(file_path.path, f"Solution to task {task.name}")
 
     return get_submission_of_digest(session, digest, language, task)
 
@@ -146,7 +144,7 @@ def resolve_solution(
 
             file_path = TaskPath.solution_path(env, source + ext)
 
-            if path.isfile(file_path.fullpath):
+            if path.isfile(file_path.path):
                 return file_path, language
 
     raise RuntimeError(f"Solution {source} isn't available in any enabled language")

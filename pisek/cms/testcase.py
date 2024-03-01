@@ -29,13 +29,11 @@ def create_testcase(
     input_file: TaskPath,
     output_file: TaskPath | None,
 ) -> Testcase:
-    input = files.put_file_from_path(
-        input_file.fullpath, f"Input for testcase {codename}"
-    )
+    input = files.put_file_from_path(input_file.path, f"Input for testcase {codename}")
 
     if output_file is not None:
         output = files.put_file_from_path(
-            output_file.fullpath, f"Output for testcase {codename}"
+            output_file.path, f"Output for testcase {codename}"
         )
     else:
         output = files.put_file_content(
@@ -91,5 +89,5 @@ def get_testcases(env: Env) -> list[tuple[str, TaskPath, TaskPath | None]]:
 
 
 def get_inputs_in(globs: list[str], dir: TaskPath) -> list[str]:
-    files = chain.from_iterable(glob(g, root_dir=dir.fullpath) for g in globs)
+    files = chain.from_iterable(glob(g, root_dir=dir.path) for g in globs)
     return list(set(files))

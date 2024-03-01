@@ -68,7 +68,7 @@ def prepare_files(env: Env):
 
 def with_env(fun: Callable[[Env, Any], int]) -> Callable[[Any], int]:
     def wrap(args) -> int:
-        env = Env.load(PATH, **vars(args))
+        env = Env.load(**vars(args))
 
         if env is None:
             return 1
