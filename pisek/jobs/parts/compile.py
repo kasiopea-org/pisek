@@ -44,12 +44,9 @@ class Compile(ProgramsJob):
         self.headers = []
 
         if use_stub and self._env.config.stub:
-            self.stub = TaskPath.base_path(self._env, self._env.config.stub)
+            self.stub = TaskPath(self._env.config.stub)
         if use_stub and self._env.config.headers:
-            self.headers = [
-                TaskPath.base_path(self._env, header)
-                for header in self._env.config.headers
-            ]
+            self.headers = [TaskPath(header) for header in self._env.config.headers]
 
     def _resolve_extension(self, name: TaskPath) -> TaskPath:
         """
@@ -60,7 +57,7 @@ class Compile(ProgramsJob):
         """
         extensions = supported_extensions()
         candidates = []
-        path = name.fullpath
+        path = name.path
         for ext in extensions:
             if os.path.isfile(path + ext):
                 candidates.append(path + ext)
@@ -75,14 +72,14 @@ class Compile(ProgramsJob):
                 f"Multiple programs with same name exist: {', '.join(candidates)}"
             )
 
-        return TaskPath.from_abspath(self._env, candidates[0])
+        return TaskPath.from_abspath(candidates[0])
 
     def _run(self):
         """Compiles program."""
         program = self._resolve_extension(self.program)
         self.makedirs(TaskPath.executable_path(self._env, "."))
 
-        _, ext = os.path.splitext(program.fullpath)
+        _, ext = os.path.splitext(program.path)
 
         if ext in COMPILE_RULES:
             COMPILE_RULES[ext](self, program)
@@ -98,7 +95,7 @@ class Compile(ProgramsJob):
         cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
-            ["g++", program.fullpath, "-o", self.target.fullpath] + cpp_flags, program
+            ["g++", program.path, "-o", self.target.path] + cpp_flags, program
         )
 
     def _compile_c(self, program: TaskPath):
@@ -107,7 +104,7 @@ class Compile(ProgramsJob):
         c_flags += self._add_stub("c")
 
         return self._run_compilation(
-            ["gcc", program.fullpath, "-o", self.target.fullpath] + c_flags, program
+            ["gcc", program.path, "-o", self.target.path] + c_flags, program
         )
 
     def _c_colors(self):
@@ -122,15 +119,15 @@ class Compile(ProgramsJob):
             "-gl",
             "-O3",
             "-Sg",
-            "-o" + self.target.fullpath,
-            "-FE" + build_dir.fullpath,
+            "-o" + self.target.path,
+            "-FE" + build_dir.path,
         ]
 
-        return self._run_compilation(["fpc"] + pas_flags + [program.fullpath], program)
+        return self._run_compilation(["fpc"] + pas_flags + [program.path], program)
 
     def _compile_rust(self, program: TaskPath):
         return self._run_compilation(
-            ["rustc", "-O", "-o", self.target.fullpath, program.fullpath], program
+            ["rustc", "-O", "-o", self.target.path, program.path], program
         )
 
     def _run_compilation(self, args: list[str], program: TaskPath, **kwargs) -> None:
@@ -166,18 +163,18 @@ class Compile(ProgramsJob):
                 "Check also that you are using linux eol."
             )
 
-        with open(program.fullpath, "r", newline="\n") as f:
+        with open(program.path, "r", newline="\n") as f:
             interpreter = f.readline().strip().lstrip("#!")
         self._check_tool(interpreter)
 
-        shutil.copyfile(program.fullpath, self.target.fullpath)
+        shutil.copyfile(program.path, self.target.path)
         self._chmod_exec(self.target)
 
     @staticmethod
     def valid_shebang(program: TaskPath) -> bool:
         """Check if file has shebang and if the shebang is valid"""
 
-        with open(program.fullpath, "r", newline="\n") as f:
+        with open(program.path, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
@@ -186,7 +183,7 @@ class Compile(ProgramsJob):
         if first_line.endswith("\r\n"):
             return False
 
-        if os.path.splitext(program.fullpath)[1] == ".py":
+        if os.path.splitext(program.path)[1] == ".py":
             return any(
                 first_line == f"#!/usr/bin/env {interpreter}\n"
                 for interpreter in VALID_PYTHON_INTERPRETERS
@@ -197,20 +194,20 @@ class Compile(ProgramsJob):
 
     @staticmethod
     def _chmod_exec(filepath: TaskPath) -> None:
-        st = os.stat(filepath.fullpath)
-        os.chmod(filepath.fullpath, st.st_mode | 0o111)
+        st = os.stat(filepath.path)
+        os.chmod(filepath.path, st.st_mode | 0o111)
 
     def _add_stub(self, extension):
         flags = []
 
         if self.stub is not None:
-            filename = TaskPath.base_path(self._env, f"{self.stub:p}.{extension}")
+            filename = TaskPath(f"{self.stub:p}.{extension}")
             self._access_file(filename)
-            flags += [filename.fullpath]
+            flags += [filename.path]
 
         for header in self.headers:
             self._access_file(header)
-            directory = os.path.normpath(os.path.dirname(header.fullpath))
+            directory = os.path.normpath(os.path.dirname(header.path))
             flags += [f"-iquote{directory}"]
 
         return flags

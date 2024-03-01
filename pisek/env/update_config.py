@@ -1,63 +1,37 @@
-# pisek  - Tool for developing tasks for programming competitions.
-#
-# Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
-# Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
-# Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
-# Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
-# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# any later version.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-import configparser
+from configparser import ConfigParser
 from copy import copy
 import glob
 from itertools import product
 import os
 import re
-import shutil
-from typing import Optional
 
-from pisek.env.config_hierarchy import CONFIG_FILENAME
+from pisek.utils.text import eprint, colored
+from pisek.env.config_errors import TaskConfigError
 
 
-def update(path) -> Optional[str]:
-    config_path = os.path.join(path, CONFIG_FILENAME)
-    if not os.path.exists(config_path):
-        return f"Config {config_path} does not exist."
+def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
+    if key_from in config[section]:
+        config[section][key_to] = config[section][key_from]
+        del config[section][key_from]
 
-    shutil.copy(config_path, os.path.join(path, f"original_{CONFIG_FILENAME}"))
 
-    config = configparser.ConfigParser()
-    read_files = config.read(config_path)
-
+def update_to_v2(config: ConfigParser, task_path: str) -> None:
     config["task"]["version"] = "v2"
 
-    def rename(config, section, key_from, key_to):
-        if key_from in config[section]:
-            config[section][key_to] = config[section][key_from]
-            del config[section][key_from]
-
-    # Renames
-    rename(config, "task", "samples_subdir", "static_subdir")
-    rename(config, "tests", "solution_manager", "stub")
+    rename_key(config, "task", "samples_subdir", "static_subdir")
+    rename_key(config, "tests", "solution_manager", "stub")
 
     subtask_points = []
     for section in sorted(config.sections()):
         if re.fullmatch(r"test[0-9]{2}", section):
             if "points" not in config[section]:
-                return f"Missing key 'points' in section [{section}]"
+                raise TaskConfigError(f"Missing key 'points' in section [{section}]")
             subtask_points.append(int(config[section]["points"]))
     if "test00" not in config.sections():
         subtask_points = [0] + subtask_points
 
     if "solutions" not in config["task"]:
-        return f"Missing key 'solutions' in section [task]"
+        raise TaskConfigError(f"Missing key 'solutions' in section [task]")
     solutions = config["task"]["solutions"].split()
     del config["task"]["solutions"]
 
@@ -67,7 +41,7 @@ def update(path) -> Optional[str]:
             if len(
                 glob.glob(
                     os.path.join(
-                        path,
+                        task_path,
                         config["task"].get("solutions_subdir", ""),
                         f"{solution}.*",
                     )
@@ -150,11 +124,6 @@ def update(path) -> Optional[str]:
                 in_globs -= subtask_inputs[pred]
             subtask_section["in_globs"] = " ".join(sorted(in_globs))
 
-    with open(config_path, "w") as f:
-        config.write(f, space_around_delimiters=False)
-
-    return None
-
 
 def get_subtask_mask(points, subtasks):
     all_valid = [0] * len(subtasks)
@@ -179,3 +148,27 @@ def get_subtask_mask(points, subtasks):
         else:
             sub_mask += "X"
     return sub_mask
+
+
+UPDATERS = {"v1": ("v2", update_to_v2)}
+NEWEST_VERSION = "v2"
+
+
+def update_config(
+    config: ConfigParser, task_path: str, no_colors: bool = False
+) -> None:
+    version = config.get("task", "version", fallback="v1")
+    if version == NEWEST_VERSION:
+        return
+
+    eprint(colored(f"Updating config to version {NEWEST_VERSION}", "yellow", no_colors))
+
+    if version not in UPDATERS:
+        raise TaskConfigError(f"Unknown version of config: {version}")
+
+    while version in UPDATERS:
+        version, updater = UPDATERS[version]
+        updater(config, task_path)
+
+    if version != NEWEST_VERSION:
+        raise RuntimeError("Config updating failed.")

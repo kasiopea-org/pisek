@@ -37,7 +37,7 @@ class GeneratorManager(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath.base_path(self._env, self._env.config.in_gen)
+        generator = TaskPath(self._env.config.in_gen)
 
         jobs: list[Job] = [compile := Compile(self._env, generator)]
 
@@ -109,14 +109,14 @@ class RunOnlineGeneratorMan(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath.base_path(self._env, self._env.config.in_gen)
+        generator = TaskPath(self._env.config.in_gen)
 
         jobs: list[Job] = [
             compile := Compile(self._env, generator),
             gen := OnlineGeneratorGenerate(
                 self._env,
                 generator,
-                TaskPath.base_path(self._env, self._file),
+                TaskPath(self._file),
                 self._subtask,
                 self._seed,
             ),
@@ -149,7 +149,7 @@ class OnlineGeneratorJob(ProgramsJob):
         if seed < 0:
             raise PipelineItemFailure(f"Seed {seed} is negative.")
 
-        input_dir = os.path.dirname(input_file.fullpath)
+        input_dir = os.path.dirname(input_file.path)
 
         difficulty = str(subtask)
         hexa_seed = f"{seed:x}"
@@ -269,7 +269,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
         """Generates all inputs."""
         gen_dir = TaskPath.generated_path(self._env, ".")
         try:
-            shutil.rmtree(gen_dir.fullpath)
+            shutil.rmtree(gen_dir.path)
         except FileNotFoundError:
             pass
         self.makedirs(gen_dir, exist_ok=False)
@@ -277,7 +277,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
         run_result = self._run_program(
             ProgramType.in_gen,
             self.generator,
-            args=[gen_dir.fullpath],
+            args=[gen_dir.path],
             print_first_stderr=True,
         )
         self._access_file(gen_dir)

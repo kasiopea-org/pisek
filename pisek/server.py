@@ -82,7 +82,7 @@ class KasiopeaInputCase:
         input_: Optional[str] = None,
         correct_output: Optional[str] = None,
     ):
-        env = Env.load(self.path)
+        env = Env.load()
         if env is None:
             return 1
 

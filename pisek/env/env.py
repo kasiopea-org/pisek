@@ -33,7 +33,6 @@ class Env(BaseEnv):
     Collection of environment variables for task testing
 
     Attributes:
-        task_dir: Directory of the task being tested
         target: What is being tested
         config: Environment variables defined by task config
         full: Whether to stop after the first failure
@@ -48,7 +47,6 @@ class Env(BaseEnv):
         inputs: Number of inputs generated (Only for task_type=kasiopea)
     """
 
-    task_dir: str
     target: TestingTarget
     config: TaskConfig
     full: bool
@@ -64,7 +62,6 @@ class Env(BaseEnv):
 
     @staticmethod
     def load(
-        task_dir: str,
         target: str = TestingTarget.all,
         full: bool = False,
         all_inputs: bool = False,
@@ -79,7 +76,7 @@ class Env(BaseEnv):
         inputs: int = 5,
         **_
     ) -> Optional["Env"]:
-        config = load_config(task_dir, strict, plain or no_colors)
+        config = load_config(".", strict, plain or no_colors)
         if config is None:
             return None
 
@@ -91,7 +88,6 @@ class Env(BaseEnv):
                 expanded_solutions.append(config.primary_solution)
 
         return Env(
-            task_dir=task_dir,
             target=TestingTarget(target),
             config=config,
             full=full,

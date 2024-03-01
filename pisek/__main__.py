@@ -26,7 +26,6 @@ from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
 from pisek.license import license, license_gnu
-from pisek.update_config import update
 from pisek.visualize import visualize_command
 
 
@@ -275,9 +274,6 @@ def main(argv):
     add_argument_limit(parser_visualize)
     add_argument_segments(parser_visualize)
 
-    parser_update = subparsers.add_parser(
-        "update", help="Update config to newer version"
-    )
     parser_license = subparsers.add_parser("license", help="Print license")
     parser_license.add_argument(
         "--print", action="store_true", help="Print entire license"
@@ -376,10 +372,6 @@ def main(argv):
         visualize_command(PATH, args)
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
-    elif args.subcommand == "update":
-        result = update(PATH)
-        if result:
-            eprint(result)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 

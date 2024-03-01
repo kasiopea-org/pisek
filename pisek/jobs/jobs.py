@@ -140,10 +140,10 @@ class Job(PipelineItem, CaptureInitParams):
 
     def _access_file(self, filename: TaskPath) -> None:
         """Add file this job depends on."""
-        self._accessed_files.add(filename.relpath)
+        self._accessed_files.add(filename.path)
 
     def _signature(
-        self, envs: AbstractSet[str], files: AbstractSet[str], results: dict[str, Any]
+        self, envs: AbstractSet[str], paths: AbstractSet[str], results: dict[str, Any]
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
@@ -160,22 +160,20 @@ class Job(PipelineItem, CaptureInitParams):
             sign.update(f"{key}={value}\n".encode())
 
         expanded_files = []
-        for file in sorted(files):
-            path = os.path.join(self._env.task_dir, file)
+        for path in sorted(paths):
             if os.path.isfile(path):
                 expanded_files.append(path)
             else:
                 for dir_, _, dir_files in os.walk(path):
-                    for file in dir_files:
-                        expanded_files.append(os.path.join(dir_, file))
+                    for path in dir_files:
+                        expanded_files.append(os.path.join(dir_, path))
 
         for file in sorted(expanded_files):
             if not os.path.exists(file):
                 return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
-            relfile = os.path.relpath(file, self._env.task_dir)
-            sign.update(f"{relfile}={file_sign.hexdigest()}\n".encode())
+            sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
             sign.update(f"{name}={yaml.dump(result)}".encode())

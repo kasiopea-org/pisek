@@ -78,13 +78,11 @@ class TaskHelper:
         self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
         files: list[str] = sum(
-            (glob.glob(g, root_dir=directory.fullpath) for g in globs),
+            (glob.glob(g, root_dir=directory.path) for g in globs),
             start=[],
         )
         files = list(sorted(set(files)))
-        return [
-            TaskPath.from_abspath(self._env, directory.fullpath, file) for file in files
-        ]
+        return [TaskPath.from_abspath(directory.path, file) for file in files]
 
     @staticmethod
     def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
@@ -102,11 +100,11 @@ class TaskHelper:
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):
-        os.makedirs(path.fullpath, exist_ok=exist_ok)
+        os.makedirs(path.path, exist_ok=exist_ok)
 
     @staticmethod
     def make_filedirs(path: TaskPath, exist_ok: bool = True):
-        os.makedirs(os.path.dirname(path.fullpath), exist_ok=exist_ok)
+        os.makedirs(os.path.dirname(path.path), exist_ok=exist_ok)
 
 
 class TaskJobManager(StatusJobManager, TaskHelper):
@@ -152,15 +150,15 @@ class TaskJob(Job, TaskHelper):
     def _open_file(self, filename: TaskPath, mode="r", **kwargs):
         if "w" in mode:
             self.make_filedirs(filename)
-        return open(filename.fullpath, mode, **kwargs)
+        return open(filename.path, mode, **kwargs)
 
     @_file_access(1)
     def _file_exists(self, filename: TaskPath):
-        return os.path.isfile(filename.fullpath)
+        return os.path.isfile(filename.path)
 
     @_file_access(1)
     def _file_size(self, filename: TaskPath):
-        return os.path.getsize(filename.fullpath)
+        return os.path.getsize(filename.path)
 
     @_file_access(1)
     def _file_not_empty(self, filename: TaskPath):
@@ -171,23 +169,23 @@ class TaskJob(Job, TaskHelper):
     @_file_access(2)
     def _copy_file(self, filename: TaskPath, dst: TaskPath):
         self.make_filedirs(dst)
-        return shutil.copy(filename.fullpath, dst.fullpath)
+        return shutil.copy(filename.path, dst.path)
 
     @_file_access(2)
     def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):
         self.make_filedirs(dst)
-        if overwrite and os.path.exists(dst.fullpath):
-            os.remove(dst.fullpath)
-        return os.link(filename.fullpath, dst.fullpath)
+        if overwrite and os.path.exists(dst.path):
+            os.remove(dst.path)
+        return os.link(filename.path, dst.path)
 
     @_file_access(2)
     def _files_equal(self, file_a: TaskPath, file_b: TaskPath) -> bool:
-        return filecmp.cmp(file_a.fullpath, file_b.fullpath)
+        return filecmp.cmp(file_a.path, file_b.path)
 
     @_file_access(2)
     def _diff_files(self, file_a: TaskPath, file_b: TaskPath) -> str:
         diff = subprocess.run(
-            ["diff", file_a.fullpath, file_b.fullpath, "-Bb", "-u2"],
+            ["diff", file_a.path, file_b.path, "-Bb", "-u2"],
             stdout=subprocess.PIPE,
         )
         return diff.stdout.decode("utf-8")
