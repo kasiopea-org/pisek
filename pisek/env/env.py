@@ -30,7 +30,7 @@ class TestingTarget(StrEnum):
 
 class Env(BaseEnv):
     """
-    Collection of environment variables for task testing
+    Collection of environment variables for task testing.
 
     Attributes:
         target: What is being tested

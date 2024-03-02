@@ -26,15 +26,9 @@ T = TypeVar("T")
 TFunc = Callable[..., T]
 
 
-class TestingTarget(StrEnum):
-    all = auto()
-    generator = auto()
-    solution = auto()
-
-
 class BaseEnv(ContextModel):
     """
-    Collection of enviroment variables which logs whether each variable was accessed.
+    Collection of environment variables which logs whether each variable was accessed.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -46,6 +40,7 @@ class BaseEnv(ContextModel):
     if not TYPE_CHECKING:
 
         def __getattribute__(self, item: str) -> Any:
+            """Overloaded __getattribute__ that logs accesses to fields"""
             # Implementing this method is kind of magical and dangerous. Beware!
             if (
                 not item.startswith("_")
@@ -58,12 +53,7 @@ class BaseEnv(ContextModel):
             return super().__getattribute__(item)
 
     def fork(self):
-        """
-        Make copy of this env overriding variables specified in **kwargs.
-
-        Accesses to env's variables (to this point) are logged in forked env as well.
-        Subsequent accesses are logged only to respective BaseEnv.
-        """
+        """Make copy of this env with no accesses logged."""
         if self._locked:
             raise RuntimeError("Locked BaseEnv cannot be forked.")
 
@@ -93,16 +83,16 @@ class BaseEnv(ContextModel):
 
     @_recursive_call
     def _clear_accesses(self) -> None:
-        """Removes all logged accesses."""
+        """Remove all logged accesses."""
         self._accessed = set()
 
     @_recursive_call
     def lock(self) -> None:
-        """Lock this BaseEnv and all subenvs so they cannot be forked."""
+        """Prevent this Env (and subenvs) from being forked."""
         self._locked = True
 
     def get_accessed(self) -> list[str]:
-        """Get all accessed variables in this env and all subenvs with their values."""
+        """Get all accessed field names in this env (and all subenvs)."""
         accessed = []
         self._logging = False
         for key in self._accessed:

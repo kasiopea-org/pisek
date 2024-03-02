@@ -36,6 +36,8 @@ def init_context(value: dict[str, Any]) -> Iterator[None]:
 
 
 class ContextModel(BaseModel):
+    """Model that adds context when validating at model initialization."""
+
     def __init__(self, /, **data: Any) -> None:
         __tracebackhide__ = True
         self.__pydantic_validator__.validate_python(

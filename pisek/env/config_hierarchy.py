@@ -29,6 +29,8 @@ CONFIG_FILENAME = "config"
 
 
 class ConfigHierarchy:
+    """Represents hierarchy of config files where last overrides all previous."""
+
     def __init__(self, task_path: str, no_colors: bool = False) -> None:
         self._config_path = os.path.join(task_path, CONFIG_FILENAME)
         config_paths = [DEFAULTS_CONFIG, self._config_path]
@@ -76,6 +78,14 @@ class ConfigHierarchy:
         return list(sections.keys())
 
     def check_unused_keys(self) -> None:
+        """
+        Check whether lowest config contains unused section or keys.
+
+        Raises
+        ------
+        TaskConfigError
+            If unused sections or keys are present.
+        """
         IGNORED_KEYS = defaultdict(
             set,
             {
@@ -100,7 +110,7 @@ class ConfigHierarchy:
                     )
 
     def check_todos(self) -> bool:
-        """Check whether config contains TODO in comments."""
+        """Check whether lowest config contains TODO in comments."""
         with open(self._config_path) as config:
             for line in config:
                 if "#" in line and "TODO" in line.split("#")[1]:
