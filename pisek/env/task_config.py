@@ -521,13 +521,16 @@ def convert_errors(e: ValidationError) -> list[str]:
 
 
 def load_config(
-    path: str, strict: bool = False, no_colors: bool = False
+    path: str,
+    strict: bool = False,
+    no_colors: bool = False,
+    suppress_warnings: bool = False,
 ) -> Optional[TaskConfig]:
     try:
         config_hierarchy = ConfigHierarchy(path)
         config = TaskConfig.load(config_hierarchy)
         config_hierarchy.check_unused_keys()
-        if config_hierarchy.check_todos():
+        if config_hierarchy.check_todos() and not suppress_warnings:
             warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
         return config
     except TaskConfigError as err:

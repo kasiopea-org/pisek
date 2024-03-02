@@ -66,7 +66,7 @@ def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
 
 
 def clean_task_dir(task_dir: str) -> bool:
-    config = load_config(task_dir)
+    config = load_config(task_dir, suppress_warnings=True)
     if config is None:
         return False
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
