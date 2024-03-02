@@ -390,7 +390,7 @@ class SolutionConfig(BaseEnv):
         elif value == "@all":
             value = "1" * subtask_cnt
         elif value == "@any":
-            value = "0" * subtask_cnt
+            value = "X" * subtask_cnt
 
         if len(value) != subtask_cnt:
             raise PydanticCustomError(
