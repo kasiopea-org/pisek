@@ -17,7 +17,7 @@
 version=v2
 
 # Name of task (for automatic CMS import)
-name=blecha
+name=a-plus-b
 
 contest_type=cms
 # Environment for which is task developed
@@ -192,10 +192,10 @@ output_max_size=5
 # Settings related to the CMS importer
 # See CMS docs (https://cms.readthedocs.io/en/latest/) for details
 
-title=Blecha
+title=A plus B
 # The name of the task shown on the task description page 
 # Defaults to the task name
-submission_format=blechinator.%%l
+submission_format=adder.%%l
 # The name of the submitted file
 # .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
 # Defaults to the task name with .%l appended
