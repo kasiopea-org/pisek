@@ -67,14 +67,14 @@ input_max_size=50
 output_max_size=10
 
 [cms]
-title=
-submission_format=
+title=@name
+submission_format=@name
 
 time_limit=1
 mem_limit=1024
 
 max_submissions=50
-min_submission_interval=X
+min_submission_interval=0
 
 score_precision=0
 score_mode=max_subtask

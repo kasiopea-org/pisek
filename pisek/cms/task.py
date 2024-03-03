@@ -24,7 +24,7 @@ from pisek.env.task_config import TaskConfig
 def create_task(session: Session, env: Env, description: str) -> Task:
     config = env.config
 
-    task = Task(name=config.name, title=config.name)
+    task = Task(name=config.name, title=config.cms.title)
     set_task_settings(task, config)
 
     dataset = create_dataset(session, env, task, description)
@@ -36,14 +36,12 @@ def create_task(session: Session, env: Env, description: str) -> Task:
 
 
 def set_task_settings(task: Task, config: TaskConfig):
-    task.title = config.cms.title or config.name
-    task.submission_format = config.cms.submission_format or [
-        get_default_file_name(config.name)
-    ]
+    task.title = config.cms.title
+    task.submission_format = config.cms.submission_format
     task.max_submission_number = config.cms.max_submissions
     task.min_submission_interval = (
         timedelta(seconds=config.cms.min_submission_interval)
-        if config.cms.min_submission_interval is not None
+        if config.cms.min_submission_interval > 0
         else None
     )
     task.score_precision = config.cms.score_precision
@@ -56,8 +54,3 @@ def get_task(session: Session, config: TaskConfig):
         return session.query(Task).filter(Task.name == config.name).one()
     except NoResultFound as e:
         raise RuntimeError("This task has not been imported into CMS yet") from e
-
-
-def get_default_file_name(name: str):
-    name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
-    return f"{name}.%l"

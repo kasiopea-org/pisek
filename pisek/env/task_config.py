@@ -152,7 +152,9 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def __init__(self, **kwargs):
-        with init_context({"subtask_count": max(kwargs["subtasks"]) + 1}):
+        value = {"subtask_count": max(kwargs["subtasks"]) + 1, "name": kwargs["name"]}
+
+        with init_context(value):
             super().__init__(**kwargs)
 
     @staticmethod
@@ -482,14 +484,14 @@ class LimitsConfig(BaseEnv):
 
 
 class CmsConfig(BaseEnv):
-    title: OptionalStr
-    submission_format: Optional[ListStr]
+    title: str
+    submission_format: ListStr
 
     time_limit: float = Field(gt=0)  # [seconds]
     mem_limit: int = Field(gt=0)  # [KB]
 
     max_submissions: MaybeInt = Field(gt=0)
-    min_submission_interval: MaybeInt = Field(gt=0)  # [seconds]
+    min_submission_interval: int = Field(ge=0)  # [seconds]
 
     score_precision: int = Field(ge=0)
     score_mode: CmsScoreMode
@@ -511,12 +513,30 @@ class CmsConfig(BaseEnv):
 
         return {key: configs.get("cms", key) for key in KEYS}
 
-    @field_validator("submission_format", mode="before")
+    @field_validator("title", mode="before")
     @classmethod
-    def convert_format(
-        cls, value: list[str], info: ValidationInfo
-    ) -> Optional[list[str]]:
-        return value or None
+    def convert_title(cls, value: str, info: ValidationInfo) -> str:
+        if value == "@name":
+            return info.context.get("name")
+        else:
+            return value
+
+    @field_validator("submission_format", mode="after")
+    @classmethod
+    def convert_format(cls, value: list[str], info: ValidationInfo) -> list[str]:
+        return [
+            (
+                CmsConfig.get_default_file_name(info.context.get("name"))
+                if n == "@name"
+                else n
+            )
+            for n in value
+        ]
+
+    @classmethod
+    def get_default_file_name(cls, name: str):
+        name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
+        return f"{name}.%l"
 
 
 def get_section_and_key(location: tuple[Any, ...]) -> str:

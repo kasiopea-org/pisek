@@ -194,11 +194,11 @@ output_max_size=5
 
 title=A plus B
 # The name of the task shown on the task description page 
-# Defaults to the task name
+# @name expands to the task name and is the default
 submission_format=adder.%%l
 # The name of the submitted file
 # .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
-# Defaults to the task name with .%l appended
+# @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended
 
 time_limit=1
 # Execution time limit [seconds]
@@ -210,7 +210,7 @@ max_submissions=50
 # Defaults to 50
 min_submission_interval=60
 # The number of seconds a contestant has to wait between consecutive submissions
-# X means unlimited and is the default
+# Defaults to 0
 
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
