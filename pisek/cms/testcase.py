@@ -13,11 +13,11 @@
 from cms.db.task import Dataset, Testcase
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from os import path
 from glob import glob
 from itertools import chain
 
 from pisek.env.env import Env
+from pisek.env.task_config import TaskType
 from pisek.paths import TaskPath
 
 
@@ -52,14 +52,13 @@ def get_testcases(env: Env) -> list[tuple[str, TaskPath, TaskPath | None]]:
     config = env.config
 
     test_dir = TaskPath.generated_path(env)
-    output_dir = TaskPath.output_path(env)
     sample_dir = TaskPath.static_path(env)
 
     sample_globs = config.subtasks[0].in_globs
     test_globs = config.input_globs
     solution = config.solutions[config.primary_solution].source
 
-    outputs_needed = config.task_type == "batch" and config.judge_needs_out
+    outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
 
     testcases = []
 
