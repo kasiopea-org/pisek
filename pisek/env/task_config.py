@@ -69,12 +69,12 @@ class ProgramType(StrEnum):
     judge = auto()
 
 
-class CmsFeedbackLevel(StrEnum):
+class CMSFeedbackLevel(StrEnum):
     full = auto()
     restricted = auto()
 
 
-class CmsScoreMode(StrEnum):
+class CMSScoreMode(StrEnum):
     max = auto()
     max_subtask = auto()
     max_tokened_last = auto()
@@ -126,7 +126,7 @@ class TaskConfig(BaseEnv):
 
     limits: "LimitsConfig"
 
-    cms: "CmsConfig"
+    cms: "CMSConfig"
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -191,7 +191,7 @@ class TaskConfig(BaseEnv):
                 solutions[m[1]] = SolutionConfig.load_dict(m[1], configs)
 
         args["limits"] = LimitsConfig.load_dict(configs)
-        args["cms"] = CmsConfig.load_dict(configs)
+        args["cms"] = CMSConfig.load_dict(configs)
 
         return args
 
@@ -483,7 +483,7 @@ class LimitsConfig(BaseEnv):
         return args
 
 
-class CmsConfig(BaseEnv):
+class CMSConfig(BaseEnv):
     title: str
     submission_format: ListStr
 
@@ -494,8 +494,8 @@ class CmsConfig(BaseEnv):
     min_submission_interval: int = Field(ge=0)  # [seconds]
 
     score_precision: int = Field(ge=0)
-    score_mode: CmsScoreMode
-    feedback_level: CmsFeedbackLevel
+    score_mode: CMSScoreMode
+    feedback_level: CMSFeedbackLevel
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
@@ -517,6 +517,9 @@ class CmsConfig(BaseEnv):
     @classmethod
     def convert_title(cls, value: str, info: ValidationInfo) -> str:
         if value == "@name":
+            if info.context is None:
+                raise RuntimeError("Missing validation context.")
+
             return info.context.get("name")
         else:
             return value
@@ -524,9 +527,12 @@ class CmsConfig(BaseEnv):
     @field_validator("submission_format", mode="after")
     @classmethod
     def convert_format(cls, value: list[str], info: ValidationInfo) -> list[str]:
+        if info.context is None:
+            raise RuntimeError("Missing validation context.")
+
         return [
             (
-                CmsConfig.get_default_file_name(info.context.get("name"))
+                CMSConfig.get_default_file_name(info.context.get("name"))
                 if n == "@name"
                 else n
             )
