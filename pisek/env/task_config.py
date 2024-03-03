@@ -42,6 +42,7 @@ MaybeInt = Annotated[
     Optional[int], BeforeValidator(lambda i: (None if i == "X" else i))
 ]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
+OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
 
 class TaskType(StrEnum):
@@ -66,6 +67,17 @@ class ProgramType(StrEnum):
     solve = auto()
     sec_solve = auto()
     judge = auto()
+
+
+class CMSFeedbackLevel(StrEnum):
+    full = auto()
+    restricted = auto()
+
+
+class CMSScoreMode(StrEnum):
+    max = auto()
+    max_subtask = auto()
+    max_tokened_last = auto()
 
 
 _GLOBAL_KEYS = [
@@ -101,13 +113,13 @@ class TaskConfig(BaseEnv):
     data_subdir: str
 
     in_gen: str
-    checker: Optional[str]
+    checker: OptionalStr
     out_check: JudgeType
     out_judge: Optional[str]
     judge_needs_in: bool
     judge_needs_out: bool
 
-    stub: Optional[str]
+    stub: OptionalStr
     headers: ListStr
 
     subtasks: dict[int, "SubtaskConfig"]
@@ -115,6 +127,8 @@ class TaskConfig(BaseEnv):
     solutions: dict[str, "SolutionConfig"]
 
     limits: "LimitsConfig"
+
+    cms: "CMSConfig"
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -140,7 +154,9 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def __init__(self, **kwargs):
-        with init_context({"subtask_count": max(kwargs["subtasks"]) + 1}):
+        value = {"subtask_count": max(kwargs["subtasks"]) + 1, "name": kwargs["name"]}
+
+        with init_context(value):
             super().__init__(**kwargs)
 
     @staticmethod
@@ -177,6 +193,7 @@ class TaskConfig(BaseEnv):
                 solutions[m[1]] = SolutionConfig.load_dict(m[1], configs)
 
         args["limits"] = LimitsConfig.load_dict(configs)
+        args["cms"] = CMSConfig.load_dict(configs)
 
         return args
 
@@ -191,11 +208,6 @@ class TaskConfig(BaseEnv):
                 f"Must be one of ({', '.join(ALLOWED)})",
             )
         return value
-
-    @field_validator("checker", mode="before")
-    @classmethod
-    def convert_checker(cls, value: str) -> Optional[str]:
-        return value or None
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -479,6 +491,68 @@ class LimitsConfig(BaseEnv):
             args[key] = configs.get("limits", key)
 
         return args
+
+
+class CMSConfig(BaseEnv):
+    title: str
+    submission_format: ListStr
+
+    time_limit: float = Field(gt=0)  # [seconds]
+    mem_limit: int = Field(gt=0)  # [KB]
+
+    max_submissions: MaybeInt = Field(gt=0)
+    min_submission_interval: int = Field(ge=0)  # [seconds]
+
+    score_precision: int = Field(ge=0)
+    score_mode: CMSScoreMode
+    feedback_level: CMSFeedbackLevel
+
+    @classmethod
+    def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
+        KEYS = [
+            "title",
+            "submission_format",
+            "time_limit",
+            "mem_limit",
+            "max_submissions",
+            "min_submission_interval",
+            "score_precision",
+            "score_mode",
+            "feedback_level",
+        ]
+
+        return {key: configs.get("cms", key) for key in KEYS}
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def convert_title(cls, value: str, info: ValidationInfo) -> str:
+        if value == "@name":
+            if info.context is None:
+                raise RuntimeError("Missing validation context.")
+
+            return info.context.get("name")
+        else:
+            return value
+
+    @field_validator("submission_format", mode="after")
+    @classmethod
+    def convert_format(cls, value: list[str], info: ValidationInfo) -> list[str]:
+        if info.context is None:
+            raise RuntimeError("Missing validation context.")
+
+        return [
+            (
+                CMSConfig.get_default_file_name(info.context.get("name"))
+                if n == "@name"
+                else n
+            )
+            for n in value
+        ]
+
+    @classmethod
+    def get_default_file_name(cls, name: str):
+        name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
+        return f"{name}.%l"
 
 
 def _get_section_and_key(location: tuple[Any, ...]) -> str:

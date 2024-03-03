@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from argparse import Namespace
 from datetime import datetime
 import os
 import sys
@@ -76,3 +77,15 @@ def locked_folder(f):
         return res
 
     return g
+
+
+def with_env(fun: Callable[[Env, Namespace], int]) -> Callable[[Namespace], int]:
+    def wrap(args) -> int:
+        env = Env.load(**vars(args))
+
+        if env is None:
+            return 1
+
+        return fun(env, args)
+
+    return wrap

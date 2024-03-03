@@ -1,4 +1,4 @@
-#include <odd.h>
+#include "odd.h"
 
 void find_odd(std::vector<int> nums) {
     for (int num : nums)

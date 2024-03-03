@@ -5,7 +5,7 @@
 # Move 'config' into a task folder 
 
 
-# Values begining with ! or @ are reserved and have special meaning:
+# Values beginning with ! or @ are reserved and have special meaning:
 # - Only ! value is !unset, which is always invalid
 # - @ values autoexpand depending on context
 
@@ -17,7 +17,7 @@
 version=v2
 
 # Name of task (for automatic CMS import)
-name=blecha
+name=a-plus-b
 
 contest_type=cms
 # Environment for which is task developed
@@ -187,3 +187,36 @@ input_max_size=20
 output_max_size=5
 # Maximal input size [MB]
 # Defaults to 10 (only in Kasiopea)
+
+[cms]
+# Settings related to the CMS importer
+# See CMS docs (https://cms.readthedocs.io/en/latest/) for details
+
+title=A plus B
+# The name of the task shown on the task description page 
+# @name expands to the task name and is the default
+submission_format=adder.%%l
+# The name of the submitted file
+# .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
+# @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended
+
+time_limit=1
+# Execution time limit [seconds]
+mem_limit=1024
+# Memory limit [MB]
+
+max_submissions=50
+# The number of submissions one contestant allowed to make, or X for unlimited
+# Defaults to 50
+min_submission_interval=60
+# The number of seconds a contestant has to wait between consecutive submissions
+# Defaults to 0
+
+score_precision=0
+# How many decimal digits scores are rounded to (defaults to 0)
+score_mode=max_subtask
+# Describes how the final score is computed from the scores of individual submissions
+# May be 'max', 'max_subtask' (default) or 'max_tokened_last'
+feedback_level=restricted
+# Specifies how much information is given to the contestants about their submission
+# May be 'full' or 'restricted' (default)
