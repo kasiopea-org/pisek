@@ -156,7 +156,7 @@ def task_path_representer(dumper, task_path: TaskPath):
 
 
 def task_path_constructor(loader, value):
-    path = loader.construct_sequence(value)
+    [path] = loader.construct_sequence(value)
     return TaskPath(path)
 
 

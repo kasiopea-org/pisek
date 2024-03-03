@@ -155,7 +155,9 @@ class CheckerJob(ProgramsJob):
         self.checker = checker
         self.subtask = subtask
         self.input = input_
-        self.log_file = TaskPath.log_file(self._env, input_.name, self.checker.name)
+        self.log_file = TaskPath.log_file(
+            self._env, input_.name, f"{self.checker.name}{subtask}"
+        )
         self.expected = expected
 
     def _check(self) -> RunResult:

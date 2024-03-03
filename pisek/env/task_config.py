@@ -80,7 +80,7 @@ class CMSScoreMode(StrEnum):
     max_tokened_last = auto()
 
 
-GLOBAL_KEYS = [
+_GLOBAL_KEYS = [
     ("task", "name"),
     ("task", "contest_type"),
     ("task", "task_type"),
@@ -93,7 +93,7 @@ GLOBAL_KEYS = [
     ("tests", "stub"),
     ("tests", "headers"),
 ]
-JUDGE_KEYS = [
+_JUDGE_KEYS = [
     ("out_judge", None),
     ("judge_needs_in", "0"),
     ("judge_needs_out", "1"),
@@ -101,6 +101,8 @@ JUDGE_KEYS = [
 
 
 class TaskConfig(BaseEnv):
+    """Configuration of task loaded from config file."""
+
     name: str
     contest_type: str
     task_type: TaskType
@@ -164,13 +166,13 @@ class TaskConfig(BaseEnv):
     @staticmethod
     def load_dict(configs: ConfigHierarchy) -> dict[str, Any]:
         args: dict[str, Any] = {
-            key: configs.get(section, key) for section, key in GLOBAL_KEYS
+            key: configs.get(section, key) for section, key in _GLOBAL_KEYS
         }
 
         args["fail_mode"] = "any" if args["contest_type"] == "cms" else "all"
 
         # Load judge specific keys
-        for key, default in JUDGE_KEYS:
+        for key, default in _JUDGE_KEYS:
             if args["out_check"] == "judge":
                 args[key] = configs.get("tests", key)
             else:
@@ -273,6 +275,8 @@ class TaskConfig(BaseEnv):
 
 
 class SubtaskConfig(BaseEnv):
+    """Configuration of one subtask."""
+
     num: int
     name: str
     points: int = Field(ge=0)
@@ -332,6 +336,8 @@ class SubtaskConfig(BaseEnv):
 
 
 class SolutionConfig(BaseEnv):
+    """Configuration of one solution."""
+
     name: str
     primary: bool
     source: str
@@ -402,7 +408,7 @@ class SolutionConfig(BaseEnv):
         elif value == "@all":
             value = "1" * subtask_cnt
         elif value == "@any":
-            value = "0" * subtask_cnt
+            value = "X" * subtask_cnt
 
         if len(value) != subtask_cnt:
             raise PydanticCustomError(
@@ -439,6 +445,8 @@ class SolutionConfig(BaseEnv):
 
 
 class ProgramLimits(BaseEnv):
+    """Configuration of limits of one program type."""
+
     time_limit: float = Field(ge=0)  # [seconds]
     clock_limit: float = Field(ge=0)  # [seconds]
     mem_limit: int = Field(ge=0)  # [KB]
@@ -461,6 +469,8 @@ class ProgramLimits(BaseEnv):
 
 
 class LimitsConfig(BaseEnv):
+    """Configuration of limits for all program types."""
+
     tool: ProgramLimits
     in_gen: ProgramLimits
     checker: ProgramLimits
@@ -545,12 +555,12 @@ class CMSConfig(BaseEnv):
         return f"{name}.%l"
 
 
-def get_section_and_key(location: tuple[Any, ...]) -> str:
+def _get_section_and_key(location: tuple[Any, ...]) -> str:
     def take_ith(l: list, i: int) -> list:
         return list(map(lambda x: x[i], l))
 
-    GLOBAL_KEYS_F = take_ith(GLOBAL_KEYS, 1)
-    JUDGE_KEYS_F = take_ith(JUDGE_KEYS, 0)
+    _GLOBAL_KEYS_F = take_ith(_GLOBAL_KEYS, 1)
+    _JUDGE_KEYS_F = take_ith(_JUDGE_KEYS, 0)
 
     loc = tuple(map(str, location))
 
@@ -562,9 +572,9 @@ def get_section_and_key(location: tuple[Any, ...]) -> str:
         case ("limits", program, *rest):
             return f"[limits] {program}_{'.'.join(rest)}"
         case (key,):
-            if key in GLOBAL_KEYS_F:
-                return f"[{GLOBAL_KEYS[GLOBAL_KEYS_F.index(key)][0]}] {key}"
-            elif key in JUDGE_KEYS_F:
+            if key in _GLOBAL_KEYS_F:
+                return f"[{_GLOBAL_KEYS[_GLOBAL_KEYS_F.index(key)][0]}] {key}"
+            elif key in _JUDGE_KEYS_F:
                 return f"[tests] {key}"
             return key
         case ():
@@ -573,7 +583,7 @@ def get_section_and_key(location: tuple[Any, ...]) -> str:
             return ".".join(map(str, loc))
 
 
-def format_message(err: ErrorDetails) -> str:
+def _format_message(err: ErrorDetails) -> str:
     inp = err["input"]
     ctx = err["ctx"] if "ctx" in err else None
     if isinstance(inp, dict) and ctx is not None:
@@ -585,23 +595,27 @@ def format_message(err: ErrorDetails) -> str:
     return f"{err['msg']}: '{inp}'"
 
 
-def convert_errors(e: ValidationError) -> list[str]:
+def _convert_errors(e: ValidationError) -> list[str]:
     error_msgs: list[str] = []
     for error in e.errors():
         error_msgs.append(
-            f"{get_section_and_key(error['loc'])}\n{tab(format_message(error))}"
+            f"{_get_section_and_key(error['loc'])}\n{tab(_format_message(error))}"
         )
     return error_msgs
 
 
 def load_config(
-    path: str, strict: bool = False, no_colors: bool = False
+    path: str,
+    strict: bool = False,
+    no_colors: bool = False,
+    suppress_warnings: bool = False,
 ) -> Optional[TaskConfig]:
+    """Loads config from given path."""
     try:
         config_hierarchy = ConfigHierarchy(path, no_colors)
         config = TaskConfig.load(config_hierarchy)
         config_hierarchy.check_unused_keys()
-        if config_hierarchy.check_todos():
+        if config_hierarchy.check_todos() and not suppress_warnings:
             warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
         return config
     except TaskConfigError as err:
@@ -609,7 +623,7 @@ def load_config(
     except ValidationError as err:
         eprint(
             colored(
-                "Invalid config:\n\n" + "\n\n".join(convert_errors(err)),
+                "Invalid config:\n\n" + "\n\n".join(_convert_errors(err)),
                 "red",
                 no_colors,
             )
