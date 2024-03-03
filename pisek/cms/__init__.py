@@ -39,7 +39,7 @@
 # Instead, the check and testing-log commands simply search the database for
 # a matching (task, file hash, language) triple.
 
-from typing import Any, Callable
+from argparse import Namespace
 from cms.db.session import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -50,7 +50,7 @@ from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.pipeline_tools import PATH
+from pisek.utils.pipeline_tools import with_env
 
 
 def prepare_files(env: Env):
@@ -66,20 +66,8 @@ def prepare_files(env: Env):
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
 
 
-def with_env(fun: Callable[[Env, Any], int]) -> Callable[[Any], int]:
-    def wrap(args) -> int:
-        env = Env.load(**vars(args))
-
-        if env is None:
-            return 1
-
-        return fun(env, args)
-
-    return wrap
-
-
 @with_env
-def create(env: Env, args) -> int:
+def create(env: Env, args: Namespace) -> int:
     prepare_files(env)
 
     session = Session()
@@ -103,7 +91,7 @@ def create(env: Env, args) -> int:
 
 
 @with_env
-def update(env: Env, args) -> int:
+def update(env: Env, args: Namespace) -> int:
     session = Session()
 
     task = get_task(session, env.config)
@@ -116,7 +104,7 @@ def update(env: Env, args) -> int:
 
 
 @with_env
-def add(env: Env, args) -> int:
+def add(env: Env, args: Namespace) -> int:
     prepare_files(env)
 
     session = Session()
@@ -139,7 +127,7 @@ def add(env: Env, args) -> int:
 
 
 @with_env
-def submit(env: Env, args) -> int:
+def submit(env: Env, args: Namespace) -> int:
     session = Session()
 
     username = args.username
@@ -156,7 +144,7 @@ def submit(env: Env, args) -> int:
 
 
 @with_env
-def testing_log(env: Env, args) -> int:
+def testing_log(env: Env, args: Namespace) -> int:
     session = Session()
 
     description = args.dataset
@@ -169,7 +157,7 @@ def testing_log(env: Env, args) -> int:
 
 
 @with_env
-def check(env: Env, args) -> int:
+def check(env: Env, args: Namespace) -> int:
     session = Session()
 
     description = args.dataset
