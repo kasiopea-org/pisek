@@ -55,7 +55,7 @@ class CreateTestingLog(TaskJobManager):
                     {
                         "time": sol_res.time,
                         "wall_clock_time": sol_res.wall_time,
-                        "test": inp,
+                        "test": inp.name,
                         "points": sol_res.points,
                         "result": sol_res.verdict.name,
                     }

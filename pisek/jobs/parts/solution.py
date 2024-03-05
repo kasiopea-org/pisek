@@ -59,11 +59,11 @@ class SolutionManager(TaskJobManager):
         jobs.append(compile_ := Compile(self._env, self._solution, True))
         self._compile_job = compile_
 
-        self._judges: dict[str, RunJudge] = {}
+        self._judges: dict[TaskPath, RunJudge] = {}
         for sub_num, sub in self._env.config.subtasks.items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp.path not in self._judges:
+                if inp not in self._judges:
                     run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
@@ -75,11 +75,11 @@ class SolutionManager(TaskJobManager):
                         run_sol = run_judge = self._create_communication_jobs(inp)
                         jobs.append(run_sol)
 
-                    self._judges[inp.path] = run_judge
+                    self._judges[inp] = run_judge
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp.path])
+                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
 
         return jobs
 
