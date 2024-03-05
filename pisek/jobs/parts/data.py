@@ -83,9 +83,10 @@ class DataManager(TaskJobManager):
             ]
             self._outputs.append(link.dest)
 
-        for glob in self._env.config.input_globs:
-            if len(self.filter_by_globs([glob], all_input_files)) == 0:
-                raise PipelineItemFailure(f"No inputs for glob '{glob}'.")
+        for num, sub in self._env.config.subtasks.items():
+            inputs = list(filter(lambda p: sub.in_subtask(p.name), all_input_files))
+            if len(inputs) == 0:
+                raise PipelineItemFailure(f"No inputs for subtask {num} with globs {sub.all_globs}.")
 
         return jobs
 
