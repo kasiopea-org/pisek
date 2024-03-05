@@ -141,6 +141,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
                 target_name = "partially correct"
                 correct = 0.0 < fraction < 1.0
             else:
+                assert target in ("W", "T", "!"), f"Unknown expected result '{target}'"
                 target_name = "wrong"
                 correct = fraction == 0.0
 
