@@ -341,6 +341,13 @@ class SubtaskConfig(BaseEnv):
 
         return list(sorted(set(predecessors)))
 
+    @model_validator(mode="after")
+    def validate_model(self):
+        if self.name == "@auto":
+            self.name = f"Subtask {self.num}"
+
+        return self
+
 
 class SolutionConfig(BaseEnv):
     """Configuration of one solution."""

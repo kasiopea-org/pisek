@@ -14,7 +14,7 @@ stub=
 headers=
 
 [all_tests]
-name=
+name=@auto 
 in_globs=@ith
 predecessors=@previous
 
