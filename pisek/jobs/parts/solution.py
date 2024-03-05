@@ -30,7 +30,6 @@ from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.solution_result import (
-    RESULT_MARK,
     Verdict,
     SolutionResult,
     SUBTASK_SPEC,
@@ -245,7 +244,7 @@ class SubtaskJobGroup:
         for verdict in Verdict:
             count = previous.count(verdict)
             if count > 0:
-                s += f"{count}{RESULT_MARK[verdict]}"
+                s += f"{count}{verdict.mark()}"
         s += ") "
         if s == "() ":
             s = ""

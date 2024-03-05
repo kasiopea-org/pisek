@@ -15,22 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from functools import partial
-from typing import Callable, Iterable
+from typing import Callable
 import yaml
 
-Verdict = Enum(
-    "Verdict", ["ok", "partial", "indeterminate", "wrong_answer", "error", "timeout"]
-)
-RESULT_MARK = {
-    Verdict.ok: "·",
-    Verdict.partial: "P",
-    Verdict.indeterminate: "?",
-    Verdict.error: "!",
-    Verdict.timeout: "T",
-    Verdict.wrong_answer: "W",
-}
+
+class Verdict(Enum):
+    ok = auto()
+    partial = auto()
+    timeout = auto()
+    wrong_answer = auto()
+    error = auto()
+
+    def mark(self) -> str:
+        return {
+            Verdict.ok: "·",
+            Verdict.partial: "P",
+            Verdict.timeout: "T",
+            Verdict.wrong_answer: "W",
+            Verdict.error: "!",
+        }[self]
 
 
 @dataclass
@@ -49,7 +54,7 @@ class SolutionResult:
         if self.verdict == Verdict.partial:
             return f"[{self.points:.2f}]"
         else:
-            return RESULT_MARK[self.verdict]
+            return self.verdict.mark()
 
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
@@ -85,7 +90,7 @@ def solution_res_true(sol_res: SolutionResult) -> bool:
 
 
 def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
-    return sol_res.points == c and sol_res.verdict != Verdict.indeterminate
+    return sol_res.points == c
 
 
 def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
