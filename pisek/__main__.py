@@ -26,7 +26,7 @@ from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
 from pisek.license import license, license_gnu
-from pisek.visualize import visualize_command
+from pisek.visualize import visualize
 
 
 def sigint_handler(sig, frame):
@@ -152,21 +152,22 @@ def main(argv):
             help="Do not use ANSI color sequences.",
         )
 
-    def add_argument_mode(parser):
+    def add_argument_filter(parser):
         parser.add_argument(
-            "--mode",
-            "-m",
+            "--filter",
+            "-f",
+            choices=("slowest", "all"),
             default="slowest",
             type=str,
             help="Visualization mode.\n slowest: Slowest input\n all: all inputs",
         )
 
-    def add_argument_no_subtasks(parser):
+    def add_argument_bundle(parser):
         parser.add_argument(
-            "--no-subtasks",
-            "-n",
+            "--bundle",
+            "-b",
             action="store_true",
-            help="Group all inputs together (not by subtask).",
+            help="Bundle all inputs together (not by subtask).",
         )
 
     def add_argument_solutions(parser):
@@ -182,19 +183,9 @@ def main(argv):
     def add_argument_filename(parser):
         parser.add_argument(
             "--filename",
-            "-f",
             default="testing_log.json",
             type=str,
             help="Name of json, from which to load data.",
-        )
-
-    def add_argument_measured_stat(parser):
-        parser.add_argument(
-            "--measured-stat",
-            "-M",
-            default="time",
-            type=str,
-            help="Stat to visualize. Only 'wall_clock_time' implemented so far.",
         )
 
     def add_argument_limit(parser):
@@ -210,7 +201,6 @@ def main(argv):
         parser.add_argument(
             "--segments",
             "-S",
-            default=5,
             type=int,
             help="Number of  segments until limit.",
         )
@@ -266,11 +256,10 @@ def main(argv):
     parser_visualize = subparsers.add_parser(
         "visualize", help="Show solutions statistics and closeness to limit."
     )
-    add_argument_mode(parser_visualize)
-    add_argument_no_subtasks(parser_visualize)
+    add_argument_filter(parser_visualize)
+    add_argument_bundle(parser_visualize)
     add_argument_solutions(parser_visualize)
     add_argument_filename(parser_visualize)
-    add_argument_measured_stat(parser_visualize)
     add_argument_limit(parser_visualize)
     add_argument_segments(parser_visualize)
 
@@ -369,7 +358,7 @@ def main(argv):
     elif args.subcommand == "clean":
         result = not clean_directory(args)
     elif args.subcommand == "visualize":
-        visualize_command(PATH, args)
+        result = visualize(PATH, **vars(args))
     elif args.subcommand == "license":
         print(license_gnu if args.print else license)
     else:

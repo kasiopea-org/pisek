@@ -1,9 +1,5 @@
 # pisek  - Tool for developing tasks for programming competitions.
 #
-# Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
-# Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
-# Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
-# Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
 # Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
@@ -13,304 +9,330 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from collections import namedtuple
-import fnmatch
+from dataclasses import dataclass
 import json
-from math import ceil
+from math import ceil, inf
 import os
-import re
-import sys
-from colorama import Fore
-from typing import Optional, Union, Iterable, Callable
+from typing import Optional
 
-from pisek.env.task_config import load_config, TaskConfig, SubtaskConfig
-from pisek.jobs.parts.task_job import TaskHelper
+from pisek.utils.text import pad, tab, colored
+from pisek.utils.terminal import terminal_width
+from pisek.jobs.parts.solution_result import Verdict
+from pisek.env.task_config import load_config, TaskConfig
 
-VERDICTS = {
-    "ok": "·",
-    "partial": "P",
-    "timeout": "T",
-    "timeout_limited": "t",
-    "wrong_answer": "W",
-    "error": "!",
-}
-VERDICTS_ORDER = ["·", "P", "t", "T", "W", "!"]
-
-# subtask section
-TestCaseResult = namedtuple("TestCaseResult", ("name", "verdict", "value", "points"))
+test_name_max_length = 0
 
 
-def red(msg: str) -> str:
-    return f"{Fore.RED}{msg}{Fore.RESET}"
+class MissingSolution(Exception):
+    def __init__(self, name: str) -> None:
+        super().__init__(f"Missing solution {name} in testing log.")
 
 
-def group_by_subtask(
-    results: list[TestCaseResult], config: TaskConfig
-) -> dict[int, list[TestCaseResult]]:
-    subtasks: dict[int, list[TestCaseResult]] = {
-        num: [] for num, _ in config.subtasks.items()
-    }
-    for result in results:
-        for i, subtask in config.subtasks.items():
-            if in_subtask(result.name, subtask):
-                subtasks[i].append(result)
-    return subtasks
+@dataclass
+class LoggedResult:
+    verdict: Verdict
+    points: float
+    time: float
+    test: str
+    original_verdict: Verdict
+
+    def __init__(
+        self,
+        verdict: Verdict,
+        points: float,
+        measured_value: float,
+        test: str,
+        original_verdict: Verdict,
+    ) -> None:
+        global test_name_max_length
+
+        self.verdict = verdict
+        self.points = points
+        self.time = measured_value
+        self.test = test
+        self.original_verdict = original_verdict
+
+        test_name_max_length = max(test_name_max_length, len(self.test))
+
+    def to_str(
+        self,
+        limit: float,
+        segments: int,
+    ) -> str:
+        def get_bar() -> str:
+            percentage = self.time / limit
+            full = max(ceil(segments * percentage), 1)
+
+            bounded = min(full, segments)
+            overflown = max(0, full - segments)
+
+            overflown_max_length = terminal_width - segments - test_name_max_length - 40
+            if cut := (overflown > overflown_max_length):
+                overflown = overflown_max_length
+
+            if abs(percentage - 1) < 0.1:
+                color = "red"
+            elif abs(percentage - 1) < 0.5:
+                color = "yellow"
+            else:
+                color = "green"
+
+            full_bar = colored("━", color)
+
+            return (
+                f"[{full_bar*bounded}{'━'*(segments-bounded)}|"
+                f"{full_bar*overflown}{' '*(overflown_max_length - overflown)}{'⋯⋯' if cut else '  '}"
+            )
+
+        return (
+            f"{pad(self.test, test_name_max_length)}  "
+            f"{self.original_verdict.mark()}->{self.verdict.mark()}  "
+            f"{get_bar()}    {self.time:.2f} / {limit:.2f}s"
+        )
 
 
-def in_subtask(name: str, subtask: SubtaskConfig):
-    return any(fnmatch.fnmatch(f"{name}.in", g) for g in subtask.all_globs)
+def limit_result(result: LoggedResult, limit: float) -> LoggedResult:
+    if result.time <= limit and result.verdict == Verdict.timeout:
+        new_verdict = result.original_verdict
+        if new_verdict == Verdict.timeout:
+            new_verdict = Verdict.ok
+
+        return LoggedResult(
+            new_verdict, 1.0, result.time, result.test, result.original_verdict
+        )
+    if result.time > limit:
+        return LoggedResult(
+            Verdict.timeout, 0.0, result.time, result.test, result.original_verdict
+        )
+    return result
 
 
-def evaluate_solution(
-    results: dict[int, list[TestCaseResult]], config: TaskConfig
-) -> float:
-    points = 0.0
-    for subtask_id, sub_results in results.items():
-        points += evaluate_subtask(sub_results, config.subtasks[subtask_id].points)
-    return points
+class SolutionResults:
+    def __init__(
+        self, name: str, config: TaskConfig, results: list[LoggedResult]
+    ) -> None:
+        self.name = name
+        self._solution = config.solutions[name]
+        self._config = config
+        self._results = results
+
+        self._results.sort(key=lambda r: r.test)
+        self._results.sort(key=lambda r: r.time)
+        # self._results.sort(key=lambda r: r.verdict)
+        self._results.sort(key=self._get_subtask)
+
+    def _get_subtask(self, result: LoggedResult) -> int:
+        return min(
+            i
+            for i, sub in self._config.subtasks.items()
+            if sub.new_in_subtask(result.test)
+        )
+
+    def _evaluate_results(
+        self, results: list[LoggedResult], expected: str
+    ) -> tuple[bool, bool, Optional[LoggedResult]]:
+        ok, definitive, breaker = self._config.evaluate_verdicts(
+            list(map(lambda r: r.verdict, results)), expected
+        )
+        return ok, definitive, results[breaker] if breaker is not None else None
+
+    @staticmethod
+    def from_log(
+        name: str, config: TaskConfig, testing_log, limit: float
+    ) -> "SolutionResults":
+        if name not in testing_log:
+            raise MissingSolution(name)
+
+        results = []
+        for result in testing_log[name]["results"]:
+            results.append(
+                limit_result(
+                    LoggedResult(
+                        Verdict[result["result"]],
+                        result["points"],
+                        result["time"],
+                        result["test"],
+                        Verdict[result["result"]],
+                    ),
+                    limit,
+                )
+            )
+
+        return SolutionResults(name, config, results)
+
+    def get_all(self) -> list[LoggedResult]:
+        return self._results
+
+    def get_by_subtask(self) -> dict[int, list[LoggedResult]]:
+        by_subtask: dict[int, list[LoggedResult]] = {
+            num: [] for num in self._config.subtasks
+        }
+        for res in self._results:
+            for num, sub in self._config.subtasks.items():
+                if sub.in_subtask(res.test):
+                    by_subtask[num].append(res)
+
+        return by_subtask
+
+    def check_subtask(self, num: int) -> Optional[str]:
+        results = self.get_by_subtask()
+
+        expected = self._solution.subtasks[num]
+        ok, _, breaker = self._evaluate_results(results[num], expected)
+        if not ok:
+            failed_test = f" ({breaker.test})" if breaker else ""
+            return f"{expected}{failed_test}"
+        return None
+
+    def check_points(self) -> Optional[str]:
+        achieved = 0.0
+        results = self.get_by_subtask()
+        for num, sub in self._config.subtasks.items():
+            achieved += min(results[num], key=lambda r: r.points).points * sub.points
+
+        points = self._solution.points
+        points_above = self._solution.points_above
+        points_below = self._solution.points_below
+
+        if points is not None and points != achieved:
+            return f"{points}p"
+        if points_above is not None and points_above < achieved:
+            return f"at least {points_above}p"
+        if points_below is not None and points_below > achieved:
+            return f"at most {points_below}p"
+
+        return None
+
+    def check_all(self) -> list[str]:
+        fails = []
+        for num in self._config.subtasks:
+            if (err := self.check_subtask(num)) is not None:
+                fails.append(f"{err} on {self._config.subtasks[num].name}")
+        if (err := self.check_points()) is not None:
+            fails.append(f"get {err}")
+
+        return fails
+
+    def get_timeout_range(self, num: int) -> tuple[float, float]:
+        results = self.get_by_subtask()[num]
+        times = [0] + list(map(lambda r: r.time, results))
+        times.sort()
+        min_possible = len(times) - 1
+        max_possible = 0
+        for i, time in enumerate(times):
+            ok, _, _ = self._evaluate_results(
+                list(map(lambda r: limit_result(r, time), results)),
+                self._solution.subtasks[num],
+            )
+            if ok:
+                min_possible = min(i, min_possible)
+                max_possible = max(i, max_possible)
+
+        times.append(inf)
+        return (times[min_possible], times[max_possible + 1])
 
 
-def evaluate_subtask(subtask_results: list[TestCaseResult], max_points):
-    return max_points * min(map(lambda r: r.points, subtask_results), default=0)
-
-
-# mode section
-def slowest(results: list[TestCaseResult]) -> Union[str, list[TestCaseResult]]:
-    wa = filter_by_verdict(results, VERDICTS["wrong_answer"])
-    err = filter_by_verdict(results, VERDICTS["error"])
-    if len(wa) != 0 or len(err) != 0:
-        return f"{len(wa)}{VERDICTS['wrong_answer']}, {len(err)}{VERDICTS['error']}"
-    slowest = max(results, key=lambda x: x.value)
-    return [slowest]
-
-
-def identity(results: list[TestCaseResult]) -> list[TestCaseResult]:
+def show_all(results: list[LoggedResult]) -> list[LoggedResult]:
     return results
 
 
-MODES_ALIASES = {
-    "s": slowest,
-    "slowest": slowest,
-    "a": identity,
-    "all": identity,
-}
-
-
-# visualization section
-def visualize_command(path, args):
-    visualize(
-        path,
-        args.mode,
-        not args.no_subtasks,
-        args.solutions,
-        args.filename,
-        args.measured_stat,
-        args.limit,
-        args.segments,
-    )
+def show_slowest(results: list[LoggedResult]) -> list[LoggedResult]:
+    return [max(results, key=lambda r: r.time)]
 
 
 def visualize(
     path: str = ".",
-    mode: str = "slowest",
-    by_subtask: bool = True,
+    filter: str = "all",
+    bundle: bool = False,
     solutions: list[str] = [],
-    filename: str = "testing_log.json",
-    measured_stat: str = "time",
     limit: Optional[float] = None,
-    segments: int = 10,
-):
+    filename: str = "testing_log.json",
+    segments: Optional[int] = None,
+    **_,
+) -> int:
     config = load_config(path)
     if config is None:
-        return exit(1)
+        return 2
 
-    with open(os.path.join(path, filename)) as f:
-        testing_log = json.load(f)
+    with open(os.path.join(path, filename)) as log_file:
+        testing_log = json.load(log_file)
 
-    if mode not in MODES_ALIASES:
-        print(
-            f"Neznámý mód {mode}. Známé mody jsou: {', '.join(set(MODES_ALIASES.keys()))}"
-        )
-        exit(1)
-    mode_func = MODES_ALIASES[mode]
-
-    if solutions == []:
-        solutions = list(testing_log.keys() - {"source"})
+    if testing_log["source"] == "cms":
+        limit_default = config.cms.time_limit
     else:
-        for solution_name in solutions:
-            if solution_name not in testing_log:
-                print(f"Řešení '{solution_name}' není v '{filename}'.", file=sys.stderr)
-                exit(1)
+        limit_default = config.limits.solve.time_limit
+    time_limit = limit_default if limit is None else limit
 
-    # TODO: Implement here for other values of measured_stat
-    if measured_stat != "time":
-        raise NotImplementedError()
+    filter_fn = show_all if filter == "all" else show_slowest
 
-    if limit is None:
-        if measured_stat == "time":
-            limit = config.limits.solve.time_limit
-        else:  # TODO: Fix when implementing additional stats
-            limit = 1
+    segment_cnt = terminal_width // 8 if segments is None else segments
 
-    # Kind of slow, but we will not have hundreds of solutions
-    def solution_index(name) -> int:
-        for i, (_, sol) in enumerate(config.solutions.items()):
-            if sol.source == name:
-                return i
-        raise ValueError(f"Unknown solution {name}")
+    solution_names = config.solutions.keys()
+    if len(solutions) == 0:
+        solutions = list(solution_names)
 
-    solutions.sort(key=solution_index)
-
-    unexpected_solutions = []
-    for solution_name in solutions:
-        if not visualize_solution(
-            solution_name,
-            testing_log[solution_name],
-            config,
-            mode_func,
-            by_subtask,
-            measured_stat,
-            limit,
-            segments,
-        ):
-            unexpected_solutions.append(solution_name)
-
-    if len(unexpected_solutions):
-        print(
-            red(f"Řešení {', '.join(unexpected_solutions)} získala špatný počet bodů."),
-            file=sys.stderr,
-        ),
-
-
-def visualize_solution(
-    solution_name: str,
-    data,
-    config: TaskConfig,
-    mode_func: Callable[[list[TestCaseResult]], Union[list[TestCaseResult], str]],
-    by_subtask: bool,
-    measured_stat: str,
-    limit: float,
-    segments: int,
-):
-    results = data["results"]
-
-    # First extract desired stats
-    results_extracted = []
-    for result in results:
-        final_verdict = VERDICTS[result["result"]]
-        points = result["points"]
-
-        # We are testing at higher limits in cms
-        # TODO: Implement here for other values
-        if final_verdict == VERDICTS["ok"] or final_verdict == VERDICTS["partial"]:
-            if result["time"] > limit:
-                final_verdict = VERDICTS["timeout_limited"]
-                points = 0.0
-
-        value = result[measured_stat]
-        results_extracted.append(
-            TestCaseResult(result["test"], final_verdict, value, points)
-        )
-
-    # Sort and filter
-    results_extracted.sort(key=lambda x: x.name)
-    results_extracted.sort(key=lambda x: x.value)
-    results_extracted.sort(key=lambda x: VERDICTS_ORDER.index(x.verdict))
-    results_extracted.sort(key=lambda x: get_subtask(x.name))
-
-    results_evaluate = group_by_subtask(results_extracted, config)
-
-    if by_subtask:
-        results_filtered: dict[str, Union[str, list[TestCaseResult]]] = {}
-        for key in results_evaluate:
-            results_filtered[str(key)] = mode_func(results_evaluate[key])
-    else:
-        results_filtered = {"all": mode_func(results_extracted)}
-
-    def get_points(name):
-        for _, sol in config.solutions.items():
-            if sol.source == name:
-                return sol.points
-
-    # Lastly print
-    exp_score = get_points(solution_name)
-    score = evaluate_solution(results_evaluate, config)
-    as_expected = (exp_score is None) or (exp_score == score)
-    print(f"{solution_name}: ({score}b)")
-    if not as_expected:
-        print(
-            red(
-                f"Řešení {solution_name} mělo získat {exp_score}b, ale získalo {score}b."
-            ),
-            file=sys.stderr,
-        ),
-
-    segment_length = limit / segments
-
-    results_groups: list[list[TestCaseResult]] = []
-    for group in results_filtered.values():
-        if isinstance(group, list):
-            results_groups.append(group)
-
-    if len(results_groups):
-        max_overflower = max(sum(results_groups, start=[]), key=lambda x: x.value)
-        max_overflowed_segments = overflowed_segments(
-            max_overflower.value, limit, segment_length
-        )
-
-    for subtask_num in sorted(results_filtered.keys()):
-        if by_subtask:
-            subtask_score = evaluate_subtask(
-                results_evaluate[int(subtask_num)],
-                config.subtasks[int(subtask_num)].points,
+    results: dict[str, SolutionResults] = {}
+    for sol in solutions:
+        try:
+            results[sol] = SolutionResults.from_log(
+                sol, config, testing_log, time_limit
             )
-            print(f"{config.subtasks[int(subtask_num)].name} ({subtask_score}b)")
+        except MissingSolution as err:
+            print(colored(str(err), "yellow"))
 
-        subtask_results = results_filtered[subtask_num]
-        if isinstance(subtask_results, str):
-            print("  " + subtask_results)
-            continue
+    wrong_solutions = {}
+    for sol, sol_res in results.items():
+        if not bundle:
+            sol_err = sol_res.check_points()
+            err_msg = ""
+            if sol_err is not None:
+                err_msg = colored(f" should get {sol_err}", "red")
+                wrong_solutions[sol] = True
+            print(f"{sol}{err_msg}")
 
-        for result in subtask_results:
-            in_segments = in_time_segments(result.value, limit, segment_length)
-            overflow_segments = overflowed_segments(result.value, limit, segment_length)
+            for num, group_res in sol_res.get_by_subtask().items():
+                subtask_err = sol_res.check_subtask(num)
+                err_msg = ""
+                if subtask_err is not None:
+                    err_msg = colored(f" should result {subtask_err}", "red")
+                    wrong_solutions[sol] = True
 
-            print(
-                f"  {result.name} ({result.verdict}): "
-                f"|{'·'*in_segments}{' '*(segments-in_segments)}"
-                f"|{'·'*overflow_segments}{' '*(max_overflowed_segments-overflow_segments)}"
-                f" ({result.value}/{limit})"
-            )
+                print(tab(f"{config.subtasks[num].name}{err_msg}"))
+                for res in filter_fn(group_res):
+                    print(tab(tab(res.to_str(time_limit, segment_cnt))))
+
+        else:
+            sol_errs = sol_res.check_all()
+            err_msg = ""
+            if sol_errs:
+                err_msg = colored(f" should {', '.join(sol_errs)}", "red")
+                wrong_solutions[sol] = True
+            print(f"{sol}{err_msg}")
+
+            for res in filter_fn(sol_res.get_all()):
+                print(tab(tab(res.to_str(time_limit, segment_cnt))))
+
     print()
-    return as_expected
+    if wrong_solutions:
+        print(
+            colored(
+                f"Solutions {', '.join(wrong_solutions.keys())} should result differently.",
+                "red",
+            )
+        )
 
+    min_possible = 0.0
+    max_possible = inf
+    for sol, sol_res in results.items():
+        for num in config.subtasks:
+            a, b = sol_res.get_timeout_range(num)
+            min_possible = max(a, min_possible)
+            max_possible = min(b, max_possible)
 
-def get_subtask(name):
-    if name.startswith("sample"):
-        return "00"
-    return name[:2]
+    if min_possible <= max_possible:
+        limit_msg = f"Valid time limit between {min_possible:.2f}, {max_possible:.2f}."
+    else:
+        limit_msg = "No valid time limit found."
+    print(colored(limit_msg, "cyan"))
 
-
-def strip_suffix(name):
-    return name[: name.rfind(".")]
-
-
-def filter_by_verdict(
-    results: list[TestCaseResult], verdicts: Union[str, Iterable[str]]
-) -> list[TestCaseResult]:
-    if isinstance(verdicts, str):
-        verdicts = (verdicts,)
-    return list(filter(lambda x: x.verdict.upper() in verdicts, results))
-
-
-def in_time_segments(value, limit, segment_length):
-    return ceil(min(value, limit) / segment_length)
-
-
-def overflowed_segments(value, limit, segment_length):
-    return max(0, ceil((value - limit) / segment_length))
-
-
-if __name__ == "__main__":
-    visualize()
+    return 0
