@@ -17,7 +17,7 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import partial
-from typing import Callable
+from typing import Optional, Callable
 import yaml
 
 
@@ -85,35 +85,36 @@ yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
-def solution_res_true(sol_res: SolutionResult) -> bool:
+def verdict_true(res: Verdict) -> bool:
     return True
 
 
-def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
-    return sol_res.points == c
+def verdict_ok(res: Verdict, ok: bool) -> bool:
+    if ok:
+        return res == Verdict.ok
+    else:
+        return res in (Verdict.wrong_answer, Verdict.timeout, Verdict.error)
 
 
-def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
-    return sol_res.verdict == verdict
+def specific_verdict(res: Verdict, verdict: Verdict) -> bool:
+    return res == verdict
 
 
 # Specifies how expected str should be interpreted
 # First function must be true for all
 # Second function must be true for any/all according to fail_mode
-SUBTASK_SPEC: dict[
-    str, tuple[Callable[[SolutionResult], bool], Callable[[SolutionResult], bool]]
-] = {
-    "1": (partial(solution_result_c_points, c=1.0), solution_res_true),
-    "0": (solution_res_true, partial(solution_result_c_points, c=0.0)),
-    "X": (solution_res_true, solution_res_true),
+SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
+    "1": (partial(verdict_ok, ok=True), verdict_true),
+    "0": (verdict_true, partial(verdict_ok, ok=False)),
+    "X": (verdict_true, verdict_true),
     "P": (
-        lambda r: not solution_result_c_points(r, 0.0),
-        partial(solution_result_verdict, verdict=Verdict.partial),
+        lambda r: not verdict_ok(r, ok=False),
+        partial(specific_verdict, verdict=Verdict.partial),
     ),
     "W": (
-        solution_res_true,
-        partial(solution_result_verdict, verdict=Verdict.wrong_answer),
+        verdict_true,
+        partial(specific_verdict, verdict=Verdict.wrong_answer),
     ),
-    "!": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.error)),
-    "T": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.timeout)),
+    "!": (verdict_true, partial(specific_verdict, verdict=Verdict.error)),
+    "T": (verdict_true, partial(specific_verdict, verdict=Verdict.timeout)),
 }
