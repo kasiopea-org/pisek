@@ -45,7 +45,7 @@ class CreateTestingLog(TaskJobManager):
             solution = name[len(SOLUTION_MAN_CODE) :]
             log[solution] = {"results": []}
 
-            inp: str
+            inp: TaskPath
             sol_res: SolutionResult
             for inp, sol_res in data["results"].items():
                 if sol_res is None:

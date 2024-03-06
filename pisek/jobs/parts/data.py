@@ -86,7 +86,9 @@ class DataManager(TaskJobManager):
         for num, sub in self._env.config.subtasks.items():
             inputs = list(filter(lambda p: sub.in_subtask(p.name), all_input_files))
             if len(inputs) == 0:
-                raise PipelineItemFailure(f"No inputs for subtask {num} with globs {sub.all_globs}.")
+                raise PipelineItemFailure(
+                    f"No inputs for subtask {num} with globs {sub.all_globs}."
+                )
 
         return jobs
 

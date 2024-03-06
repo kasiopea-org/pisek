@@ -118,7 +118,9 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
         """Get new inputs of given subtask."""
-        return list(filter(lambda p: subtask.new_in_subtask(p.name), self._all_inputs()))
+        return list(
+            filter(lambda p: subtask.new_in_subtask(p.name), self._all_inputs())
+        )
 
 
 class TaskJob(Job, TaskHelper):
