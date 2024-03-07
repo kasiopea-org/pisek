@@ -36,7 +36,7 @@ from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
 from pisek.env.config_hierarchy import TaskConfigError, ConfigHierarchy
 from pisek.env.context import init_context
-from pisek.jobs.parts.solution_result import Verdict, SUBTASK_SPEC, verdict_true
+from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
 
 MaybeInt = Annotated[
@@ -273,31 +273,6 @@ class TaskConfig(BaseEnv):
 
         for i in range(self.subtasks_count):
             compute_subtask(i)
-
-    def evaluate_verdicts(
-        self, verdicts: list[Verdict], expected: str
-    ) -> tuple[bool, bool, Optional[int]]:
-        mode_quantifier = all if self.fail_mode == FailMode.all else any
-
-        result = True
-        definitive = True
-        breaker = None
-        quantifiers = [all, mode_quantifier]
-        for i, quant in enumerate(quantifiers):
-            oks = list(map(SUBTASK_SPEC[expected][i], verdicts))
-            ok = quant(oks)
-
-            result &= ok
-            definitive &= (
-                (quant == any and ok)
-                or (quant == all and not ok)
-                or (SUBTASK_SPEC[expected][i] == verdict_true)
-            )
-            if quant == all and ok == False:
-                breaker = oks.index(False)
-                break
-
-        return result, definitive, breaker
 
 
 class SubtaskConfig(BaseEnv):

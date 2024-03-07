@@ -25,7 +25,7 @@ from pisek.paths import TaskPath
 from pisek.env.task_config import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN
-from pisek.jobs.status import MAX_BAR_LEN
+from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
@@ -295,8 +295,8 @@ class SubtaskJobGroup:
         finished_jobs = self._finished_jobs(jobs)
         verdicts = self._finished_job_results(jobs)
 
-        result, definitive, breaker = self._env.config.evaluate_verdicts(
-            list(map(lambda r: r.verdict, verdicts)), expected_str
+        result, definitive, breaker = evaluate_verdicts(
+            self._env.config, list(map(lambda r: r.verdict, verdicts)), expected_str
         )
 
         breaker_job = None if breaker is None else finished_jobs[breaker]

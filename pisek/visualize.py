@@ -131,8 +131,8 @@ class SolutionResults:
     def _evaluate_results(
         self, results: list[LoggedResult], expected: str
     ) -> tuple[bool, bool, Optional[LoggedResult]]:
-        ok, definitive, breaker = self._config.evaluate_verdicts(
-            list(map(lambda r: r.verdict, results)), expected
+        ok, definitive, breaker = evaluate_verdicts(
+            self._config, list(map(lambda r: r.verdict, results)), expected
         )
         return ok, definitive, results[breaker] if breaker is not None else None
 
