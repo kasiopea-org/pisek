@@ -9,6 +9,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from dataclasses import dataclass
 import json
 from math import ceil, inf
@@ -177,9 +178,9 @@ class SolutionResults:
 
         if points is not None and points != achieved:
             return f"{points}p"
-        if points_above is not None and points_above < achieved:
+        if points_above is not None and not achieved >= points_above:
             return f"at least {points_above}p"
-        if points_below is not None and points_below > achieved:
+        if points_below is not None and not achieved <= points_below:
             return f"at most {points_below}p"
 
         return None
