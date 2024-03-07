@@ -144,10 +144,10 @@ class SolutionResults:
     def get_all(self) -> list[LoggedResult]:
         return self._results
 
-    def get_by_subtask(self) -> dict[int, list[LoggedResult]]:
-        by_subtask: dict[int, list[LoggedResult]] = {
-            num: [] for num in self._config.subtasks
-        }
+    def get_by_subtask(self) -> list[list[LoggedResult]]:
+        by_subtask: list[list[LoggedResult]] = [
+            [] for _ in range(self._config.subtasks_count)
+        ]
         for res in self._results:
             for num, sub in self._config.subtasks.items():
                 if sub.in_subtask(res.test):
@@ -275,7 +275,7 @@ def visualize(
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
-            for num, group_res in sol_res.get_by_subtask().items():
+            for num, group_res in enumerate(sol_res.get_by_subtask()):
                 subtask_err = sol_res.check_subtask(num)
                 err_msg = ""
                 if subtask_err is not None:
