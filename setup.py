@@ -1,4 +1,4 @@
-# pisek  - Nástroj na přípravu úloh do programátorských soutěží, primárně pro soutěž Kasiopea.
+# pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
@@ -19,7 +19,7 @@ import setuptools
 setuptools.setup(
     name="pisek",
     version="0.1",
-    description="Nástroj na kontrolování úloh",
+    description="Tool for developing tasks for programming competitions",
     packages=setuptools.find_packages(),
     install_requires=["PyYAML", "colorama", "pydantic"],
     extras_require={"dev": ["black", "mypy"]},
