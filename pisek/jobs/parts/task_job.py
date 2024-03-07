@@ -66,14 +66,6 @@ class TaskHelper:
             "process_limit": limits.process_limit,
         }
 
-    @staticmethod
-    def filter_by_globs(
-        globs: Iterable[str], files: Iterable[TaskPath]
-    ) -> list[TaskPath]:
-        return [
-            file for file in files if any(fnmatch.fnmatch(file.name, g) for g in globs)
-        ]
-
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
@@ -122,11 +114,13 @@ class TaskJobManager(StatusJobManager, TaskHelper):
 
     def _subtask_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
         """Get all inputs of given subtask."""
-        return self.filter_by_globs(subtask.all_globs, self._all_inputs())
+        return list(filter(lambda p: subtask.in_subtask(p.name), self._all_inputs()))
 
     def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
         """Get new inputs of given subtask."""
-        return self.filter_by_globs(subtask.in_globs, self._all_inputs())
+        return list(
+            filter(lambda p: subtask.new_in_subtask(p.name), self._all_inputs())
+        )
 
 
 class TaskJob(Job, TaskHelper):

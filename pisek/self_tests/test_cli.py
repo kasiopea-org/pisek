@@ -23,7 +23,7 @@ class TestCLI(TestFixture):
         return "../../fixtures/sum_cms/"
 
     def args(self):
-        return ["--timeout", "1"]
+        return [["--timeout", "1"]]
 
     def runTest(self):
         if not self.fixture_path():
@@ -33,34 +33,43 @@ class TestCLI(TestFixture):
 
         with mock.patch("sys.stdout", new=StringIO()) as std_out:
             with mock.patch("sys.stderr", new=StringIO()) as std_err:
-                result = main(self.args())
+                for args_i in self.args():
+                    result = main(args_i)
 
-                self.assertFalse(
-                    result,
-                    f"Command failed: {' '.join(self.args())}",
-                )
+                    self.assertFalse(
+                        result,
+                        f"Command failed: {' '.join(args_i)}",
+                    )
 
         self.check_files()
 
 
 class TestCLITestSolution(TestCLI):
     def args(self):
-        return ["test", "solution", "solve"]
+        return [["test", "solution", "solve"]]
 
 
 class TestCLITestGenerator(TestCLI):
     def args(self):
-        return ["test", "generator"]
+        return [["test", "generator"]]
 
 
 class TestCLIClean(TestCLI):
     def args(self):
-        return ["clean"]
+        return [["clean"]]
 
 
 class TestCLITestingLog(TestCLI):
     def args(self):
-        return ["--testing-log"]
+        return [["--testing-log"]]
+
+    def created_files(self):
+        return ["testing_log.json"]
+
+
+class TestCLIVisualize(TestCLI):
+    def args(self):
+        return [["--testing-log"], ["visualize"]]
 
     def created_files(self):
         return ["testing_log.json"]

@@ -17,25 +17,19 @@
 import os
 import tempfile
 import time
-from typing import Any, Optional, Callable, Iterable
+from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.paths import TaskPath
-from pisek.env.task_config import ProgramType
+from pisek.env.task_config import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN
-from pisek.jobs.status import MAX_BAR_LEN
+from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
 from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.solution_result import (
-    RESULT_MARK,
-    Verdict,
-    SolutionResult,
-    SUBTASK_SPEC,
-    solution_res_true,
-)
+from pisek.jobs.parts.solution_result import Verdict, SolutionResult
 from pisek.jobs.parts.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
 
@@ -60,11 +54,11 @@ class SolutionManager(TaskJobManager):
         jobs.append(compile_ := Compile(self._env, self._solution, True))
         self._compile_job = compile_
 
-        self._judges: dict[str, RunJudge] = {}
+        self._judges: dict[TaskPath, RunJudge] = {}
         for sub_num, sub in self._env.config.subtasks.items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in self._subtask_inputs(sub):
-                if inp.path not in self._judges:
+                if inp not in self._judges:
                     run_sol: RunSolution
                     run_judge: RunJudge
                     if self._env.config.task_type == "batch":
@@ -76,11 +70,11 @@ class SolutionManager(TaskJobManager):
                         run_sol = run_judge = self._create_communication_jobs(inp)
                         jobs.append(run_sol)
 
-                    self._judges[inp.path] = run_judge
+                    self._judges[inp] = run_judge
                     self.subtasks[-1].new_jobs.append(run_judge)
                     self.subtasks[-1].new_run_jobs.append(run_sol)
                 else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp.path])
+                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
 
         return jobs
 
@@ -245,7 +239,7 @@ class SubtaskJobGroup:
         for verdict in Verdict:
             count = previous.count(verdict)
             if count > 0:
-                s += f"{count}{RESULT_MARK[verdict]}"
+                s += f"{count}{verdict.mark()}"
         s += ") "
         if s == "() ":
             s = ""
@@ -293,34 +287,21 @@ class SubtaskJobGroup:
             - whether the result is definitive (cannot be changed)
             - a job that makes the result different than expected (if there is one particular)
         """
-        mode_quantifier = self._get_quant()
-        jobs = self.new_jobs + ([] if mode_quantifier == all else self.previous_jobs)
+
+        jobs = self.new_jobs + (
+            [] if self._env.config.fail_mode == FailMode.all else self.previous_jobs
+        )
 
         finished_jobs = self._finished_jobs(jobs)
         verdicts = self._finished_job_results(jobs)
 
-        result = True
-        definitive = True
-        breaker = None
-        quantifiers = [all, mode_quantifier]
-        for i, quant in enumerate(quantifiers):
-            oks = list(map(SUBTASK_SPEC[expected_str][i], verdicts))
-            ok = quant(oks) or (len(jobs) == 0)
+        result, definitive, breaker = evaluate_verdicts(
+            self._env.config, list(map(lambda r: r.verdict, verdicts)), expected_str
+        )
 
-            result &= ok
-            definitive &= (
-                (quant == any and ok)
-                or (quant == all and not ok)
-                or (SUBTASK_SPEC[expected_str][i] == solution_res_true)
-            )
-            if quant == all and ok == False:
-                breaker = finished_jobs[oks.index(False)]
-                break
+        breaker_job = None if breaker is None else finished_jobs[breaker]
 
-        return result, definitive, breaker
-
-    def _get_quant(self) -> Callable[[Iterable[bool]], bool]:
-        return all if self._env.config.fail_mode == "all" else any
+        return result, definitive, breaker_job
 
     def cancel(self):
         for job in self.new_run_jobs:

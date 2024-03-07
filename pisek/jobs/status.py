@@ -13,16 +13,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import os
-
 from pisek.utils.text import tab, pad
-from pisek.utils.terminal import colored_env, MSG_LEN
+from pisek.utils.terminal import colored_env, MSG_LEN, terminal_width
 from pisek.jobs.jobs import State, PipelineItem, JobManager
-
-try:
-    terminal_width, terminal_height = os.get_terminal_size()
-except OSError:
-    terminal_width, terminal_height = 100, 24
 
 MAX_BAR_LEN = 60
 line_sepatator = "⎯" * terminal_width + "\n"

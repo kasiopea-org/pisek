@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import StrEnum, auto
+import fnmatch
 from functools import cached_property
 from pydantic_core import PydanticCustomError, ErrorDetails
 from pydantic import (
@@ -284,6 +285,12 @@ class SubtaskConfig(BaseEnv):
     all_globs: list[str] = []
     predecessors: list[int]
 
+    def in_subtask(self, filename: str) -> bool:
+        return any(fnmatch.fnmatch(filename, g) for g in self.all_globs)
+
+    def new_in_subtask(self, filename: str) -> bool:
+        return any(fnmatch.fnmatch(filename, g) for g in self.in_globs)
+
     @staticmethod
     def load_dict(number: int, configs: ConfigHierarchy) -> dict[str, Any]:
         KEYS = ["name", "points", "in_globs", "predecessors"]
@@ -333,6 +340,13 @@ class SubtaskConfig(BaseEnv):
                     )
 
         return list(sorted(set(predecessors)))
+
+    @model_validator(mode="after")
+    def validate_model(self):
+        if self.name == "@auto":
+            self.name = f"Subtask {self.num}"
+
+        return self
 
 
 class SolutionConfig(BaseEnv):

@@ -30,7 +30,7 @@ SANITIZED_SUBDIR = "sanitized/"
 LOG_SUBDIR = "log/"
 
 
-@dataclass
+@dataclass(frozen=True)
 class TaskPath:
     """Class representing a path to task file."""
 
@@ -39,8 +39,8 @@ class TaskPath:
 
     def __init__(self, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
-        self.path = joined_path
-        self.name = os.path.basename(joined_path)
+        object.__setattr__(self, "path", joined_path)
+        object.__setattr__(self, "name", os.path.basename(joined_path))
 
     def __format__(self, __format_spec: str) -> str:
         match __format_spec:

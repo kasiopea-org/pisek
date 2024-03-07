@@ -17,20 +17,25 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Callable, Iterable
+from typing import Callable
 import yaml
 
-Verdict = Enum(
-    "Verdict", ["ok", "partial", "indeterminate", "wrong_answer", "error", "timeout"]
-)
-RESULT_MARK = {
-    Verdict.ok: "·",
-    Verdict.partial: "P",
-    Verdict.indeterminate: "?",
-    Verdict.error: "!",
-    Verdict.timeout: "T",
-    Verdict.wrong_answer: "W",
-}
+
+class Verdict(Enum):
+    ok = 1
+    partial = 2
+    timeout = 3
+    wrong_answer = 4
+    error = 5
+
+    def mark(self) -> str:
+        return {
+            Verdict.ok: "·",
+            Verdict.partial: "P",
+            Verdict.timeout: "T",
+            Verdict.wrong_answer: "W",
+            Verdict.error: "!",
+        }[self]
 
 
 @dataclass
@@ -49,7 +54,7 @@ class SolutionResult:
         if self.verdict == Verdict.partial:
             return f"[{self.points:.2f}]"
         else:
-            return RESULT_MARK[self.verdict]
+            return self.verdict.mark()
 
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
@@ -80,35 +85,37 @@ yaml.add_representer(SolutionResult, sol_result_representer)
 yaml.add_constructor("!SolutionResult", sol_result_constructor)
 
 
-def solution_res_true(sol_res: SolutionResult) -> bool:
+def verdict_always(res: Verdict) -> bool:
     return True
 
 
-def solution_result_c_points(sol_res: SolutionResult, c: float) -> bool:
-    return sol_res.points == c and sol_res.verdict != Verdict.indeterminate
+def verdict_1point(res: Verdict) -> bool:
+    return res == Verdict.ok
 
 
-def solution_result_verdict(sol_res: SolutionResult, verdict: Verdict) -> bool:
-    return sol_res.verdict == verdict
+def verdict_0points(res: Verdict) -> bool:
+    return res in (Verdict.wrong_answer, Verdict.timeout, Verdict.error)
+
+
+def specific_verdict(res: Verdict, verdict: Verdict) -> bool:
+    return res == verdict
 
 
 # Specifies how expected str should be interpreted
 # First function must be true for all
 # Second function must be true for any/all according to fail_mode
-SUBTASK_SPEC: dict[
-    str, tuple[Callable[[SolutionResult], bool], Callable[[SolutionResult], bool]]
-] = {
-    "1": (partial(solution_result_c_points, c=1.0), solution_res_true),
-    "0": (solution_res_true, partial(solution_result_c_points, c=0.0)),
-    "X": (solution_res_true, solution_res_true),
+SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
+    "1": (verdict_1point, verdict_always),
+    "0": (verdict_always, verdict_0points),
+    "X": (verdict_always, verdict_always),
     "P": (
-        lambda r: not solution_result_c_points(r, 0.0),
-        partial(solution_result_verdict, verdict=Verdict.partial),
+        lambda r: not verdict_0points(r),
+        partial(specific_verdict, verdict=Verdict.partial),
     ),
     "W": (
-        solution_res_true,
-        partial(solution_result_verdict, verdict=Verdict.wrong_answer),
+        verdict_always,
+        partial(specific_verdict, verdict=Verdict.wrong_answer),
     ),
-    "!": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.error)),
-    "T": (solution_res_true, partial(solution_result_verdict, verdict=Verdict.timeout)),
+    "!": (verdict_always, partial(specific_verdict, verdict=Verdict.error)),
+    "T": (verdict_always, partial(specific_verdict, verdict=Verdict.timeout)),
 }
