@@ -45,7 +45,7 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
 
 def test_solution(args):
     if args.solution is None:
-        eprint(f"Enter solution name to test")
+        eprint(f"Specify a solution name to test.")
         eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
         return 1
 
@@ -61,7 +61,7 @@ def test_generator(args):
 @locked_folder
 def clean_directory(args) -> bool:
     task_dir = PATH
-    eprint(f"Cleaning repository: {os.path.abspath(task_dir)}")
+    eprint(f"Cleaning directory: {os.path.abspath(task_dir)}")
     return clean_task_dir(task_dir)
 
 
@@ -78,19 +78,19 @@ def main(argv):
             "--timeout",
             "-t",
             type=float,
-            help="After how many seconds kill running solution",
+            help="Override time limit for solutions to TIMEOUT seconds.",
         )
 
     def add_argument_full(parser):
         parser.add_argument(
-            "--full", "-f", action="store_true", help="Don't stop on first failure"
+            "--full", "-f", action="store_true", help="Don't stop on first failure."
         )
 
     def add_argument_strict(parser):
         parser.add_argument(
             "--strict",
             action="store_true",
-            help="For final check: warnings are interpreted as failures",
+            help="Interpret warnings as failures (for final check).",
         )
 
     def add_argument_ninputs(parser):
@@ -99,28 +99,28 @@ def main(argv):
             "-n",
             type=int,
             default=5,
-            help="Number of test (only for kasiopea)",
+            help="Test on INPUTS difference inputs (only for Kasiopea tasks).",
         )
 
     def add_argument_all_inputs(parser):
         parser.add_argument(
             "--all-inputs",
             action="store_true",
-            help="Test solution on all inputs.",
+            help="Test each solution on all inputs.",
         )
 
     def add_argument_skip_on_timeout(parser):
         parser.add_argument(
             "--skip-on-timeout",
             action="store_true",
-            help="Skip following inputs on timeout",
+            help="Skip all following inputs on first timeout.",
         )
 
     def add_argument_testing_log(parser):
         parser.add_argument(
             "--testing-log",
             action="store_true",
-            help="Write test results to testing_log.json",
+            help="Write test results to testing_log.json.",
         )
 
     def add_argument_clean(parser):
@@ -128,7 +128,7 @@ def main(argv):
             "--clean",
             "-c",
             action="store_true",
-            help="Clean directory beforehand",
+            help="Clean directory beforehand.",
         )
 
     def add_argument_plain(parser):
@@ -159,7 +159,7 @@ def main(argv):
             choices=("slowest", "all"),
             default="slowest",
             type=str,
-            help="Which inputs to show.\n slowest: Show slowest input only\n all: Show all inputs",
+            help="Which inputs to show:\n slowest: Show slowest input only.\n all: Show all inputs.",
         )
 
     def add_argument_bundle(parser):
@@ -167,7 +167,7 @@ def main(argv):
             "--bundle",
             "-b",
             action="store_true",
-            help="Bundle all inputs together (not by subtask).",
+            help="Don't group inputs by subtask.",
         )
 
     def add_argument_solutions(parser):
@@ -177,7 +177,7 @@ def main(argv):
             default=[],
             type=str,
             nargs="*",
-            help="Solutions to visualize.",
+            help="Visualize only solutions named SOLUTIONS.",
         )
 
     def add_argument_filename(parser):
@@ -185,7 +185,7 @@ def main(argv):
             "--filename",
             default="testing_log.json",
             type=str,
-            help="Path to testing log to visualize.",
+            help="Read testing log from FILENAME.",
         )
 
     def add_argument_limit(parser):
@@ -194,7 +194,7 @@ def main(argv):
             "-l",
             default=None,
             type=float,
-            help="Limit measured_stat for solution.",
+            help="Visualize as if the time limit was LIMIT seconds.",
         )
 
     def add_argument_segments(parser):
@@ -202,7 +202,7 @@ def main(argv):
             "--segments",
             "-S",
             type=int,
-            help="Number of  segments until limit.",
+            help="Print bars SEGMENTS characters wide.",
         )
 
     def add_argument_description(parser):
@@ -210,7 +210,7 @@ def main(argv):
             "--description",
             "-d",
             type=str,
-            help="Description of the created dataset",
+            help="Created the dataset with a description of DESCRIPTION.",
         )
 
     def add_argument_dataset(parser):
@@ -219,7 +219,7 @@ def main(argv):
             "-d",
             type=str,
             required=True,
-            help="The description of the dataset for which to fetch results",
+            help="Use the dataset with the description DESCRIPTION.",
         )
 
     add_argument_timeout(parser)
@@ -234,16 +234,16 @@ def main(argv):
     add_argument_no_colors(parser)
     add_argument_testing_log(parser)
 
-    subparsers = parser.add_subparsers(help="subcommands", dest="subcommand")
+    subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand")
 
     parser_test = subparsers.add_parser("test", help="test")
     parser_test.add_argument(
         "target",
         choices=["solution", "generator"],
-        help="choice between 'solution' or 'generator'",
+        help="Test this program type ('solution' or 'generator').",
     )
     parser_test.add_argument(
-        "solution", type=str, help="name of solution section", nargs="?"
+        "solution", type=str, help="Test the solution with this name.", nargs="?"
     )
     add_argument_timeout(parser_test)
     add_argument_full(parser_test)
@@ -251,7 +251,7 @@ def main(argv):
     add_argument_ninputs(parser_test)
     add_argument_clean(parser_test)
 
-    _parser_clean = subparsers.add_parser("clean", help="Clean directory")
+    _parser_clean = subparsers.add_parser("clean", help="Clean the directory.")
 
     parser_visualize = subparsers.add_parser(
         "visualize", help="Show solutions statistics and closeness to limit."
@@ -265,51 +265,51 @@ def main(argv):
 
     parser_license = subparsers.add_parser("license", help="Print license")
     parser_license.add_argument(
-        "--print", action="store_true", help="Print entire license"
+        "--print", action="store_true", help="Print entire license."
     )
 
-    parser_cms = subparsers.add_parser("cms", help="Import tasks into CMS")
+    parser_cms = subparsers.add_parser("cms", help="Import tasks into CMS.")
     subparsers_cms = parser_cms.add_subparsers(
-        help="subcommands", dest="cms_subcommand"
+        help="The subcommand to run.", dest="cms_subcommand"
     )
 
-    parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task")
+    parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task.")
     add_argument_description(parser_cms_create)
 
     parser_cms_update = subparsers_cms.add_parser(
-        "update", help="Update the basic properties of an existing task"
+        "update", help="Update the basic properties of an existing task."
     )
 
     parser_cms_add = subparsers_cms.add_parser(
-        "add", help="Add a dataset to an existing task"
+        "add", help="Add a dataset to an existing task."
     )
     add_argument_description(parser_cms_add)
     parser_cms_add.add_argument(
         "--no-autojudge",
         action="store_true",
-        help="Disable background judging for the new dataset",
+        help="Disable background judging for the new dataset.",
     )
 
     parser_cms_submit = subparsers_cms.add_parser(
-        "submit", help="Submit reference solutions for evaluation using CMS"
+        "submit", help="Submit reference solutions for evaluation using CMS."
     )
     parser_cms_submit.add_argument(
         "--username",
         "-u",
         type=str,
         required=True,
-        help="The username of user to submit as",
+        help="Submit as the user with username USERNAME.",
     )
 
     parser_cms_testing_log = subparsers_cms.add_parser(
         "testing-log",
-        help="Generate a testing log for reference solutions submitted to CMS",
+        help="Generate a testing log for reference solutions submitted to CMS.",
     )
     add_argument_dataset(parser_cms_testing_log)
 
     parser_cms_check = subparsers_cms.add_parser(
         "check",
-        help="Check if reference solutions scored as expected in CMS",
+        help="Check if reference solutions scored as expected in CMS.",
     )
     add_argument_dataset(parser_cms_check)
 
