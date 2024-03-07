@@ -3,7 +3,7 @@
 # Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 # Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 # Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
-# Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+# Copyright (c)   2022        Jiří Kalvoda <jirikalvoda@kam.mff.cuni.cz>
 # Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,9 @@ pisek  - Tool for developing programming task for competetive programming.
 Copyright (c)   2019 - 2022 Václav Volhejn <vaclav.volhejn@gmail.com>
 Copyright (c)   2019 - 2022 Jiří Beneš <mail@jiribenes.com>
 Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
-Copyright (c)   2022        Jiri Kalvoda <jirikalvoda@kam.mff.cuni.cz>
+Copyright (c)   2022        Jiří Kalvoda <jirikalvoda@kam.mff.cuni.cz>
 Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+Copyright (c)   2024        Benjamin Swart <Benjaminswart@email.cz>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

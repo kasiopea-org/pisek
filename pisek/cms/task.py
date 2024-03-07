@@ -1,6 +1,6 @@
 # pisek cms - Tool for importing tasks from Pisek into CMS.
 #
-# Copyright (c)   2024        Benjamin Swart <Benjaminswart@email.cz>
+# Copyright (c)   2024        Benjamin Swart <benjaminswart@email.cz>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
