@@ -159,7 +159,7 @@ def main(argv):
             choices=("slowest", "all"),
             default="slowest",
             type=str,
-            help="Visualization mode.\n slowest: Slowest input\n all: all inputs",
+            help="Which inputs to show.\n slowest: Show slowest input only\n all: Show all inputs",
         )
 
     def add_argument_bundle(parser):
@@ -185,7 +185,7 @@ def main(argv):
             "--filename",
             default="testing_log.json",
             type=str,
-            help="Name of json, from which to load data.",
+            help="Path to testing log to visualize.",
         )
 
     def add_argument_limit(parser):
