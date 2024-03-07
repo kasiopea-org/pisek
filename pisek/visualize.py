@@ -17,10 +17,9 @@ from typing import Optional
 
 from pisek.utils.text import pad, tab, colored
 from pisek.utils.terminal import terminal_width
-from pisek.jobs.parts.solution_result import Verdict
 from pisek.env.task_config import load_config, TaskConfig
-
-test_name_max_length = 0
+from pisek.jobs.parts.solution_result import Verdict
+from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 
 
 class MissingSolution(Exception):
@@ -36,28 +35,11 @@ class LoggedResult:
     test: str
     original_verdict: Verdict
 
-    def __init__(
-        self,
-        verdict: Verdict,
-        points: float,
-        measured_value: float,
-        test: str,
-        original_verdict: Verdict,
-    ) -> None:
-        global test_name_max_length
-
-        self.verdict = verdict
-        self.points = points
-        self.time = measured_value
-        self.test = test
-        self.original_verdict = original_verdict
-
-        test_name_max_length = max(test_name_max_length, len(self.test))
-
     def to_str(
         self,
         limit: float,
         segments: int,
+        test_pad_length: int = 15,
     ) -> str:
         def get_bar() -> str:
             percentage = self.time / limit
@@ -66,7 +48,7 @@ class LoggedResult:
             bounded = min(full, segments)
             overflown = max(0, full - segments)
 
-            overflown_max_length = terminal_width - segments - test_name_max_length - 40
+            overflown_max_length = terminal_width - segments - test_pad_length - 40
             if cut := (overflown > overflown_max_length):
                 overflown = overflown_max_length
 
@@ -85,7 +67,7 @@ class LoggedResult:
             )
 
         return (
-            f"{pad(self.test, test_name_max_length)}  "
+            f"{pad(self.test, test_pad_length)}  "
             f"{self.original_verdict.mark()}->{self.verdict.mark()}  "
             f"{get_bar()}    {self.time:.2f} / {limit:.2f}s"
         )
@@ -116,10 +98,9 @@ class SolutionResults:
         self._config = config
         self._results = results
 
-        self._results.sort(key=lambda r: r.test)
-        self._results.sort(key=lambda r: r.time)
-        # self._results.sort(key=lambda r: r.verdict)
-        self._results.sort(key=self._get_subtask)
+        self._results.sort(
+            key=lambda r: (self._get_subtask(r), r.verdict.value, r.time, r.test)
+        )
 
     def _get_subtask(self, result: LoggedResult) -> int:
         return min(
@@ -272,10 +253,14 @@ def visualize(
         solutions = list(solution_names)
 
     results: dict[str, SolutionResults] = {}
+    max_test_length = 0
     for sol in solutions:
         try:
             results[sol] = SolutionResults.from_log(
                 sol, config, testing_log, time_limit
+            )
+            max_test_length = max(
+                max_test_length, max(map(lambda r: len(r.test), results[sol].get_all()))
             )
         except MissingSolution as err:
             print(colored(str(err), "yellow"))
@@ -299,7 +284,9 @@ def visualize(
 
                 print(tab(f"{config.subtasks[num].name}{err_msg}"))
                 for res in filter_fn(group_res):
-                    print(tab(tab(res.to_str(time_limit, segment_cnt))))
+                    print(
+                        tab(tab(res.to_str(time_limit, segment_cnt, max_test_length)))
+                    )
 
         else:
             sol_errs = sol_res.check_all()
@@ -310,7 +297,7 @@ def visualize(
             print(f"{sol}{err_msg}")
 
             for res in filter_fn(sol_res.get_all()):
-                print(tab(tab(res.to_str(time_limit, segment_cnt))))
+                print(tab(tab(res.to_str(time_limit, segment_cnt, max_test_length))))
 
     print()
     if wrong_solutions:
