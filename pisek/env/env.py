@@ -18,8 +18,10 @@ from enum import StrEnum, auto
 from pydantic import Field
 from typing import Optional
 
+from pisek.utils.text import eprint, colored
 from pisek.env.base_env import BaseEnv
 from pisek.env.task_config import load_config, TaskConfig
+from pisek.env.select_solutions import expand_solutions, UnknownSolutions
 
 
 class TestingTarget(StrEnum):
@@ -76,23 +78,25 @@ class Env(BaseEnv):
         inputs: int = 5,
         **_
     ) -> Optional["Env"]:
-        config = load_config(".", strict, plain or no_colors)
+        no_jumps |= plain
+        no_colors |= plain
+
+        config = load_config(".", strict, no_colors)
         if config is None:
             return None
 
-        if solutions is None:
-            expanded_solutions = list(config.solutions)
-        else:
-            expanded_solutions = solutions[:]
-            if config.primary_solution not in expanded_solutions:
-                expanded_solutions.append(config.primary_solution)
+        try:
+            expanded_solutions = expand_solutions(config, solutions)
+        except UnknownSolutions as err:
+            eprint(colored(str(err), "red", no_colors))
+            return None
 
         return Env(
             target=TestingTarget(target),
             config=config,
             full=full,
-            no_jumps=plain or no_jumps,
-            no_colors=plain or no_colors,
+            no_jumps=no_jumps,
+            no_colors=no_colors,
             strict=strict,
             testing_log=testing_log,
             solutions=expanded_solutions,

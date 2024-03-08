@@ -175,10 +175,10 @@ def main(argv):
         parser.add_argument(
             "--solutions",
             "-s",
-            default=[],
+            default=None,
             type=str,
             nargs="*",
-            help="Visualize only solutions named SOLUTIONS.",
+            help="Visualize only solutions with a name or source in SOLUTIONS.",
         )
 
     def add_argument_filename(parser):

@@ -29,7 +29,6 @@ from pydantic import (
     model_validator,
 )
 import re
-import sys
 from typing import Optional, Any, Annotated
 
 from pisek.utils.text import tab
@@ -155,6 +154,10 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
+    def get_solution_by_source(self, source: str) -> Optional[str]:
+        sources = (name for name, sol in self.solutions.items() if sol.source == source)
+        return next(sources, None)
+
     def __init__(self, **kwargs):
         value = {"subtask_count": max(kwargs["subtasks"]) + 1, "name": kwargs["name"]}
 
@@ -172,7 +175,6 @@ class TaskConfig(BaseEnv):
         }
 
         args["fail_mode"] = "any" if args["contest_type"] == "cms" else "all"
-
         # Load judge specific keys
         for key, default in _JUDGE_KEYS:
             if args["out_check"] == "judge":
