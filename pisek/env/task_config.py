@@ -421,7 +421,7 @@ class SolutionConfig(BaseEnv):
         subtask_cnt = info.context.get("subtask_count")
         primary = info.data.get("primary")
         if value == "@auto":
-            value = ("1" if primary else "0") * subtask_cnt
+            value = ("1" if primary else "X") * subtask_cnt
         elif value == "@all":
             value = "1" * subtask_cnt
         elif value == "@any":
