@@ -60,7 +60,7 @@ def expand_solutions(config: TaskConfig, solutions: Optional[list[str]]) -> list
         else:
             unknown.append(sol)
 
-    if len(unknown):
+    if unknown:
         raise UnknownSolutions(unknown, config.solutions)
 
     return expanded
