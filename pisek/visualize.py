@@ -18,7 +18,7 @@ from typing import Optional
 
 from pisek.utils.text import pad, tab, colored
 from pisek.utils.terminal import terminal_width
-from pisek.env.task_config import load_config, TaskConfig
+from pisek.env.task_config import load_config, TaskConfig, FailMode
 from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 
@@ -111,10 +111,20 @@ class SolutionResults:
         )
 
     def _evaluate_results(
-        self, results: list[LoggedResult], expected: str
+        self, results: list[LoggedResult], subtask_num: int
     ) -> tuple[bool, bool, Optional[LoggedResult]]:
+        if self._config.fail_mode == FailMode.all:
+            results = list(
+                filter(
+                    lambda r: self._config.subtasks[subtask_num].new_in_subtask(r.test),
+                    results,
+                )
+            )
+
         ok, definitive, breaker = evaluate_verdicts(
-            self._config, list(map(lambda r: r.verdict, results)), expected
+            self._config,
+            list(map(lambda r: r.verdict, results)),
+            self._solution.subtasks[subtask_num],
         )
         return ok, definitive, results[breaker] if breaker is not None else None
 
@@ -160,7 +170,7 @@ class SolutionResults:
         results = self.get_by_subtask()
 
         expected = self._solution.subtasks[num]
-        ok, _, breaker = self._evaluate_results(results[num], expected)
+        ok, _, breaker = self._evaluate_results(results[num], num)
         if not ok:
             failed_test = f" ({breaker.test})" if breaker else ""
             return f"{expected}{failed_test}"
@@ -204,7 +214,7 @@ class SolutionResults:
         for i, time in enumerate(times):
             ok, _, _ = self._evaluate_results(
                 list(map(lambda r: limit_result(r, time), results)),
-                self._solution.subtasks[num],
+                num,
             )
             if ok:
                 min_possible = min(i, min_possible)
