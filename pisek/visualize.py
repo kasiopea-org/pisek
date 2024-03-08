@@ -16,9 +16,10 @@ from math import ceil, inf
 import os
 from typing import Optional
 
-from pisek.utils.text import pad, tab, colored
+from pisek.utils.text import pad, tab, colored, eprint
 from pisek.utils.terminal import terminal_width
 from pisek.env.task_config import load_config, TaskConfig
+from pisek.env.select_solutions import expand_solutions, UnknownSolutions
 from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 
@@ -226,7 +227,7 @@ def visualize(
     path: str = ".",
     filter: str = "all",
     bundle: bool = False,
-    solutions: list[str] = [],
+    solutions: Optional[list[str]] = None,
     limit: Optional[float] = None,
     filename: str = "testing_log.json",
     segments: Optional[int] = None,
@@ -249,13 +250,15 @@ def visualize(
 
     segment_cnt = terminal_width // 8 if segments is None else segments
 
-    solution_names = config.solutions.keys()
-    if len(solutions) == 0:
-        solutions = list(solution_names)
+    try:
+        expanded_solutions = expand_solutions(config, solutions)
+    except UnknownSolutions as err:
+        eprint(colored(str(err), "red"))
+        return 2
 
     results: dict[str, SolutionResults] = {}
     max_test_length = 0
-    for sol in solutions:
+    for sol in expanded_solutions:
         try:
             results[sol] = SolutionResults.from_log(
                 sol, config, testing_log, time_limit
@@ -264,7 +267,7 @@ def visualize(
                 max_test_length, max(map(lambda r: len(r.test), results[sol].get_all()))
             )
         except MissingSolution as err:
-            print(colored(str(err), "yellow"))
+            eprint(colored(str(err), "yellow"))
 
     wrong_solutions = {}
     for sol, sol_res in results.items():

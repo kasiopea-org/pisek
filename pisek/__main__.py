@@ -175,7 +175,7 @@ def main(argv):
         parser.add_argument(
             "--solutions",
             "-s",
-            default=[],
+            default=None,
             type=str,
             nargs="*",
             help="Visualize only solutions named SOLUTIONS.",
