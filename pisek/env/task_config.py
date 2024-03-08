@@ -155,14 +155,8 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def get_solution_by_source(self, source: str) -> Optional[str]:
-        sources = list(
-            filter(
-                lambda x: x[1] == source,
-                [(name, sol.source) for name, sol in self.solutions.items()],
-            )
-        )
-
-        return sources[0][0] if len(sources) else None
+        sources = (name for name, sol in self.solutions.items() if sol.source == source)
+        return next(sources, None)
 
     def __init__(self, **kwargs):
         value = {"subtask_count": max(kwargs["subtasks"]) + 1, "name": kwargs["name"]}
