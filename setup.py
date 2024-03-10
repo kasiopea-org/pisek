@@ -25,5 +25,5 @@ setuptools.setup(
     extras_require={"dev": ["black", "mypy"]},
     entry_points={"console_scripts": ["pisek=pisek.__main__:main_wrapped"]},
     include_package_data=True,
-    package_data={"pisek": ["defaults-config", "tools/*"]},
+    package_data={"pisek": ["env/global-defaults", "tools/*"]},
 )

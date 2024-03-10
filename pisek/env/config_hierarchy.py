@@ -26,7 +26,7 @@ from pisek.utils.text import tab
 from pisek.env.config_errors import TaskConfigError
 from pisek.env.update_config import update_config
 
-DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
+DEFAULTS_CONFIG = str(files("pisek").joinpath("env/global-defaults"))
 CONFIG_FILENAME = "config"
 
 
