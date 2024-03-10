@@ -34,7 +34,7 @@ from typing import Optional, Any, Annotated, Union
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
-from pisek.env.config_hierarchy import ConfigValue, PISEK_INTERNAL_CONFIG_VAL, TaskConfigError, ConfigHierarchy
+from pisek.env.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
 from pisek.env.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
@@ -81,8 +81,12 @@ class CMSScoreMode(StrEnum):
     max_tokened_last = auto()
 
 
-ValuesDict = dict[str, Union[str, 'ValuesDict', dict[Any, 'ValuesDict']]]
-ConfigValuesDict = dict[str, Union[ConfigValue, 'ConfigValuesDict', dict[Any, 'ConfigValuesDict']]]
+ValuesDict = dict[str, Union[str, "ValuesDict", dict[Any, "ValuesDict"]]]
+ConfigValuesDict = dict[
+    str, Union[ConfigValue, "ConfigValuesDict", dict[Any, "ConfigValuesDict"]]
+]
+
+
 def _to_values(config_values_dict: ConfigValuesDict) -> ValuesDict:
     def convert(what: ConfigValue | dict) -> str | dict:
         if isinstance(what, ConfigValue):
@@ -91,8 +95,6 @@ def _to_values(config_values_dict: ConfigValuesDict) -> ValuesDict:
             return {key: convert(val) for key, val in what.items()}
 
     return {key: convert(val) for key, val in config_values_dict.items()}
-
-
 
 
 class TaskConfig(BaseEnv):
@@ -184,16 +186,18 @@ class TaskConfig(BaseEnv):
 
         args["fail_mode"] = ConfigValue(
             "any" if args["contest_type"].value == "cms" else "all",
+            config="_internal",
+            section="task",
             key="fail_mode",
-            **PISEK_INTERNAL_CONFIG_VAL
-        ) # TODO: Add fail_mode to config
+            internal=True,
+        )  # TODO: Add fail_mode to config
 
         # Load judge specific keys
         for key, default in JUDGE_KEYS:
             if args["out_check"].value == "judge":
                 args[key] = configs.get("tests", key)
             else:
-                args[key] = ConfigValue(default, key=key, **PISEK_INTERNAL_CONFIG_VAL)
+                args[key] = ConfigValue(default, "_internal", "tests", key, True)
 
         section_names = configs.sections()
 
@@ -204,16 +208,14 @@ class TaskConfig(BaseEnv):
             if m := re.match(r"test(\d{2})", section_name):
                 num = m[1]
                 subtasks[int(num)] = SubtaskConfig.load_dict(
-                    ConfigValue(num, section.config, section.section, None),
-                    configs
+                    ConfigValue(num, section.config, section.section, None), configs
                 )
 
         args["solutions"] = solutions = {}
         for section in section_names:
             if m := re.match(r"solution_(.+)", section.value):
                 solutions[m[1]] = SolutionConfig.load_dict(
-                    ConfigValue(m[1], section.config, section.section, None),
-                    configs
+                    ConfigValue(m[1], section.config, section.section, None), configs
                 )
 
         args["limits"] = LimitsConfig.load_dict(configs)
@@ -246,7 +248,7 @@ class TaskConfig(BaseEnv):
             )
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
-        if len(primary) > 2:
+        if len(primary) > 1:
             raise PydanticCustomError(
                 "multiple_primary_solutions",
                 "Multiple primary solutions",
@@ -263,7 +265,7 @@ class TaskConfig(BaseEnv):
             if i not in self.subtasks:
                 raise PydanticCustomError(
                     "missing_subtask",
-                    f"Missing section for subtask {i}.",
+                    f"Missing section for subtask {i}",
                     {},
                 )
 
@@ -324,7 +326,9 @@ class SubtaskConfig(BaseEnv):
             args = {key: configs.get(number.section, key) for key in KEYS}
         else:
             args = {
-                key: configs.get_from_candidates([(number.section, key), ("all_tests", key)])
+                key: configs.get_from_candidates(
+                    [(number.section, key), ("all_tests", key)]
+                )
                 for key in KEYS
             }
         return {"_section": configs.get(number.section, None), "num": number, **args}
@@ -347,6 +351,8 @@ class SubtaskConfig(BaseEnv):
     @field_validator("predecessors", mode="before")
     @classmethod
     def expand_predecessors(cls, value: str, info: ValidationInfo) -> list[str]:
+        if info.context is None:
+            raise RuntimeError("Missing validation context.")
         subtask_cnt = info.context.get("subtask_count")
         number = info.data["num"]
 
@@ -365,7 +371,8 @@ class SubtaskConfig(BaseEnv):
                     )
                 if not 0 <= num < subtask_cnt:
                     raise PydanticCustomError(
-                        "predecessors_must_be_in_range", f"Predecessors must be in range 0, {subtask_cnt-1}"
+                        "predecessors_must_be_in_range",
+                        f"Predecessors must be in range 0, {subtask_cnt-1}",
                     )
                 predecessors.append(num)
 
@@ -465,7 +472,7 @@ class SolutionConfig(BaseEnv):
             if char not in SUBTASK_SPEC:
                 raise PydanticCustomError(
                     "subtasks_str_invalid_char",
-                    f"Not allowed char in subtask string: {char}. Recognized are {''.join(SUBTASK_SPEC.keys())}"
+                    f"Not allowed char in subtask string: {char}. Recognized are {''.join(SUBTASK_SPEC.keys())}",
                 )
 
         if primary and value != "1" * subtask_cnt:
@@ -537,7 +544,7 @@ class LimitsConfig(BaseEnv):
 
         for file_type in ("input", "output"):
             key = f"{file_type}_max_size"
-            args[key] = configs.get(cls._section.default, key)
+            args[key] = configs.get("limits", key)
 
         return args
 
@@ -573,7 +580,7 @@ class CMSConfig(BaseEnv):
             "feedback_level",
         ]
 
-        return {key: configs.get(cls._section.default, key) for key in KEYS}
+        return {key: configs.get("cms", key) for key in KEYS}
 
     @field_validator("title", mode="before")
     @classmethod
@@ -606,6 +613,7 @@ class CMSConfig(BaseEnv):
         name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
         return f"{name}.%l"
 
+
 def _format_message(err: ErrorDetails) -> str:
     inp = err["input"]
     ctx = err["ctx"] if "ctx" in err else None
@@ -625,7 +633,16 @@ def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list
         for loc in error["loc"]:
             value = value[loc]
 
-        error_msgs.append(f"{value.location()}\n" + tab(_format_message(error)))
+        if not isinstance(value, ConfigValue):
+            location = (
+                value["_section"].location()
+                if "_section" in value
+                else "Global config error:"
+            )
+        else:
+            location = value.location()
+
+        error_msgs.append(f"{location}\n" + tab(_format_message(error)))
     return error_msgs
 
 
@@ -649,7 +666,8 @@ def load_config(
     except ValidationError as err:
         eprint(
             colored(
-                "Invalid config:\n\n" + "\n\n".join(_convert_errors(err, config_values)),
+                "Invalid config:\n\n"
+                + "\n\n".join(_convert_errors(err, config_values)),
                 "red",
                 no_colors,
             )

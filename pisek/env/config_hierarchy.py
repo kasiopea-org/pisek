@@ -29,20 +29,21 @@ from pisek.env.update_config import update_config
 DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
 CONFIG_FILENAME = "config"
 
+
 @dataclass
 class ConfigValue:
     value: Any
     config: str
     section: str
     key: Optional[str]
+    internal: bool = False
 
     def location(self) -> str:
-        text = f"Config {self.config}, section [{self.section}]"
+        text = "Internal pisek value" if self.internal else f"Config {self.config}"
+        text += f", section [{self.section}]"
         if self.key is not None:
             text += f", key '{self.key}'"
         return text
-
-PISEK_INTERNAL_CONFIG_VAL = {"config": "pisek", "section": "internal"}
 
 
 class ConfigHierarchy:
@@ -72,12 +73,19 @@ class ConfigHierarchy:
     def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])
 
-    def get_from_candidates(self, candidates: list[tuple[str, str | None]]) -> ConfigValue:
+    def get_from_candidates(
+        self, candidates: list[tuple[str, str | None]]
+    ) -> ConfigValue:
         for section, key in candidates:
-            self._used_keys[section].add(key)
+            if key is None:
+                # Defaultdict, so we are creating the section set
+                self._used_keys[section]
+            else:
+                self._used_keys[section].add(key)
 
         unset: bool = False
-        for config in self._configs:
+        for config_path, config in zip(self._config_paths, self._configs):
+            config_path = os.path.basename(config_path)
             for section, key in candidates:
                 if key is None:
                     value = section if section in config else None
@@ -88,20 +96,27 @@ class ConfigHierarchy:
                     unset = True
                     break
                 elif value is not None:
-                    return ConfigValue(value, "", section, key) # TODO: Show config
+                    return ConfigValue(
+                        value, config_path, section, key
+                    )  # TODO: Show config
             if unset:
                 break
 
-        def msg(section_key: tuple[str, str]) -> str:
-            return f"key '{section_key[1]}' in section [{section_key[0]}]"
+        def msg(section_key: tuple[str, str | None]) -> str:
+            section, key = section_key
+            if key is None:
+                return f"Section [{section}]"
+            else:
+                return f"Key '{key}' in section [{section}]"
 
         candidates_str = " or\n".join(map(msg, candidates))
         raise TaskConfigError(f"Unset value for:\n{tab(candidates_str)}")
 
     def sections(self) -> list[ConfigValue]:
         sections = {
-            section: ConfigValue(section, "", section, None) # TODO: Add config
-            for config in self._configs for section in config.sections()
+            section: ConfigValue(section, "", section, None)  # TODO: Add config
+            for config in self._configs
+            for section in config.sections()
         }  # We need to use dictionary here because order matters
         return list(sections.values())
 
@@ -122,10 +137,10 @@ class ConfigHierarchy:
             },
         )
         IGNORED_TEST_KEYS = {"file_name"}
-        for section in self._configs[-1].sections():
+        for section in self._configs[0].sections():
             if section not in self._used_keys:
                 raise TaskConfigError(f"Unexpected section [{section}] in config")
-            for key in self._configs[-1][section].keys():
+            for key in self._configs[0][section].keys():
                 if key in IGNORED_KEYS[section]:
                     continue
                 if (
