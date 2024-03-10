@@ -29,12 +29,12 @@ from pydantic import (
     model_validator,
 )
 import re
-from typing import Optional, Any, Annotated
+from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
-from pisek.env.config_hierarchy import TaskConfigError, ConfigHierarchy
+from pisek.env.config_hierarchy import ConfigValue, PISEK_INTERNAL_CONFIG_VAL, TaskConfigError, ConfigHierarchy
 from pisek.env.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
@@ -81,24 +81,18 @@ class CMSScoreMode(StrEnum):
     max_tokened_last = auto()
 
 
-_GLOBAL_KEYS = [
-    ("task", "name"),
-    ("task", "contest_type"),
-    ("task", "task_type"),
-    ("task", "solutions_subdir"),
-    ("task", "static_subdir"),
-    ("task", "data_subdir"),
-    ("tests", "in_gen"),
-    ("tests", "checker"),
-    ("tests", "out_check"),
-    ("tests", "stub"),
-    ("tests", "headers"),
-]
-_JUDGE_KEYS = [
-    ("out_judge", None),
-    ("judge_needs_in", "0"),
-    ("judge_needs_out", "1"),
-]
+ValuesDict = dict[str, Union[str, 'ValuesDict', dict[Any, 'ValuesDict']]]
+ConfigValuesDict = dict[str, Union[ConfigValue, 'ConfigValuesDict', dict[Any, 'ConfigValuesDict']]]
+def _to_values(config_values_dict: ConfigValuesDict) -> ValuesDict:
+    def convert(what: ConfigValue | dict) -> str | dict:
+        if isinstance(what, ConfigValue):
+            return what.value
+        else:
+            return {key: convert(val) for key, val in what.items()}
+
+    return {key: convert(val) for key, val in config_values_dict.items()}
+
+
 
 
 class TaskConfig(BaseEnv):
@@ -165,36 +159,62 @@ class TaskConfig(BaseEnv):
             super().__init__(**kwargs)
 
     @staticmethod
-    def load(configs: ConfigHierarchy) -> "TaskConfig":
-        return TaskConfig(**TaskConfig.load_dict(configs))
-
-    @staticmethod
-    def load_dict(configs: ConfigHierarchy) -> dict[str, Any]:
+    def load_dict(configs: ConfigHierarchy) -> ConfigValuesDict:
+        GLOBAL_KEYS = [
+            ("task", "name"),
+            ("task", "contest_type"),
+            ("task", "task_type"),
+            ("task", "solutions_subdir"),
+            ("task", "static_subdir"),
+            ("task", "data_subdir"),
+            ("tests", "in_gen"),
+            ("tests", "checker"),
+            ("tests", "out_check"),
+            ("tests", "stub"),
+            ("tests", "headers"),
+        ]
+        JUDGE_KEYS = [
+            ("out_judge", None),
+            ("judge_needs_in", "0"),
+            ("judge_needs_out", "1"),
+        ]
         args: dict[str, Any] = {
-            key: configs.get(section, key) for section, key in _GLOBAL_KEYS
+            key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
 
-        args["fail_mode"] = "any" if args["contest_type"] == "cms" else "all"
+        args["fail_mode"] = ConfigValue(
+            "any" if args["contest_type"].value == "cms" else "all",
+            key="fail_mode",
+            **PISEK_INTERNAL_CONFIG_VAL
+        ) # TODO: Add fail_mode to config
+
         # Load judge specific keys
-        for key, default in _JUDGE_KEYS:
-            if args["out_check"] == "judge":
+        for key, default in JUDGE_KEYS:
+            if args["out_check"].value == "judge":
                 args[key] = configs.get("tests", key)
             else:
-                args[key] = default
+                args[key] = ConfigValue(default, key=key, **PISEK_INTERNAL_CONFIG_VAL)
 
         section_names = configs.sections()
 
         # Load subtasks
         args["subtasks"] = subtasks = {}
-        for section_name in sorted(section_names):
+        for section in sorted(section_names, key=lambda cv: cv.value):
+            section_name = section.value
             if m := re.match(r"test(\d{2})", section_name):
-                num = int(m[1])
-                subtasks[num] = SubtaskConfig.load_dict(num, configs)
+                num = m[1]
+                subtasks[int(num)] = SubtaskConfig.load_dict(
+                    ConfigValue(num, section.config, section.section, None),
+                    configs
+                )
 
         args["solutions"] = solutions = {}
-        for section_name in section_names:
-            if m := re.match(r"solution_(.+)", section_name):
-                solutions[m[1]] = SolutionConfig.load_dict(m[1], configs)
+        for section in section_names:
+            if m := re.match(r"solution_(.+)", section.value):
+                solutions[m[1]] = SolutionConfig.load_dict(
+                    ConfigValue(m[1], section.config, section.section, None),
+                    configs
+                )
 
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
@@ -261,7 +281,7 @@ class TaskConfig(BaseEnv):
                 return subtask.all_globs
             elif num in visited:
                 raise PydanticCustomError(
-                    "cyclic_predecessor_subtasks", "Cyclic predecessor subtasks.", {}
+                    "cyclic_predecessor_subtasks", "Cyclic predecessor subtasks", {}
                 )
 
             visited.add(num)
@@ -281,6 +301,7 @@ class TaskConfig(BaseEnv):
 class SubtaskConfig(BaseEnv):
     """Configuration of one subtask."""
 
+    _section: str
     num: int
     name: str
     points: int = Field(ge=0)
@@ -295,18 +316,18 @@ class SubtaskConfig(BaseEnv):
         return any(fnmatch.fnmatch(filename, g) for g in self.in_globs)
 
     @staticmethod
-    def load_dict(number: int, configs: ConfigHierarchy) -> dict[str, Any]:
+    def load_dict(number: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:
         KEYS = ["name", "points", "in_globs", "predecessors"]
-        section = f"test{number:02}"
+        num = int(number.value)
         args: dict[str, Any]
-        if number == 0:
-            args = {key: configs.get(section, key) for key in KEYS}
+        if num == 0:
+            args = {key: configs.get(number.section, key) for key in KEYS}
         else:
             args = {
-                key: configs.get_from_candidates([(section, key), ("all_tests", key)])
+                key: configs.get_from_candidates([(number.section, key), ("all_tests", key)])
                 for key in KEYS
             }
-        return {"num": number, **args}
+        return {"_section": configs.get(number.section, None), "num": number, **args}
 
     @field_validator("in_globs", mode="after")
     @classmethod
@@ -326,6 +347,7 @@ class SubtaskConfig(BaseEnv):
     @field_validator("predecessors", mode="before")
     @classmethod
     def expand_predecessors(cls, value: str, info: ValidationInfo) -> list[str]:
+        subtask_cnt = info.context.get("subtask_count")
         number = info.data["num"]
 
         predecessors = []
@@ -336,11 +358,16 @@ class SubtaskConfig(BaseEnv):
                 predecessors.append(number - 1)
             else:
                 try:
-                    predecessors.append(int(pred))
+                    num = int(pred)
                 except ValueError:
                     raise PydanticCustomError(
                         "predecessors_must_be_int", "Predecessors must be int"
                     )
+                if not 0 <= num < subtask_cnt:
+                    raise PydanticCustomError(
+                        "predecessors_must_be_in_range", f"Predecessors must be in range 0, {subtask_cnt-1}"
+                    )
+                predecessors.append(num)
 
         return list(sorted(set(predecessors)))
 
@@ -355,6 +382,7 @@ class SubtaskConfig(BaseEnv):
 class SolutionConfig(BaseEnv):
     """Configuration of one solution."""
 
+    _section: str
     name: str
     primary: bool
     source: str
@@ -367,7 +395,7 @@ class SolutionConfig(BaseEnv):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def load_dict(cls, name: str, configs: ConfigHierarchy) -> dict[str, Any]:
+    def load_dict(cls, name: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:
         KEYS = [
             "primary",
             "source",
@@ -378,11 +406,11 @@ class SolutionConfig(BaseEnv):
         ]
         args = {
             key: configs.get_from_candidates(
-                [(f"solution_{name}", key), ("all_solutions", key)]
+                [(name.section, key), ("all_solutions", key)]
             )
             for key in KEYS
         }
-        return {"name": name, **args}
+        return {"_section": configs.get(name.section, None), "name": name, **args}
 
     @field_validator("name", mode="after")
     @classmethod
@@ -437,7 +465,7 @@ class SolutionConfig(BaseEnv):
             if char not in SUBTASK_SPEC:
                 raise PydanticCustomError(
                     "subtasks_str_invalid_char",
-                    f"Not allowed char in subtask string: {char}\nRecognized are {''.join(SUBTASK_SPEC.keys())}",
+                    f"Not allowed char in subtask string: {char}. Recognized are {''.join(SUBTASK_SPEC.keys())}"
                 )
 
         if primary and value != "1" * subtask_cnt:
@@ -464,6 +492,8 @@ class SolutionConfig(BaseEnv):
 class ProgramLimits(BaseEnv):
     """Configuration of limits of one program type."""
 
+    _section: str = "limits"
+
     time_limit: float = Field(ge=0)  # [seconds]
     clock_limit: float = Field(ge=0)  # [seconds]
     mem_limit: int = Field(ge=0)  # [KB]
@@ -471,8 +501,8 @@ class ProgramLimits(BaseEnv):
     # limit=0 means unlimited
 
     @classmethod
-    def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> dict[str, Any]:
-        def get_limit(limit: str) -> str:
+    def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> ConfigValuesDict:
+        def get_limit(limit: str) -> ConfigValue:
             if part == ProgramType.sec_solve:
                 return configs.get_from_candidates(
                     [("limits", f"{part.name}_{limit}"), ("limits", f"solve_{limit}")]
@@ -488,6 +518,8 @@ class ProgramLimits(BaseEnv):
 class LimitsConfig(BaseEnv):
     """Configuration of limits for all program types."""
 
+    _section: str = "limits"
+
     tool: ProgramLimits
     in_gen: ProgramLimits
     checker: ProgramLimits
@@ -498,19 +530,21 @@ class LimitsConfig(BaseEnv):
     output_max_size: int
 
     @classmethod
-    def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
+    def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
         args: dict[str, Any] = {}
         for part in ProgramType:
             args[part.name] = ProgramLimits.load_dict(part, configs)
 
         for file_type in ("input", "output"):
             key = f"{file_type}_max_size"
-            args[key] = configs.get("limits", key)
+            args[key] = configs.get(cls._section.default, key)
 
         return args
 
 
 class CMSConfig(BaseEnv):
+    _section: str = "cms"
+
     title: str
     submission_format: ListStr
 
@@ -525,7 +559,8 @@ class CMSConfig(BaseEnv):
     feedback_level: CMSFeedbackLevel
 
     @classmethod
-    def load_dict(cls, configs: ConfigHierarchy) -> dict[str, Any]:
+    def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
+        SECTION = "cms"
         KEYS = [
             "title",
             "submission_format",
@@ -538,7 +573,7 @@ class CMSConfig(BaseEnv):
             "feedback_level",
         ]
 
-        return {key: configs.get("cms", key) for key in KEYS}
+        return {key: configs.get(cls._section.default, key) for key in KEYS}
 
     @field_validator("title", mode="before")
     @classmethod
@@ -571,35 +606,6 @@ class CMSConfig(BaseEnv):
         name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
         return f"{name}.%l"
 
-
-def _get_section_and_key(location: tuple[Any, ...]) -> str:
-    def take_ith(l: list, i: int) -> list:
-        return list(map(lambda x: x[i], l))
-
-    _GLOBAL_KEYS_F = take_ith(_GLOBAL_KEYS, 1)
-    _JUDGE_KEYS_F = take_ith(_JUDGE_KEYS, 0)
-
-    loc = tuple(map(str, location))
-
-    match loc:
-        case ("subtasks", num, *rest):
-            return f"[test{int(num):02}] " + ".".join(rest)
-        case ("solutions", name, *rest):
-            return f"[solution_{name}] " + ".".join(rest)
-        case ("limits", program, *rest):
-            return f"[limits] {program}_{'.'.join(rest)}"
-        case (key,):
-            if key in _GLOBAL_KEYS_F:
-                return f"[{_GLOBAL_KEYS[_GLOBAL_KEYS_F.index(key)][0]}] {key}"
-            elif key in _JUDGE_KEYS_F:
-                return f"[tests] {key}"
-            return key
-        case ():
-            return "Config"
-        case _:
-            return ".".join(map(str, loc))
-
-
 def _format_message(err: ErrorDetails) -> str:
     inp = err["input"]
     ctx = err["ctx"] if "ctx" in err else None
@@ -612,12 +618,14 @@ def _format_message(err: ErrorDetails) -> str:
     return f"{err['msg']}: '{inp}'"
 
 
-def _convert_errors(e: ValidationError) -> list[str]:
+def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list[str]:
     error_msgs: list[str] = []
     for error in e.errors():
-        error_msgs.append(
-            f"{_get_section_and_key(error['loc'])}\n{tab(_format_message(error))}"
-        )
+        value: Any = config_values
+        for loc in error["loc"]:
+            value = value[loc]
+
+        error_msgs.append(f"{value.location()}\n" + tab(_format_message(error)))
     return error_msgs
 
 
@@ -630,7 +638,8 @@ def load_config(
     """Loads config from given path."""
     try:
         config_hierarchy = ConfigHierarchy(path, no_colors)
-        config = TaskConfig.load(config_hierarchy)
+        config_values = TaskConfig.load_dict(config_hierarchy)
+        config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()
         if config_hierarchy.check_todos() and not suppress_warnings:
             warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
@@ -640,7 +649,7 @@ def load_config(
     except ValidationError as err:
         eprint(
             colored(
-                "Invalid config:\n\n" + "\n\n".join(_convert_errors(err)),
+                "Invalid config:\n\n" + "\n\n".join(_convert_errors(err, config_values)),
                 "red",
                 no_colors,
             )

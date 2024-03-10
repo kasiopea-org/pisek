@@ -16,9 +16,11 @@
 
 from collections import defaultdict
 from configparser import ConfigParser
+from dataclasses import dataclass
 from importlib.resources import files
 import os
 import re
+from typing import Optional, Any
 
 from pisek.utils.text import tab
 from pisek.env.config_errors import TaskConfigError
@@ -27,16 +29,33 @@ from pisek.env.update_config import update_config
 DEFAULTS_CONFIG = str(files("pisek").joinpath("defaults-config"))
 CONFIG_FILENAME = "config"
 
+@dataclass
+class ConfigValue:
+    value: Any
+    config: str
+    section: str
+    key: Optional[str]
+
+    def location(self) -> str:
+        text = f"Config {self.config}, section [{self.section}]"
+        if self.key is not None:
+            text += f", key '{self.key}'"
+        return text
+
+PISEK_INTERNAL_CONFIG_VAL = {"config": "pisek", "section": "internal"}
+
 
 class ConfigHierarchy:
     """Represents hierarchy of config files where last overrides all previous."""
 
     def __init__(self, task_path: str, no_colors: bool = False) -> None:
-        self._config_path = os.path.join(task_path, CONFIG_FILENAME)
-        config_paths = [DEFAULTS_CONFIG, self._config_path]
+        self._config_paths = [
+            os.path.join(task_path, CONFIG_FILENAME),
+            DEFAULTS_CONFIG,
+        ]
 
-        self._configs = []
-        for path in config_paths:
+        self._configs: list[ConfigParser] = []
+        for path in self._config_paths:
             self._configs.append(config := ConfigParser())
             if not config.read(path):
                 raise TaskConfigError(f"Missing config {path}. Is this task folder?")
@@ -46,22 +65,30 @@ class ConfigHierarchy:
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
 
-    def get(self, section: str, key: str) -> str:
+    @property
+    def top_config(self) -> str:
+        return self._config_paths[0]
+
+    def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])
 
-    def get_from_candidates(self, candidates: list[tuple[str, str]]):
+    def get_from_candidates(self, candidates: list[tuple[str, str | None]]) -> ConfigValue:
         for section, key in candidates:
             self._used_keys[section].add(key)
 
         unset: bool = False
-        for config in reversed(self._configs):
+        for config in self._configs:
             for section, key in candidates:
-                value = config.get(section, key, fallback=None)
+                if key is None:
+                    value = section if section in config else None
+                else:
+                    value = config.get(section, key, fallback=None)
+
                 if value == "!unset":
                     unset = True
                     break
                 elif value is not None:
-                    return value
+                    return ConfigValue(value, "", section, key) # TODO: Show config
             if unset:
                 break
 
@@ -71,11 +98,12 @@ class ConfigHierarchy:
         candidates_str = " or\n".join(map(msg, candidates))
         raise TaskConfigError(f"Unset value for:\n{tab(candidates_str)}")
 
-    def sections(self):
+    def sections(self) -> list[ConfigValue]:
         sections = {
-            section: True for config in self._configs for section in config.sections()
+            section: ConfigValue(section, "", section, None) # TODO: Add config
+            for config in self._configs for section in config.sections()
         }  # We need to use dictionary here because order matters
-        return list(sections.keys())
+        return list(sections.values())
 
     def check_unused_keys(self) -> None:
         """
@@ -111,7 +139,7 @@ class ConfigHierarchy:
 
     def check_todos(self) -> bool:
         """Check whether lowest config contains TODO in comments."""
-        with open(self._config_path) as config:
+        with open(self.top_config) as config:
             for line in config:
                 if "#" in line and "TODO" in line.split("#")[1]:
                     return True
