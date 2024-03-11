@@ -641,7 +641,7 @@ def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list
         else:
             location = value.location()
 
-        error_msgs.append(f"{location}\n" + tab(_format_message(error)))
+        error_msgs.append(f"In {location}:\n" + tab(_format_message(error)))
     return error_msgs
 
 
