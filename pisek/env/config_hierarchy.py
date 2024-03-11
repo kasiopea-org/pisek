@@ -39,7 +39,7 @@ class ConfigValue:
     internal: bool = False
 
     def location(self) -> str:
-        text = "Internal pisek value" if self.internal else f"Config {self.config}"
+        text = "Internal pisek value" if self.internal else f"In config {self.config}"
         text += f", section [{self.section}]"
         if self.key is not None:
             text += f", key '{self.key}'"
@@ -65,10 +65,6 @@ class ConfigHierarchy:
             update_config(config, task_path, no_colors)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
-
-    @property
-    def top_config(self) -> str:
-        return self._config_paths[0]
 
     def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])
@@ -154,7 +150,7 @@ class ConfigHierarchy:
 
     def check_todos(self) -> bool:
         """Check whether lowest config contains TODO in comments."""
-        with open(self.top_config) as config:
+        with open(self._config_paths[0]) as config:
             for line in config:
                 if "#" in line and "TODO" in line.split("#")[1]:
                     return True

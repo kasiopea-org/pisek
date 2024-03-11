@@ -567,7 +567,6 @@ class CMSConfig(BaseEnv):
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
-        SECTION = "cms"
         KEYS = [
             "title",
             "submission_format",
