@@ -39,12 +39,15 @@ class ConfigValue:
     internal: bool = False
 
     def location(self) -> str:
-        text = (
-            "Internal pisek value" if self.internal else f"In section [{self.section}]"
-        )
+        text = f"section [{self.section}]"
         if self.key is not None:
             text += f", key '{self.key}'"
-        text += f" (config {os.path.abspath(self.config)})"
+
+        if self.internal:
+            text += " (internal pisek value)"
+        else:
+            text += f" (config {os.path.abspath(self.config)})"
+
         return text
 
 
