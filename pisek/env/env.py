@@ -76,7 +76,7 @@ class Env(BaseEnv):
         solutions: Optional[list[str]] = None,
         timeout: Optional[float] = None,
         inputs: int = 5,
-        **_
+        **_,
     ) -> Optional["Env"]:
         no_jumps |= plain
         no_colors |= plain

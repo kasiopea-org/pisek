@@ -48,5 +48,11 @@ pisek = "pisek.__main__:main_wrapped"
 Homepage = "https://github.com/kasiopea-org/pisek"
 Issues = "https://github.com/kasiopea-org/pisek/issues"
 
-[tool.setuptools]
-packages = ["pisek"]
+[tool.setuptools.packages.find]
+exclude = ["fixtures"]
+
+[tool.setuptools.package-data]
+pisek = [
+    "env/global-defaults",
+    "tools/*",
+]
