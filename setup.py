@@ -18,7 +18,7 @@ import setuptools
 
 setuptools.setup(
     name="pisek",
-    version="0.1",
+    version="1.0",
     description="Tool for developing tasks for programming competitions",
     packages=setuptools.find_packages(),
     install_requires=["PyYAML", "colorama", "pydantic"],
