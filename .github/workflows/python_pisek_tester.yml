@@ -23,7 +23,7 @@ jobs:
         pip install .
     - name: Test Pisek itself
       run: |
-        ./self_tests.sh
+        ./tests.sh
     - name: Check formatting
       run: |
         pip install black
