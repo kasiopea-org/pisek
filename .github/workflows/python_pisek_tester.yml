@@ -34,4 +34,4 @@ jobs:
         pip install types-setuptools 
         pip install types-PyYAML
         pip install types-colorama
-        mypy . --exclude fixtures
+        mypy pisek 
