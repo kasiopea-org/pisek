@@ -74,6 +74,15 @@ def main(argv):
         )
     )
 
+    def add_argument_verbosity(parser):
+        parser.add_argument(
+            "--verbosity",
+            "-v",
+            type=int,
+            default=0,
+            help="Be more verbose.",  # TODO
+        )
+
     def add_argument_timeout(parser):
         parser.add_argument(
             "--timeout",
@@ -223,6 +232,7 @@ def main(argv):
             help="Use the dataset with the description DESCRIPTION.",
         )
 
+    add_argument_verbosity(parser)
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)
