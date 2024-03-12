@@ -1,6 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+packages = ["pisek"]
+
 [project]
 name = "pisek"
 version = "1.0.0"
+
+dependencies = [
+    "PyYAML",
+    "colorama",
+    "pydantic",
+]
+requires-python = ">=3.11"
+
 authors = [
     { name="Václav Volhejn", email="vaclav.volhejn@gmail.com" },
     { name="Jiří Beneš", email="mail@jiribenes.com" },
@@ -9,19 +22,31 @@ authors = [
     { name="Daniel Skýpala", email="skipy@kam.mff.cuni.cz" },
     { name="Benjamin Swart", email="benjaminswart@email.cz" },
 ]
+maintainers = [
+    { name="Daniel Skýpala", email="skipy@kam.mff.cuni.cz" },
+]
+
 description = "Tool for developing tasks for programming competitions."
 readme = "README.md"
-requires-python = ">=3.11"
+license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: POSIX :: Linux",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy"
+]
+
+[project.scripts]
+pisek = "pisek.__main__:main_wrapped"
+
 [project.urls]
 Homepage = "https://github.com/kasiopea-org/pisek"
 Issues = "https://github.com/kasiopea-org/pisek/issues"
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[tool.setuptools]
+packages = ["pisek"]
