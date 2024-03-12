@@ -1,7 +1,7 @@
 #!/bin/bash
 # Self-tests + formatting (black) + typechecks (mypy)
 # Install as a pre-commit hook to check automatically before committing:
-# ln -s ../../check_all.sh .git/hooks/pre-commit
+# ln -s ../check_all.sh .git/hooks/pre-commit
 
 set -e
 
@@ -15,4 +15,4 @@ echo "======== Checking types ========"
 python3 -m mypy pisek/
 
 echo "======== Testing ========"
-./self_tests.sh
+./tests.sh

@@ -8,12 +8,12 @@ import unittest
 import shutil
 import os
 
-from pisek.self_tests.util import TestFixtureVariant, overwrite_file, modify_config
+from util import TestFixtureVariant, overwrite_file, modify_config
 
 
 class TestSumKasiopea(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/sum_kasiopea/"
+        return "../fixtures/sum_kasiopea/"
 
 
 class TestMissingSampleIn(TestSumKasiopea):

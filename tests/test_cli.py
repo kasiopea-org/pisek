@@ -8,7 +8,7 @@ import unittest
 from io import StringIO
 from unittest import mock
 
-from pisek.self_tests.util import TestFixture
+from util import TestFixture
 
 from pisek.__main__ import main
 from pisek.utils import util
@@ -20,7 +20,7 @@ def quote_test_suite_output(l):
 
 class TestCLI(TestFixture):
     def fixture_path(self):
-        return "../../fixtures/sum_cms/"
+        return "../fixtures/sum_cms/"
 
     def args(self):
         return [["--timeout", "1"]]

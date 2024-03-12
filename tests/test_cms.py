@@ -4,13 +4,13 @@ import shutil
 import unittest
 
 from pisek.paths import GENERATED_SUBDIR
-from pisek.self_tests.util import TestFixtureVariant, overwrite_file
+from util import TestFixtureVariant, overwrite_file
 from pisek.env.task_config import load_config
 
 
 class TestSumCMS(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/sum_cms/"
+        return "../fixtures/sum_cms/"
 
 
 class TestMissingGenerator(TestSumCMS):
@@ -123,12 +123,12 @@ class TestDirtySamle(TestSumCMS):
 
 class TestGuess(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/guess/"
+        return "../fixtures/guess/"
 
 
 class TestStub(TestFixtureVariant):
     def fixture_path(self):
-        return "../../fixtures/odd_stub/"
+        return "../fixtures/odd_stub/"
 
 
 if __name__ == "__main__":

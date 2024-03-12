@@ -31,6 +31,7 @@ jobs:
     - name: Check typing
       run: |
         pip install mypy
+        pip install types-setuptools 
         pip install types-PyYAML
         pip install types-colorama
-        mypy pisek/
+        mypy . --exclude fixtures
