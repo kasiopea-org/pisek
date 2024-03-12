@@ -1,0 +1,27 @@
+[project]
+name = "pisek"
+version = "1.0.0"
+authors = [
+    { name="Václav Volhejn", email="vaclav.volhejn@gmail.com" },
+    { name="Jiří Beneš", email="mail@jiribenes.com" },
+    { name="Michal Töpfer", email="michal.topfer@gmail.com" },
+    { name="Jiri Kalvoda", email="jirikalvoda@kam.mff.cuni.cz" },
+    { name="Daniel Skýpala", email="skipy@kam.mff.cuni.cz" },
+    { name="Benjamin Swart", email="benjaminswart@email.cz" },
+]
+description = "Tool for developing tasks for programming competitions."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux",
+]
+
+[project.urls]
+Homepage = "https://github.com/kasiopea-org/pisek"
+Issues = "https://github.com/kasiopea-org/pisek/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
