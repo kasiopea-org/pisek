@@ -268,6 +268,24 @@ class RunJudge(ProgramsJob):
 
         return text
 
+    def verdict_text(self) -> str:
+        if self.result is not None:
+            if self.result.verdict == Verdict.partial:
+                return f"{self.result.verdict.name} {self.result.points:.2f}"
+            return self.result.verdict.name
+        else:
+            return self.state.name
+
+    def verdict_mark(self) -> str:
+        if self.state == State.canceled:
+            return "-"
+        elif self.result is None:
+            return " "
+        elif self.result.verdict == Verdict.partial:
+            return f"[{self.result.points:.2f}]"
+        else:
+            return self.result.verdict.mark()
+
 
 class RunCMSJudge(RunJudge):
     """Judge class with CMS helper functions"""

@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from functools import partial
+from functools import partial, cache
 from typing import Callable
 import yaml
 
@@ -37,6 +37,11 @@ class Verdict(Enum):
             Verdict.error: "!",
         }[self]
 
+    @staticmethod
+    @cache
+    def pad_length() -> int:
+        return max(len(v.name) for v in Verdict)
+
 
 @dataclass
 class SolutionResult:
@@ -49,12 +54,6 @@ class SolutionResult:
     judge_stderr: str
     output: str = ""
     diff: str = ""
-
-    def __str__(self):
-        if self.verdict == Verdict.partial:
-            return f"[{self.points:.2f}]"
-        else:
-            return self.verdict.mark()
 
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
