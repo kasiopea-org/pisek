@@ -17,10 +17,13 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from colorama import Cursor, ansi
+from math import ceil
 import sys
+import re
 import time
 
 from pisek.env.env import Env
+from pisek.utils.terminal import terminal_width
 from pisek.jobs.jobs import State, PipelineItem, Job, JobManager
 from pisek.jobs.cache import Cache
 
@@ -108,8 +111,12 @@ class JobPipeline(ABC):
 
     def _print_tmp(self, msg, env: Env, *args, **kwargs):
         """Prints a text to be rewriten latter."""
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         if not env.no_jumps:
-            self._tmp_lines += msg.count("\n") + 1
+            self._tmp_lines += sum(
+                ceil(len(re.sub(ansi_escape, "", line)) / terminal_width)
+                for line in msg.split("\n")
+            )
             print(str(msg), *args, **kwargs)
 
     def _print(self, msg, env: Env, *args, **kwargs):
