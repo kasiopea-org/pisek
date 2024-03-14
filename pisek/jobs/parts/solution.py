@@ -25,7 +25,7 @@ from pisek.env.env import Env
 from pisek.paths import TaskPath
 from pisek.env.task_config import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
-from pisek.utils.terminal import MSG_LEN, colored_env
+from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
@@ -135,15 +135,26 @@ class SolutionManager(TaskJobManager):
             return self._job_bar(msg)
 
         points_places = len(str(self._env.config.total_points)) + POINTS_DEC_PLACES + 2
-        points = pad_left(f"{format_points(self.solution_points)}p", points_places)
-        subtasks_res = [sub.status(self.subtasks) for sub in self.subtasks]
+        points = f"{format_points(self.solution_points)}p"
 
-        if self._env.verbosity <= 0:
+        max_time = max((s.slowest_time for s in self.subtasks), default=0)
+
+        verbosity = self._env.verbosity if self.state.finished() else 0
+        subtasks_res = [sub.status(self.subtasks, verbosity) for sub in self.subtasks]
+
+        if verbosity <= 0:
+            points = pad_left(points, points_places + 1)
             header = f"{pad(msg, MSG_LEN)}{points} "
             subtasks_text = tab("|".join(subtasks_res))
         else:
-            header = colored_env(f"{msg} {points}", "cyan", self._env)
-            subtasks_text = "\n" + tab("\n".join(subtasks_res))
+            header = (
+                right_aligned_text(f"{msg}: {points} ", f"slowest {max_time:.2f}s")
+                + "\n"
+            )
+            header = colored_env(header, "cyan", self._env)
+            subtasks_text = tab("\n".join(subtasks_res))
+            if verbosity == 1:
+                subtasks_text += "\n"
 
         return header + subtasks_text
 
@@ -217,7 +228,7 @@ class SubtaskJobGroup:
     def slowest_time(self) -> float:
         results = self._finished_job_results(self.all_jobs)
         times = map(lambda r: r.time, results)
-        return min(times, default=0.0)
+        return max(times, default=0.0)
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
@@ -248,6 +259,9 @@ class SubtaskJobGroup:
     def status(
         self, all_subtasks: list["SubtaskJobGroup"], verbosity: Optional[int] = None
     ) -> str:
+        def subtask_name(num: int) -> str:
+            return self._env.config.subtasks[num].name
+
         def verdict_summary(jobs: list[RunJudge]) -> str:
             text = ""
             verdicts = self._judge_verdicts(jobs)
@@ -258,64 +272,78 @@ class SubtaskJobGroup:
             return text
 
         def verdict_marks(jobs: list[RunJudge]) -> str:
-            return "".join(job.verdict_mark() for job in self.new_jobs)
+            return "".join(job.verdict_mark() for job in jobs)
 
         verbosity = self._env.verbosity if verbosity is None else verbosity
         text = ""
 
-        if verbosity == 0:
-            predecessor_summary = verdict_summary(self.previous_jobs)
-            if predecessor_summary:
-                text += f"({predecessor_summary}) "
+        predecessor_summary = verdict_summary(self.previous_jobs)
+        if predecessor_summary:
+            predecessor_summary = f"({predecessor_summary}) "
 
-            text += verdict_marks(self.new_jobs)
+        if verbosity == 0:
+            text += f"{predecessor_summary}{verdict_marks(self.new_jobs)}"
 
         elif verbosity == 1:
-            text += colored_env(
-                f"{self.subtask.name}: {self._points}p, slowest {self.slowest_time:.2f}s\n",
-                "magenta",
-                self._env,
+            max_sub_name_len = max(
+                len(subtask_name(num)) for num in self._env.config.subtasks
+            )
+            max_sub_points_len = max(
+                len(str(sub.points)) for sub in self._env.config.subtasks.values()
             )
 
-            for pred in self.subtask.predecessors:
-                text += (
-                    tab(
-                        f"Predecessor {self._env.config.subtasks[pred].name}: "
-                        f"{all_subtasks[pred].status(all_subtasks, 0)}"
-                    )
-                    + "\n"
-                )
-            if len(self.subtask.predecessors):
-                text += "\n"
+            subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
+            subtask_points = pad_left(format_points(self._points), max_sub_points_len)
 
-            text += tab(f"Results: {verdict_marks(self.new_jobs)}") + "\n"
+            text += right_aligned_text(
+                f"{subtask_name} {subtask_points}p  "
+                f"{predecessor_summary}{verdict_marks(self.new_jobs)} ",
+                f"slowest {self.slowest_time:.2f}s",
+                offset=-2,
+            )
 
         elif verbosity >= 2:
             longest_input_name = max(map(lambda j: len(j.input.name), self.new_jobs))
-            text += colored_env(
-                f"{self.subtask.name}: {self._points}p, slowest {self.slowest_time:.2f}s\n",
-                "magenta",
-                self._env,
-            )
-
-            for pred in self.subtask.predecessors:
-                text += (
-                    tab(
-                        f"Predecessor {self._env.config.subtasks[pred].name}: "
-                        f"{all_subtasks[pred].status(all_subtasks, 0)}"
-                    )
-                    + "\n"
+            subtask_info = (
+                right_aligned_text(
+                    f"{self.subtask.name}: {format_points(self._points)}p ",
+                    f"slowest {self.slowest_time:.2f}s",
+                    offset=-2,
                 )
-            if len(self.subtask.predecessors):
+                + "\n"
+            )
+            text += colored_env(subtask_info, "magenta", self._env)
+
+            max_pred_name_len = max(
+                (len(subtask_name(pred)) for pred in self.subtask.predecessors),
+                default=0,
+            )
+            for pred in self.subtask.predecessors:
+                pred_group = all_subtasks[pred]
+                text += right_aligned_text(
+                    tab(
+                        f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
+                        f"{pred_group.status(all_subtasks, 0)} "
+                    ),
+                    f"slowest {pred_group.slowest_time:.2f}s",
+                    offset=-2,
+                )
+                text += "\n"
+
+            if len(self.subtask.predecessors) and any(
+                map(lambda j: j.result, self.new_jobs)
+            ):
                 text += "\n"
 
             for job in self.new_jobs:
                 if job.result is not None:
+                    input_verdict = tab(
+                        f"{pad(job.input.name + ':', longest_input_name+1)} "
+                        f"{pad(job.verdict_text(), Verdict.pad_length())} "
+                    )
                     text += (
-                        tab(
-                            f"{pad(job.input.name + ':', longest_input_name+1)} "
-                            f"{pad(job.verdict_text(), Verdict.pad_length())}  "
-                            f"({job.result.time:.2f}s)"
+                        right_aligned_text(
+                            input_verdict, f"{job.result.time:.2f}s", offset=-2
                         )
                         + "\n"
                     )

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 
-from pisek.utils.text import colored
+from pisek.utils.text import pad, colored
 from pisek.env.env import Env
 
 MSG_LEN = 25
@@ -24,6 +24,12 @@ try:
     terminal_width, terminal_height = os.get_terminal_size()
 except OSError:
     terminal_width, terminal_height = 100, 24
+
+TARGET_LINE_WIDTH = min(terminal_width, 100)
+
+
+def right_aligned_text(left: str, right: str, offset: int = 0):
+    return pad(left, TARGET_LINE_WIDTH - len(right) + offset) + right
 
 
 def colored_env(msg: str, color: str, env: Env) -> str:
