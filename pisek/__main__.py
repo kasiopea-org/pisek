@@ -106,6 +106,7 @@ def main(argv):
     def add_argument_all_inputs(parser):
         parser.add_argument(
             "--all-inputs",
+            "-a",
             action="store_true",
             help="Test each solution on all inputs.",
         )
