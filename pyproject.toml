@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pisek"
-version = "1.0.0"
+dynamic = ["version"]
 
 dependencies = [
     "PyYAML",
@@ -55,3 +55,6 @@ pisek = [
     "env/global-defaults",
     "tools/*",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "pisek.version.__version__"}

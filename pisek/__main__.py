@@ -28,6 +28,7 @@ from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
 from pisek.license import license, license_gnu
 from pisek.visualize import visualize
+from pisek.version import print_version
 
 
 def sigint_handler(sig, frame):
@@ -238,6 +239,8 @@ def main(argv):
 
     subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand")
 
+    parser_version = subparsers.add_parser("version", help="Print current version.")
+
     parser_test = subparsers.add_parser("test", help="test")
     parser_test.add_argument(
         "target",
@@ -323,7 +326,9 @@ def main(argv):
         if not clean_directory(args):
             return 1
 
-    if args.subcommand == "test":
+    if args.subcommand == "version":
+        result = print_version()
+    elif args.subcommand == "test":
         if args.target == "solution":
             result = test_solution(args)
         elif args.target == "generator":
