@@ -161,25 +161,38 @@ def get_subtask_mask(points, subtasks):
             sub_mask += "X"
     return sub_mask
 
+def update_to_v3(config: ConfigParser, task_path: str) -> None:
+    pass
 
-UPDATERS = {"v1": ("v2", update_to_v2)}
-NEWEST_VERSION = "v2"
 
+OUTDATED_VERSIONS = {
+    "v1": ("v2", update_to_v2)
+}
+CURRENT_VERSIONS = {
+    "v2": ("v3", update_to_v3)
+}
+
+NEWEST_VERSION = "v3"
+IS_EXPERIMENTAL = True
 
 def update_config(
     config: ConfigParser, task_path: str, no_colors: bool = False
 ) -> None:
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:
+        if IS_EXPERIMENTAL:
+            eprint(colored(f"Config format for version {NEWEST_VERSION} is experimental and can be changed", "yellow", no_colors))
         return
 
-    eprint(colored(f"Updating config to version {NEWEST_VERSION}", "yellow", no_colors))
+    if version in OUTDATED_VERSIONS:
+        eprint(colored(f"Updating config", "yellow", no_colors))
 
-    if version not in UPDATERS:
+    updaters = OUTDATED_VERSIONS | CURRENT_VERSIONS
+    if version not in updaters:
         raise TaskConfigError(f"Unknown version of config: {version}")
 
-    while version in UPDATERS:
-        version, updater = UPDATERS[version]
+    while version in updaters:
+        version, updater = updaters[version]
         updater(config, task_path)
 
     if version != NEWEST_VERSION:
