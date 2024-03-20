@@ -17,6 +17,7 @@ from pisek.utils.text import tab, pad
 from pisek.utils.terminal import colored_env, MSG_LEN, TARGET_LINE_WIDTH, terminal_width
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
+TARGET_BAR_WIDTH = TARGET_LINE_WIDTH - MSG_LEN - 11
 line_sepatator = "⎯" * terminal_width + "\n"
 
 
@@ -28,7 +29,6 @@ class StatusJobManager(JobManager):
         msg = pad(msg, MSG_LEN)
         progress_msg = f"  ({part}/{full})"
 
-        TARGET_BAR_WIDTH = TARGET_LINE_WIDTH - MSG_LEN - 11
         bar_len = min(
             TARGET_BAR_WIDTH, TARGET_LINE_WIDTH - len(msg) - len(progress_msg)
         )
