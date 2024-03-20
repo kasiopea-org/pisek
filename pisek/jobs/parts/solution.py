@@ -144,7 +144,7 @@ class SolutionManager(TaskJobManager):
 
         if verbosity <= 0:
             points = pad_left(points, points_places)
-            header = f"{pad(msg, MSG_LEN)} {points}   "
+            header = f"{pad(msg, MSG_LEN-1)} {points}   "
             subtasks_text = "|".join(subtasks_res)
         else:
             header = (
@@ -341,12 +341,10 @@ class SubtaskJobGroup:
                     input_verdict = tab(
                         f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
                     )
-                    text += (
-                        split_aligned_text(
-                            input_verdict, f"{job.result.time:.2f}s", offset=-2
-                        )
-                        + "\n"
+                    text += split_aligned_text(
+                        input_verdict, f"{job.result.time:.2f}s", offset=-2
                     )
+                    text += "\n"
 
         return text
 
