@@ -17,7 +17,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 import hashlib
-from enum import Enum
+from enum import Enum, auto
 from functools import wraps
 import sys
 from typing import Optional, AbstractSet, MutableSet, Any
@@ -28,7 +28,16 @@ from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.paths import TaskPath
 
-State = Enum("State", ["in_queue", "running", "succeeded", "failed", "canceled"])
+
+class State(Enum):
+    in_queue = auto()
+    running = auto()
+    succeeded = auto()
+    failed = auto()
+    canceled = auto()
+
+    def finished(self) -> bool:
+        return self in (State.succeeded, State.failed)
 
 
 class PipelineItemFailure(Exception):

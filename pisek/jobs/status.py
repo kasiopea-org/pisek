@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pisek.utils.text import tab, pad
-from pisek.utils.terminal import colored_env, MSG_LEN, terminal_width
+from pisek.utils.terminal import colored_env, MSG_LEN, TARGET_LINE_WIDTH, terminal_width
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
-MAX_BAR_LEN = 60
+TARGET_BAR_WIDTH = TARGET_LINE_WIDTH - MSG_LEN - 11
 line_sepatator = "⎯" * terminal_width + "\n"
 
 
@@ -29,7 +29,9 @@ class StatusJobManager(JobManager):
         msg = pad(msg, MSG_LEN)
         progress_msg = f"  ({part}/{full})"
 
-        bar_len = min(terminal_width - len(msg) - len(progress_msg), MAX_BAR_LEN)
+        bar_len = min(
+            TARGET_BAR_WIDTH, TARGET_LINE_WIDTH - len(msg) - len(progress_msg)
+        )
         filled = bar_len * part // full
 
         return f"{msg}{colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"

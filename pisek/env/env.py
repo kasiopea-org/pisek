@@ -51,6 +51,7 @@ class Env(BaseEnv):
 
     target: TestingTarget
     config: TaskConfig
+    verbosity: int
     full: bool
     no_colors: bool
     no_jumps: bool
@@ -65,6 +66,7 @@ class Env(BaseEnv):
     @staticmethod
     def load(
         target: str = TestingTarget.all,
+        verbosity: int = 0,
         full: bool = False,
         all_inputs: bool = False,
         skip_on_timeout: bool = False,
@@ -94,6 +96,7 @@ class Env(BaseEnv):
         return Env(
             target=TestingTarget(target),
             config=config,
+            verbosity=verbosity,
             full=full,
             no_jumps=no_jumps,
             no_colors=no_colors,

@@ -24,8 +24,8 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.paths import TaskPath
 from pisek.env.task_config import ProgramType, FailMode
-from pisek.utils.text import pad, pad_left, tab
-from pisek.utils.terminal import MSG_LEN
+from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
+from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
@@ -130,21 +130,35 @@ class SolutionManager(TaskJobManager):
                 subtask.cancel()
 
     def _get_status(self) -> str:
-        msg = f"Testing {self.solution_label} "
+        msg = f"Testing {self.solution_label}"
         if self.state == State.canceled:
             return self._job_bar(msg)
-        msg = pad(msg, MSG_LEN)
 
-        INT_PLACES = len(str(self._env.config.total_points))
-        DEC_PLACES = 2
-        if self.solution_points is None:
-            points = "?" + "." + "?" * DEC_PLACES
+        points_places = len(str(self._env.config.total_points)) + POINTS_DEC_PLACES + 2
+        points = f"{format_points(self.solution_points)}p"
+
+        max_time = max((s.slowest_time for s in self.subtasks), default=0)
+
+        if not self.state.finished() or self._env.verbosity == 0:
+            points = pad_left(points, points_places)
+            header = f"{pad(msg, MSG_LEN-1)} {points}   "
+            subtasks_text = "|".join(sub.status_verbosity0() for sub in self.subtasks)
         else:
-            points = format(self.solution_points, f".{DEC_PLACES}f")
-        points = pad_left(f"{points}p ", INT_PLACES + DEC_PLACES + 3)
+            header = (
+                right_aligned_text(f"{msg}: {points}", f"slowest {max_time:.2f}s")
+                + "\n"
+            )
+            header = colored_env(header, "cyan", self._env)
+            subtasks_text = tab(
+                "\n".join(
+                    sub.status(self.subtasks, self._env.verbosity)
+                    for sub in self.subtasks
+                )
+            )
+            if self._env.verbosity == 1:
+                subtasks_text += "\n"
 
-        subtasks_res = "|".join(map(str, self.subtasks))
-        return msg + points + subtasks_res
+        return header + subtasks_text
 
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
@@ -152,9 +166,7 @@ class SolutionManager(TaskJobManager):
         solution_conf = self._env.config.solutions[self.solution_label]
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
-            subtask = self._env.config.subtasks[sub_job.num]
-            sub_points = sub_job.points(expected[sub_job.num])
-            self.solution_points += subtask.points * sub_points
+            self.solution_points += sub_job.points(expected[sub_job.num])
 
         points = solution_conf.points
         above = solution_conf.points_above
@@ -196,12 +208,29 @@ class SolutionManager(TaskJobManager):
 class SubtaskJobGroup:
     """Groups jobs of a single subtask."""
 
-    def __init__(self, env: Env, num) -> None:
-        self.num = int(num)
+    def __init__(self, env: Env, num: int) -> None:
         self._env = env
+        self.num = num
+        self.subtask = env.config.subtasks[num]
         self.new_run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
+
+    @property
+    def all_jobs(self) -> list[RunJudge]:
+        return self.previous_jobs + self.new_jobs
+
+    @property
+    def _points(self) -> float:
+        results = self._finished_job_results(self.all_jobs)
+        points = map(lambda r: r.points, results)
+        return min(points, default=1.0) * self.subtask.points
+
+    @property
+    def slowest_time(self) -> float:
+        results = self._finished_job_results(self.all_jobs)
+        times = map(lambda r: r.time, results)
+        return max(times, default=0.0)
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
         return list(map(lambda j: j.result, jobs))
@@ -229,31 +258,107 @@ class SubtaskJobGroup:
             )
         )
 
-    def __str__(self) -> str:
-        s = "("
-        previous = list(
-            map(
-                lambda x: x.verdict if x else None,
-                self._job_results(self.previous_jobs),
-            )
-        )
+    def status(
+        self, all_subtasks: list["SubtaskJobGroup"], verbosity: Optional[int] = None
+    ) -> str:
+        verbosity = self._env.verbosity if verbosity is None else verbosity
+
+        if verbosity <= 0:
+            return self.status_verbosity0()
+        elif verbosity == 1:
+            return self.status_verbosity1()
+        elif verbosity >= 2:
+            return self.status_verbosity2(all_subtasks)
+
+        raise RuntimeError(f"Unknown verbosity {verbosity}")
+
+    def _verdict_summary(self, jobs: list[RunJudge]) -> str:
+        text = ""
+        verdicts = self._judge_verdicts(jobs)
         for verdict in Verdict:
-            count = previous.count(verdict)
+            count = verdicts.count(verdict)
             if count > 0:
-                s += f"{count}{verdict.mark()}"
-        s += ") "
-        if s == "() ":
-            s = ""
+                text += f"{count}{verdict.mark()}"
+        return text
 
-        for job, result in zip(self.new_jobs, self._job_results(self.new_jobs)):
-            if job.state == State.canceled:
-                s += "-"
-            elif result is None:
-                s += " "
-            else:
-                s += str(result)
+    def _verdict_marks(self, jobs: list[RunJudge]) -> str:
+        return "".join(job.verdict_mark() for job in jobs)
 
-        return s
+    def _predecessor_summary(self) -> str:
+        predecessor_summary = self._verdict_summary(self.previous_jobs)
+        if predecessor_summary:
+            return f"({predecessor_summary}) "
+        return ""
+
+    def status_verbosity0(self) -> str:
+        return f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}"
+
+    def status_verbosity1(self) -> str:
+        max_sub_name_len = max(
+            len(subtask.name) for subtask in self._env.config.subtasks.values()
+        )
+        max_sub_points_len = max(
+            len(format_points(sub.points)) for sub in self._env.config.subtasks.values()
+        )
+
+        subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
+        subtask_points = pad_left(format_points(self._points), max_sub_points_len)
+
+        return right_aligned_text(
+            f"{subtask_name} {subtask_points}p  "
+            f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}",
+            f"slowest {self.slowest_time:.2f}s",
+            offset=-2,
+        )
+
+    def status_verbosity2(self, all_subtasks: list["SubtaskJobGroup"]):
+        def subtask_name(num: int) -> str:
+            return self._env.config.subtasks[num].name
+
+        text = ""
+        max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
+        subtask_info = (
+            right_aligned_text(
+                f"{self.subtask.name}: {format_points(self._points)}p",
+                f"slowest {self.slowest_time:.2f}s",
+                offset=-2,
+            )
+            + "\n"
+        )
+        text += colored_env(subtask_info, "magenta", self._env)
+
+        max_pred_name_len = max(
+            (len(subtask_name(pred)) for pred in self.subtask.predecessors),
+            default=0,
+        )
+        for pred in self.subtask.predecessors:
+            pred_group = all_subtasks[pred]
+            text += right_aligned_text(
+                tab(
+                    f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
+                    f"{pred_group.status_verbosity0()}"
+                ),
+                f"slowest {pred_group.slowest_time:.2f}s",
+                offset=-2,
+            )
+            text += "\n"
+
+        if len(self.subtask.predecessors) and any(
+            map(lambda j: j.result, self.new_jobs)
+        ):
+            text += "\n"
+
+        for job in self.new_jobs:
+            if job.result is not None:
+                input_verdict = tab(
+                    f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
+                )
+                text += right_aligned_text(
+                    input_verdict, f"{job.result.time:.2f}s", offset=-2
+                )
+                text += "\n"
+
+        return text
 
     def definitive(self, expected_str: str) -> bool:
         """Checks whether subtask jobs have resulted in outcome that cannot be changed."""
@@ -265,7 +370,7 @@ class SubtaskJobGroup:
         ):
             return True
 
-        if expected_str == "X" and min(self._jobs_points(), default=1) > 0:
+        if expected_str == "X" and self._points > 0:
             return False  # Cause X is very very special
 
         return self._as_expected(expected_str)[1]
@@ -274,12 +379,12 @@ class SubtaskJobGroup:
         """Returns points from this subtask. Raises PipelineItemFailure if not as expected."""
         ok, _, breaker = self._as_expected(expected_str)
         if not ok:
-            msg = f"Subtask {self.num} did not result as expected: '{expected_str}'"
+            msg = f"{self.subtask.name} did not result as expected: '{expected_str}'"
             if breaker is not None:
                 msg += f"\n{tab(breaker.message())}"
             raise PipelineItemFailure(msg)
 
-        return min(self._jobs_points(), default=1.0)
+        return self._points
 
     def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
         """
