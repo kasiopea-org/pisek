@@ -139,21 +139,23 @@ class SolutionManager(TaskJobManager):
 
         max_time = max((s.slowest_time for s in self.subtasks), default=0)
 
-        verbosity = self._env.verbosity if self.state.finished() else 0
-        subtasks_res = [sub.status(self.subtasks, verbosity) for sub in self.subtasks]
-
-        if verbosity <= 0:
+        if not self.state.finished() or self._env.verbosity == 0:
             points = pad_left(points, points_places)
             header = f"{pad(msg, MSG_LEN-1)} {points}   "
-            subtasks_text = "|".join(subtasks_res)
+            subtasks_text = "|".join(sub.status_verbosity0() for sub in self.subtasks)
         else:
             header = (
                 right_aligned_text(f"{msg}: {points}", f"slowest {max_time:.2f}s")
                 + "\n"
             )
             header = colored_env(header, "cyan", self._env)
-            subtasks_text = tab("\n".join(subtasks_res))
-            if verbosity == 1:
+            subtasks_text = tab(
+                "\n".join(
+                    sub.status(self.subtasks, self._env.verbosity)
+                    for sub in self.subtasks
+                )
+            )
+            if self._env.verbosity == 1:
                 subtasks_text += "\n"
 
         return header + subtasks_text
@@ -259,92 +261,102 @@ class SubtaskJobGroup:
     def status(
         self, all_subtasks: list["SubtaskJobGroup"], verbosity: Optional[int] = None
     ) -> str:
+        verbosity = self._env.verbosity if verbosity is None else verbosity
+
+        if verbosity <= 0:
+            return self.status_verbosity0()
+        elif verbosity == 1:
+            return self.status_verbosity1()
+        elif verbosity >= 2:
+            return self.status_verbosity2(all_subtasks)
+
+        raise RuntimeError(f"Unknown verbosity {verbosity}")
+
+    def _verdict_summary(self, jobs: list[RunJudge]) -> str:
+        text = ""
+        verdicts = self._judge_verdicts(jobs)
+        for verdict in Verdict:
+            count = verdicts.count(verdict)
+            if count > 0:
+                text += f"{count}{verdict.mark()}"
+        return text
+
+    def _verdict_marks(self, jobs: list[RunJudge]) -> str:
+        return "".join(job.verdict_mark() for job in jobs)
+
+    def _predecessor_summary(self) -> str:
+        predecessor_summary = self._verdict_summary(self.previous_jobs)
+        if predecessor_summary:
+            return f"({predecessor_summary}) "
+        return ""
+
+    def status_verbosity0(self) -> str:
+        return f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}"
+
+    def status_verbosity1(self) -> str:
+        max_sub_name_len = max(
+            len(subtask.name) for subtask in self._env.config.subtasks.values()
+        )
+        max_sub_points_len = max(
+            len(format_points(sub.points)) for sub in self._env.config.subtasks.values()
+        )
+
+        subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
+        subtask_points = pad_left(format_points(self._points), max_sub_points_len)
+
+        return right_aligned_text(
+            f"{subtask_name} {subtask_points}p  "
+            f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}",
+            f"slowest {self.slowest_time:.2f}s",
+            offset=-2,
+        )
+
+    def status_verbosity2(self, all_subtasks: list["SubtaskJobGroup"]):
         def subtask_name(num: int) -> str:
             return self._env.config.subtasks[num].name
 
-        def verdict_summary(jobs: list[RunJudge]) -> str:
-            text = ""
-            verdicts = self._judge_verdicts(jobs)
-            for verdict in Verdict:
-                count = verdicts.count(verdict)
-                if count > 0:
-                    text += f"{count}{verdict.mark()}"
-            return text
-
-        def verdict_marks(jobs: list[RunJudge]) -> str:
-            return "".join(job.verdict_mark() for job in jobs)
-
-        verbosity = self._env.verbosity if verbosity is None else verbosity
         text = ""
-
-        predecessor_summary = verdict_summary(self.previous_jobs)
-        if predecessor_summary:
-            predecessor_summary = f"({predecessor_summary}) "
-
-        if verbosity <= 0:
-            text += f"{predecessor_summary}{verdict_marks(self.new_jobs)}"
-
-        elif verbosity == 1:
-            max_sub_name_len = max(
-                len(subtask_name(num)) for num in self._env.config.subtasks
-            )
-            max_sub_points_len = max(
-                len(format_points(sub.points))
-                for sub in self._env.config.subtasks.values()
-            )
-
-            subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
-            subtask_points = pad_left(format_points(self._points), max_sub_points_len)
-
-            text += right_aligned_text(
-                f"{subtask_name} {subtask_points}p  "
-                f"{predecessor_summary}{verdict_marks(self.new_jobs)}",
+        max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
+        subtask_info = (
+            right_aligned_text(
+                f"{self.subtask.name}: {format_points(self._points)}p",
                 f"slowest {self.slowest_time:.2f}s",
                 offset=-2,
             )
+            + "\n"
+        )
+        text += colored_env(subtask_info, "magenta", self._env)
 
-        elif verbosity >= 2:
-            max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
-            subtask_info = (
-                right_aligned_text(
-                    f"{self.subtask.name}: {format_points(self._points)}p",
-                    f"slowest {self.slowest_time:.2f}s",
-                    offset=-2,
+        max_pred_name_len = max(
+            (len(subtask_name(pred)) for pred in self.subtask.predecessors),
+            default=0,
+        )
+        for pred in self.subtask.predecessors:
+            pred_group = all_subtasks[pred]
+            text += right_aligned_text(
+                tab(
+                    f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
+                    f"{pred_group.status_verbosity0()}"
+                ),
+                f"slowest {pred_group.slowest_time:.2f}s",
+                offset=-2,
+            )
+            text += "\n"
+
+        if len(self.subtask.predecessors) and any(
+            map(lambda j: j.result, self.new_jobs)
+        ):
+            text += "\n"
+
+        for job in self.new_jobs:
+            if job.result is not None:
+                input_verdict = tab(
+                    f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
                 )
-                + "\n"
-            )
-            text += colored_env(subtask_info, "magenta", self._env)
-
-            max_pred_name_len = max(
-                (len(subtask_name(pred)) for pred in self.subtask.predecessors),
-                default=0,
-            )
-            for pred in self.subtask.predecessors:
-                pred_group = all_subtasks[pred]
                 text += right_aligned_text(
-                    tab(
-                        f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
-                        f"{pred_group.status(all_subtasks, 0)}"
-                    ),
-                    f"slowest {pred_group.slowest_time:.2f}s",
-                    offset=-2,
+                    input_verdict, f"{job.result.time:.2f}s", offset=-2
                 )
                 text += "\n"
-
-            if len(self.subtask.predecessors) and any(
-                map(lambda j: j.result, self.new_jobs)
-            ):
-                text += "\n"
-
-            for job in self.new_jobs:
-                if job.result is not None:
-                    input_verdict = tab(
-                        f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
-                    )
-                    text += right_aligned_text(
-                        input_verdict, f"{job.result.time:.2f}s", offset=-2
-                    )
-                    text += "\n"
 
         return text
 
