@@ -25,7 +25,7 @@ from pisek.env.env import Env
 from pisek.paths import TaskPath
 from pisek.env.task_config import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
-from pisek.utils.terminal import MSG_LEN, colored_env, split_aligned_text
+from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.program import RunResult, ProgramsJob
@@ -148,7 +148,7 @@ class SolutionManager(TaskJobManager):
             subtasks_text = "|".join(subtasks_res)
         else:
             header = (
-                split_aligned_text(f"{msg}: {points} ", f"slowest {max_time:.2f}s")
+                right_aligned_text(f"{msg}: {points}", f"slowest {max_time:.2f}s")
                 + "\n"
             )
             header = colored_env(header, "cyan", self._env)
@@ -296,9 +296,9 @@ class SubtaskJobGroup:
             subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
             subtask_points = pad_left(format_points(self._points), max_sub_points_len)
 
-            text += split_aligned_text(
+            text += right_aligned_text(
                 f"{subtask_name} {subtask_points}p  "
-                f"{predecessor_summary}{verdict_marks(self.new_jobs)} ",
+                f"{predecessor_summary}{verdict_marks(self.new_jobs)}",
                 f"slowest {self.slowest_time:.2f}s",
                 offset=-2,
             )
@@ -306,8 +306,8 @@ class SubtaskJobGroup:
         elif verbosity >= 2:
             max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
             subtask_info = (
-                split_aligned_text(
-                    f"{self.subtask.name}: {format_points(self._points)}p ",
+                right_aligned_text(
+                    f"{self.subtask.name}: {format_points(self._points)}p",
                     f"slowest {self.slowest_time:.2f}s",
                     offset=-2,
                 )
@@ -321,10 +321,10 @@ class SubtaskJobGroup:
             )
             for pred in self.subtask.predecessors:
                 pred_group = all_subtasks[pred]
-                text += split_aligned_text(
+                text += right_aligned_text(
                     tab(
                         f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
-                        f"{pred_group.status(all_subtasks, 0)} "
+                        f"{pred_group.status(all_subtasks, 0)}"
                     ),
                     f"slowest {pred_group.slowest_time:.2f}s",
                     offset=-2,
@@ -341,7 +341,7 @@ class SubtaskJobGroup:
                     input_verdict = tab(
                         f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
                     )
-                    text += split_aligned_text(
+                    text += right_aligned_text(
                         input_verdict, f"{job.result.time:.2f}s", offset=-2
                     )
                     text += "\n"
