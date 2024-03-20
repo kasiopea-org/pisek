@@ -28,8 +28,8 @@ except OSError:
 TARGET_LINE_WIDTH = min(terminal_width, 100)
 
 
-def right_aligned_text(left: str, right: str, offset: int = 0):
-    return pad(left, TARGET_LINE_WIDTH - len(right) + offset) + right
+def split_aligned_text(left: str, right: str, offset: int = 0):
+    return pad(left, TARGET_LINE_WIDTH - len(right) + offset - 1) + " " + right
 
 
 def colored_env(msg: str, color: str, env: Env) -> str:

@@ -28,10 +28,7 @@ class StatusJobManager(JobManager):
         msg = pad(msg, MSG_LEN)
         progress_msg = f"  ({part}/{full})"
 
-        bar_len = min(
-            terminal_width - len(msg) - len(progress_msg),
-            TARGET_LINE_WIDTH - MSG_LEN - 5,
-        )
+        bar_len = TARGET_LINE_WIDTH - MSG_LEN - len(progress_msg)
         filled = bar_len * part // full
 
         return f"{msg}{colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"

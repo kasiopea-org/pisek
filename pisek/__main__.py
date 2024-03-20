@@ -78,9 +78,9 @@ def main(argv):
         parser.add_argument(
             "--verbosity",
             "-v",
-            type=int,
+            action="count",
             default=0,
-            help="Be more verbose.",  # TODO
+            help="Be more verbose. (Enter multiple times for even more verbosity.)",
         )
 
     def add_argument_timeout(parser):
