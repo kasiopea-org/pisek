@@ -22,6 +22,7 @@ import yaml
 
 from pisek.jobs.parts.run_result import RunResult
 
+
 class Verdict(Enum):
     ok = 1
     partial = 2
@@ -54,7 +55,6 @@ class SolutionResult:
     judge_rr: Optional[RunResult]
 
 
-
 def sol_result_representer(dumper, sol_result: SolutionResult):
     return dumper.represent_sequence(
         "!SolutionResult",
@@ -62,7 +62,7 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
             sol_result.verdict.name,
             sol_result.points,
             sol_result.solution_rr,
-            sol_result.judge_rr
+            sol_result.judge_rr,
         ],
     )
 

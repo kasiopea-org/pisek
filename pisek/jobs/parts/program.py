@@ -20,7 +20,6 @@ import tempfile
 from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
-import yaml
 
 from pisek.env.task_config import ProgramType
 from pisek.env.env import Env

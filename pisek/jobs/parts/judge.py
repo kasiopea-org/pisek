@@ -218,19 +218,9 @@ class RunJudge(ProgramsJob):
         if self._solution_run_res.kind == RunResultKind.OK:
             result = self._judge()
         elif self._solution_run_res.kind == RunResultKind.RUNTIME_ERROR:
-            result = SolutionResult(
-                Verdict.error,
-                0.0,
-                self._solution_run_res,
-                None
-            )
+            result = SolutionResult(Verdict.error, 0.0, self._solution_run_res, None)
         elif self._solution_run_res.kind == RunResultKind.TIMEOUT:
-            result = SolutionResult(
-                Verdict.timeout,
-                0.0,
-                self._solution_run_res,
-                None
-            )
+            result = SolutionResult(Verdict.timeout, 0.0, self._solution_run_res, None)
 
         if (
             self.expected_points is not None
@@ -327,10 +317,7 @@ class RunCMSJudge(RunJudge):
                 verdict = Verdict.partial
 
             return SolutionResult(
-                verdict,
-                points,
-                self._solution_run_res,
-                judge_run_result
+                verdict, points, self._solution_run_res, judge_run_result
             )
         else:
             raise self._create_program_failure(
@@ -418,19 +405,9 @@ class RunDiffJudge(RunBatchJudge):
             status="Files are same" if diff.returncode == 0 else "Files differ",
         )
         if diff.returncode == 0:
-            return SolutionResult(
-                Verdict.ok,
-                1.0,
-                self._solution_run_res,
-                rr
-            )
+            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)
         elif diff.returncode == 1:
-            return SolutionResult(
-                Verdict.wrong_answer,
-                0.0,
-                self._solution_run_res,
-                rr
-            )
+            return SolutionResult(Verdict.wrong_answer, 0.0, self._solution_run_res, rr)
         else:
             raise PipelineItemFailure(
                 f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}"
@@ -483,18 +460,10 @@ class RunKasiopeaJudge(RunBatchJudge):
             env=envs,
         )
         if result.returncode == 0:
-            return SolutionResult(
-                Verdict.ok,
-                1.0,
-                self._solution_run_res,
-                result
-            )
+            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, result)
         elif result.returncode == 1:
             return SolutionResult(
-                Verdict.wrong_answer,
-                0.0,
-                self._solution_run_res,
-                result
+                Verdict.wrong_answer, 0.0, self._solution_run_res, result
             )
         else:
             raise self._create_program_failure(
