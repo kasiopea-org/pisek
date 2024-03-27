@@ -42,7 +42,6 @@ def run_result_representer(dumper, run_result: RunResult):
             run_result.wall_time,
             run_result.stdout_file,
             run_result.stderr_file,
-            run_result.stderr_text,
             run_result.status,
         ],
     )
@@ -60,7 +59,7 @@ def run_result_constructor(loader, value):
         status,
     ) = loader.construct_sequence(value)
     return RunResult(
-        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, err_t, status
+        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, status
     )
 
 
@@ -95,7 +94,7 @@ class ProgramPoolItem:
             attr = getattr(self, std)
             if isinstance(attr, TaskPath):
                 minibox_args.append(f"--{std}={attr.path}")
-            elif getattr(self, std) is None and std != "stderr":
+            elif getattr(self, std) is None:
                 minibox_args.append(f"--{std}=/dev/null")
 
             if isinstance(attr, int):
@@ -173,7 +172,7 @@ class ProgramsJob(TaskJob):
             raise RuntimeError("Callback already loaded.")
         self._callback = callback
 
-    def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
+    def _run_programs(self) -> list[RunResult]:
         """Runs all programs in execution pool."""
         running_pool: list[subprocess.Popen] = []
         meta_files: list[str] = []
@@ -187,7 +186,6 @@ class ProgramsJob(TaskJob):
                 subprocess.Popen(**pool_item.to_popen(minibox, meta_file))
             )
 
-        stderr_raw = ""
         callback_exec = False
         while True:
             states = [process.poll() is not None for process in running_pool]
@@ -195,15 +193,6 @@ class ProgramsJob(TaskJob):
                 callback_exec = True
                 if self._callback is not None:
                     self._callback(running_pool[states.index(True)])
-
-            if print_first_stderr:
-                assert running_pool[0].stderr is not None  # To make mypy happy
-                line = running_pool[0].stderr.read().decode()
-                if line:
-                    stderr_raw += line
-                    self._print(
-                        colored_env(line, "yellow", self._env), end="", stderr=True
-                    )
 
             if all(states):
                 break
@@ -222,9 +211,6 @@ class ProgramsJob(TaskJob):
             os.remove(meta_file)
 
             meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
-            if not print_first_stderr:
-                stderr_raw = process.stderr.read().decode()
-            stderr_text = None if pool_item.stderr else stderr_raw
             if process.returncode == 0:
                 t, wt = float(meta["time"]), float(meta["time-wall"])
                 run_results.append(
@@ -235,7 +221,6 @@ class ProgramsJob(TaskJob):
                         wt,
                         pool_item.stdout,
                         pool_item.stderr,
-                        stderr_text,
                         "Finished successfully",
                     )
                 )
@@ -256,7 +241,6 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-                            stderr_text,
                             meta["message"],
                         )
                     )
@@ -269,14 +253,13 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-                            stderr_text,
                             f"Timeout after {pool_item.time_limit}s",
                         )
                     )
                 else:
                     raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
-                raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
+                raise PipelineItemFailure(f"Minibox error:\n{tab(process.stderr.read().decode())}")
 
         return run_results
 
@@ -284,12 +267,11 @@ class ProgramsJob(TaskJob):
         self,
         program_type: ProgramType,
         program: TaskPath,
-        print_first_stderr=False,
         **kwargs,
     ) -> RunResult:
         """Loads one program and runs it."""
         self._load_program(program_type, program, **kwargs)
-        return self._run_programs(print_first_stderr)[0]
+        return self._run_programs()[0]
 
     def _create_program_failure(self, msg: str, res: RunResult):
         """Create PipelineItemFailure that nicely formats RunResult"""

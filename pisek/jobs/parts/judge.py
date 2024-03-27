@@ -415,7 +415,6 @@ class RunDiffJudge(RunBatchJudge):
             diff.returncode,
             0,
             0,
-            stderr_text=diff.stderr.decode("utf-8"),
             status="Files are same" if diff.returncode == 0 else "Files differ",
         )
         if diff.returncode == 0:

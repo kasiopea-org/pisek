@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 import os
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import yaml
 
 if TYPE_CHECKING:
@@ -147,9 +147,12 @@ class TaskPath:
         return TaskPath.log_path(env, f"{name}.points")
 
     @staticmethod
-    def log_file(env: "Env", name: str, program: str) -> "TaskPath":
-        name = os.path.splitext(os.path.basename(name))[0]
+    def log_file(env: "Env", name: Optional[str], program: str) -> "TaskPath":
         program = os.path.basename(program)
+        if name is None:
+            return TaskPath.log_path(env, f"{program}.log")
+
+        name = os.path.splitext(os.path.basename(name))[0]
         return TaskPath.log_path(env, f"{name}.{program}.log")
 
 

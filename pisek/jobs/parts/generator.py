@@ -161,7 +161,6 @@ class OnlineGeneratorJob(ProgramsJob):
             args=[difficulty, hexa_seed],
             stdout=input_file,
             stderr=TaskPath.log_file(self._env, self.input_.name, self.generator.name),
-            print_first_stderr=True,
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -279,7 +278,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
             ProgramType.in_gen,
             self.generator,
             args=[gen_dir.path],
-            print_first_stderr=True,
+            stderr=TaskPath.log_file(self._env, None, self.generator.name),
         )
         self._access_file(gen_dir)
 

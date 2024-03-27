@@ -32,14 +32,12 @@ class RunResult:
         wall_time: float,
         stdout_file: Optional[Union[TaskPath, int]] = None,
         stderr_file: Optional[TaskPath] = None,
-        stderr_text: Optional[str] = None,
         status: str = "",
     ):
         self.kind = kind
         self.returncode = returncode
         self.stdout_file = stdout_file
         self.stderr_file = stderr_file
-        self.stderr_text = stderr_text
         self.status = status
         self.time = time
         self.wall_time = wall_time
