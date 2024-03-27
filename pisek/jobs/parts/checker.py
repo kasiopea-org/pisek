@@ -22,7 +22,8 @@ from pisek.paths import TaskPath
 from pisek.env.task_config import ProgramType
 from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
+from pisek.jobs.parts.run_result import RunResult, RunResultKind
+from pisek.jobs.parts.program import ProgramsJob
 from pisek.jobs.parts.compile import Compile
 
 

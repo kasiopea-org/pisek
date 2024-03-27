@@ -28,7 +28,8 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
+from pisek.jobs.parts.run_result import RunResult, RunResultKind
+from pisek.jobs.parts.program import ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.jobs.parts.tools import Sanitize
@@ -182,6 +183,8 @@ class RunJudge(ProgramsJob):
         self.judge_log_file = judge_log_file
         self.expected_points = expected_points
 
+        self.result: Optional[SolutionResult]
+
     @cache
     def _load_solution_run_res(self) -> None:
         """
@@ -218,20 +221,15 @@ class RunJudge(ProgramsJob):
             result = SolutionResult(
                 Verdict.error,
                 0.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                "",
-                self._quote_program(self._solution_run_res),
-                self._solution_run_res.status,
+                self._solution_run_res,
+                None
             )
         elif self._solution_run_res.kind == RunResultKind.TIMEOUT:
             result = SolutionResult(
                 Verdict.timeout,
                 0.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                "",
-                self._quote_program(self._solution_run_res),
+                self._solution_run_res,
+                None
             )
 
         if (
@@ -262,11 +260,12 @@ class RunJudge(ProgramsJob):
         elif self.result.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {self.input}"
 
-        text = f"{head}:\n{tab(self.result.output)}"
-        if self.result.diff != "":
-            text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
+        # text = f"{head}:\n{tab(self.result.output)}"
+        # TODO: Diff
+        # if self.result.diff != "":
+        #     text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
 
-        return text
+        return head
 
     def verdict_text(self) -> str:
         if self.result is not None:
@@ -301,7 +300,8 @@ class RunCMSJudge(RunJudge):
         self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
 
     def _load_points(self, result: RunResult) -> float:
-        points_str = result.raw_stdout(self._access_file).split("\n")[0]
+        with self._open_file(result.stdout_file) as f:
+            points_str = f.read().split("\n")[0]
         try:
             points = float(points_str)
         except ValueError:
@@ -329,10 +329,8 @@ class RunCMSJudge(RunJudge):
             return SolutionResult(
                 verdict,
                 points,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                judge_run_result.raw_stderr(self._access_file),
-                self._quote_program(judge_run_result),
+                self._solution_run_res,
+                judge_run_result
             )
         else:
             raise self._create_program_failure(
@@ -424,20 +422,15 @@ class RunDiffJudge(RunBatchJudge):
             return SolutionResult(
                 Verdict.ok,
                 1.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                "",
-                self._quote_program(rr),
+                self._solution_run_res,
+                rr
             )
         elif diff.returncode == 1:
             return SolutionResult(
                 Verdict.wrong_answer,
                 0.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                "",
-                self._quote_program(rr),
-                self._nice_diff(),
+                self._solution_run_res,
+                rr
             )
         else:
             raise PipelineItemFailure(
@@ -494,20 +487,15 @@ class RunKasiopeaJudge(RunBatchJudge):
             return SolutionResult(
                 Verdict.ok,
                 1.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                result.raw_stderr(self._access_file),
-                self._quote_program(result),
+                self._solution_run_res,
+                result
             )
         elif result.returncode == 1:
             return SolutionResult(
                 Verdict.wrong_answer,
                 0.0,
-                self._solution_run_res.time,
-                self._solution_run_res.wall_time,
-                result.raw_stderr(self._access_file),
-                self._quote_program(result),
-                self._nice_diff(),
+                self._solution_run_res,
+                result
             )
         else:
             raise self._create_program_failure(
@@ -555,8 +543,6 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
         )
 
         sol_result = self._load_solution_result(result)
-        if sol_result.verdict != Verdict.ok:
-            sol_result.diff = self._nice_diff()
         return sol_result
 
 

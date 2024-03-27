@@ -15,10 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass, field
-from enum import Enum
 import os
 import tempfile
-import time
 from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
@@ -30,78 +28,8 @@ from pisek.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.utils.terminal import colored_env
-from pisek.jobs.parts.task_job import TaskHelper, TaskJob
-
-
-class RunResultKind(Enum):
-    OK = 0
-    RUNTIME_ERROR = 1
-    TIMEOUT = 2
-
-
-class RunResult:
-    """Represents the way the program execution ended. Specially, a program
-    that finished successfully, but got Wrong Answer, still gets the OK
-    RunResult."""
-
-    def __init__(
-        self,
-        kind: RunResultKind,
-        returncode: int,
-        time: float,
-        wall_time: float,
-        stdout_file: Optional[Union[TaskPath, int]] = None,
-        stderr_file: Optional[TaskPath] = None,
-        stderr_text: Optional[str] = None,
-        status: str = "",
-    ):
-        self.kind = kind
-        self.returncode = returncode
-        self.stdout_file = stdout_file
-        self.stderr_file = stderr_file
-        self.stderr_text = stderr_text
-        self.status = status
-        self.time = time
-        self.wall_time = wall_time
-
-    @staticmethod
-    def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
-        res = tab(TaskHelper._short_text(text, max_lines, max_chars))
-        return colored_env(res, "yellow", env)
-
-    def raw_stdout(self, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stdout_file, TaskPath):
-            access_file(self.stdout_file)
-            return open(self.stdout_file.path).read()
-        else:
-            return None
-
-    def raw_stderr(self, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stderr_file, TaskPath):
-            access_file(self.stderr_file)
-            return open(self.stderr_file.path).read()
-        else:
-            return self.stderr_text
-
-    def stdout(self, env: Env, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stdout_file, str):
-            return f" in file {self.stdout_file}:\n" + self._format(
-                self.raw_stdout(access_file), env
-            )
-        else:
-            return " has been discarded"
-
-    def stderr(self, env: Env, access_file: Callable[[TaskPath], None]):
-        text = self._format(self.raw_stderr(access_file), env)
-        if self.stderr_file:
-            return f" in file {self.stderr_file}:\n{text}"
-        else:
-            return f":\n{text}"
-
-    def __str__(self):
-        return f"<RunResult {self.kind.name}, exitcode: {self.returncode}>"
-
-    __repr__ = __str__
+from pisek.jobs.parts.run_result import RunResultKind, RunResult
+from pisek.jobs.parts.task_job import TaskJob
 
 
 def run_result_representer(dumper, run_result: RunResult):
@@ -368,6 +296,7 @@ class ProgramsJob(TaskJob):
         return PipelineItemFailure(f"{msg}\n{tab(self._quote_program(res))}")
 
     def _quote_program(self, res: RunResult):
+        # TODO: Rewrite
         """Quotes program's stdout and stderr."""
         program_msg = f"status: {res.status}\n"
         for std in ("stdout", "stderr"):

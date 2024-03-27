@@ -229,7 +229,7 @@ class SubtaskJobGroup:
     @property
     def slowest_time(self) -> float:
         results = self._finished_job_results(self.all_jobs)
-        times = map(lambda r: r.time, results)
+        times = map(lambda r: r.solution_rr.time, results)
         return max(times, default=0.0)
 
     def _job_results(self, jobs: list[RunJudge]) -> list[Optional[SolutionResult]]:
@@ -354,7 +354,7 @@ class SubtaskJobGroup:
                     f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
                 )
                 text += right_aligned_text(
-                    input_verdict, f"{job.result.time:.2f}s", offset=-2
+                    input_verdict, f"{job.result.solution_rr.time:.2f}s", offset=-2
                 )
                 text += "\n"
 

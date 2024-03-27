@@ -17,9 +17,10 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial, cache
-from typing import Callable
+from typing import Callable, Optional
 import yaml
 
+from pisek.jobs.parts.run_result import RunResult
 
 class Verdict(Enum):
     ok = 1
@@ -49,11 +50,9 @@ class SolutionResult:
 
     verdict: Verdict
     points: float
-    time: float
-    wall_time: float
-    judge_stderr: str
-    output: str = ""
-    diff: str = ""
+    solution_rr: RunResult
+    judge_rr: Optional[RunResult]
+
 
 
 def sol_result_representer(dumper, sol_result: SolutionResult):
@@ -62,22 +61,15 @@ def sol_result_representer(dumper, sol_result: SolutionResult):
         [
             sol_result.verdict.name,
             sol_result.points,
-            sol_result.time,
-            sol_result.wall_time,
-            sol_result.judge_stderr,
-            sol_result.output,
-            sol_result.diff,
+            sol_result.solution_rr,
+            sol_result.judge_rr
         ],
     )
 
 
 def sol_result_constructor(loader, value) -> SolutionResult:
-    verdict, points, time, wall_time, stderr, output, diff = loader.construct_sequence(
-        value
-    )
-    return SolutionResult(
-        Verdict[verdict], points, time, wall_time, stderr, output, diff
-    )
+    verdict, points, sol_rr, judge_rr = loader.construct_sequence(value)
+    return SolutionResult(Verdict[verdict], points, sol_rr, judge_rr)
 
 
 yaml.add_representer(SolutionResult, sol_result_representer)

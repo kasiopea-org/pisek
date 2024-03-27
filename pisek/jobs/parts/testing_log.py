@@ -53,8 +53,8 @@ class CreateTestingLog(TaskJobManager):
                     continue
                 log[solution]["results"].append(
                     {
-                        "time": sol_res.time,
-                        "wall_clock_time": sol_res.wall_time,
+                        "time": sol_res.solution_rr.time,
+                        "wall_clock_time": sol_res.solution_rr.wall_time,
                         "test": inp.name,
                         "points": sol_res.points,
                         "result": sol_res.verdict.name,
