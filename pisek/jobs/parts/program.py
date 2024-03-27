@@ -32,41 +32,6 @@ from pisek.jobs.parts.run_result import RunResultKind, RunResult
 from pisek.jobs.parts.task_job import TaskJob
 
 
-def run_result_representer(dumper, run_result: RunResult):
-    return dumper.represent_sequence(
-        "!RunResult",
-        [
-            run_result.kind.name,
-            run_result.returncode,
-            run_result.time,
-            run_result.wall_time,
-            run_result.stdout_file,
-            run_result.stderr_file,
-            run_result.status,
-        ],
-    )
-
-
-def run_result_constructor(loader, value):
-    (
-        kind,
-        returncode,
-        time,
-        wall_time,
-        out_f,
-        err_f,
-        err_t,
-        status,
-    ) = loader.construct_sequence(value)
-    return RunResult(
-        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, status
-    )
-
-
-yaml.add_representer(RunResult, run_result_representer)
-yaml.add_constructor("!RunResult", run_result_constructor)
-
-
 @dataclass
 class ProgramPoolItem:
     executable: TaskPath
@@ -259,7 +224,9 @@ class ProgramsJob(TaskJob):
                 else:
                     raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
-                raise PipelineItemFailure(f"Minibox error:\n{tab(process.stderr.read().decode())}")
+                raise PipelineItemFailure(
+                    f"Minibox error:\n{tab(process.stderr.read().decode())}"
+                )
 
         return run_results
 
