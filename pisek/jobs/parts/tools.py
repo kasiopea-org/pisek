@@ -21,7 +21,7 @@ from typing import Optional
 import subprocess
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.env.task_config import ProgramType
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
 from pisek.jobs.parts.program import ProgramsJob

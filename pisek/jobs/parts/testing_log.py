@@ -16,7 +16,7 @@
 import json
 from typing import Any
 
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import (

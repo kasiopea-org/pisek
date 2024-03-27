@@ -22,7 +22,7 @@ from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.env.task_config import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text

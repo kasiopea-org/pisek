@@ -12,7 +12,7 @@
 from enum import Enum
 from typing import Optional, Union, Callable
 
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 
 class RunResultKind(Enum):
     OK = 0

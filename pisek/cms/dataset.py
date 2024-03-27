@@ -22,7 +22,7 @@ import datetime
 from pisek.cms.testcase import create_testcase, get_testcases
 from pisek.env.env import Env
 from pisek.env.task_config import JudgeType, TaskConfig, TaskType
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 
 
 def create_dataset(

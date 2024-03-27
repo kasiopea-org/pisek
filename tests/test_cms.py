@@ -3,7 +3,7 @@ import shutil
 
 import unittest
 
-from pisek.paths import GENERATED_SUBDIR
+from pisek.utils.paths import GENERATED_SUBDIR
 from util import TestFixtureVariant, overwrite_file
 from pisek.env.task_config import load_config
 
