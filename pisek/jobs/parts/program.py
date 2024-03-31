@@ -241,12 +241,41 @@ class ProgramsJob(TaskJob):
 
     def _create_program_failure(self, msg: str, res: RunResult):
         """Create PipelineItemFailure that nicely formats RunResult"""
-        return PipelineItemFailure(f"{msg}\n{tab(self._quote_program(res))}")
+        return PipelineItemFailure(f"{msg}\n{tab(self._format_run_result(res))}")
 
-    def _quote_program(self, res: RunResult):
-        # TODO: Rewrite
-        """Quotes program's stdout and stderr."""
-        program_msg = f"status: {res.status}\n"
-        for std in ("stdout", "stderr"):
-            program_msg += f"{std}{getattr(res, std)(self._env, self._access_file)}\n"
+    def _format_run_result(
+        self,
+        res: RunResult,
+        status: bool = True,
+        stdout: bool = True,
+        stderr: bool = True,
+        time: bool = False,
+    ):
+        """Formats RunResult."""
+        program_msg = ""
+        if status:
+            program_msg += f"status: {res.status}\n"
+        
+        show_stds = []
+        if stdout:
+            show_stds.append("stdout")
+        if stderr:
+            show_stds.append("stdout")
+
+        for std in show_stds:
+            std_file = getattr(res, std + "_file")
+            program_msg += f"{std} in file {std_file}"
+            if self._env.verbosity <= 0:
+                program_msg += "\n"
+                self._access_file(std_file)  # Caching improvements
+            else:
+                with self._open_file(std_file) as f:
+                    std_text = self._short_text(f.read()).removesuffix("\n")
+                    program_msg += ":\n"
+                    program_msg += tab(colored_env(std_text, "yellow", self._env))
+                    program_msg += "\n"
+        
+        if time:
+            program_msg += f"time: {res.time}\n"
+
         return program_msg[:-1]

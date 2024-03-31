@@ -250,12 +250,18 @@ class RunJudge(ProgramsJob):
         elif self.result.verdict == Verdict.timeout:
             head = f"Solution did timeout on input {self.input}"
 
-        # text = f"{head}:\n{tab(self.result.output)}"
+        text = f"{head}:\n"
+        for prog in ("solution", "judge"):
+            rr = getattr(self.result, f"{prog}_rr")
+            if rr is not None:
+                text += (
+                    tab(f"{prog.capitalize()}:\n" + tab(self._format_run_result(rr))) + "\n"
+                )
         # TODO: Diff
         # if self.result.diff != "":
         #     text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
 
-        return head
+        return text
 
     def verdict_text(self) -> str:
         if self.result is not None:
