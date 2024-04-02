@@ -178,7 +178,7 @@ class DataCheckingManager(TaskJobManager):
                 outs = data["outputs"]
                 outputs += (
                     outs[Verdict.ok]
-                    + outs[Verdict.partial]
+                    + outs[Verdict.partial_ok]
                     + outs[Verdict.wrong_answer]
                 )
         for inp in inputs:

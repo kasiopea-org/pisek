@@ -238,25 +238,19 @@ class RunJudge(ProgramsJob):
         if self.result is None:
             raise RuntimeError(f"Job {self.name} has not finished yet.")
 
-        judging = self._judging_message()
-        if self.result.verdict == Verdict.ok:
-            head = f"{self.judge_name} accepted {judging}"
-        elif self.result.verdict == Verdict.wrong_answer:
-            head = f"{self.judge_name} rejected {judging}"
-        elif self.result.verdict == Verdict.partial:
-            head = f"{self.judge_name} partially accepted {judging}"
-        elif self.result.verdict == Verdict.error:
-            head = f"Solution failed on input {self.input}"
-        elif self.result.verdict == Verdict.timeout:
-            head = f"Solution did timeout on input {self.input}"
-
-        text = f"{head}:\n"
-        for prog in ("solution", "judge"):
-            rr = getattr(self.result, f"{prog}_rr")
-            if rr is not None:
-                text += (
-                    tab(f"{prog.capitalize()}:\n" + tab(self._format_run_result(rr))) + "\n"
-                )
+        text = (
+            f"input: {self.input}\n"
+            f"result: {self.result.verdict.name}\n"
+        )
+        text += f"solution:\n"
+        text += tab(self._format_run_result(self.result.solution_rr, time=True))
+        text += "\n"
+        if self.result.judge_rr is not None:
+            text += (
+                f"{self.judge_name}:\n"
+                + tab(self._format_run_result(self.result.judge_rr))
+                + "\n"
+            )
         # TODO: Diff
         # if self.result.diff != "":
         #     text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
@@ -265,7 +259,7 @@ class RunJudge(ProgramsJob):
 
     def verdict_text(self) -> str:
         if self.result is not None:
-            if self.result.verdict == Verdict.partial:
+            if self.result.verdict == Verdict.partial_ok:
                 return f"{self.result.verdict.name} {self.result.points:.2f}"
             return self.result.verdict.name
         else:
@@ -276,7 +270,7 @@ class RunJudge(ProgramsJob):
             return "-"
         elif self.result is None:
             return " "
-        elif self.result.verdict == Verdict.partial:
+        elif self.result.verdict == Verdict.partial_ok:
             return f"[{self.result.points:.2f}]"
         else:
             return self.result.verdict.mark()
@@ -320,7 +314,7 @@ class RunCMSJudge(RunJudge):
             elif points == 0.0:
                 verdict = Verdict.wrong_answer
             else:
-                verdict = Verdict.partial
+                verdict = Verdict.partial_ok
 
             return SolutionResult(
                 verdict, points, self._solution_run_res, judge_run_result
@@ -408,7 +402,7 @@ class RunDiffJudge(RunBatchJudge):
             diff.returncode,
             0,
             0,
-            status="Files are same" if diff.returncode == 0 else "Files differ",
+            status=("Files are same" if diff.returncode == 0 else "Files differ") + f": {self.output}, {self.correct_output}",
         )
         if diff.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)

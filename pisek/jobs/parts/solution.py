@@ -189,7 +189,7 @@ class SolutionManager(TaskJobManager):
         result: dict[str, Any] = {}
         result["outputs"] = {
             Verdict.ok: [],
-            Verdict.partial: [],
+            Verdict.partial_ok: [],
             Verdict.wrong_answer: [],
             Verdict.timeout: [],
             Verdict.error: [],

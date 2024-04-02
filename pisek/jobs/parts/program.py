@@ -255,15 +255,18 @@ class ProgramsJob(TaskJob):
         program_msg = ""
         if status:
             program_msg += f"status: {res.status}\n"
-        
+
         show_stds = []
         if stdout:
             show_stds.append("stdout")
         if stderr:
-            show_stds.append("stdout")
+            show_stds.append("stderr")
 
         for std in show_stds:
             std_file = getattr(res, std + "_file")
+            if std_file is None:
+                continue
+
             program_msg += f"{std} in file {std_file}"
             if self._env.verbosity <= 0:
                 program_msg += "\n"
@@ -274,7 +277,7 @@ class ProgramsJob(TaskJob):
                     program_msg += ":\n"
                     program_msg += tab(colored_env(std_text, "yellow", self._env))
                     program_msg += "\n"
-        
+
         if time:
             program_msg += f"time: {res.time}\n"
 

@@ -25,7 +25,7 @@ from pisek.jobs.parts.run_result import RunResult
 
 class Verdict(Enum):
     ok = 1
-    partial = 2
+    partial_ok = 2
     timeout = 3
     wrong_answer = 4
     error = 5
@@ -33,7 +33,7 @@ class Verdict(Enum):
     def mark(self) -> str:
         return {
             Verdict.ok: "·",
-            Verdict.partial: "P",
+            Verdict.partial_ok: "P",
             Verdict.timeout: "T",
             Verdict.wrong_answer: "W",
             Verdict.error: "!",
@@ -101,7 +101,7 @@ SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], boo
     "X": (verdict_always, verdict_always),
     "P": (
         lambda r: not verdict_0points(r),
-        partial(specific_verdict, verdict=Verdict.partial),
+        partial(specific_verdict, verdict=Verdict.partial_ok),
     ),
     "W": (
         verdict_always,
