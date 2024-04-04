@@ -114,7 +114,7 @@ class JobPipeline(ABC):
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         if not env.no_jumps:
             self._tmp_lines += sum(
-                ceil(len(re.sub(ansi_escape, "", line)) / terminal_width)
+                max(ceil(len(re.sub(ansi_escape, "", line)) / terminal_width), 1)
                 for line in msg.split("\n")
             )
             print(str(msg), *args, **kwargs)
