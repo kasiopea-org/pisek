@@ -222,8 +222,6 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-
-                            stderr_text,
                             f"Timeout after {timeout}",
                         )
                     )
