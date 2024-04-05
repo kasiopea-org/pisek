@@ -209,6 +209,11 @@ class ProgramsJob(TaskJob):
                         )
                     )
                 elif meta["status"] == "TO":
+                    timeout = (
+                        f"{pool_item.time_limit}s"
+                        if t > pool_item.time_limit
+                        else f"{pool_item.clock_limit}ws"
+                    )
                     run_results.append(
                         RunResult(
                             RunResultKind.TIMEOUT,
@@ -217,7 +222,9 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-                            f"Timeout after {pool_item.time_limit}s",
+
+                            stderr_text,
+                            f"Timeout after {timeout}",
                         )
                     )
                 else:

@@ -61,16 +61,22 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
                 points = evaluation.outcome
                 result_type = "indeterminate"
 
-            results.append(
-                {
-                    "time": evaluation.execution_time,
-                    "wall_clock_time": evaluation.execution_wall_clock_time,
-                    "memory": evaluation.execution_memory / (1024 * 1024),
-                    "test": f"{evaluation.codename}.in",
-                    "points": points,
-                    "result": result_type,
-                }
-            )
+            result = {
+                "time": evaluation.execution_time,
+                "wall_clock_time": evaluation.execution_wall_clock_time,
+                "memory": (
+                    evaluation.execution_memory / (1024 * 1024)
+                    if evaluation.execution_memory is not None
+                    else None
+                ),
+                "test": f"{evaluation.codename}.in",
+                "points": points,
+                "result": result_type,
+            }
+
+            result = dict(filter(lambda p: p[1] is not None, result.items()))
+
+            results.append(result)
 
     with open(TESTING_LOG, "w") as file:
         json.dump(payload, file, indent=4)
