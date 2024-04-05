@@ -246,20 +246,27 @@ class RunJudge(ProgramsJob):
             text += f"correct output: {self._named_file(self.correct_output)}"
         text += f"result: {self.result.verdict.name}\n"
 
-        text += f"solution:\n"
-        text += tab(
-            self._format_run_result(
-                sol_rr,
-                status=sol_rr.kind != RunResultKind.OK,
-                stderr_force=sol_rr.kind == RunResultKind.RUNTIME_ERROR,
-                time=True
+        if isinstance(self, RunBatchJudge):
+            text += f"solution:\n"
+            text += tab(
+                self._format_run_result(
+                    sol_rr,
+                    status=sol_rr.kind != RunResultKind.OK,
+                    stderr_force=sol_rr.kind == RunResultKind.RUNTIME_ERROR,
+                    time=True,
+                )
             )
-        )
-        text += "\n"
+            text += "\n"
         if judge_rr is not None:
             text += (
                 f"{self.judge_name}:\n"
-                + tab(self._format_run_result(judge_rr, status=False, stderr_force=True))
+                + tab(
+                    self._format_run_result(
+                        judge_rr,
+                        status=isinstance(self, RunDiffJudge),
+                        stderr_force=True,
+                    )
+                )
                 + "\n"
             )
 

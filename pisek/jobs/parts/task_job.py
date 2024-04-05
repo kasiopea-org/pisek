@@ -88,7 +88,7 @@ class TaskHelper:
         for line in text.split("\n"):
             line = line.strip()
             if len(line) > max_chars:
-                line = line[:max_chars-3] + "..."
+                line = line[: max_chars - 3] + "..."
             s_text.append(line)
         if len(s_text) < max_lines:
             return text
@@ -96,28 +96,6 @@ class TaskHelper:
         tail = max(ceil(style.count("t") * max_lines / len(style)) - 1, 0)
         head = max_lines - tail - 1
         return "\n".join(s_text[:head] + ["[...]"] + (s_text[-tail:] if tail else []))
-
-    def _file_content(
-        self,
-        file: TaskPath,
-        force: bool = False,
-        tab_times: int = 1,
-        color: str = "yellow",
-        **kwargs
-    ) -> str:
-        if force or self._env.file_contents:
-            with self._open_file(file) as f:
-                text = self._short_text(f.read().strip(), **kwargs)
-                text = colored_env(text, color, self._env)
-                for _ in range(tab_times):
-                    text = tab(text)
-            return text + "\n"
-        else:
-            self._access_file(file)  # Caching improvements
-            return ""
-
-    def _named_file(self, file: TaskPath, **kwargs) -> str:
-        return f"{file.col(self._env)}\n{self._file_content(file, **kwargs)}"
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):
@@ -212,3 +190,25 @@ class TaskJob(Job, TaskHelper):
             stdout=subprocess.PIPE,
         )
         return diff.stdout.decode("utf-8")
+
+    def _file_content(
+        self,
+        file: TaskPath,
+        force: bool = False,
+        tab_times: int = 1,
+        color: str = "yellow",
+        **kwargs,
+    ) -> str:
+        if force or self._env.file_contents:
+            with self._open_file(file) as f:
+                text = self._short_text(f.read().strip(), **kwargs)
+                text = colored_env(text, color, self._env)
+                for _ in range(tab_times):
+                    text = tab(text)
+            return text + "\n"
+        else:
+            self._access_file(file)  # Caching improvements
+            return ""
+
+    def _named_file(self, file: TaskPath, **kwargs) -> str:
+        return f"{file.col(self._env)}\n{self._file_content(file, **kwargs)}"

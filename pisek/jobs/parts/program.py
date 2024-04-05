@@ -258,11 +258,12 @@ class ProgramsJob(TaskJob):
         if status:
             program_msg += f"status: {res.status}\n"
 
-        show_stds = []
-        if stdout:
-            program_msg += f"stdout: {self._named_file(res.stdout_file, force=stdout_force)}"
-        if stderr:
-            program_msg += f"stdout: {self._named_file(res.stderr_file, force=stderr_force, style='ht')}"
+        if stdout and isinstance(res.stdout_file, TaskPath):
+            program_msg += (
+                f"stdout: {self._named_file(res.stdout_file, force=stdout_force)}"
+            )
+        if stderr and isinstance(res.stderr_file, TaskPath):
+            program_msg += f"stderr: {self._named_file(res.stderr_file, force=stderr_force, style='ht')}"
         if time:
             program_msg += f"time: {res.time}\n"
 
