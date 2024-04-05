@@ -241,22 +241,21 @@ class RunJudge(ProgramsJob):
         sol_rr = self.result.solution_rr
         judge_rr = self.result.judge_rr
 
-        text = f"input: {self._named_file(self.input)}"
+        text = f"input: {self._quote_file_with_name(self.input)}"
         if isinstance(self, RunBatchJudge):
-            text += f"correct output: {self._named_file(self.correct_output)}"
+            text += f"correct output: {self._quote_file_with_name(self.correct_output)}"
         text += f"result: {self.result.verdict.name}\n"
 
-        if isinstance(self, RunBatchJudge):
-            text += f"solution:\n"
-            text += tab(
-                self._format_run_result(
-                    sol_rr,
-                    status=sol_rr.kind != RunResultKind.OK,
-                    stderr_force=sol_rr.kind == RunResultKind.RUNTIME_ERROR,
-                    time=True,
-                )
+        text += f"solution:\n"
+        text += tab(
+            self._format_run_result(
+                sol_rr,
+                status=sol_rr.kind != RunResultKind.OK,
+                stderr_force_content=sol_rr.kind == RunResultKind.RUNTIME_ERROR,
+                time=True,
             )
-            text += "\n"
+        )
+        text += "\n"
         if judge_rr is not None:
             text += (
                 f"{self.judge_name}:\n"
@@ -264,7 +263,7 @@ class RunJudge(ProgramsJob):
                     self._format_run_result(
                         judge_rr,
                         status=isinstance(self, RunDiffJudge),
-                        stderr_force=True,
+                        stderr_force_content=True,
                     )
                 )
                 + "\n"
@@ -377,11 +376,6 @@ class RunBatchJudge(RunJudge):
     def _judging_message(self) -> str:
         return f"output {self.output:p} for input {self.input:p}"
 
-    def _nice_diff(self) -> str:
-        """Create a nice diff between output and correct output."""
-        diff = self._short_text(self._diff_files(self.correct_output, self.output))
-        return colored_env(diff, "yellow", self._env)
-
 
 class RunDiffJudge(RunBatchJudge):
     """Judges solution output and correct output using diff."""
@@ -417,8 +411,8 @@ class RunDiffJudge(RunBatchJudge):
             diff.returncode,
             0,
             0,
-            status=("Files are same" if diff.returncode == 0 else "Files differ")
-            + f": {self.output.col(self._env)}, {self.correct_output.col(self._env)}",
+            status=("Files are the same" if diff.returncode == 0 else "Files differ")
+            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
         )
         if diff.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)

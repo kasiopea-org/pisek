@@ -248,9 +248,9 @@ class ProgramsJob(TaskJob):
         res: RunResult,
         status: bool = True,
         stdout: bool = True,
-        stdout_force: bool = False,
+        stdout_force_content: bool = False,
         stderr: bool = True,
-        stderr_force: bool = False,
+        stderr_force_content: bool = False,
         time: bool = False,
     ):
         """Formats RunResult."""
@@ -259,12 +259,10 @@ class ProgramsJob(TaskJob):
             program_msg += f"status: {res.status}\n"
 
         if stdout and isinstance(res.stdout_file, TaskPath):
-            program_msg += (
-                f"stdout: {self._named_file(res.stdout_file, force=stdout_force)}"
-            )
+            program_msg += f"stdout: {self._quote_file_with_name(res.stdout_file, force_content=stdout_force_content)}"
         if stderr and isinstance(res.stderr_file, TaskPath):
-            program_msg += f"stderr: {self._named_file(res.stderr_file, force=stderr_force, style='ht')}"
+            program_msg += f"stderr: {self._quote_file_with_name(res.stderr_file, force_content=stderr_force_content, style='ht')}"
         if time:
             program_msg += f"time: {res.time}\n"
 
-        return program_msg[:-1]
+        return program_msg.removesuffix("\n")

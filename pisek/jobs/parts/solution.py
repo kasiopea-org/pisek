@@ -516,7 +516,9 @@ class RunCommunication(RunCMSJudge, RunSolution):
             judge=judge,
             input_=input_,
             expected_points=expected_points,
-            judge_log_file=TaskPath.log_file(self._env, input_.name, solution.name),
+            judge_log_file=TaskPath.log_file(
+                self._env, input_.name, f"{solution.name}.{judge.name}"
+            ),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
