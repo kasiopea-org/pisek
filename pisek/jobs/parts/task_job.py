@@ -15,17 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import filecmp
-import fnmatch
 import glob
+from math import ceil
 import os
-import re
 import shutil
-from typing import Optional, Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Literal
 
 import subprocess
 from pisek.env.env import Env
 from pisek.env.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
+from pisek.utils.terminal import colored_env
+from pisek.utils.text import tab
 from pisek.env.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
@@ -77,18 +78,46 @@ class TaskHelper:
         return [TaskPath.from_abspath(directory.path, file) for file in files]
 
     @staticmethod
-    def _short_text(text: str, max_lines: int = 15, max_chars: int = 100) -> str:
-        short_text = []
-        for i, line in enumerate(text.split("\n", max_lines)):
-            if i < max_lines:
-                if len(line) > max_chars:
-                    line = f"{line[:max_chars-3]}..."
-                short_text.append(line)
-            else:
-                short_text[-1] = "[...]\n"
-                break
+    def _short_text(
+        text: str,
+        style: Literal["h", "t", "ht"] = "h",
+        max_lines: int = 10,
+        max_chars: int = 100,
+    ) -> str:
+        s_text = []
+        for line in text.split("\n"):
+            line = line.strip()
+            if len(line) > max_chars:
+                line = line[:max_chars-3] + "..."
+            s_text.append(line)
+        if len(s_text) < max_lines:
+            return text
 
-        return "\n".join(short_text)
+        tail = max(ceil(style.count("t") * max_lines / len(style)) - 1, 0)
+        head = max_lines - tail - 1
+        return "\n".join(s_text[:head] + ["[...]"] + (s_text[-tail:] if tail else []))
+
+    def _file_content(
+        self,
+        file: TaskPath,
+        force: bool = False,
+        tab_times: int = 1,
+        color: str = "yellow",
+        **kwargs
+    ) -> str:
+        if force or self._env.file_contents:
+            with self._open_file(file) as f:
+                text = self._short_text(f.read().strip(), **kwargs)
+                text = colored_env(text, color, self._env)
+                for _ in range(tab_times):
+                    text = tab(text)
+            return text + "\n"
+        else:
+            self._access_file(file)  # Caching improvements
+            return ""
+
+    def _named_file(self, file: TaskPath, **kwargs) -> str:
+        return f"{file.col(self._env)}\n{self._file_content(file, **kwargs)}"
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):

@@ -238,22 +238,30 @@ class RunJudge(ProgramsJob):
         if self.result is None:
             raise RuntimeError(f"Job {self.name} has not finished yet.")
 
-        text = (
-            f"input: {self.input}\n"
-            f"result: {self.result.verdict.name}\n"
-        )
+        sol_rr = self.result.solution_rr
+        judge_rr = self.result.judge_rr
+
+        text = f"input: {self._named_file(self.input)}"
+        if isinstance(self, RunBatchJudge):
+            text += f"correct output: {self._named_file(self.correct_output)}"
+        text += f"result: {self.result.verdict.name}\n"
+
         text += f"solution:\n"
-        text += tab(self._format_run_result(self.result.solution_rr, time=True))
+        text += tab(
+            self._format_run_result(
+                sol_rr,
+                status=sol_rr.kind != RunResultKind.OK,
+                stderr_force=sol_rr.kind == RunResultKind.RUNTIME_ERROR,
+                time=True
+            )
+        )
         text += "\n"
-        if self.result.judge_rr is not None:
+        if judge_rr is not None:
             text += (
                 f"{self.judge_name}:\n"
-                + tab(self._format_run_result(self.result.judge_rr))
+                + tab(self._format_run_result(judge_rr, status=False, stderr_force=True))
                 + "\n"
             )
-        # TODO: Diff
-        # if self.result.diff != "":
-        #     text += "\n" + tab(f"diff:\n{tab(self.result.diff)}")
 
         return text
 
@@ -402,7 +410,8 @@ class RunDiffJudge(RunBatchJudge):
             diff.returncode,
             0,
             0,
-            status=("Files are same" if diff.returncode == 0 else "Files differ") + f": {self.output}, {self.correct_output}",
+            status=("Files are same" if diff.returncode == 0 else "Files differ")
+            + f": {self.output.col(self._env)}, {self.correct_output.col(self._env)}",
         )
         if diff.returncode == 0:
             return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)

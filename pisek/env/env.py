@@ -37,6 +37,8 @@ class Env(BaseEnv):
     Attributes:
         target: What is being tested
         config: Environment variables defined by task config
+        verbosity: How much verbose to be
+        file_contents: Show file contents in errors
         full: Whether to stop after the first failure
         no_colors: If not to use ansi colors
         no_jumps: If not to use ansi control sequences
@@ -52,6 +54,7 @@ class Env(BaseEnv):
     target: TestingTarget
     config: TaskConfig
     verbosity: int
+    file_contents: bool
     full: bool
     no_colors: bool
     no_jumps: bool
@@ -67,6 +70,7 @@ class Env(BaseEnv):
     def load(
         target: str = TestingTarget.all,
         verbosity: int = 0,
+        file_contents: bool = False,
         full: bool = False,
         all_inputs: bool = False,
         skip_on_timeout: bool = False,
@@ -97,6 +101,7 @@ class Env(BaseEnv):
             target=TestingTarget(target),
             config=config,
             verbosity=verbosity,
+            file_contents=file_contents,
             full=full,
             no_jumps=no_jumps,
             no_colors=no_colors,

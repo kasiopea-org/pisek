@@ -248,7 +248,9 @@ class ProgramsJob(TaskJob):
         res: RunResult,
         status: bool = True,
         stdout: bool = True,
+        stdout_force: bool = False,
         stderr: bool = True,
+        stderr_force: bool = False,
         time: bool = False,
     ):
         """Formats RunResult."""
@@ -258,26 +260,9 @@ class ProgramsJob(TaskJob):
 
         show_stds = []
         if stdout:
-            show_stds.append("stdout")
+            program_msg += f"stdout: {self._named_file(res.stdout_file, force=stdout_force)}"
         if stderr:
-            show_stds.append("stderr")
-
-        for std in show_stds:
-            std_file = getattr(res, std + "_file")
-            if std_file is None:
-                continue
-
-            program_msg += f"{std} in file {std_file}"
-            if self._env.verbosity <= 0:
-                program_msg += "\n"
-                self._access_file(std_file)  # Caching improvements
-            else:
-                with self._open_file(std_file) as f:
-                    std_text = self._short_text(f.read()).removesuffix("\n")
-                    program_msg += ":\n"
-                    program_msg += tab(colored_env(std_text, "yellow", self._env))
-                    program_msg += "\n"
-
+            program_msg += f"stdout: {self._named_file(res.stderr_file, force=stderr_force, style='ht')}"
         if time:
             program_msg += f"time: {res.time}\n"
 

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import os
 from typing import Optional, TYPE_CHECKING
 import yaml
+from pisek.utils.terminal import colored_env
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
@@ -62,6 +63,9 @@ class TaskPath:
             return self.path == other_path.path
         else:
             return False
+
+    def col(self, env: "Env") -> str:
+        return colored_env(self.path, "magenta", env)
 
     def replace_suffix(self, new_suffix: str) -> "TaskPath":
         path = os.path.splitext(self.path)[0] + new_suffix
