@@ -18,7 +18,7 @@ import random
 import string
 
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.jobs.parts.task_job import TaskJob
 
 

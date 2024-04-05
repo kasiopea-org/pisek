@@ -122,7 +122,7 @@ class Cache:
         with open(CACHE_FILENAME, encoding="utf-8") as f:
             try:
                 entries = yaml.full_load(f)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, KeyError):
                 eprint(
                     colored_env(
                         "Invalid .pisek_cache file. Starting from scratch...",

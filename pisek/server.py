@@ -116,7 +116,7 @@ class KasiopeaInputCase:
             raise RuntimeError("Judging failed.")
 
         judging_res = pipeline.judge_result()
-        return judging_res.points, judging_res.judge_stderr
+        return judging_res.points
 
     def _needs_generating(self, put: Optional[str]):
         return put is None or not os.path.exists(os.path.join(self.path, "data/", put))

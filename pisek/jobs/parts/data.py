@@ -19,7 +19,7 @@ from typing import Any, Callable
 
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.jobs.parts.task_job import (
     TaskJob,
     TaskJobManager,
@@ -178,7 +178,7 @@ class DataCheckingManager(TaskJobManager):
                 outs = data["outputs"]
                 outputs += (
                     outs[Verdict.ok]
-                    + outs[Verdict.partial]
+                    + outs[Verdict.partial_ok]
                     + outs[Verdict.wrong_answer]
                 )
         for inp in inputs:

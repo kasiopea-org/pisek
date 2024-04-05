@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
+from typing import TYPE_CHECKING
 
 from pisek.utils.text import pad, colored
-from pisek.env.env import Env
+
+if TYPE_CHECKING:
+    from pisek.env.env import Env
 
 MSG_LEN = 25
 
@@ -32,6 +35,6 @@ def right_aligned_text(left: str, right: str, offset: int = 0):
     return pad(left, TARGET_LINE_WIDTH - len(right) + offset - 1) + " " + right
 
 
-def colored_env(msg: str, color: str, env: Env) -> str:
+def colored_env(msg: str, color: str, env: "Env") -> str:
     """Recolors all white text to given color."""
     return colored(msg, color, env.no_colors)

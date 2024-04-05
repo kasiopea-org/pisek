@@ -84,6 +84,14 @@ def main(argv):
             help="Be more verbose. (Enter multiple times for even more verbosity.)",
         )
 
+    def add_argument_file_contents(parser):
+        parser.add_argument(
+            "--file-contents",
+            "-C",
+            action="store_true",
+            help="Show file contents on error",
+        )
+
     def add_argument_timeout(parser):
         parser.add_argument(
             "--timeout",
@@ -235,6 +243,7 @@ def main(argv):
         )
 
     add_argument_verbosity(parser)
+    add_argument_file_contents(parser)
     add_argument_timeout(parser)
     add_argument_full(parser)
     add_argument_strict(parser)

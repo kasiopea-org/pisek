@@ -21,11 +21,12 @@ import shutil
 from typing import Any
 
 from pisek.env.env import Env
-from pisek.paths import TaskPath, GENERATED_SUBDIR
+from pisek.utils.paths import TaskPath, GENERATED_SUBDIR
 from pisek.env.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import RunResult, RunResultKind, ProgramsJob
+from pisek.jobs.parts.run_result import RunResult, RunResultKind
+from pisek.jobs.parts.program import ProgramsJob
 from pisek.jobs.parts.compile import Compile
 
 
@@ -160,7 +161,6 @@ class OnlineGeneratorJob(ProgramsJob):
             args=[difficulty, hexa_seed],
             stdout=input_file,
             stderr=TaskPath.log_file(self._env, self.input_.name, self.generator.name),
-            print_first_stderr=True,
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -278,7 +278,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
             ProgramType.in_gen,
             self.generator,
             args=[gen_dir.path],
-            print_first_stderr=True,
+            stderr=TaskPath.log_file(self._env, None, self.generator.name),
         )
         self._access_file(gen_dir)
 

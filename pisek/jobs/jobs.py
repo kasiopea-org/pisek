@@ -26,7 +26,7 @@ import yaml
 import os.path
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 
 
 class State(Enum):

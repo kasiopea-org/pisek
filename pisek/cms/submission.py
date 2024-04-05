@@ -25,7 +25,7 @@ from datetime import datetime
 
 from pisek.env.env import Env
 from pisek.env.task_config import SolutionConfig, TaskConfig
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 
 
 def get_participation(session: Session, task: Task, username: str) -> Participation:

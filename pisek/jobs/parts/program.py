@@ -15,129 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass, field
-from enum import Enum
 import os
 import tempfile
-import time
 from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
-import yaml
 
 from pisek.env.task_config import ProgramType
 from pisek.env.env import Env
-from pisek.paths import TaskPath
+from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.utils.terminal import colored_env
-from pisek.jobs.parts.task_job import TaskHelper, TaskJob
-
-
-class RunResultKind(Enum):
-    OK = 0
-    RUNTIME_ERROR = 1
-    TIMEOUT = 2
-
-
-class RunResult:
-    """Represents the way the program execution ended. Specially, a program
-    that finished successfully, but got Wrong Answer, still gets the OK
-    RunResult."""
-
-    def __init__(
-        self,
-        kind: RunResultKind,
-        returncode: int,
-        time: float,
-        wall_time: float,
-        stdout_file: Optional[Union[TaskPath, int]] = None,
-        stderr_file: Optional[TaskPath] = None,
-        stderr_text: Optional[str] = None,
-        status: str = "",
-    ):
-        self.kind = kind
-        self.returncode = returncode
-        self.stdout_file = stdout_file
-        self.stderr_file = stderr_file
-        self.stderr_text = stderr_text
-        self.status = status
-        self.time = time
-        self.wall_time = wall_time
-
-    @staticmethod
-    def _format(text: str, env: Env, max_lines: int = 20, max_chars: int = 100):
-        res = tab(TaskHelper._short_text(text, max_lines, max_chars))
-        return colored_env(res, "yellow", env)
-
-    def raw_stdout(self, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stdout_file, TaskPath):
-            access_file(self.stdout_file)
-            return open(self.stdout_file.path).read()
-        else:
-            return None
-
-    def raw_stderr(self, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stderr_file, TaskPath):
-            access_file(self.stderr_file)
-            return open(self.stderr_file.path).read()
-        else:
-            return self.stderr_text
-
-    def stdout(self, env: Env, access_file: Callable[[TaskPath], None]):
-        if isinstance(self.stdout_file, str):
-            return f" in file {self.stdout_file}:\n" + self._format(
-                self.raw_stdout(access_file), env
-            )
-        else:
-            return " has been discarded"
-
-    def stderr(self, env: Env, access_file: Callable[[TaskPath], None]):
-        text = self._format(self.raw_stderr(access_file), env)
-        if self.stderr_file:
-            return f" in file {self.stderr_file}:\n{text}"
-        else:
-            return f":\n{text}"
-
-    def __str__(self):
-        return f"<RunResult {self.kind.name}, exitcode: {self.returncode}>"
-
-    __repr__ = __str__
-
-
-def run_result_representer(dumper, run_result: RunResult):
-    return dumper.represent_sequence(
-        "!RunResult",
-        [
-            run_result.kind.name,
-            run_result.returncode,
-            run_result.time,
-            run_result.wall_time,
-            run_result.stdout_file,
-            run_result.stderr_file,
-            run_result.stderr_text,
-            run_result.status,
-        ],
-    )
-
-
-def run_result_constructor(loader, value):
-    (
-        kind,
-        returncode,
-        time,
-        wall_time,
-        out_f,
-        err_f,
-        err_t,
-        status,
-    ) = loader.construct_sequence(value)
-    return RunResult(
-        RunResultKind[kind], returncode, time, wall_time, out_f, err_f, err_t, status
-    )
-
-
-yaml.add_representer(RunResult, run_result_representer)
-yaml.add_constructor("!RunResult", run_result_constructor)
+from pisek.jobs.parts.run_result import RunResultKind, RunResult
+from pisek.jobs.parts.task_job import TaskJob
 
 
 @dataclass
@@ -167,7 +58,7 @@ class ProgramPoolItem:
             attr = getattr(self, std)
             if isinstance(attr, TaskPath):
                 minibox_args.append(f"--{std}={attr.path}")
-            elif getattr(self, std) is None and std != "stderr":
+            elif getattr(self, std) is None:
                 minibox_args.append(f"--{std}=/dev/null")
 
             if isinstance(attr, int):
@@ -245,7 +136,7 @@ class ProgramsJob(TaskJob):
             raise RuntimeError("Callback already loaded.")
         self._callback = callback
 
-    def _run_programs(self, print_first_stderr=False) -> list[RunResult]:
+    def _run_programs(self) -> list[RunResult]:
         """Runs all programs in execution pool."""
         running_pool: list[subprocess.Popen] = []
         meta_files: list[str] = []
@@ -259,7 +150,6 @@ class ProgramsJob(TaskJob):
                 subprocess.Popen(**pool_item.to_popen(minibox, meta_file))
             )
 
-        stderr_raw = ""
         callback_exec = False
         while True:
             states = [process.poll() is not None for process in running_pool]
@@ -267,15 +157,6 @@ class ProgramsJob(TaskJob):
                 callback_exec = True
                 if self._callback is not None:
                     self._callback(running_pool[states.index(True)])
-
-            if print_first_stderr:
-                assert running_pool[0].stderr is not None  # To make mypy happy
-                line = running_pool[0].stderr.read().decode()
-                if line:
-                    stderr_raw += line
-                    self._print(
-                        colored_env(line, "yellow", self._env), end="", stderr=True
-                    )
 
             if all(states):
                 break
@@ -294,9 +175,6 @@ class ProgramsJob(TaskJob):
             os.remove(meta_file)
 
             meta = {key: val for key, val in map(lambda x: x.split(":", 1), meta_raw)}
-            if not print_first_stderr:
-                stderr_raw = process.stderr.read().decode()
-            stderr_text = None if pool_item.stderr else stderr_raw
             if process.returncode == 0:
                 t, wt = float(meta["time"]), float(meta["time-wall"])
                 run_results.append(
@@ -307,7 +185,6 @@ class ProgramsJob(TaskJob):
                         wt,
                         pool_item.stdout,
                         pool_item.stderr,
-                        stderr_text,
                         "Finished successfully",
                     )
                 )
@@ -328,7 +205,6 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-                            stderr_text,
                             meta["message"],
                         )
                     )
@@ -346,14 +222,15 @@ class ProgramsJob(TaskJob):
                             wt,
                             pool_item.stdout,
                             pool_item.stderr,
-                            stderr_text,
                             f"Timeout after {timeout}",
                         )
                     )
                 else:
                     raise RuntimeError(f"Unknown minibox status {meta['message']}.")
             else:
-                raise PipelineItemFailure(f"Minibox error:\n{tab(stderr_raw)}")
+                raise PipelineItemFailure(
+                    f"Minibox error:\n{tab(process.stderr.read().decode())}"
+                )
 
         return run_results
 
@@ -361,20 +238,36 @@ class ProgramsJob(TaskJob):
         self,
         program_type: ProgramType,
         program: TaskPath,
-        print_first_stderr=False,
         **kwargs,
     ) -> RunResult:
         """Loads one program and runs it."""
         self._load_program(program_type, program, **kwargs)
-        return self._run_programs(print_first_stderr)[0]
+        return self._run_programs()[0]
 
     def _create_program_failure(self, msg: str, res: RunResult):
         """Create PipelineItemFailure that nicely formats RunResult"""
-        return PipelineItemFailure(f"{msg}\n{tab(self._quote_program(res))}")
+        return PipelineItemFailure(f"{msg}\n{tab(self._format_run_result(res))}")
 
-    def _quote_program(self, res: RunResult):
-        """Quotes program's stdout and stderr."""
-        program_msg = f"status: {res.status}\n"
-        for std in ("stdout", "stderr"):
-            program_msg += f"{std}{getattr(res, std)(self._env, self._access_file)}\n"
-        return program_msg[:-1]
+    def _format_run_result(
+        self,
+        res: RunResult,
+        status: bool = True,
+        stdout: bool = True,
+        stdout_force_content: bool = False,
+        stderr: bool = True,
+        stderr_force_content: bool = False,
+        time: bool = False,
+    ):
+        """Formats RunResult."""
+        program_msg = ""
+        if status:
+            program_msg += f"status: {res.status}\n"
+
+        if stdout and isinstance(res.stdout_file, TaskPath):
+            program_msg += f"stdout: {self._quote_file_with_name(res.stdout_file, force_content=stdout_force_content)}"
+        if stderr and isinstance(res.stderr_file, TaskPath):
+            program_msg += f"stderr: {self._quote_file_with_name(res.stderr_file, force_content=stderr_force_content, style='ht')}"
+        if time:
+            program_msg += f"time: {res.time}\n"
+
+        return program_msg.removesuffix("\n")
