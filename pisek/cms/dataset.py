@@ -14,7 +14,7 @@ from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from os import path, listdir
 import re
 import datetime
@@ -93,7 +93,7 @@ def get_group_score_parameters(config: TaskConfig) -> list[tuple[int, str]]:
 
 def strip_input_extention(file: str) -> str:
     if not file.endswith(".in"):
-        raise RuntimeError("Input file {file} does not have a .in extention")
+        raise RuntimeError(f"Input file {file} does not have a .in extention")
 
     return file[:-3]
 
@@ -207,7 +207,17 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
         session.add(Manager(dataset=dataset, filename=basename, digest=header))
 
 
-def get_dataset(session: Session, task: Task, description: str) -> Dataset:
+def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:
+    if description is None:
+        datasets = session.query(Dataset).filter(Dataset.task == task).all()
+
+        if len(datasets) > 2:
+            raise RuntimeError(
+                f'The task has multiple datasets: {", ".join(d.description for d in datasets)}'
+            )
+        else:
+            return datasets[0]
+
     try:
         return (
             session.query(Dataset)
