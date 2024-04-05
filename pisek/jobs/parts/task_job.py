@@ -91,11 +91,11 @@ class TaskHelper:
                 line = line[: max_chars - 1] + "…"
             s_text.append(line)
         if len(s_text) < max_lines:
-            return text
+            return "\n".join(s_text)
 
         tail = max(ceil(("t" in style) * max_lines / len(style)) - 1, 0)
         head = max_lines - tail - 1
-        return "\n".join(s_text[:head] + ["[...]"] + (s_text[-tail:] if tail else []))
+        return "\n".join(s_text[:head] + ["[…]"] + (s_text[-tail:] if tail else []))
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):
