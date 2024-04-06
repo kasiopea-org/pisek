@@ -213,7 +213,7 @@ def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dat
 
         if len(datasets) > 2:
             raise RuntimeError(
-                f'The task has multiple datasets: {", ".join(d.description for d in datasets)}'
+                f"The task has multiple datasets: {', '.join(d.description for d in datasets)}"
             )
         else:
             return datasets[0]
