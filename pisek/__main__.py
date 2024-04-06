@@ -238,7 +238,7 @@ def main(argv):
             "--dataset",
             "-d",
             type=str,
-            required=True,
+            required=False,
             help="Use the dataset with the description DESCRIPTION.",
         )
 
