@@ -62,16 +62,17 @@ class CheckerManager(TaskJobManager):
                     )
                 )
                 check.add_prerequisite(compile)
-            if sub.predecessors:
-                self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
-                for pred in sub.predecessors:
-                    self.loose_subtasks[-1].jobs[pred] = []
-                    for inp in self._subtask_new_inputs(sub):
-                        jobs.append(
-                            check := CheckerJob(self._env, checker, inp, pred, None)
-                        )
-                        self.loose_subtasks[-1].jobs[pred].append(check)
-                        check.add_prerequisite(compile)
+            if self._env.config.checks.check_strict_checker:
+                if sub.predecessors:
+                    self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
+                    for pred in sub.predecessors:
+                        self.loose_subtasks[-1].jobs[pred] = []
+                        for inp in self._subtask_new_inputs(sub):
+                            jobs.append(
+                                check := CheckerJob(self._env, checker, inp, pred, None)
+                            )
+                            self.loose_subtasks[-1].jobs[pred].append(check)
+                            check.add_prerequisite(compile)
 
         return jobs
 

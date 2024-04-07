@@ -127,6 +127,8 @@ class TaskConfig(BaseEnv):
 
     cms: "CMSConfig"
 
+    checks: "ChecksConfig"
+
     @computed_field  # type: ignore[misc]
     @cached_property
     def total_points(self) -> int:
@@ -220,6 +222,7 @@ class TaskConfig(BaseEnv):
 
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
+        args["checks"] = ChecksConfig.load_dict(configs)
 
         return args
 
@@ -611,6 +614,19 @@ class CMSConfig(BaseEnv):
     def get_default_file_name(cls, name: str):
         name = re.sub(r"[^a-zA-Z0-9]+", "_", name)
         return f"{name}.%l"
+
+
+class ChecksConfig(BaseEnv):
+    """Configuration of checks for pisek to run."""
+
+    _section: str = "checks"
+
+    check_strict_checker: bool
+
+    @classmethod
+    def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
+        KEYS = ["check_strict_checker"]
+        return {key: configs.get("checks", key) for key in KEYS}
 
 
 def _format_message(err: ErrorDetails) -> str:
