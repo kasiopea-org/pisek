@@ -71,6 +71,8 @@ class CaptureInitParams:
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
 
+    run_always: bool = False  # Runs even if prerequisites failed
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.state = State.in_queue
@@ -100,7 +102,8 @@ class PipelineItem(ABC):
             return  # No need to cancel
         self.state = State.canceled
         for item, _ in self.required_by:
-            item.cancel()
+            if not item.run_always:
+                item.cancel()
 
     def _check_prerequisites(self) -> None:
         """Checks if all prerequisites are finished raises error otherwise."""
@@ -118,14 +121,12 @@ class PipelineItem(ABC):
 
     def finish(self) -> None:
         """Notifies PipelineItems that depend on this job."""
-        if self.state == State.succeeded:
-            for item, name in self.required_by:
+        for item, name in self.required_by:
+            if item.run_always or self.state == State.succeeded:
                 item.prerequisites -= 1
                 if name is not None:
                     item.prerequisites_results[name] = deepcopy(self.result)
-
-        elif self.state == State.failed:
-            for item, _ in self.required_by:
+            else:
                 item.cancel()
 
 
@@ -353,7 +354,8 @@ class JobManager(PipelineItem):
                 self._fail(failure)
             else:
                 self.state = State.succeeded
-                self.result = self._compute_result()
+
+            self.result = self._compute_result()
 
         super().finish()
         return self._get_status()

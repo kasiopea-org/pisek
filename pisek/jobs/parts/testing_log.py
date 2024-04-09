@@ -29,6 +29,8 @@ TESTING_LOG = "testing_log.json"
 
 
 class CreateTestingLog(TaskJobManager):
+    run_always: bool = True
+
     def __init__(self):
         super().__init__(f"Creating testing log")
 
