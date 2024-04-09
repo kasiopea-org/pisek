@@ -37,7 +37,7 @@ def create_testcase(
         )
     else:
         output = files.put_file_content(
-            "No output".encode(), f"Almost empty output file"
+            "No output".encode(), "Almost empty output file"
         )
 
     testcase = Testcase(

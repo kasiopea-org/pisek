@@ -47,8 +47,8 @@ def test_task_path(path, solutions: Optional[list[str]] = None, **env_args):
 
 def test_solution(args):
     if args.solution is None:
-        eprint(f"Specify a solution name to test.")
-        eprint(f"Example:   pisek [--all_tests] test solution solve_slow_4b")
+        eprint("Specify a solution name to test.")
+        eprint("Example:   pisek [--all_tests] test solution solve_slow_4b")
         return 1
 
     eprint(f"Testing solution: {args.solution}")
@@ -56,7 +56,7 @@ def test_solution(args):
 
 
 def test_generator(args):
-    eprint(f"Testing generator")
+    eprint("Testing generator")
     return test_task(args, solutions=[])
 
 

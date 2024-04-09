@@ -28,7 +28,7 @@ class UnknownSolutions(TaskConfigError):
             else:
                 return f"{s.name} (source: {s.source})"
 
-        unknown_text = f"', '".join(unknown)
+        unknown_text = "', '".join(unknown)
         sols_text = "\n".join(map(format_solution, solutions.values()))
         super().__init__(
             f"Unknown solution{'s' if len(unknown) > 1 else ''} '{unknown_text}'. "

@@ -97,9 +97,7 @@ class ConfigHierarchy:
                     unset = True
                     break
                 elif value is not None:
-                    return ConfigValue(
-                        value, config_path, section, key
-                    )  # TODO: Show config
+                    return ConfigValue(value, config_path, section, key)
             if unset:
                 break
 
@@ -115,8 +113,8 @@ class ConfigHierarchy:
 
     def sections(self) -> list[ConfigValue]:
         sections = {
-            section: ConfigValue(section, "", section, None)  # TODO: Add config
-            for config in self._configs
+            section: ConfigValue(section, path, section, None)
+            for config, path in reversed(list(zip(self._configs, self._config_paths)))
             for section in config.sections()
         }  # We need to use dictionary here because order matters
         return list(sections.values())
@@ -133,7 +131,7 @@ class ConfigHierarchy:
         IGNORED_KEYS = defaultdict(
             set,
             {
-                "task": {"tests", "version"},  # TODO: Version updates
+                "task": {"tests", "version"},
                 "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
             },
         )

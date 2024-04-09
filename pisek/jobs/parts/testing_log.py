@@ -30,7 +30,7 @@ TESTING_LOG = "testing_log.json"
 
 class CreateTestingLog(TaskJobManager):
     def __init__(self):
-        super().__init__(f"Creating testing log")
+        super().__init__("Creating testing log")
 
     def _get_jobs(self) -> list[Job]:
         return []

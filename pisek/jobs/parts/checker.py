@@ -49,7 +49,7 @@ class CheckerManager(TaskJobManager):
 
         checker = TaskPath(self._env.config.checker)
 
-        jobs: list[Job] = [compile := Compile(self._env, checker)]
+        jobs: list[Job] = [compile_checker := Compile(self._env, checker)]
 
         self.loose_subtasks = []
         for sub_num, sub in self._env.config.subtasks.items():
@@ -61,7 +61,7 @@ class CheckerManager(TaskJobManager):
                         self._env, checker, inp, sub_num, RunResultKind.OK
                     )
                 )
-                check.add_prerequisite(compile)
+                check.add_prerequisite(compile_checker)
             if self._env.config.checks.check_strict_checker:
                 if sub.predecessors:
                     self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
@@ -72,7 +72,7 @@ class CheckerManager(TaskJobManager):
                                 check := CheckerJob(self._env, checker, inp, pred, None)
                             )
                             self.loose_subtasks[-1].jobs[pred].append(check)
-                            check.add_prerequisite(compile)
+                            check.add_prerequisite(compile_checker)
 
         return jobs
 

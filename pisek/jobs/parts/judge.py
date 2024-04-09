@@ -145,9 +145,11 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 )
             jobs.insert(
                 0,
-                compile := Compile(self._env, TaskPath(self._env.config.out_judge)),
+                compile_judge := Compile(
+                    self._env, TaskPath(self._env.config.out_judge)
+                ),
             )
-            judge.add_prerequisite(compile)
+            judge.add_prerequisite(compile_judge)
 
         self._judge_job = judge
 
@@ -155,9 +157,9 @@ class RunKasiopeaJudgeMan(TaskJobManager):
 
     def judge_result(self) -> SolutionResult:
         if self.state != State.succeeded:
-            raise RuntimeError(f"Judging hasn't successfully finished.")
+            raise RuntimeError("Judging hasn't successfully finished.")
         elif not isinstance(self._judge_job.result, SolutionResult):
-            raise RuntimeError(f"Judging result invalid.")
+            raise RuntimeError("Judging result invalid.")
         return self._judge_job.result
 
 
@@ -246,7 +248,7 @@ class RunJudge(ProgramsJob):
             text += f"correct output: {self._quote_file_with_name(self.correct_output)}"
         text += f"result: {self.result.verdict.name}\n"
 
-        text += f"solution:\n"
+        text += "solution:\n"
         text += tab(
             self._format_run_result(
                 sol_rr,

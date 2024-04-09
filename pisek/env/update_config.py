@@ -43,7 +43,7 @@ def update_to_v2(config: ConfigParser, task_path: str) -> None:
         subtask_points = [0] + subtask_points
 
     if "solutions" not in config["task"]:
-        raise TaskConfigError(f"Missing key 'solutions' in section [task]")
+        raise TaskConfigError("Missing key 'solutions' in section [task]")
     solutions = config["task"]["solutions"].split()
     del config["task"]["solutions"]
 

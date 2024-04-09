@@ -40,7 +40,7 @@ class GeneratorManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         generator = TaskPath(self._env.config.in_gen)
 
-        jobs: list[Job] = [compile := Compile(self._env, generator)]
+        jobs: list[Job] = [compile_gen := Compile(self._env, generator)]
 
         if self._env.config.contest_type == "kasiopea":
             random.seed(4)  # Reproducibility!
@@ -61,7 +61,7 @@ class GeneratorManager(TaskJobManager):
                             self._env, generator, input_, sub_num, seed
                         )
                     )
-                    gen.add_prerequisite(compile)
+                    gen.add_prerequisite(compile_gen)
                     if i == 0:
                         jobs.append(
                             det := OnlineGeneratorDeterministic(
@@ -85,7 +85,7 @@ class GeneratorManager(TaskJobManager):
                     last_gen = gen
         else:
             jobs.append(gen2 := OfflineGeneratorGenerate(self._env, generator))
-            gen2.add_prerequisite(compile)
+            gen2.add_prerequisite(compile_gen)
 
         return jobs
 
@@ -113,7 +113,7 @@ class RunOnlineGeneratorMan(TaskJobManager):
         generator = TaskPath(self._env.config.in_gen)
 
         jobs: list[Job] = [
-            compile := Compile(self._env, generator),
+            compile_gen := Compile(self._env, generator),
             gen := OnlineGeneratorGenerate(
                 self._env,
                 generator,
@@ -122,7 +122,7 @@ class RunOnlineGeneratorMan(TaskJobManager):
                 self._seed,
             ),
         ]
-        gen.add_prerequisite(compile)
+        gen.add_prerequisite(compile_gen)
 
         return jobs
 
@@ -283,7 +283,7 @@ class OfflineGeneratorGenerate(ProgramsJob):
         self._access_file(gen_dir)
 
         if run_result.kind != RunResultKind.OK:
-            raise self._create_program_failure(f"Generator failed:", run_result)
+            raise self._create_program_failure("Generator failed:", run_result)
 
     def _run(self) -> None:
         self._gen()

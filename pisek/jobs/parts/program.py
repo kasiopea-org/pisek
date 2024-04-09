@@ -69,7 +69,7 @@ class ProgramPoolItem:
         for key, val in self.env.items():
             minibox_args.append(f"--env={key}={val}")
 
-        minibox_args.append(f"--silent")
+        minibox_args.append("--silent")
         minibox_args.append(f"--meta={meta_file}")
 
         result["args"] = (

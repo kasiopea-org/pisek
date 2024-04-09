@@ -45,6 +45,8 @@ MaybeInt = Annotated[
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
+MISSING_VALIDATION_CONTEXT = "Missing validation context."
+
 
 class TaskType(StrEnum):
     batch = auto()
@@ -246,7 +248,7 @@ class TaskConfig(BaseEnv):
         ):
             raise PydanticCustomError(
                 "communication_must_have_judge",
-                f"For communication task 'out_check' must be 'judge'",
+                "For communication task 'out_check' must be 'judge'",
                 {"task_type": self.task_type, "out_check": self.out_check},
             )
 
@@ -355,7 +357,7 @@ class SubtaskConfig(BaseEnv):
     @classmethod
     def expand_predecessors(cls, value: str, info: ValidationInfo) -> list[str]:
         if info.context is None:
-            raise RuntimeError("Missing validation context.")
+            raise RuntimeError(MISSING_VALIDATION_CONTEXT)
         subtask_cnt = info.context.get("subtask_count")
         number = info.data["num"]
 
@@ -442,7 +444,7 @@ class SolutionConfig(BaseEnv):
             return False
         raise PydanticCustomError(
             "primary_invalid",
-            f"Must be one of (yes, no)",
+            "Must be one of (yes, no)",
         )
 
     @field_validator("source", mode="before")
@@ -455,7 +457,7 @@ class SolutionConfig(BaseEnv):
     @field_validator("subtasks", mode="after")
     def validate_subtasks(cls, value, info: ValidationInfo):
         if info.context is None:
-            raise RuntimeError("Missing validation context.")
+            raise RuntimeError(MISSING_VALIDATION_CONTEXT)
         subtask_cnt = info.context.get("subtask_count")
         primary = info.data.get("primary")
         if value == "@auto":
@@ -589,7 +591,7 @@ class CMSConfig(BaseEnv):
     def convert_title(cls, value: str, info: ValidationInfo) -> str:
         if value == "@name":
             if info.context is None:
-                raise RuntimeError("Missing validation context.")
+                raise RuntimeError(MISSING_VALIDATION_CONTEXT)
 
             return info.context.get("name")
         else:
@@ -599,7 +601,7 @@ class CMSConfig(BaseEnv):
     @classmethod
     def convert_format(cls, value: list[str], info: ValidationInfo) -> list[str]:
         if info.context is None:
-            raise RuntimeError("Missing validation context.")
+            raise RuntimeError(MISSING_VALIDATION_CONTEXT)
 
         return [
             (
