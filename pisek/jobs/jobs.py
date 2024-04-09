@@ -107,7 +107,7 @@ class PipelineItem(ABC):
 
     def _check_prerequisites(self) -> None:
         """Checks if all prerequisites are finished raises error otherwise."""
-        if self.prerequisites > 0:
+        if not self.run_always and self.prerequisites > 0:
             raise RuntimeError(
                 f"{self.__class__.__name__} {self.name} prerequisites not finished ({self.prerequisites} remaining)."
             )

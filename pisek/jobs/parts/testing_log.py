@@ -39,12 +39,14 @@ class CreateTestingLog(TaskJobManager):
 
     def _evaluate(self) -> None:
         log: dict[str, Any] = {"source": "pisek"}
+        solutions: set[str] = set()
         warn_skipped: bool = False
         for name, data in self.prerequisites_results.items():
             if not name.startswith(SOLUTION_MAN_CODE):
                 continue
 
             solution = name[len(SOLUTION_MAN_CODE) :]
+            solutions.add(solution)
             log[solution] = {"results": []}
 
             inp: TaskPath
@@ -63,12 +65,17 @@ class CreateTestingLog(TaskJobManager):
                     }
                 )
 
-        if warn_skipped:
-            MSG = "Not all inputs were tested. For testing them use --all-inputs."
+        warn_msg = None
+        if len(solutions) < len(self._env.solutions):
+            warn_msg = "Not all solutions were tested."
+        elif warn_skipped:
+            warn_msg = "Not all inputs were tested. For testing them use --all-inputs."
+
+        if warn_msg is not None:
             if self._env.strict:
-                raise PipelineItemFailure(MSG)
+                raise PipelineItemFailure(warn_msg)
             else:
-                self._print(colored_env(MSG, "yellow", self._env))
+                self._print(colored_env(warn_msg, "yellow", self._env))
 
         with open(TaskPath(TESTING_LOG).path, "w") as f:
             json.dump(log, f, indent=4)
