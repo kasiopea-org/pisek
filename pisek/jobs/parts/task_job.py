@@ -53,6 +53,7 @@ class TaskHelper:
             return parts[-1]
 
     def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
+        """Get execution limits for given program type."""
         limits: ProgramLimits = getattr(self._env.config.limits, program_type.name)
         time_limit = limits.time_limit
 
@@ -70,6 +71,7 @@ class TaskHelper:
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
+        """Get files in given directory that match any glob."""
         files: list[str] = sum(
             (glob.glob(g, root_dir=directory.path) for g in globs),
             start=[],
@@ -84,6 +86,10 @@ class TaskHelper:
         max_lines: int = 10,
         max_chars: int = 100,
     ) -> str:
+        """
+        Shorten text to max_lines lines and max_chars on line.
+        Keep lines from head / tail / both depending on style.
+        """
         s_text = []
         for line in text.split("\n"):
             line = line.strip()
@@ -99,10 +105,12 @@ class TaskHelper:
 
     @staticmethod
     def makedirs(path: TaskPath, exist_ok: bool = True):
+        """Make directories"""
         os.makedirs(path.path, exist_ok=exist_ok)
 
     @staticmethod
     def make_filedirs(path: TaskPath, exist_ok: bool = True):
+        """Make directories for given file"""
         os.makedirs(os.path.dirname(path.path), exist_ok=exist_ok)
 
 
@@ -192,12 +200,17 @@ class TaskJob(Job, TaskHelper):
         return diff.stdout.decode("utf-8")
 
     def _quote_file(self, file: TaskPath, **kwargs) -> str:
+        """Get shortened file contents"""
         with self._open_file(file) as f:
             return self._short_text(f.read().strip(), **kwargs)
 
     def _quote_file_with_name(
         self, file: TaskPath, force_content: bool = False, **kwargs
     ) -> str:
+        """
+        Get file name (with its shortened content if env.file_contents or force_content)
+        for printing into terminal
+        """
         if force_content or self._env.file_contents:
             return f"{file.col(self._env)}\n{colored_env(tab(self._quote_file(file, **kwargs)), 'yellow', self._env)}\n"
         else:
