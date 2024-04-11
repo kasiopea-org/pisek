@@ -65,17 +65,10 @@ class CreateTestingLog(TaskJobManager):
                     }
                 )
 
-        warn_msg = None
-        if len(solutions) < len(self._env.solutions):
-            warn_msg = "Not all solutions were tested."
-        elif warn_skipped:
-            warn_msg = "Not all inputs were tested. For testing them use --all-inputs."
-
-        if warn_msg is not None:
-            if self._env.strict:
-                raise PipelineItemFailure(warn_msg)
-            else:
-                self._print(colored_env(warn_msg, "yellow", self._env))
+        if len(solutions) < len(self._env.config.solutions):
+            self._warn("Not all solutions were tested.")
+        if warn_skipped:
+            self._warn("Not all inputs were tested. For testing them use --all-inputs.")
 
         with open(TaskPath(TESTING_LOG).path, "w") as f:
             json.dump(log, f, indent=4)

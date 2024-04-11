@@ -27,6 +27,7 @@ import os.path
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
+from pisek.utils.terminal import colored_env
 
 
 class State(Enum):
@@ -88,6 +89,12 @@ class PipelineItem(ABC):
         """Prints text to stdout/stderr."""
         self.dirty = True
         (sys.stderr if stderr else sys.stdout).write(msg + end)
+
+    def _warn(self, msg: str) -> None:
+        if self._env.strict:
+            raise PipelineItemFailure(msg)
+        else:
+            self._print(colored_env(msg, "yellow", self._env))
 
     def _fail(self, failure: PipelineItemFailure) -> None:
         """End this job in failure."""
