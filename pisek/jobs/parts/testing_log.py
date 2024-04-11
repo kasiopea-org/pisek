@@ -67,6 +67,9 @@ class CreateTestingLog(TaskJobManager):
                     }
                 )
 
+        if len(solutions) == 0:
+            raise PipelineItemFailure("No solution was tested.")
+
         if len(solutions) < len(self._env.config.solutions):
             self._warn("Not all solutions were tested.")
         if warn_skipped:
