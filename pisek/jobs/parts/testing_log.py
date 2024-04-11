@@ -42,7 +42,9 @@ class CreateTestingLog(TaskJobManager):
         solutions: set[str] = set()
         warn_skipped: bool = False
         for name, data in self.prerequisites_results.items():
-            if not name.startswith(SOLUTION_MAN_CODE):
+            if not name.startswith(SOLUTION_MAN_CODE) or not any(
+                data["results"].values()
+            ):
                 continue
 
             solution = name[len(SOLUTION_MAN_CODE) :]

@@ -72,6 +72,7 @@ class CaptureInitParams:
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
 
+    _env: Env
     run_always: bool = False  # Runs even if prerequisites failed
 
     def __init__(self, name: str) -> None:
@@ -362,7 +363,7 @@ class JobManager(PipelineItem):
             else:
                 self.state = State.succeeded
 
-            self.result = self._compute_result()
+        self.result = self._compute_result()
 
         super().finish()
         return self._get_status()
