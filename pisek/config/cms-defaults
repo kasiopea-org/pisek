@@ -1,5 +1,8 @@
+# Defaults of v2 contest_type cms
+
 [task]
 version=v3
+contest_type=kasiopea
 task_type=batch
 solutions_subdir=.
 static_subdir=.

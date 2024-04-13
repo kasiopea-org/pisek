@@ -26,7 +26,11 @@ from pisek.utils.text import tab
 from pisek.config.config_errors import TaskConfigError
 from pisek.config.update_config import update_config
 
-DEFAULTS_CONFIG = str(files("pisek").joinpath("config/global-defaults"))
+GLOBAL_DEFAULTS = str(files("pisek").joinpath("config/global-defaults"))
+V2_DEFAULTS = {
+    task_type: str(files("pisek").joinpath(f"config/{task_type}-defaults"))
+    for task_type in ["kasiopea", "cms"]
+}
 CONFIG_FILENAME = "config"
 
 
@@ -55,21 +59,37 @@ class ConfigHierarchy:
     """Represents hierarchy of config files where last overrides all previous."""
 
     def __init__(self, task_path: str, no_colors: bool = False) -> None:
-        self._config_paths = [
-            os.path.join(task_path, CONFIG_FILENAME),
-            DEFAULTS_CONFIG,
-        ]
+        self._task_path = task_path
 
+        self._config_paths: list[str] = []
         self._configs: list[ConfigParser] = []
-        for path in self._config_paths:
-            self._configs.append(config := ConfigParser())
-            if not config.read(path):
-                raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
-        for config in self._configs:
-            update_config(config, task_path, no_colors)
+        self._load_config(os.path.join(task_path, CONFIG_FILENAME))
+        self._load_config(GLOBAL_DEFAULTS, info=False)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
+
+    def _load_config(
+        self, path: str, no_colors: bool = False, info: bool = True
+    ) -> None:
+        self._config_paths.append(path)
+        self._configs.append(config := ConfigParser())
+        if not config.read(path):
+            raise TaskConfigError(f"Missing config {path}. Is this task folder?")
+
+        update_config(config, self._task_path, info, no_colors)
+        if defaults := config.get("task", "defaults", fallback=None):
+            self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
+
+    def _resolve_defaults_config(self, path: str):
+        if path.startswith("@"):
+            if (default := V2_DEFAULTS.get(path.removeprefix("@"))) is None:
+                raise TaskConfigError(f"Unknown special task_type: '{path}'")
+            return default
+
+        # TODO: Do the actual resolving
+
+        return path
 
     def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])
@@ -131,7 +151,7 @@ class ConfigHierarchy:
         IGNORED_KEYS = defaultdict(
             set,
             {
-                "task": {"tests", "version"},
+                "task": {"tests", "version", "defaults"},
                 "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
             },
         )

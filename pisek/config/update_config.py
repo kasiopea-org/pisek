@@ -163,7 +163,10 @@ def get_subtask_mask(points, subtasks):
 
 
 def update_to_v3(config: ConfigParser, task_path: str) -> None:
-    pass
+    config["task"]["defaults"] = "@" + config.get(
+        "task", "contest_type", fallback="kasiopea"
+    )
+    # TODO: del config["task"]["contest_type"]
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
@@ -174,22 +177,22 @@ IS_EXPERIMENTAL = True
 
 
 def update_config(
-    config: ConfigParser, task_path: str, no_colors: bool = False
+    config: ConfigParser, task_path: str, infos: bool = True, no_colors: bool = False
 ) -> None:
+    def inform(msg: str):
+        if infos:
+            eprint(colored(msg, "yellow", no_colors))
+
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:
         if IS_EXPERIMENTAL:
-            eprint(
-                colored(
-                    f"Config format for version {NEWEST_VERSION} is experimental and can be changed",
-                    "yellow",
-                    no_colors,
-                )
+            inform(
+                f"Config format for version {NEWEST_VERSION} is experimental and can be changed"
             )
         return
 
     if version in OUTDATED_VERSIONS:
-        eprint(colored(f"Updating config", "yellow", no_colors))
+        inform(f"Updating config")
 
     updaters = OUTDATED_VERSIONS | CURRENT_VERSIONS
     if version not in updaters:
