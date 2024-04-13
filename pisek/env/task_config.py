@@ -29,6 +29,7 @@ from pydantic import (
     model_validator,
 )
 import re
+import sys
 from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
@@ -212,7 +213,8 @@ class TaskConfig(BaseEnv):
             if m := re.match(r"test(\d{2})", section_name):
                 num = m[1]
                 subtasks[int(num)] = SubtaskConfig.load_dict(
-                    ConfigValue(num, section.config, section.section, None), configs
+                    ConfigValue(str(int(num)), section.config, section.section, None),
+                    configs,
                 )
 
         args["solutions"] = solutions = {}
