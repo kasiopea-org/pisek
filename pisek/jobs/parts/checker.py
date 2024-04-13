@@ -19,7 +19,7 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.env.task_config import ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.run_result import RunResult, RunResultKind

@@ -5,7 +5,7 @@ import unittest
 
 from pisek.utils.paths import GENERATED_SUBDIR
 from util import TestFixtureVariant, overwrite_file
-from pisek.env.task_config import load_config
+from pisek.config.task_config import load_config
 
 
 class TestSumCMS(TestFixtureVariant):

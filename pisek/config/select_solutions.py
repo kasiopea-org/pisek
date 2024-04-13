@@ -14,8 +14,8 @@ import os
 from typing import Optional
 
 from pisek.utils.text import tab
-from pisek.env.config_errors import TaskConfigError
-from pisek.env.task_config import TaskConfig, SolutionConfig
+from pisek.config.config_errors import TaskConfigError
+from pisek.config.task_config import TaskConfig, SolutionConfig
 
 
 class UnknownSolutions(TaskConfigError):

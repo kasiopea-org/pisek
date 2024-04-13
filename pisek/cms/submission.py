@@ -24,7 +24,7 @@ from os import path
 from datetime import datetime
 
 from pisek.env.env import Env
-from pisek.env.task_config import SolutionConfig, TaskConfig
+from pisek.config.task_config import SolutionConfig, TaskConfig
 from pisek.utils.paths import TaskPath
 
 

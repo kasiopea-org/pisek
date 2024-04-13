@@ -52,7 +52,7 @@ exclude = ["fixtures"]
 
 [tool.setuptools.package-data]
 pisek = [
-    "env/global-defaults",
+    "config/global-defaults",
     "tools/*",
 ]
 

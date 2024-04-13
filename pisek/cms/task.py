@@ -18,7 +18,7 @@ import re
 
 from pisek.cms.dataset import create_dataset
 from pisek.env.env import Env
-from pisek.env.task_config import TaskConfig
+from pisek.config.task_config import TaskConfig
 
 
 def create_task(session: Session, env: Env, description: str) -> Task:

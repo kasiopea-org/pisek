@@ -18,7 +18,7 @@ import os
 import re
 
 from pisek.utils.text import eprint, colored
-from pisek.env.config_errors import TaskConfigError
+from pisek.config.config_errors import TaskConfigError
 
 
 def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
@@ -161,19 +161,17 @@ def get_subtask_mask(points, subtasks):
             sub_mask += "X"
     return sub_mask
 
+
 def update_to_v3(config: ConfigParser, task_path: str) -> None:
     pass
 
 
-OUTDATED_VERSIONS = {
-    "v1": ("v2", update_to_v2)
-}
-CURRENT_VERSIONS = {
-    "v2": ("v3", update_to_v3)
-}
+OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
+CURRENT_VERSIONS = {"v2": ("v3", update_to_v3)}
 
 NEWEST_VERSION = "v3"
 IS_EXPERIMENTAL = True
+
 
 def update_config(
     config: ConfigParser, task_path: str, no_colors: bool = False
@@ -181,7 +179,13 @@ def update_config(
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:
         if IS_EXPERIMENTAL:
-            eprint(colored(f"Config format for version {NEWEST_VERSION} is experimental and can be changed", "yellow", no_colors))
+            eprint(
+                colored(
+                    f"Config format for version {NEWEST_VERSION} is experimental and can be changed",
+                    "yellow",
+                    no_colors,
+                )
+            )
         return
 
     if version in OUTDATED_VERSIONS:

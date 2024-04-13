@@ -20,8 +20,8 @@ from typing import Optional
 
 from pisek.utils.text import eprint, colored
 from pisek.env.base_env import BaseEnv
-from pisek.env.task_config import load_config, TaskConfig
-from pisek.env.select_solutions import expand_solutions, UnknownSolutions
+from pisek.config.task_config import load_config, TaskConfig
+from pisek.config.select_solutions import expand_solutions, UnknownSolutions
 
 
 class TestingTarget(StrEnum):

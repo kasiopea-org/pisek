@@ -23,10 +23,10 @@ import re
 from typing import Optional, Any
 
 from pisek.utils.text import tab
-from pisek.env.config_errors import TaskConfigError
-from pisek.env.update_config import update_config
+from pisek.config.config_errors import TaskConfigError
+from pisek.config.update_config import update_config
 
-DEFAULTS_CONFIG = str(files("pisek").joinpath("env/global-defaults"))
+DEFAULTS_CONFIG = str(files("pisek").joinpath("config/global-defaults"))
 CONFIG_FILENAME = "config"
 
 

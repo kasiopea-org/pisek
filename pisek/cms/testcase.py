@@ -17,7 +17,7 @@ from glob import glob
 from itertools import chain
 
 from pisek.env.env import Env
-from pisek.env.task_config import TaskType
+from pisek.config.task_config import TaskType
 from pisek.utils.paths import TaskPath
 
 

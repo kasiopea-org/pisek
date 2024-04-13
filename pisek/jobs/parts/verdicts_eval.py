@@ -13,7 +13,7 @@
 
 from typing import Optional
 
-from pisek.env.task_config import TaskConfig, FailMode
+from pisek.config.task_config import TaskConfig, FailMode
 from pisek.jobs.parts.solution_result import Verdict, SUBTASK_SPEC, verdict_always
 
 
