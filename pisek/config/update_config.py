@@ -19,6 +19,7 @@ import re
 
 from pisek.utils.text import eprint, colored
 from pisek.config.config_errors import TaskConfigError
+from pisek.config.config_types import ProgramType
 
 
 def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
@@ -168,6 +169,14 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         raise TaskConfigError(f"Invalid contest_type: '{contest_type}'")
     config["task"]["defaults"] = f"@{contest_type}"
     # TODO: del config["task"]["contest_type"]
+
+    for program_type in ProgramType:
+        config["limits"][f"{program_type}_clock_mul"] = "0"
+        config["limits"][f"{program_type}_clock_min"] = config.get(
+            "limits", f"{program_type}_clock_limit", fallback="360"
+        )
+        if f"{program_type}_clock_limit" in config["limits"]:
+            del config["limits"][f"{program_type}_clock_limit"]
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
