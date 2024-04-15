@@ -21,7 +21,8 @@ import datetime
 
 from pisek.cms.testcase import create_testcase, get_testcases
 from pisek.env.env import Env
-from pisek.config.task_config import JudgeType, TaskConfig, TaskType
+from pisek.config.task_config import TaskConfig
+from pisek.config.config_types import JudgeType, TaskType
 from pisek.utils.paths import TaskPath
 
 

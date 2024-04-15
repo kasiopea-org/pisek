@@ -23,7 +23,7 @@ import subprocess
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.task_config import ProgramType, JudgeType
+from pisek.config.config_types import ProgramType, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.utils.terminal import colored_env

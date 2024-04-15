@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum, auto
 import fnmatch
 from functools import cached_property
 from pydantic_core import PydanticCustomError, ErrorDetails
@@ -29,13 +28,20 @@ from pydantic import (
     model_validator,
 )
 import re
-import sys
 from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
 from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
+from pisek.config.config_types import (
+    TaskType,
+    JudgeType,
+    FailMode,
+    ProgramType,
+    CMSFeedbackLevel,
+    CMSScoreMode,
+)
 from pisek.env.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
@@ -47,42 +53,6 @@ ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
-
-
-class TaskType(StrEnum):
-    batch = auto()
-    communication = auto()
-
-
-class JudgeType(StrEnum):
-    diff = auto()
-    judge = auto()
-
-
-class FailMode(StrEnum):
-    all = auto()
-    any = auto()
-
-
-class ProgramType(StrEnum):
-    tool = auto()
-    in_gen = auto()
-    checker = auto()
-    solve = auto()
-    sec_solve = auto()
-    judge = auto()
-
-
-class CMSFeedbackLevel(StrEnum):
-    full = auto()
-    restricted = auto()
-
-
-class CMSScoreMode(StrEnum):
-    max = auto()
-    max_subtask = auto()
-    max_tokened_last = auto()
-
 
 ValuesDict = dict[str, Union[str, "ValuesDict", dict[Any, "ValuesDict"]]]
 ConfigValuesDict = dict[

@@ -18,7 +18,9 @@ from typing import Optional
 
 from pisek.utils.text import pad, tab, colored, eprint
 from pisek.utils.terminal import terminal_width
-from pisek.config.task_config import load_config, TaskConfig, FailMode
+from pisek.config.task_config import load_config
+from pisek.config.task_config import TaskConfig
+from pisek.config.config_types import FailMode
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
 from pisek.jobs.parts.solution_result import Verdict
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts

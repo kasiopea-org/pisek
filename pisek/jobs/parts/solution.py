@@ -23,7 +23,7 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.task_config import ProgramType, FailMode
+from pisek.config.config_types import ProgramType, FailMode
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
