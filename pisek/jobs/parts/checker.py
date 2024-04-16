@@ -63,7 +63,7 @@ class CheckerManager(TaskJobManager):
                     )
                 )
                 check.add_prerequisite(compile_checker)
-            if self._env.config.checks.check_strict_checker:
+            if self._env.config.checks.checker_distinguishes_subtasks:
                 if sub.predecessors:
                     self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
                     for pred in sub.predecessors:

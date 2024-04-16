@@ -76,7 +76,7 @@ input_max_size=50
 output_max_size=10
 
 [checks]
-check_strict_checker=on
+checker_distinguishes_subtasks=on
 
 [cms]
 title=@name

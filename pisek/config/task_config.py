@@ -595,11 +595,11 @@ class ChecksConfig(BaseEnv):
 
     _section: str = "checks"
 
-    check_strict_checker: bool
+    checker_distinguishes_subtasks: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
-        KEYS = ["check_strict_checker"]
+        KEYS = ["checker_distinguishes_subtasks"]
         return {key: configs.get("checks", key) for key in KEYS}
 
 

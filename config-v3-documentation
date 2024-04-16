@@ -20,7 +20,7 @@ version=v3
 # Name of task (for automatic CMS import)
 name=a-plus-b
 
-use=organisation-config
+use=organization-config
 # Config to use defaults from
 
 contest_type=cms
@@ -247,6 +247,15 @@ output_max_size=5
 # Defaults to 10
 
 [checks]
+# Sections for enabling/disabling checks that task must satisfy
+
+# Please be careful with this section as disabling checks can make
+# task making into a minefield
+
+checker_distinguishes_subtasks=off
+# checks that this subtasks's inputs doesn't pass checker in predecessor subtasks
+# Whether one/all must not pass depends on scoring 
+
 # TODO: Implement keys in this section
 
 [cms]
