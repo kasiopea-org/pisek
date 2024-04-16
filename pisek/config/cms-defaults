@@ -72,8 +72,8 @@ sec_solve_clock_min=1
 sec_solve_mem_limit=0
 sec_solve_process_limit=1
 
-input_max_size=50
-output_max_size=10
+input_max_size=0
+output_max_size=0
 
 [checks]
 check_strict_checker=on

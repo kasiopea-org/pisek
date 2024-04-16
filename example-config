@@ -182,11 +182,13 @@ solve_time_limit=3
 
 input_max_size=20
 # Maximal input size [MB]
-# Defaults to 50 (only in Kasiopea)
+# (0 for unlimited)
+# Defaults to 50
 
 output_max_size=5
 # Maximal input size [MB]
-# Defaults to 10 (only in Kasiopea)
+# (0 for unlimited)
+# Defaults to 10
 
 [cms]
 # Settings related to the CMS importer

@@ -183,12 +183,12 @@ class DataCheckingManager(TaskJobManager):
                 )
         for inp in inputs:
             jobs.append(IsClean(self._env, inp))
-            if self._env.config.contest_type == "kasiopea":
+            if self._env.config.limits.input_max_size != 0:
                 jobs.append(InputSmall(self._env, inp))
 
         for out in outputs:
             jobs.append(IsClean(self._env, out))
-            if self._env.config.contest_type == "kasiopea":
+            if self._env.config.limits.output_max_size != 0:
                 jobs.append(OutputSmall(self._env, out))
 
         return jobs

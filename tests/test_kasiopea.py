@@ -223,7 +223,7 @@ class TestBigInput(TestSumKasiopea):
 
     def modify_task(self):
         def modification_fn(raw_config):
-            raw_config["limits"]["input_max_size"] = "0"
+            raw_config["limits"]["input_max_size"] = "1"
 
         modify_config(self.task_dir, modification_fn)
 
@@ -246,7 +246,7 @@ class TestBigOutput(TestSumKasiopea):
 
     def modify_task(self):
         def modification_fn(raw_config):
-            raw_config["limits"]["output_max_size"] = "0"
+            raw_config["limits"]["output_max_size"] = "1"
 
         modify_config(self.task_dir, modification_fn)
 
