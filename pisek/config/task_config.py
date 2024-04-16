@@ -37,7 +37,7 @@ from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHi
 from pisek.config.config_types import (
     TaskType,
     JudgeType,
-    FailMode,
+    Scoring,
     ProgramType,
     CMSFeedbackLevel,
     CMSScoreMode,
@@ -76,7 +76,7 @@ class TaskConfig(BaseEnv):
     name: str
     contest_type: str
     task_type: TaskType
-    fail_mode: FailMode
+    scoring: Scoring
 
     solutions_subdir: str
     static_subdir: str
@@ -141,6 +141,7 @@ class TaskConfig(BaseEnv):
             ("task", "name"),
             ("task", "contest_type"),
             ("task", "task_type"),
+            ("task", "scoring"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),
             ("task", "data_subdir"),
@@ -158,14 +159,6 @@ class TaskConfig(BaseEnv):
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
-
-        args["fail_mode"] = ConfigValue(
-            "any" if args["contest_type"].value == "cms" else "all",
-            config="_internal",
-            section="task",
-            key="fail_mode",
-            internal=True,
-        )  # TODO: Add fail_mode to config
 
         # Load judge specific keys
         for key, default in JUDGE_KEYS:

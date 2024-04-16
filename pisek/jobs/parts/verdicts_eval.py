@@ -14,7 +14,7 @@
 from typing import Optional
 
 from pisek.config.task_config import TaskConfig
-from pisek.config.config_types import FailMode
+from pisek.config.config_types import Scoring
 from pisek.jobs.parts.solution_result import Verdict, SUBTASK_SPEC, verdict_always
 
 
@@ -25,12 +25,12 @@ def evaluate_verdicts(
     definitive = True
     breaker = None
 
-    modes = [FailMode.all, config.fail_mode]
+    modes = [Scoring.equal, config.scoring]
 
     for i, mode in enumerate(modes):
         oks = list(map(SUBTASK_SPEC[expected][i], verdicts))
 
-        if mode == FailMode.all:
+        if mode == Scoring.equal:
             ok = all(oks)
 
             result &= ok
@@ -39,7 +39,7 @@ def evaluate_verdicts(
             if not ok:
                 breaker = oks.index(False)
                 break
-        elif mode == FailMode.any:
+        elif mode == Scoring.min:
             ok = any(oks)
 
             result &= ok

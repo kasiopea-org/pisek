@@ -2,8 +2,9 @@
 
 [task]
 version=v3
-contest_type=kasiopea
+contest_type=cms
 task_type=batch
+scoring=min
 solutions_subdir=.
 static_subdir=.
 data_subdir=data/

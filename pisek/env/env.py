@@ -46,7 +46,7 @@ class Env(BaseEnv):
         testing_log: Whether to produce testing_log.json after running
         solutions: List of all solutions to be tested
         timeout: Timeout for (overrides config)
-        skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if fail_mode=all)
+        skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if scoring=equal)
         all_inputs: Finish testing all inputs of a solution
         inputs: Number of inputs generated (Only for task_type=kasiopea)
     """

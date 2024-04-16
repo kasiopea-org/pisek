@@ -23,9 +23,9 @@ class JudgeType(StrEnum):
     judge = auto()
 
 
-class FailMode(StrEnum):
-    all = auto()
-    any = auto()
+class Scoring(StrEnum):
+    equal = auto()
+    min = auto()
 
 
 class ProgramType(StrEnum):
