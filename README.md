@@ -18,7 +18,7 @@ pip install pisek --upgrade
 ```
 ## Testing tasks
 
-First create a `config` file as documented [here](https://github.com/kasiopea-org/pisek/blob/master/example-config).
+First create a `config` file as documented [here](https://github.com/kasiopea-org/pisek/blob/master/config-v2-documentation).
 You can also reference the examples for
 [Kasiopea mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/sum_kasiopea/config)
 and [CMS mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/sum_cms/config).

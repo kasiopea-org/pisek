@@ -1,9 +1,9 @@
 # Example and explanation of a config file for task made in pisek
-# Parsed by configparser.RawConfigParser with checking of unused keys
-# See more here: https://docs.python.org/3.10/library/configparser.html
+
+# !!! Config version 3 is experimental and can be changed !!!
+# TODO comments indicate future changes
 
 # Move 'config' into a task folder 
-
 
 # Values beginning with ! or @ are reserved and have special meaning:
 # - Only ! value is !unset, which is always invalid
@@ -13,15 +13,16 @@
 
 # Task version
 # - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
-# - v2 - Current version, Added solution sections and redone test sections.
-version=v2
+# - v2 - Current stable version, Added solution sections and redone test sections.
+# - v3 - Current experimental version, generalized contest_type to defaults. More changes incoming
+version=v3
 
 # Name of task (for automatic CMS import)
 name=a-plus-b
 
-contest_type=cms
-# Environment for which is task developed
-# kasiopea (default) / cms
+defaults=organisation-config
+# Config to use defaults from
+# TODO: Implement loading
 
 task_type=communication
 # Task type:
@@ -40,7 +41,7 @@ data_subdir=tests/
 
 tests = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
-
+# TODO: Get rid of this
 
 [tests]
 
@@ -71,17 +72,20 @@ stub=src/stub
 # Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix)
 # Used commonly for interactive tasks
+# TODO: Move to better section
 
 headers=src/blecha.h
 # Only for C/C++ CMS tasks
 # Allow each solution to include the given headers
 # Used commonly for interactive tasks
+# TODO: Move to better section
 
 in_mode = ??? (ignored)
 out_mode = ??? (ignored)
 out_format = ??? (ignored)
 online_validity = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
+# TODO: Get rid of this
 
 
 [test01]
@@ -101,6 +105,7 @@ in_globs=01*.in
 
 file_name = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
+# TODO: Get rid of this
 
 predecessors =
 # Space separated list of subtasks easier than this subtask
@@ -189,6 +194,9 @@ output_max_size=5
 # Maximal input size [MB]
 # (0 for unlimited)
 # Defaults to 10
+
+[checks]
+# TODO: Implement keys in this section
 
 [cms]
 # Settings related to the CMS importer
