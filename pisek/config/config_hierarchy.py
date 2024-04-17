@@ -81,15 +81,35 @@ class ConfigHierarchy:
         if defaults := config.get("task", "defaults", fallback=None):
             self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
 
-    def _resolve_defaults_config(self, path: str):
-        if path.startswith("@"):
-            if (default := V2_DEFAULTS.get(path.removeprefix("@"))) is None:
-                raise TaskConfigError(f"Unknown special task_type: '{path}'")
+    def _resolve_defaults_config(self, name: str):
+        if name.startswith("@"):
+            if (default := V2_DEFAULTS.get(name.removeprefix("@"))) is None:
+                raise TaskConfigError(f"Unknown special task_type: '{name}'")
             return default
 
-        # TODO: Do the actual resolving
+        current_path = os.path.abspath(self._task_path)
+        while current_path:
+            pisek_folder = os.path.join(current_path, ".pisek")
+            if os.path.exists(pisek_folder):
+                if not os.path.isdir(pisek_folder):
+                    raise TaskConfigError(f"'{current_path}' is not a directory")
+                defaults = os.path.join(pisek_folder, name)
+                if not os.path.exists(defaults):
+                    raise TaskConfigError(
+                        f"Defaults '{name}' do not exist in: '{current_path}'"
+                    )
+                if not os.path.exists(defaults):
+                    raise TaskConfigError(f"Defaults '{defaults}' is not a directory.")
+                return defaults
 
-        return path
+            step_up = os.path.abspath(os.path.join(current_path, ".."))
+            if step_up == current_path:
+                break  # topmost directory
+            if os.stat(step_up).st_uid != os.stat(current_path).st_uid:
+                break  # other user's directory
+            current_path = step_up
+
+        return name
 
     def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])

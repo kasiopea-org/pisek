@@ -22,7 +22,6 @@ name=a-plus-b
 
 defaults=organisation-config
 # Config to use defaults from
-# TODO: Implement loading
 
 task_type=communication
 # Task type:
