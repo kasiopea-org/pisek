@@ -23,11 +23,14 @@ class TestFixture(unittest.TestCase):
         self.task_dir_orig = os.path.abspath(
             os.path.join(os.path.dirname(__file__), self.fixture_path())
         )
-        self.task_dir = tempfile.mkdtemp()
+        self.fixtures_dir = tempfile.mkdtemp()
+        self.task_dir = os.path.join(
+            self.fixtures_dir, os.path.relpath(self.fixture_path(), "../fixtures")
+        )
 
         # shutil.copytree() requires that the destination directory does not exist,
-        os.rmdir(self.task_dir)
-        shutil.copytree(self.task_dir_orig, self.task_dir)
+        os.rmdir(self.fixtures_dir)
+        shutil.copytree(os.path.join(self.task_dir_orig, ".."), self.fixtures_dir)
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
