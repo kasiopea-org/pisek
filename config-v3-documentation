@@ -38,10 +38,6 @@ data_subdir=tests/
 # Directory for automatically generated files (inputs, outputs, ...)
 # Default: data/
 
-tests = ??? (ignored)
-# Ignored (because of compatibility with KSP/Kasiopea web)
-# TODO: Get rid of this
-
 [tests]
 
 in_gen=src/gen
@@ -79,14 +75,6 @@ headers=src/blecha.h
 # Used commonly for interactive tasks
 # TODO: Move to better section
 
-in_mode = ??? (ignored)
-out_mode = ??? (ignored)
-out_format = ??? (ignored)
-online_validity = ??? (ignored)
-# Ignored (because of compatibility with KSP/Kasiopea web)
-# TODO: Get rid of this
-
-
 [test01]
 # Section for each subtask (indexed from one)
 
@@ -101,10 +89,6 @@ in_globs=01*.in
 # Supports expansion of * and ? as in shell
 # @ith expands to {subtask_number:02}*.in
 # Defaults to @ith
-
-file_name = ??? (ignored)
-# Ignored (because of compatibility with KSP/Kasiopea web)
-# TODO: Get rid of this
 
 predecessors =
 # Space separated list of subtasks easier than this subtask

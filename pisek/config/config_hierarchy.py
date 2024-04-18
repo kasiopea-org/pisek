@@ -168,23 +168,12 @@ class ConfigHierarchy:
         TaskConfigError
             If unused sections or keys are present.
         """
-        IGNORED_KEYS = defaultdict(
-            set,
-            {
-                "task": {"tests", "version", "defaults"},
-                "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
-            },
-        )
-        IGNORED_TEST_KEYS = {"file_name"}
+        IGNORED_KEYS = defaultdict(set, {"task": {"version", "defaults"}})
         for section in self._configs[0].sections():
             if section not in self._used_keys:
                 raise TaskConfigError(f"Unexpected section [{section}] in config")
             for key in self._configs[0][section].keys():
                 if key in IGNORED_KEYS[section]:
-                    continue
-                if (
-                    section == "all_tests" or re.match(r"test\d{2}", section)
-                ) and key in IGNORED_TEST_KEYS:
                     continue
                 if key not in self._used_keys[section]:
                     raise TaskConfigError(

@@ -28,6 +28,11 @@ def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
         del config[section][key_from]
 
 
+def maybe_delete_key(config: ConfigParser, section: str, key: str):
+    if section in config and key in config[section]:
+        del config[section][key]
+
+
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
     config["task"]["version"] = "v2"
 
@@ -175,8 +180,21 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         config["limits"][f"{program_type}_clock_min"] = config.get(
             "limits", f"{program_type}_clock_limit", fallback="360"
         )
-        if f"{program_type}_clock_limit" in config["limits"]:
-            del config["limits"][f"{program_type}_clock_limit"]
+        maybe_delete_key(config, "limits", f"{program_type}_clock_limit")
+
+    IGNORED_KEYS = [
+        ("task", "tests"),
+        ("tests", "in_mode"),
+        ("tests", "out_mode"),
+        ("tests", "out_format"),
+        ("tests", "online_validity"),
+    ]
+    for section, key in IGNORED_KEYS:
+        maybe_delete_key(config, section, key)
+
+    for section in config.sections():
+        if re.match(r"test\d{2}", section):
+            maybe_delete_key(config, section, "file_name")
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
