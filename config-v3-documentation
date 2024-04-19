@@ -77,6 +77,7 @@ headers=src/blecha.h
 
 [test01]
 # Section for each subtask (indexed from one)
+# Keys default to [all_tests] keys if test is not set
 
 name=Subtask 1
 # Name of subtask (optional)
@@ -88,43 +89,46 @@ in_globs=01*.in
 # Which new inputs are introduced in this subtask.
 # Supports expansion of * and ? as in shell
 # @ith expands to {subtask_number:02}*.in
-# Defaults to @ith
 
 predecessors =
 # Space separated list of subtasks easier than this subtask
 # Inputs from these subtasks are included into this subtask as well
 # @previous expands to previous subtask (or nothing if subtask has number <= 1)
-# Defaults to @previous
 
 [test00]
 # Section for samples subtasks
-# Can be omitted and has the following defaults
+# Can be omitted and has the following defaults (doesn't use [all_tests] defaults)
 name=Samples
 points=0
 in_globs=sample*.in
 predecessors=
 
+[all_tests]
+# Defaults for all tests
+# If not specified the defaults are
+name=@auto
+in_globs=@ith
+predecessors=@previous
+
 [solution_correct]
 # Section for each solution
+# Keys default to [all_solution] keys if test is not set
 
 source=solve
 # Filename of the program (without suffix)
-# Defaults to name of the section without "solution_" (in this case to "correct")
+# @auto expands to name of the section without "solution_" (in this case to "correct")
 
 primary=yes
 # Use this solution to generate correct outputs?
 # Exactly one solution has to be set to primary
 # (or zero if there are no solutions in config)
-# Defaults to no
 
 points=10
 # Points that program should get or X for any number of points
-# Defaults to X
 
 points_above=5
 points_below=7
 # Upper and lower bounds on points
-# Default to X
 # Cannot be set simultaneously with points
 
 subtasks=X10
@@ -140,7 +144,16 @@ subtasks=X10
 # @all - string of 11...
 # @any - string of XX...
 # @auto - @all if this is primary solution, @any otherwise
-# Defaults to @auto
+
+[all_solutions]
+# Defaults for all tests
+# If not specified the defaults are
+source=@auto
+primary=no
+points=X
+points_above=X
+points_below=X
+subtasks=@auto
 
 [limits]
 # Resource limits for various programs: all of them are called KEY_LIMIT,
