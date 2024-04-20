@@ -478,11 +478,11 @@ class ProgramLimits(BaseEnv):
     process_limit: int = Field(ge=0)
     # limit=0 means unlimited
 
-    @cached_property
-    def clock_limit(self) -> float:
-        if self.time_limit == 0:
+    def clock_limit(self, override_time_limit: Optional[float] = None) -> float:
+        tl = override_time_limit if override_time_limit is not None else self.time_limit
+        if tl == 0:
             return 0
-        return max(self.time_limit * self.clock_mul, self.clock_min)
+        return max(tl * self.clock_mul, self.clock_min)
 
     @classmethod
     def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> ConfigValuesDict:

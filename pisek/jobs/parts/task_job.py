@@ -63,7 +63,7 @@ class TaskHelper:
 
         return {
             "time_limit": time_limit,
-            "clock_limit": limits.clock_limit,
+            "clock_limit": limits.clock_limit(time_limit),
             "mem_limit": limits.mem_limit,
             "process_limit": limits.process_limit,
         }
