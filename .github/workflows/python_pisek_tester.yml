@@ -34,4 +34,5 @@ jobs:
         pip install types-setuptools 
         pip install types-PyYAML
         pip install types-colorama
+        pip install types-editdistance 
         mypy pisek 

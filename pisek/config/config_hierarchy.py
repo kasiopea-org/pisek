@@ -17,6 +17,7 @@
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
+import editdistance
 from importlib.resources import files
 import os
 import re
@@ -31,6 +32,8 @@ V2_DEFAULTS = {
     task_type: str(files("pisek").joinpath(f"config/{task_type}-defaults"))
     for task_type in ["kasiopea", "cms"]
 }
+V3_DOCUMENTATION = str(files("pisek").joinpath("config/config-v3-documentation"))
+
 CONFIG_FILENAME = "config"
 
 
@@ -171,13 +174,13 @@ class ConfigHierarchy:
         IGNORED_KEYS = defaultdict(set, {"task": {"version", "defaults"}})
         for section in self._configs[0].sections():
             if section not in self._used_keys:
-                raise TaskConfigError(f"Unexpected section [{section}] in config")
+                raise TaskConfigError(f"Unexpected section [{section}] in config.")
             for key in self._configs[0][section].keys():
                 if key in IGNORED_KEYS[section]:
                     continue
                 if key not in self._used_keys[section]:
                     raise TaskConfigError(
-                        f"Unexpected key '{key}' in section [{section}] of config."
+                        f"Unexpected key '{key}' in section [{section}] of config. {self._help_invalid_key(section, key)}"
                     )
 
     def check_todos(self) -> bool:
@@ -188,3 +191,30 @@ class ConfigHierarchy:
                     return True
 
         return False
+
+    def _help_invalid_key(self, section: str, key: str) -> str:
+        guess = self._guess_key(section, key)
+        if guess is None:
+            return ""
+
+        return (
+            f"(Did you mean '{guess[1]}'"
+            + (f" in section [{guess[0]}]" if section != guess[0] else "")
+            + "?)"
+        )
+
+    def _guess_key(self, section: str, key: str) -> Optional[tuple[str, str]]:
+        v3_docs = ConfigParser()
+        v3_docs.read(V3_DOCUMENTATION)
+
+        best_guess = ("", "")
+        best_score = len(key)
+        for section2 in v3_docs.sections():
+            for key2 in v3_docs[section2].keys():
+                score = editdistance.distance(key, key2) + 5 * (section2 != section)
+                if score < best_score:
+                    best_guess, best_score = (section2, key2), score
+
+        if best_score == 0 or best_guess == ("", ""):
+            return None
+        return best_guess
