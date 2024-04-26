@@ -640,10 +640,11 @@ def load_config(
     strict: bool = False,
     no_colors: bool = False,
     suppress_warnings: bool = False,
+    pisek_directory: Optional[str] = None,
 ) -> Optional[TaskConfig]:
     """Loads config from given path."""
     try:
-        config_hierarchy = ConfigHierarchy(path, no_colors)
+        config_hierarchy = ConfigHierarchy(path, no_colors, pisek_directory)
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()

@@ -61,8 +61,14 @@ class ConfigValue:
 class ConfigHierarchy:
     """Represents hierarchy of config files where last overrides all previous."""
 
-    def __init__(self, task_path: str, no_colors: bool = False) -> None:
+    def __init__(
+        self,
+        task_path: str,
+        no_colors: bool = False,
+        pisek_directory: Optional[str] = None,
+    ) -> None:
         self._task_path = task_path
+        self._pisek_directory = pisek_directory
 
         self._config_paths: list[str] = []
         self._configs: list[ConfigParser] = []
@@ -85,26 +91,34 @@ class ConfigHierarchy:
             self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
 
     def _resolve_defaults_config(self, name: str):
+        def load_from_path(path: str) -> str:
+            configs_folder = os.path.join(path, "configs")
+            if not os.path.exists(configs_folder):
+                raise TaskConfigError(f"'{configs_folder}' does not exist.")
+            defaults = os.path.join(configs_folder, name)
+            if not os.path.exists(defaults):
+                raise TaskConfigError(
+                    f"Config '{name}' does not exist in: '{configs_folder}'"
+                )
+            return defaults
+
         if name.startswith("@"):
             if (default := V2_DEFAULTS.get(name.removeprefix("@"))) is None:
                 raise TaskConfigError(f"Unknown special task_type: '{name}'")
             return default
 
+        if self._pisek_directory is not None:
+            return load_from_path(os.path.join(self._task_path, self._pisek_directory))
+
+        if "PISEK_DIRECTORY" in os.environ:
+            return load_from_path(
+                os.path.join(self._task_path, os.environ["PISEK_DIRECTORY"])
+            )
+
         current_path = os.path.abspath(self._task_path)
         while current_path:
-            pisek_folder = os.path.join(current_path, ".pisek")
-            if os.path.exists(pisek_folder):
-                if not os.path.isdir(pisek_folder):
-                    raise TaskConfigError(f"'{current_path}' is not a directory")
-                defaults = os.path.join(pisek_folder, name)
-                if not os.path.exists(defaults):
-                    raise TaskConfigError(
-                        f"Defaults '{name}' do not exist in: '{current_path}'"
-                    )
-                if not os.path.exists(defaults):
-                    raise TaskConfigError(f"Defaults '{defaults}' is not a directory.")
-                return defaults
-
+            if os.path.exists(os.path.join(current_path, ".git")):
+                return load_from_path(os.path.join(current_path, "pisek"))
             step_up = os.path.abspath(os.path.join(current_path, ".."))
             if step_up == current_path:
                 break  # topmost directory

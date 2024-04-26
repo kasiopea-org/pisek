@@ -17,6 +17,8 @@ class TestFixture(unittest.TestCase):
         return None
 
     def setUp(self):
+        os.environ["PISEK_DIRECTORY"] = "../pisek"
+
         if not self.fixture_path():
             return
 
@@ -34,7 +36,7 @@ class TestFixture(unittest.TestCase):
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
-        if not clean_task_dir(self.task_dir):
+        if not clean_task_dir(self.task_dir, None):
             exit(1)
 
         self.cwd_orig = os.getcwd()
