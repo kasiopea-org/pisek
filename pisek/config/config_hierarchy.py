@@ -87,7 +87,7 @@ class ConfigHierarchy:
             raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
         update_config(config, self._task_path, info, no_colors)
-        if defaults := config.get("task", "defaults", fallback=None):
+        if defaults := config.get("task", "use", fallback=None):
             self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
 
     def _resolve_defaults_config(self, name: str):
@@ -185,7 +185,7 @@ class ConfigHierarchy:
         TaskConfigError
             If unused sections or keys are present.
         """
-        IGNORED_KEYS = defaultdict(set, {"task": {"version", "defaults"}})
+        IGNORED_KEYS = defaultdict(set, {"task": {"version", "use"}})
         for section in self._configs[0].sections():
             if section not in self._used_keys:
                 raise TaskConfigError(f"Unexpected section [{section}] in config.")

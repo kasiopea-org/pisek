@@ -14,13 +14,13 @@
 # Task version
 # - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
 # - v2 - Current stable version, Added solution sections and redone test sections.
-# - v3 - Current experimental version, generalized contest_type to defaults. More changes incoming
+# - v3 - Current experimental version, generalized contest_type to use. More changes incoming
 version=v3
 
 # Name of task (for automatic CMS import)
 name=a-plus-b
 
-defaults=organisation-config
+use=organisation-config
 # Config to use defaults from
 
 task_type=communication

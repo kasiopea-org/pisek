@@ -172,7 +172,7 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     contest_type = config.get("task", "contest_type", fallback="kasiopea")
     if contest_type not in ["kasiopea", "cms"]:
         raise TaskConfigError(f"Invalid contest_type: '{contest_type}'")
-    config["task"]["defaults"] = f"@{contest_type}"
+    config["task"]["use"] = f"@{contest_type}"
     # TODO: del config["task"]["contest_type"]
 
     for program_type in ProgramType:
