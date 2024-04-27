@@ -201,7 +201,7 @@ OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
 CURRENT_VERSIONS = {"v2": ("v3", update_to_v3)}
 
 NEWEST_VERSION = "v3"
-IS_EXPERIMENTAL = True
+NEWEST_IS_EXPERIMENTAL = True
 
 
 def update_config(
@@ -213,7 +213,7 @@ def update_config(
 
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:
-        if IS_EXPERIMENTAL:
+        if NEWEST_IS_EXPERIMENTAL:
             inform(
                 f"Config format for version {NEWEST_VERSION} is experimental and can be changed"
             )
