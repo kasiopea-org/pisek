@@ -175,7 +175,7 @@ def main(argv):
     def add_argument_pisek_dir(parser):
         parser.add_argument(
             "--pisek-dir",
-            help="Pisek directory where to load configs from.",
+            help="Pisek directory where to load configs from. (If not provided uses [git root]/pisek/)",
             type=str,
         )
 
