@@ -1,5 +1,5 @@
 # Pisek fixture
-# Source: $(Písek)/example-config for more information
+# Source: $(pisek)/config-v2-documentation for more information
 
 [task]
 name=sum-cms

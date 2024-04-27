@@ -3,7 +3,7 @@
 # !!! Config version 3 is experimental and can be changed !!!
 # TODO comments indicate future changes
 
-# Move 'config' into a task folder 
+# Move 'config' into a task folder
 
 # Values beginning with ! or @ are reserved and have special meaning:
 # - Only ! value is !unset, which is always invalid
@@ -23,10 +23,22 @@ name=a-plus-b
 use=organisation-config
 # Config to use defaults from
 
+contest_type=cms
+# Environment for which is task developed
+# kasiopea (default) / cmscontest_type=cms
+# 
+# Currently determines generator / judge format
+# TODO: Remove this key and split to multiple ones
+
 task_type=communication
 # Task type:
 # - batch (default)
 # - communication
+
+scoring=equal
+# Type of subtask scoring
+# - equal - all inputs should result the same
+# - min   - worst input in subtask determines the result
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config
@@ -158,6 +170,7 @@ subtasks=@auto
 [limits]
 # Resource limits for various programs: all of them are called KEY_LIMIT,
 # where KEY is one of:
+#   tool        Pisek tools
 #   in_gen      Input generator
 #   checker     Checker
 #   judge       Judge
@@ -165,7 +178,8 @@ subtasks=@auto
 #   sec_solve   Secondary solution usually subject to much less strict limits.
 # and LIMIT is one of:
 #   time_limit  Execution time limit [seconds]
-#   clock_limit Wall clock time limit [seconds]
+#   clock_mul   Wall clock multiplier [1]
+#   clock_min   Wall clock minimum [second]   
 #   mem_limit   Memory limit [MB]
 #   process_limit   Maximum number of processes -- at the moment,
 #           limits greater than 1 are interpreted as "unlimited".
@@ -174,12 +188,53 @@ subtasks=@auto
 #
 # Setting limit to 0 means unlimited
 #
+# clock_limit = max(time_limit * clock_mul, clock_min)
+#               or 0 if time_limit = 0, therefore unlimited
+#
 # Defaults:
-#   time_limit     360s
-#   clock_limit    360s
-#   mem_limit      unlimited
-#   process_limit  1
-solve_time_limit=3
+#  | key           | tool      | other     |
+#  | ------------- | --------- | --------- |
+#  | time_limit    | unlimited | 360s      |
+#  | clock_mul     | 2         | 2         |
+#  | clock_min     | 1s        | 1s        |
+#  | mem_limit     | unlimited | unlimited |
+#  | process_limit | 1         | unlimited |
+
+tool_time_limit=0
+tool_clock_mul=2
+tool_clock_min=1
+tool_mem_limit=0
+tool_process_limit=0
+
+in_gen_time_limit=360
+in_gen_clock_mul=2
+in_gen_clock_min=1
+in_gen_mem_limit=0
+in_gen_process_limit=1
+
+checker_time_limit=360
+checker_clock_mul=2
+checker_clock_min=1
+checker_mem_limit=0
+checker_process_limit=1
+
+judge_time_limit=360
+judge_clock_mul=2
+judge_clock_min=1
+judge_mem_limit=0
+judge_process_limit=1
+
+solve_time_limit=360
+solve_clock_mul=2
+solve_clock_min=1
+solve_mem_limit=0
+solve_process_limit=1
+
+sec_solve_time_limit=360
+sec_solve_clock_mul=2
+sec_solve_clock_min=1
+sec_solve_mem_limit=0
+sec_solve_process_limit=1
 
 input_max_size=20
 # Maximal input size [MB]
