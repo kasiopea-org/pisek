@@ -193,8 +193,10 @@ class ConfigHierarchy:
                 if key in IGNORED_KEYS[section]:
                     continue
                 if key not in self._used_keys[section]:
+                    help_msg = self._help_invalid_key(section, key)
                     raise TaskConfigError(
-                        f"Unexpected key '{key}' in section [{section}] of config. {self._help_invalid_key(section, key)}"
+                        f"Unexpected key '{key}' in section [{section}] of config."
+                        + (f" {help_msg}" if help_msg else "")
                     )
 
     def check_todos(self) -> bool:
@@ -221,7 +223,7 @@ class ConfigHierarchy:
         v3_docs = ConfigParser()
         v3_docs.read(V3_DOCUMENTATION)
 
-        best_guess = ("", "")
+        best_guess = None
         best_score = len(key)
         for section2 in v3_docs.sections():
             for key2 in v3_docs[section2].keys():
@@ -229,6 +231,6 @@ class ConfigHierarchy:
                 if score < best_score:
                     best_guess, best_score = (section2, key2), score
 
-        if best_score == 0 or best_guess == ("", ""):
+        if best_score == 0 or best_guess is None:
             return None
         return best_guess

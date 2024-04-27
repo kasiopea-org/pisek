@@ -31,8 +31,8 @@ jobs:
     - name: Check typing
       run: |
         pip install mypy
-        pip install types-setuptools 
+        pip install types-setuptools
         pip install types-PyYAML
         pip install types-colorama
-        pip install types-editdistance 
+        pip install types-editdistance
         mypy pisek 
