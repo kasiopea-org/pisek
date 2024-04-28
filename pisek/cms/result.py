@@ -20,6 +20,7 @@ import json
 from pisek.cms.submission import get_submission
 from pisek.env.env import Env
 from pisek.jobs.parts.testing_log import TESTING_LOG
+from pisek.jobs.parts.solution_result import Verdict
 from pisek.config.task_config import SolutionConfig, SubtaskConfig
 from pisek.utils.terminal import colored_env
 from pisek.utils.text import eprint, tab
@@ -52,11 +53,11 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
                 points = float(evaluation.outcome)
 
                 if points >= 1:
-                    result_type = "ok"
+                    result_type = Verdict.ok.name
                 elif points <= 0:
-                    result_type = "wrong_answer"
+                    result_type = Verdict.wrong_answer.name
                 else:
-                    result_type = "partial"
+                    result_type = Verdict.partial_ok.name
             except ValueError:
                 points = evaluation.outcome
                 result_type = "indeterminate"

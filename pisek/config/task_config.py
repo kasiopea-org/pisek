@@ -28,6 +28,7 @@ from pydantic import (
     model_validator,
 )
 import re
+import sys
 from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
