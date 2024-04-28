@@ -26,7 +26,7 @@ use=organization-config
 contest_type=cms
 # Environment for which is task developed
 # kasiopea (default) / cmscontest_type=cms
-# 
+#
 # Currently determines generator / judge format
 # TODO: Remove this key and split to multiple ones
 
@@ -179,7 +179,7 @@ subtasks=@auto
 # and LIMIT is one of:
 #   time_limit  Execution time limit [seconds]
 #   clock_mul   Wall clock multiplier [1]
-#   clock_min   Wall clock minimum [second]   
+#   clock_min   Wall clock minimum [second]
 #   mem_limit   Memory limit [MB]
 #   process_limit   Maximum number of processes -- at the moment,
 #           limits greater than 1 are interpreted as "unlimited".
