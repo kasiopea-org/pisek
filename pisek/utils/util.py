@@ -21,7 +21,7 @@ import shutil
 from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
-from pisek.env.task_config import TaskConfig, load_config
+from pisek.config.task_config import TaskConfig, load_config
 
 BUILD_DIR = "build/"
 
@@ -65,8 +65,10 @@ def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
             pass
 
 
-def clean_task_dir(task_dir: str) -> bool:
-    config = load_config(task_dir, suppress_warnings=True)
+def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
+    config = load_config(
+        task_dir, suppress_warnings=True, pisek_directory=pisek_directory
+    )
     if config is None:
         return False
     # XXX: ^ safeguard, raises an exception if task_dir isn't really a task

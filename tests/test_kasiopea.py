@@ -217,17 +217,6 @@ class TestStrictChecker(TestSumKasiopea):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
-class TestBigInput(TestSumKasiopea):
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        def modification_fn(raw_config):
-            raw_config["limits"]["input_max_size"] = "0"
-
-        modify_config(self.task_dir, modification_fn)
-
-
 class TestDirtySamle(TestSumKasiopea):
     """Sample without newline at the end."""
 
@@ -238,17 +227,6 @@ class TestDirtySamle(TestSumKasiopea):
         sample = ["3", "1 2", "-8 5", "0 0"]
         with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
             f.write("\n".join(sample))
-
-
-class TestBigOutput(TestSumKasiopea):
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        def modification_fn(raw_config):
-            raw_config["limits"]["output_max_size"] = "0"
-
-        modify_config(self.task_dir, modification_fn)
 
 
 class TestExtraConfigKeys(TestSumKasiopea):

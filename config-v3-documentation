@@ -1,0 +1,292 @@
+# Example and explanation of a config file for task made in pisek
+
+# !!! Config version 3 is experimental and can be changed !!!
+# TODO comments indicate future changes
+
+# Move 'config' into a task folder
+
+# Values beginning with ! or @ are reserved and have special meaning:
+# - Only ! value is !unset, which is always invalid
+# - @ values autoexpand depending on context
+
+[task]
+
+# Task version
+# - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
+# - v2 - Current stable version, Added solution sections and redone test sections.
+# - v3 - Current experimental version, generalized contest_type to use. More changes incoming
+version=v3
+
+# Name of task (for automatic CMS import)
+name=a-plus-b
+
+use=organization-config
+# Config to use defaults from
+
+contest_type=cms
+# Environment for which is task developed
+# kasiopea (default) / cmscontest_type=cms
+#
+# Currently determines generator / judge format
+# TODO: Remove this key and split to multiple ones
+
+task_type=communication
+# Task type:
+# - batch (default)
+# - communication
+
+scoring=equal
+# Type of subtask scoring
+# - equal - all inputs should result the same
+# - min   - worst input in subtask determines the result
+
+solutions_subdir=solutions/
+# Try to find solutions in this folder relative to config
+# Default: .
+static_subdir=sample_tests/
+# Try to find static inputs and outputs in this folder relative to config
+# Default: .
+data_subdir=tests/
+# Directory for automatically generated files (inputs, outputs, ...)
+# Default: data/
+
+[tests]
+
+in_gen=src/gen
+# Source code of generator (without suffix)
+
+checker=check
+# Program (without suffix) that validates inputs
+# No value means no checking
+
+out_check=judge
+# Describes how to check outputs
+#   - diff: checks that contestant output equals correct output (ignores whitespace) (default)
+#   - judge: if there can be multiple solutions, checks with program (called 'judge')
+# In communication, only judge is allowed
+
+out_judge=judge
+# Only for out_check=judge
+# Source code of judge (without suffix)
+
+judge_needs_in=0
+judge_needs_out=0
+# Only for task_type=batch and out_check=judge
+# Set to 1 if judge needs input/output
+# Defaults to 1
+
+stub=src/stub
+# Only for C/C++ CMS tasks
+# Link each solution with given program (without suffix)
+# Used commonly for interactive tasks
+# TODO: Move to better section
+
+headers=src/blecha.h
+# Only for C/C++ CMS tasks
+# Allow each solution to include the given headers
+# Used commonly for interactive tasks
+# TODO: Move to better section
+
+[test01]
+# Section for each subtask (indexed from one)
+# Keys default to [all_tests] keys if test is not set
+
+name=Subtask 1
+# Name of subtask (optional)
+
+points=3
+# Number of points (<int>)
+
+in_globs=01*.in
+# Which new inputs are introduced in this subtask.
+# Supports expansion of * and ? as in shell
+# @ith expands to {subtask_number:02}*.in
+
+predecessors =
+# Space separated list of subtasks easier than this subtask
+# Inputs from these subtasks are included into this subtask as well
+# @previous expands to previous subtask (or nothing if subtask has number <= 1)
+
+[test00]
+# Section for samples subtasks
+# Can be omitted and has the following defaults (doesn't use [all_tests] defaults)
+name=Samples
+points=0
+in_globs=sample*.in
+predecessors=
+
+[all_tests]
+# Defaults for all tests
+# If not specified the defaults are
+name=@auto
+in_globs=@ith
+predecessors=@previous
+
+[solution_correct]
+# Section for each solution
+# Keys default to [all_solution] keys if test is not set
+
+source=solve
+# Filename of the program (without suffix)
+# @auto expands to name of the section without "solution_" (in this case to "correct")
+
+primary=yes
+# Use this solution to generate correct outputs?
+# Exactly one solution has to be set to primary
+# (or zero if there are no solutions in config)
+
+points=10
+# Points that program should get or X for any number of points
+
+points_above=5
+points_below=7
+# Upper and lower bounds on points
+# Cannot be set simultaneously with points
+
+subtasks=X10
+# String describing result on each subtask:
+# 1 - success
+# 0 - fail
+# P - partial success
+# W - wrong answer
+# ! - runtime error
+# T - timeout
+# X - any result
+#
+# @all - string of 11...
+# @any - string of XX...
+# @auto - @all if this is primary solution, @any otherwise
+
+[all_solutions]
+# Defaults for all tests
+# If not specified the defaults are
+source=@auto
+primary=no
+points=X
+points_above=X
+points_below=X
+subtasks=@auto
+
+[limits]
+# Resource limits for various programs: all of them are called KEY_LIMIT,
+# where KEY is one of:
+#   tool        Pisek tools
+#   in_gen      Input generator
+#   checker     Checker
+#   judge       Judge
+#   solve       Primary solution
+#   sec_solve   Secondary solution usually subject to much less strict limits.
+# and LIMIT is one of:
+#   time_limit  Execution time limit [seconds]
+#   clock_mul   Wall clock multiplier [1]
+#   clock_min   Wall clock minimum [second]
+#   mem_limit   Memory limit [MB]
+#   process_limit   Maximum number of processes -- at the moment,
+#           limits greater than 1 are interpreted as "unlimited".
+#           Please keep in mind that killing of multiple processes
+#           upon errors is inherently unreliable.
+#
+# Setting limit to 0 means unlimited
+#
+# clock_limit = max(time_limit * clock_mul, clock_min)
+#               or 0 if time_limit = 0, therefore unlimited
+#
+# Defaults:
+#  | key           | tool      | other     |
+#  | ------------- | --------- | --------- |
+#  | time_limit    | unlimited | 360s      |
+#  | clock_mul     | 2         | 2         |
+#  | clock_min     | 1s        | 1s        |
+#  | mem_limit     | unlimited | unlimited |
+#  | process_limit | 1         | unlimited |
+
+tool_time_limit=0
+tool_clock_mul=2
+tool_clock_min=1
+tool_mem_limit=0
+tool_process_limit=0
+
+in_gen_time_limit=360
+in_gen_clock_mul=2
+in_gen_clock_min=1
+in_gen_mem_limit=0
+in_gen_process_limit=1
+
+checker_time_limit=360
+checker_clock_mul=2
+checker_clock_min=1
+checker_mem_limit=0
+checker_process_limit=1
+
+judge_time_limit=360
+judge_clock_mul=2
+judge_clock_min=1
+judge_mem_limit=0
+judge_process_limit=1
+
+solve_time_limit=360
+solve_clock_mul=2
+solve_clock_min=1
+solve_mem_limit=0
+solve_process_limit=1
+
+sec_solve_time_limit=360
+sec_solve_clock_mul=2
+sec_solve_clock_min=1
+sec_solve_mem_limit=0
+sec_solve_process_limit=1
+
+input_max_size=20
+# Maximal input size [MB]
+# (0 for unlimited)
+# Defaults to 50
+
+output_max_size=5
+# Maximal input size [MB]
+# (0 for unlimited)
+# Defaults to 10
+
+[checks]
+# Sections for enabling/disabling checks that task must satisfy
+
+# Please be careful with this section as disabling checks can make
+# task making into a minefield
+
+checker_distinguishes_subtasks=off
+# checks that this subtasks's inputs doesn't pass checker in predecessor subtasks
+# Whether one/all must not pass depends on scoring 
+
+# TODO: Implement keys in this section
+
+[cms]
+# Settings related to the CMS importer
+# See CMS docs (https://cms.readthedocs.io/en/latest/) for details
+
+title=A plus B
+# The name of the task shown on the task description page 
+# @name expands to the task name and is the default
+submission_format=adder.%%l
+# The name of the submitted file
+# .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
+# @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended
+
+time_limit=1
+# Execution time limit [seconds]
+mem_limit=1024
+# Memory limit [MB]
+
+max_submissions=50
+# The number of submissions one contestant allowed to make, or X for unlimited
+# Defaults to 50
+min_submission_interval=60
+# The number of seconds a contestant has to wait between consecutive submissions
+# Defaults to 0
+
+score_precision=0
+# How many decimal digits scores are rounded to (defaults to 0)
+score_mode=max_subtask
+# Describes how the final score is computed from the scores of individual submissions
+# May be 'max', 'max_subtask' (default) or 'max_tokened_last'
+feedback_level=restricted
+# Specifies how much information is given to the contestants about their submission
+# May be 'full' or 'restricted' (default)

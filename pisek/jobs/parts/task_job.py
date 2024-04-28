@@ -23,11 +23,11 @@ from typing import Any, Callable, Iterable, Literal
 
 import subprocess
 from pisek.env.env import Env
-from pisek.env.task_config import ProgramLimits
+from pisek.config.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
 from pisek.utils.terminal import colored_env
 from pisek.utils.text import tab
-from pisek.env.task_config import SubtaskConfig, ProgramType
+from pisek.config.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
 
@@ -63,7 +63,7 @@ class TaskHelper:
 
         return {
             "time_limit": time_limit,
-            "clock_limit": limits.clock_limit,
+            "clock_limit": limits.clock_limit(time_limit),
             "mem_limit": limits.mem_limit,
             "process_limit": limits.process_limit,
         }

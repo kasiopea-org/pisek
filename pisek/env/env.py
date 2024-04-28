@@ -20,8 +20,8 @@ from typing import Optional
 
 from pisek.utils.text import eprint, colored
 from pisek.env.base_env import BaseEnv
-from pisek.env.task_config import load_config, TaskConfig
-from pisek.env.select_solutions import expand_solutions, UnknownSolutions
+from pisek.config.task_config import load_config, TaskConfig
+from pisek.config.select_solutions import expand_solutions, UnknownSolutions
 
 
 class TestingTarget(StrEnum):
@@ -46,7 +46,7 @@ class Env(BaseEnv):
         testing_log: Whether to produce testing_log.json after running
         solutions: List of all solutions to be tested
         timeout: Timeout for (overrides config)
-        skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if fail_mode=all)
+        skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if scoring=equal)
         all_inputs: Finish testing all inputs of a solution
         inputs: Number of inputs generated (Only for task_type=kasiopea)
     """
@@ -82,12 +82,13 @@ class Env(BaseEnv):
         solutions: Optional[list[str]] = None,
         timeout: Optional[float] = None,
         inputs: int = 5,
+        pisek_dir: Optional[str] = None,
         **_,
     ) -> Optional["Env"]:
         no_jumps |= plain
         no_colors |= plain
 
-        config = load_config(".", strict, no_colors)
+        config = load_config(".", strict, no_colors, pisek_directory=pisek_dir)
         if config is None:
             return None
 

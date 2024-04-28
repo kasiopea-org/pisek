@@ -4,8 +4,8 @@ import shutil
 import unittest
 
 from pisek.utils.paths import GENERATED_SUBDIR
-from util import TestFixtureVariant, overwrite_file
-from pisek.env.task_config import load_config
+from util import TestFixtureVariant, overwrite_file, modify_config
+from pisek.config.task_config import load_config
 
 
 class TestSumCMS(TestFixtureVariant):
@@ -129,6 +129,28 @@ class TestGuess(TestFixtureVariant):
 class TestStub(TestFixtureVariant):
     def fixture_path(self):
         return "../fixtures/odd_stub/"
+
+
+class TestBigInput(TestStub):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["limits"]["input_max_size"] = "1"
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestBigOutput(TestStub):
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["limits"]["output_max_size"] = "1"
+
+        modify_config(self.task_dir, modification_fn)
 
 
 if __name__ == "__main__":

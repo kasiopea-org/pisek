@@ -64,7 +64,7 @@ def test_generator(args):
 def clean_directory(args) -> bool:
     task_dir = PATH
     eprint(f"Cleaning directory: {os.path.abspath(task_dir)}")
-    return clean_task_dir(task_dir)
+    return clean_task_dir(task_dir, args.pisek_dir)
 
 
 def main(argv):
@@ -172,6 +172,13 @@ def main(argv):
             help="Do not use ANSI color sequences.",
         )
 
+    def add_argument_pisek_dir(parser):
+        parser.add_argument(
+            "--pisek-dir",
+            help="Pisek directory where to load configs from. (If not provided uses [git root]/pisek/)",
+            type=str,
+        )
+
     def add_argument_filter(parser):
         parser.add_argument(
             "--filter",
@@ -255,6 +262,7 @@ def main(argv):
     add_argument_no_jumps(parser)
     add_argument_no_colors(parser)
     add_argument_testing_log(parser)
+    add_argument_pisek_dir(parser)
 
     subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand")
 

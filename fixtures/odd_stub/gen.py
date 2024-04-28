@@ -10,7 +10,8 @@ directory = sys.argv[1]
 for i in range(10):
     nums = set()
 
-    for _ in range(random.randint(900, 1000)):
+    n = random.randint(300000, 400000)
+    for _ in range(n):
         nums.add(random.randint(1, 1_000_000))
 
     nums = list(nums)

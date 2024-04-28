@@ -17,16 +17,23 @@
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
+import editdistance
 from importlib.resources import files
 import os
 import re
 from typing import Optional, Any
 
 from pisek.utils.text import tab
-from pisek.env.config_errors import TaskConfigError
-from pisek.env.update_config import update_config
+from pisek.config.config_errors import TaskConfigError
+from pisek.config.update_config import update_config
 
-DEFAULTS_CONFIG = str(files("pisek").joinpath("env/global-defaults"))
+GLOBAL_DEFAULTS = str(files("pisek").joinpath("config/global-defaults"))
+V2_DEFAULTS = {
+    task_type: str(files("pisek").joinpath(f"config/{task_type}-defaults"))
+    for task_type in ["kasiopea", "cms"]
+}
+V3_DOCUMENTATION = str(files("pisek").joinpath("config/config-v3-documentation"))
+
 CONFIG_FILENAME = "config"
 
 
@@ -54,22 +61,72 @@ class ConfigValue:
 class ConfigHierarchy:
     """Represents hierarchy of config files where last overrides all previous."""
 
-    def __init__(self, task_path: str, no_colors: bool = False) -> None:
-        self._config_paths = [
-            os.path.join(task_path, CONFIG_FILENAME),
-            DEFAULTS_CONFIG,
-        ]
+    def __init__(
+        self,
+        task_path: str,
+        no_colors: bool = False,
+        pisek_directory: Optional[str] = None,
+    ) -> None:
+        self._task_path = task_path
+        self._pisek_directory = pisek_directory
 
+        self._config_paths: list[str] = []
         self._configs: list[ConfigParser] = []
-        for path in self._config_paths:
-            self._configs.append(config := ConfigParser())
-            if not config.read(path):
-                raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
-        for config in self._configs:
-            update_config(config, task_path, no_colors)
+        self._load_config(os.path.join(task_path, CONFIG_FILENAME))
+        self._load_config(GLOBAL_DEFAULTS, info=False)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
+
+    def _load_config(
+        self, path: str, no_colors: bool = False, info: bool = True
+    ) -> None:
+        self._config_paths.append(path)
+        self._configs.append(config := ConfigParser())
+        if not config.read(path):
+            raise TaskConfigError(f"Missing config {path}. Is this task folder?")
+
+        update_config(config, self._task_path, info, no_colors)
+        if defaults := config.get("task", "use", fallback=None):
+            self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
+
+    def _resolve_defaults_config(self, name: str):
+        def load_from_path(path: str) -> str:
+            configs_folder = os.path.join(path, "configs")
+            if not os.path.exists(configs_folder):
+                raise TaskConfigError(f"'{configs_folder}' does not exist.")
+            defaults = os.path.join(configs_folder, name)
+            if not os.path.exists(defaults):
+                raise TaskConfigError(
+                    f"Config '{name}' does not exist in: '{configs_folder}'"
+                )
+            return defaults
+
+        if name.startswith("@"):
+            if (default := V2_DEFAULTS.get(name.removeprefix("@"))) is None:
+                raise TaskConfigError(f"Unknown special task_type: '{name}'")
+            return default
+
+        if self._pisek_directory is not None:
+            return load_from_path(os.path.join(self._task_path, self._pisek_directory))
+
+        if "PISEK_DIRECTORY" in os.environ:
+            return load_from_path(
+                os.path.join(self._task_path, os.environ["PISEK_DIRECTORY"])
+            )
+
+        current_path = os.path.abspath(self._task_path)
+        while current_path:
+            if os.path.exists(os.path.join(current_path, ".git")):
+                return load_from_path(os.path.join(current_path, "pisek"))
+            step_up = os.path.abspath(os.path.join(current_path, ".."))
+            if step_up == current_path:
+                break  # topmost directory
+            if os.stat(step_up).st_uid != os.stat(current_path).st_uid:
+                break  # other user's directory
+            current_path = step_up
+
+        return name
 
     def get(self, section: str, key: str | None) -> ConfigValue:
         return self.get_from_candidates([(section, key)])
@@ -128,27 +185,18 @@ class ConfigHierarchy:
         TaskConfigError
             If unused sections or keys are present.
         """
-        IGNORED_KEYS = defaultdict(
-            set,
-            {
-                "task": {"tests", "version"},
-                "tests": {"in_mode", "out_mode", "out_format", "online_validity"},
-            },
-        )
-        IGNORED_TEST_KEYS = {"file_name"}
+        IGNORED_KEYS = defaultdict(set, {"task": {"version", "use"}})
         for section in self._configs[0].sections():
             if section not in self._used_keys:
-                raise TaskConfigError(f"Unexpected section [{section}] in config")
+                raise TaskConfigError(f"Unexpected section [{section}] in config.")
             for key in self._configs[0][section].keys():
                 if key in IGNORED_KEYS[section]:
                     continue
-                if (
-                    section == "all_tests" or re.match(r"test\d{2}", section)
-                ) and key in IGNORED_TEST_KEYS:
-                    continue
                 if key not in self._used_keys[section]:
+                    help_msg = self._help_invalid_key(section, key)
                     raise TaskConfigError(
                         f"Unexpected key '{key}' in section [{section}] of config."
+                        + (f" {help_msg}" if help_msg else "")
                     )
 
     def check_todos(self) -> bool:
@@ -159,3 +207,30 @@ class ConfigHierarchy:
                     return True
 
         return False
+
+    def _help_invalid_key(self, section: str, key: str) -> str:
+        guess = self._guess_key(section, key)
+        if guess is None:
+            return ""
+
+        return (
+            f"(Did you mean '{guess[1]}'"
+            + (f" in section [{guess[0]}]" if section != guess[0] else "")
+            + "?)"
+        )
+
+    def _guess_key(self, section: str, key: str) -> Optional[tuple[str, str]]:
+        v3_docs = ConfigParser()
+        v3_docs.read(V3_DOCUMENTATION)
+
+        best_guess = None
+        best_score = len(key)
+        for section2 in v3_docs.sections():
+            for key2 in v3_docs[section2].keys():
+                score = editdistance.distance(key, key2) + 5 * (section2 != section)
+                if score < best_score:
+                    best_guess, best_score = (section2, key2), score
+
+        if best_score == 0 or best_guess is None:
+            return None
+        return best_guess

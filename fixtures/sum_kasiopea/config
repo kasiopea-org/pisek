@@ -1,7 +1,5 @@
-# Open-data task configuration
-# Source: $(Písek)/example-config for more information
-#
-# Task author: Kasiopea Org
+# Pisek fixture
+# Source: $(pisek)/config-v3-documentation for more information
 
 [task]
 name=sum-kasiopea

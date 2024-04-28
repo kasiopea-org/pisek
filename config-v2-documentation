@@ -13,7 +13,8 @@
 
 # Task version
 # - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
-# - v2 - Current version, Added solution sections and redone test sections.
+# - v2 - Current stable version, Added solution sections and redone test sections.
+# - v3 - Current experimental version, generalized contest_type to use. More changes incoming
 version=v2
 
 # Name of task (for automatic CMS import)
@@ -182,11 +183,13 @@ solve_time_limit=3
 
 input_max_size=20
 # Maximal input size [MB]
-# Defaults to 50 (only in Kasiopea)
+# (0 for unlimited)
+# Defaults to 50
 
 output_max_size=5
 # Maximal input size [MB]
-# Defaults to 10 (only in Kasiopea)
+# (0 for unlimited)
+# Defaults to 10
 
 [cms]
 # Settings related to the CMS importer

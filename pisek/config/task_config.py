@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum, auto
 import fnmatch
 from functools import cached_property
 from pydantic_core import PydanticCustomError, ErrorDetails
@@ -35,7 +34,15 @@ from typing import Optional, Any, Annotated, Union
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
-from pisek.env.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
+from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
+from pisek.config.config_types import (
+    TaskType,
+    JudgeType,
+    Scoring,
+    ProgramType,
+    CMSFeedbackLevel,
+    CMSScoreMode,
+)
 from pisek.env.context import init_context
 from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 
@@ -47,42 +54,6 @@ ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
-
-
-class TaskType(StrEnum):
-    batch = auto()
-    communication = auto()
-
-
-class JudgeType(StrEnum):
-    diff = auto()
-    judge = auto()
-
-
-class FailMode(StrEnum):
-    all = auto()
-    any = auto()
-
-
-class ProgramType(StrEnum):
-    tool = auto()
-    in_gen = auto()
-    checker = auto()
-    solve = auto()
-    sec_solve = auto()
-    judge = auto()
-
-
-class CMSFeedbackLevel(StrEnum):
-    full = auto()
-    restricted = auto()
-
-
-class CMSScoreMode(StrEnum):
-    max = auto()
-    max_subtask = auto()
-    max_tokened_last = auto()
-
 
 ValuesDict = dict[str, Union[str, "ValuesDict", dict[Any, "ValuesDict"]]]
 ConfigValuesDict = dict[
@@ -106,7 +77,7 @@ class TaskConfig(BaseEnv):
     name: str
     contest_type: str
     task_type: TaskType
-    fail_mode: FailMode
+    scoring: Scoring
 
     solutions_subdir: str
     static_subdir: str
@@ -171,6 +142,7 @@ class TaskConfig(BaseEnv):
             ("task", "name"),
             ("task", "contest_type"),
             ("task", "task_type"),
+            ("task", "scoring"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),
             ("task", "data_subdir"),
@@ -188,14 +160,6 @@ class TaskConfig(BaseEnv):
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
-
-        args["fail_mode"] = ConfigValue(
-            "any" if args["contest_type"].value == "cms" else "all",
-            config="_internal",
-            section="task",
-            key="fail_mode",
-            internal=True,
-        )  # TODO: Add fail_mode to config
 
         # Load judge specific keys
         for key, default in JUDGE_KEYS:
@@ -509,10 +473,17 @@ class ProgramLimits(BaseEnv):
     _section: str = "limits"
 
     time_limit: float = Field(ge=0)  # [seconds]
-    clock_limit: float = Field(ge=0)  # [seconds]
+    clock_mul: float = Field(ge=0)  # [1]
+    clock_min: float = Field(ge=0)  # [seconds]
     mem_limit: int = Field(ge=0)  # [KB]
     process_limit: int = Field(ge=0)
     # limit=0 means unlimited
+
+    def clock_limit(self, override_time_limit: Optional[float] = None) -> float:
+        tl = override_time_limit if override_time_limit is not None else self.time_limit
+        if tl == 0:
+            return 0
+        return max(tl * self.clock_mul, self.clock_min)
 
     @classmethod
     def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> ConfigValuesDict:
@@ -670,10 +641,11 @@ def load_config(
     strict: bool = False,
     no_colors: bool = False,
     suppress_warnings: bool = False,
+    pisek_directory: Optional[str] = None,
 ) -> Optional[TaskConfig]:
     """Loads config from given path."""
     try:
-        config_hierarchy = ConfigHierarchy(path, no_colors)
+        config_hierarchy = ConfigHierarchy(path, no_colors, pisek_directory)
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()

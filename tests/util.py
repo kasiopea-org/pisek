@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from pisek.env import config_hierarchy
+from pisek.config import config_hierarchy
 from pisek.__main__ import test_task_path
 from pisek.utils.util import quote_output, clean_task_dir
 
@@ -17,21 +17,26 @@ class TestFixture(unittest.TestCase):
         return None
 
     def setUp(self):
+        os.environ["PISEK_DIRECTORY"] = "../pisek"
+
         if not self.fixture_path():
             return
 
         self.task_dir_orig = os.path.abspath(
             os.path.join(os.path.dirname(__file__), self.fixture_path())
         )
-        self.task_dir = tempfile.mkdtemp()
+        self.fixtures_dir = tempfile.mkdtemp()
+        self.task_dir = os.path.join(
+            self.fixtures_dir, os.path.relpath(self.fixture_path(), "../fixtures")
+        )
 
         # shutil.copytree() requires that the destination directory does not exist,
-        os.rmdir(self.task_dir)
-        shutil.copytree(self.task_dir_orig, self.task_dir)
+        os.rmdir(self.fixtures_dir)
+        shutil.copytree(os.path.join(self.task_dir_orig, ".."), self.fixtures_dir)
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
-        if not clean_task_dir(self.task_dir):
+        if not clean_task_dir(self.task_dir, None):
             exit(1)
 
         self.cwd_orig = os.getcwd()

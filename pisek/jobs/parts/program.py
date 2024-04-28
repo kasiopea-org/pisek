@@ -21,7 +21,7 @@ from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
 
-from pisek.env.task_config import ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure

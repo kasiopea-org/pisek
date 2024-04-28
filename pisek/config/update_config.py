@@ -18,13 +18,19 @@ import os
 import re
 
 from pisek.utils.text import eprint, colored
-from pisek.env.config_errors import TaskConfigError
+from pisek.config.config_errors import TaskConfigError
+from pisek.config.config_types import ProgramType
 
 
 def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
     if key_from in config[section]:
         config[section][key_to] = config[section][key_from]
         del config[section][key_from]
+
+
+def maybe_delete_key(config: ConfigParser, section: str, key: str):
+    if section in config and key in config[section]:
+        del config[section][key]
 
 
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
@@ -162,24 +168,66 @@ def get_subtask_mask(points, subtasks):
     return sub_mask
 
 
-UPDATERS = {"v1": ("v2", update_to_v2)}
-NEWEST_VERSION = "v2"
+def update_to_v3(config: ConfigParser, task_path: str) -> None:
+    contest_type = config.get("task", "contest_type", fallback="kasiopea")
+    if contest_type not in ["kasiopea", "cms"]:
+        raise TaskConfigError(f"Invalid contest_type: '{contest_type}'")
+    config["task"]["use"] = f"@{contest_type}"
+    # TODO: del config["task"]["contest_type"]
+
+    for program_type in ProgramType:
+        config["limits"][f"{program_type}_clock_mul"] = "0"
+        config["limits"][f"{program_type}_clock_min"] = config.get(
+            "limits", f"{program_type}_clock_limit", fallback="360"
+        )
+        maybe_delete_key(config, "limits", f"{program_type}_clock_limit")
+
+    IGNORED_KEYS = [
+        ("task", "tests"),
+        ("tests", "in_mode"),
+        ("tests", "out_mode"),
+        ("tests", "out_format"),
+        ("tests", "online_validity"),
+    ]
+    for section, key in IGNORED_KEYS:
+        maybe_delete_key(config, section, key)
+
+    for section in config.sections():
+        if re.match(r"test\d{2}", section):
+            maybe_delete_key(config, section, "file_name")
+
+
+OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
+CURRENT_VERSIONS = {"v2": ("v3", update_to_v3)}
+
+NEWEST_VERSION = "v3"
+NEWEST_IS_EXPERIMENTAL = True
 
 
 def update_config(
-    config: ConfigParser, task_path: str, no_colors: bool = False
+    config: ConfigParser, task_path: str, infos: bool = True, no_colors: bool = False
 ) -> None:
+    def inform(msg: str):
+        if infos:
+            eprint(colored(msg, "yellow", no_colors))
+
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:
+        if NEWEST_IS_EXPERIMENTAL:
+            inform(
+                f"Config format for version {NEWEST_VERSION} is experimental and can be changed"
+            )
         return
 
-    eprint(colored(f"Updating config to version {NEWEST_VERSION}", "yellow", no_colors))
+    if version in OUTDATED_VERSIONS:
+        inform(f"Updating config")
 
-    if version not in UPDATERS:
+    updaters = OUTDATED_VERSIONS | CURRENT_VERSIONS
+    if version not in updaters:
         raise TaskConfigError(f"Unknown version of config: {version}")
 
-    while version in UPDATERS:
-        version, updater = UPDATERS[version]
+    while version in updaters:
+        version, updater = updaters[version]
         updater(config, task_path)
 
     if version != NEWEST_VERSION:

@@ -19,7 +19,8 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.env.task_config import ProgramType
+from pisek.config.task_config import ProgramType
+from pisek.config.config_types import Scoring
 from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.run_result import RunResult, RunResultKind
@@ -81,7 +82,7 @@ class CheckerManager(TaskJobManager):
             return
 
         for loose_subtask in self.loose_subtasks:
-            err = loose_subtask.failed(self._env.config.fail_mode)
+            err = loose_subtask.failed(self._env.config.scoring)
             if err is not None:
                 raise PipelineItemFailure(err)
 
@@ -105,7 +106,7 @@ class LooseCheckJobGroup:
         self.num = num
         self.jobs: dict[int, list[CheckerJob]] = {}
 
-    def failed(self, fail_mode: str) -> Optional[str]:
+    def failed(self, scoring: Scoring) -> Optional[str]:
         """Returns whether jobs resulted as expected."""
 
         def result_kind(job: CheckerJob) -> RunResultKind:
@@ -115,14 +116,14 @@ class LooseCheckJobGroup:
 
         for pred in self.jobs:
             results = list(map(result_kind, self.jobs[pred]))
-            if fail_mode == "all" and RunResultKind.OK in results:
+            if scoring == Scoring.equal and RunResultKind.OK in results:
                 job = self._index_job(pred, results, RunResultKind.OK)
                 return (
                     f"Checker is not strict enough:\n"
                     f"All inputs of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
                     f"but on input {job.input} did not."
                 )
-            if fail_mode == "any" and RunResultKind.RUNTIME_ERROR not in results:
+            if scoring == Scoring.min and RunResultKind.RUNTIME_ERROR not in results:
                 return (
                     f"Checker is not strict enough:\n"
                     f"An input of subtask {self.num} should have not passed on predecessor subtask {pred}\n"

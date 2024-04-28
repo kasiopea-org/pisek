@@ -94,7 +94,7 @@ def specific_verdict(res: Verdict, verdict: Verdict) -> bool:
 
 # Specifies how expected str should be interpreted
 # First function must be true for all
-# Second function must be true for any/all according to fail_mode
+# Second function must be true for any/all according to scoring (min/equal)
 SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
     "1": (verdict_1point, verdict_always),
     "0": (verdict_always, verdict_0points),

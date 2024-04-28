@@ -10,6 +10,7 @@ dependencies = [
     "PyYAML",
     "colorama",
     "pydantic",
+    "editdistance",
 ]
 requires-python = ">=3.11"
 
@@ -52,8 +53,9 @@ exclude = ["fixtures"]
 
 [tool.setuptools.package-data]
 pisek = [
-    "env/global-defaults",
     "tools/*",
+    "config/*-defaults",
+    "config/config-v3-documentation",
 ]
 
 [tool.setuptools.dynamic]
