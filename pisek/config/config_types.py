@@ -18,7 +18,7 @@ class TaskType(StrEnum):
     communication = auto()
 
 
-class JudgeType(StrEnum):
+class OutCheck(StrEnum):
     diff = auto()
     judge = auto()
 

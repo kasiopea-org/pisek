@@ -22,7 +22,7 @@ import datetime
 from pisek.cms.testcase import create_testcase, get_testcases
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
-from pisek.config.config_types import JudgeType, TaskType
+from pisek.config.config_types import OutCheck, TaskType
 from pisek.utils.paths import TaskPath
 
 
@@ -48,7 +48,7 @@ def create_dataset(
         task_params = (
             "grader" if config.stub is not None else "alone",
             ("", ""),
-            "comparator" if config.out_check == JudgeType.judge else "diff",
+            "comparator" if config.out_check == OutCheck.judge else "diff",
         )
     elif config.task_type == TaskType.communication:
         task_type = "Communication"
@@ -121,7 +121,7 @@ def globs_to_regex(globs: Iterator[str]) -> str:
 def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     config = env.config
 
-    if config.out_check != JudgeType.judge:
+    if config.out_check != OutCheck.judge:
         return
 
     assert config.out_judge is not None

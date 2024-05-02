@@ -37,7 +37,7 @@ from pisek.env.base_env import BaseEnv
 from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
 from pisek.config.config_types import (
     TaskType,
-    JudgeType,
+    OutCheck,
     Scoring,
     ProgramType,
     CMSFeedbackLevel,
@@ -85,7 +85,7 @@ class TaskConfig(BaseEnv):
 
     in_gen: str
     checker: OptionalStr
-    out_check: JudgeType
+    out_check: OutCheck
     out_judge: Optional[str]
     judge_needs_in: bool
     judge_needs_out: bool
@@ -210,7 +210,7 @@ class TaskConfig(BaseEnv):
     def validate_model(self):
         if (
             self.task_type == TaskType.communication
-            and self.out_check != JudgeType.judge
+            and self.out_check != OutCheck.judge
         ):
             raise PydanticCustomError(
                 "communication_must_have_judge",
