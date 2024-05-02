@@ -15,18 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from functools import cache, partial
-import os
+from functools import cache
 import random
 from typing import Optional, Union, Callable
 import subprocess
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, OutCheck
+from pisek.config.config_types import ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.run_result import RunResult, RunResultKind
 from pisek.jobs.parts.program import ProgramsJob
@@ -543,7 +541,7 @@ def judge_job(
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
     judge = TaskPath(env.config.out_judge)
 
-    if env.config.contest_type == "cms":
+    if env.config.judge_type == JudgeType.cms:
         return RunCMSBatchJudge(
             env, judge, input_, output, correct_output, expected_points
         )

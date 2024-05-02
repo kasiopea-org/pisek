@@ -23,6 +23,11 @@ class OutCheck(StrEnum):
     judge = auto()
 
 
+class JudgeType(StrEnum):
+    cms = auto()
+    opendata_v1 = "opendata-v1"
+
+
 class Scoring(StrEnum):
     equal = auto()
     min = auto()

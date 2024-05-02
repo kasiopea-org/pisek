@@ -38,6 +38,7 @@ from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHi
 from pisek.config.config_types import (
     TaskType,
     OutCheck,
+    JudgeType,
     Scoring,
     ProgramType,
     CMSFeedbackLevel,
@@ -87,6 +88,7 @@ class TaskConfig(BaseEnv):
     checker: OptionalStr
     out_check: OutCheck
     out_judge: Optional[str]
+    judge_type: Optional[JudgeType]
     judge_needs_in: bool
     judge_needs_out: bool
 
@@ -154,6 +156,7 @@ class TaskConfig(BaseEnv):
         ]
         JUDGE_KEYS = [
             ("out_judge", None),
+            ("judge_type", None),
             ("judge_needs_in", "0"),
             ("judge_needs_out", "1"),
         ]
