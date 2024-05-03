@@ -18,9 +18,14 @@ class TaskType(StrEnum):
     communication = auto()
 
 
-class JudgeType(StrEnum):
+class OutCheck(StrEnum):
     diff = auto()
     judge = auto()
+
+
+class JudgeType(StrEnum):
+    cms = auto()
+    opendata_v1 = "opendata-v1"
 
 
 class Scoring(StrEnum):

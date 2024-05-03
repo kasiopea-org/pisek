@@ -15,18 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from functools import cache, partial
-import os
+from functools import cache
 import random
 from typing import Optional, Union, Callable
 import subprocess
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, JudgeType
+from pisek.config.config_types import ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored_env
 from pisek.jobs.parts.task_job import TaskJobManager
 from pisek.jobs.parts.run_result import RunResult, RunResultKind
 from pisek.jobs.parts.program import ProgramsJob
@@ -46,7 +44,7 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
-        if self._env.config.out_check == JudgeType.judge:
+        if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
@@ -71,7 +69,7 @@ class JudgeManager(TaskJobManager):
                     self._env,
                 )
             )
-            if self._env.config.out_check == JudgeType.judge:
+            if self._env.config.out_check == OutCheck.judge:
                 judge_j.add_prerequisite(comp)
 
             JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
@@ -96,7 +94,7 @@ class JudgeManager(TaskJobManager):
                             self._env,
                         ),
                     ]
-                    if self._env.config.out_check == JudgeType.judge:
+                    if self._env.config.out_check == OutCheck.judge:
                         run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
@@ -138,7 +136,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
             ),
         ]
         judge.add_prerequisite(sanitize)
-        if self._env.config.out_check == JudgeType.judge:
+        if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
@@ -536,14 +534,14 @@ def judge_job(
     env: Env,
 ) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
-    if env.config.out_check == JudgeType.diff:
+    if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(env, input_, output, correct_output, expected_points)
 
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
     judge = TaskPath(env.config.out_judge)
 
-    if env.config.contest_type == "cms":
+    if env.config.judge_type == JudgeType.cms:
         return RunCMSBatchJudge(
             env, judge, input_, output, correct_output, expected_points
         )
