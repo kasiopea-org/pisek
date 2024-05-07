@@ -42,6 +42,7 @@ class SolutionManager(TaskJobManager):
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
         self._outputs: list[tuple[TaskPath, RunJudge]] = []
+        self._subtasks_results: dict[int, float] = {}
         super().__init__(f"Solution {solution_label} Manager")
 
     def _get_jobs(self) -> list[Job]:
@@ -166,7 +167,9 @@ class SolutionManager(TaskJobManager):
         solution_conf = self._env.config.solutions[self.solution_label]
         expected = solution_conf.subtasks
         for sub_job in self.subtasks:
-            self.solution_points += sub_job.points(expected[sub_job.num])
+            sub_job.as_expected(expected[sub_job.num])
+            self.solution_points += sub_job.points
+            self._subtasks_results[sub_job.num] = sub_job.normalized_points
 
         points = solution_conf.points
         above = solution_conf.points_above
@@ -202,6 +205,8 @@ class SolutionManager(TaskJobManager):
         for inp in self._judges:
             result["results"][inp] = self._judges[inp].result
 
+        result["subtasks"] = self._subtasks_results
+
         return result
 
 
@@ -221,10 +226,14 @@ class SubtaskJobGroup:
         return self.previous_jobs + self.new_jobs
 
     @property
-    def _points(self) -> float:
+    def normalized_points(self) -> float:
         results = self._finished_job_results(self.all_jobs)
         points = map(lambda r: r.points, results)
-        return min(points, default=1.0) * self.subtask.points
+        return min(points, default=1.0)
+
+    @property
+    def points(self) -> float:
+        return self.normalized_points * self.subtask.points
 
     @property
     def slowest_time(self) -> float:
@@ -302,7 +311,7 @@ class SubtaskJobGroup:
         )
 
         subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
-        subtask_points = pad_left(format_points(self._points), max_sub_points_len)
+        subtask_points = pad_left(format_points(self.points), max_sub_points_len)
 
         return right_aligned_text(
             f"{subtask_name} {subtask_points}p  "
@@ -319,7 +328,7 @@ class SubtaskJobGroup:
         max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
         subtask_info = (
             right_aligned_text(
-                f"{self.subtask.name}: {format_points(self._points)}p",
+                f"{self.subtask.name}: {format_points(self.points)}p",
                 f"slowest {self.slowest_time:.2f}s",
                 offset=-2,
             )
@@ -328,10 +337,10 @@ class SubtaskJobGroup:
         text += colored_env(subtask_info, "magenta", self._env)
 
         max_pred_name_len = max(
-            (len(subtask_name(pred)) for pred in self.subtask.predecessors),
+            (len(subtask_name(pred)) for pred in self.subtask.all_predecessors),
             default=0,
         )
-        for pred in self.subtask.predecessors:
+        for pred in self.subtask.all_predecessors:
             pred_group = all_subtasks[pred]
             text += right_aligned_text(
                 tab(
@@ -343,7 +352,7 @@ class SubtaskJobGroup:
             )
             text += "\n"
 
-        if len(self.subtask.predecessors) and any(
+        if len(self.subtask.all_predecessors) and any(
             map(lambda j: j.result, self.new_jobs)
         ):
             text += "\n"
@@ -370,21 +379,19 @@ class SubtaskJobGroup:
         ):
             return True
 
-        if expected_str == "X" and self._points > 0:
+        if expected_str == "X" and self.points > 0:
             return False  # Cause X is very very special
 
         return self._as_expected(expected_str)[1]
 
-    def points(self, expected_str: str) -> float:
-        """Returns points from this subtask. Raises PipelineItemFailure if not as expected."""
+    def as_expected(self, expected_str: str) -> None:
+        """Checks this subtask resulted as expected. Raises PipelineItemFailure otherwise."""
         ok, _, breaker = self._as_expected(expected_str)
         if not ok:
             msg = f"{self.subtask.name} did not result as expected: '{expected_str}'"
             if breaker is not None:
                 msg += f"\n{tab(breaker.message())}"
             raise PipelineItemFailure(msg)
-
-        return self._points
 
     def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
         """

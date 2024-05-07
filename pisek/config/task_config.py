@@ -28,7 +28,6 @@ from pydantic import (
     model_validator,
 )
 import re
-import sys
 from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
@@ -243,32 +242,41 @@ class TaskConfig(BaseEnv):
                     {},
                 )
 
-        self._compute_all_globs()
-
+        self._compute_predecessors()
         return self
 
-    def _compute_all_globs(self) -> None:
+    def _compute_predecessors(self) -> None:
         visited = set()
         computed = set()
 
-        def compute_subtask(num: int) -> list[str]:
+        def compute_subtask(num: int) -> list[int]:
             subtask = self.subtasks[num]
             if num in computed:
-                return subtask.all_globs
+                return subtask.all_predecessors
             elif num in visited:
                 raise PydanticCustomError(
                     "cyclic_predecessor_subtasks", "Cyclic predecessor subtasks", {}
                 )
 
             visited.add(num)
-            all_globs = sum(
-                (compute_subtask(p) for p in subtask.predecessors),
-                start=subtask.in_globs,
+            all_predecessors = sum(
+                (compute_subtask(p) for p in subtask.direct_predecessors),
+                start=subtask.direct_predecessors,
             )
-            subtask.all_globs = list(sorted(set(all_globs)))
+
+            def normalize_list(l):
+                return list(sorted(set(l)))
+
+            subtask.all_predecessors = normalize_list(all_predecessors)
+            subtask.all_globs = normalize_list(
+                sum(
+                    (self.subtasks[p].in_globs for p in subtask.all_predecessors),
+                    start=subtask.in_globs,
+                )
+            )
             computed.add(num)
 
-            return subtask.all_globs
+            return subtask.all_predecessors
 
         for i in range(self.subtasks_count):
             compute_subtask(i)
@@ -283,7 +291,8 @@ class SubtaskConfig(BaseEnv):
     points: int = Field(ge=0)
     in_globs: ListStr
     all_globs: list[str] = []
-    predecessors: list[int]
+    direct_predecessors: list[int]
+    all_predecessors: list[int] = []
 
     def in_subtask(self, filename: str) -> bool:
         return any(fnmatch.fnmatch(filename, g) for g in self.all_globs)
@@ -305,6 +314,8 @@ class SubtaskConfig(BaseEnv):
                 )
                 for key in KEYS
             }
+        args["direct_predecessors"] = args.pop("predecessors")
+
         return {"_section": configs.get(number.section, None), "num": number, **args}
 
     @field_validator("in_globs", mode="after")
@@ -322,7 +333,7 @@ class SubtaskConfig(BaseEnv):
 
         return globs
 
-    @field_validator("predecessors", mode="before")
+    @field_validator("direct_predecessors", mode="before")
     @classmethod
     def expand_predecessors(cls, value: str, info: ValidationInfo) -> list[str]:
         if info.context is None:
@@ -600,11 +611,11 @@ class ChecksConfig(BaseEnv):
     _section: str = "checks"
 
     checker_distinguishes_subtasks: bool
+    solution_for_each_subtask: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
-        KEYS = ["checker_distinguishes_subtasks"]
-        return {key: configs.get("checks", key) for key in KEYS}
+        return {key: configs.get("checks", key) for key in cls.model_fields}
 
 
 def _format_message(err: ErrorDetails) -> str:

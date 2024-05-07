@@ -78,6 +78,7 @@ output_max_size=10
 
 [checks]
 checker_distinguishes_subtasks=on
+solution_for_each_subtask=off
 
 [cms]
 title=@name

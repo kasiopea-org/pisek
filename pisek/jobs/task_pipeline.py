@@ -17,7 +17,7 @@
 from collections import deque
 
 from pisek.jobs.job_pipeline import JobPipeline
-from pisek.env.env import Env
+from pisek.env.env import Env, TestingTarget
 
 from pisek.jobs.parts.task_job import (
     TOOLS_MAN_CODE,
@@ -37,6 +37,7 @@ from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
 from pisek.jobs.parts.data import DataCheckingManager
 from pisek.jobs.parts.testing_log import CreateTestingLog
+from pisek.jobs.parts.completeness_check import CompletenessCheck
 
 
 class TaskPipeline(JobPipeline):
@@ -98,5 +99,10 @@ class TaskPipeline(JobPipeline):
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
+
+        if env.target == TestingTarget.all:
+            named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
+            for solution in solutions:
+                completeness_check[0].add_prerequisite(*solution)
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
