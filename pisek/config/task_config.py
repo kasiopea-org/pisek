@@ -28,7 +28,6 @@ from pydantic import (
     model_validator,
 )
 import re
-import sys
 from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.text import tab
@@ -250,7 +249,7 @@ class TaskConfig(BaseEnv):
         visited = set()
         computed = set()
 
-        def compute_subtask(num: int) -> list[str]:
+        def compute_subtask(num: int) -> list[int]:
             subtask = self.subtasks[num]
             if num in computed:
                 return subtask.all_predecessors
@@ -265,7 +264,7 @@ class TaskConfig(BaseEnv):
                 start=subtask.direct_predecessors,
             )
 
-            def normalize_list(l: list[int]) -> list[int]:
+            def normalize_list(l):
                 return list(sorted(set(l)))
 
             subtask.all_predecessors = normalize_list(all_predecessors)
@@ -612,11 +611,11 @@ class ChecksConfig(BaseEnv):
     _section: str = "checks"
 
     checker_distinguishes_subtasks: bool
+    solution_for_each_subtask: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
-        KEYS = ["checker_distinguishes_subtasks"]
-        return {key: configs.get("checks", key) for key in KEYS}
+        return {key: configs.get("checks", key) for key in cls.model_fields}
 
 
 def _format_message(err: ErrorDetails) -> str:
