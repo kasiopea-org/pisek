@@ -37,6 +37,7 @@ from pisek.jobs.parts.judge import JudgeManager
 from pisek.jobs.parts.solution import SolutionManager
 from pisek.jobs.parts.data import DataCheckingManager
 from pisek.jobs.parts.testing_log import CreateTestingLog
+from pisek.jobs.parts.completeness_check import CompletenessCheck
 
 
 class TaskPipeline(JobPipeline):
@@ -98,5 +99,7 @@ class TaskPipeline(JobPipeline):
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
+
+        named_pipeline.append((CompletenessCheck(), ""))
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
