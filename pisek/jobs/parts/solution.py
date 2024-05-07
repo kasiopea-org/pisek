@@ -328,10 +328,10 @@ class SubtaskJobGroup:
         text += colored_env(subtask_info, "magenta", self._env)
 
         max_pred_name_len = max(
-            (len(subtask_name(pred)) for pred in self.subtask.predecessors),
+            (len(subtask_name(pred)) for pred in self.subtask.all_predecessors),
             default=0,
         )
-        for pred in self.subtask.predecessors:
+        for pred in self.subtask.all_predecessors:
             pred_group = all_subtasks[pred]
             text += right_aligned_text(
                 tab(
@@ -343,7 +343,7 @@ class SubtaskJobGroup:
             )
             text += "\n"
 
-        if len(self.subtask.predecessors) and any(
+        if len(self.subtask.all_predecessors) and any(
             map(lambda j: j.result, self.new_jobs)
         ):
             text += "\n"

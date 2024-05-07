@@ -64,9 +64,11 @@ class CheckerManager(TaskJobManager):
                 )
                 check.add_prerequisite(compile_checker)
             if self._env.config.checks.checker_distinguishes_subtasks:
-                if sub.predecessors:
+                if sub.direct_predecessors:
                     self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
-                    for pred in sub.predecessors:
+                    for pred in sub.direct_predecessors:
+                        if pred == 0:
+                            continue  # Skip samples
                         self.loose_subtasks[-1].jobs[pred] = []
                         for inp in self._subtask_new_inputs(sub):
                             jobs.append(
