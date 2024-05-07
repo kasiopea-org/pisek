@@ -262,9 +262,17 @@ output_max_size=5
 # Please be careful with this section as disabling checks can make
 # task making into a minefield
 
+# Values are on/off and keys defaults to these values: 
+
 checker_distinguishes_subtasks=off
 # checks that this subtasks's inputs doesn't pass checker in predecessor subtasks
 # Whether one/all must not pass depends on scoring 
+
+solution_for_each_subtask=off
+# checks that solution for each subtask exists (aside from samples)
+# Solution for subtask:
+# - For this subtask and predecessors gets full points
+# - For other subtasks doesn't get full points
 
 # TODO: Implement keys in this section
 
