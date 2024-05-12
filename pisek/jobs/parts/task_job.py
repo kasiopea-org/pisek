@@ -92,7 +92,6 @@ class TaskHelper:
         """
         s_text = []
         for line in text.split("\n"):
-            line = line.strip()
             if len(line) > max_chars:
                 line = line[: max_chars - 1] + "…"
             s_text.append(line)
