@@ -28,6 +28,11 @@ class JudgeType(StrEnum):
     opendata_v1 = "opendata-v1"
 
 
+class FormatType(StrEnum):
+    text = auto()
+    binary = auto()
+
+
 class Scoring(StrEnum):
     equal = auto()
     min = auto()

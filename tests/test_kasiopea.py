@@ -217,7 +217,7 @@ class TestStrictChecker(TestSumKasiopea):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
-class TestDirtySamle(TestSumKasiopea):
+class TestDirtySample(TestSumKasiopea):
     """Sample without newline at the end."""
 
     def expecting_success(self):
