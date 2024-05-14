@@ -109,7 +109,7 @@ class TestStrictChecker(TestSumCMS):
         overwrite_file(self.task_dir, "check.py", "check_strict.py")
 
 
-class TestDirtySamle(TestSumCMS):
+class TestDirtySample(TestSumCMS):
     """Sample without newline at the end."""
 
     def expecting_success(self):
@@ -119,6 +119,64 @@ class TestDirtySamle(TestSumCMS):
         sample = ["3", "1 2", "-8 5", "0 0"]
         with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
             f.write("\n".join(sample))
+
+
+class TestNoLFInTextInput(TestSumCMS):
+    """Input without newline at the end with in_format=text."""
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["in_gen"] = "gen_no_lf"
+            raw_config["tests"]["checker"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInBinaryInput(TestSumCMS):
+    """Input without newline at the end with in_format=binary."""
+
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["in_format"] = "binary"
+            raw_config["tests"]["in_gen"] = "gen_no_lf"
+            raw_config["tests"]["checker"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInTextOutput(TestSumCMS):
+    """Output without newline at the end with out_format=text."""
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["solution_solve"]["source"] = "solve_no_lf"
+            raw_config["tests"]["checker"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInBinaryOutput(TestSumCMS):
+    """Output without newline at the end with out_format=binary."""
+
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["out_format"] = "binary"
+            raw_config["solution_solve"]["source"] = "solve_no_lf"
+            raw_config["tests"]["checker"] = ""
+
+        modify_config(self.task_dir, modification_fn)
 
 
 class TestGuess(TestFixtureVariant):

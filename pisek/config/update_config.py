@@ -186,7 +186,6 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         ("task", "tests"),
         ("tests", "in_mode"),
         ("tests", "out_mode"),
-        ("tests", "out_format"),
         ("tests", "online_validity"),
     ]
     for section, key in IGNORED_KEYS:
