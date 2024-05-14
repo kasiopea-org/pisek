@@ -17,7 +17,7 @@
 import re
 from typing import Any, Callable
 
-from pisek.config.config_types import FormatType
+from pisek.config.config_types import DataFormat
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -183,14 +183,14 @@ class DataCheckingManager(TaskJobManager):
                     + outs[Verdict.wrong_answer]
                 )
         for inp in inputs:
-            if self._env.config.in_format == FormatType.text:
+            if self._env.config.in_format == DataFormat.text:
                 jobs.append(IsClean(self._env, inp))
 
             if self._env.config.limits.input_max_size != 0:
                 jobs.append(InputSmall(self._env, inp))
 
         for out in outputs:
-            if self._env.config.out_format == FormatType.text:
+            if self._env.config.out_format == DataFormat.text:
                 jobs.append(IsClean(self._env, out))
 
             if self._env.config.limits.output_max_size != 0:

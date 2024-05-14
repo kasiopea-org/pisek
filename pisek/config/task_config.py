@@ -38,7 +38,7 @@ from pisek.config.config_types import (
     TaskType,
     OutCheck,
     JudgeType,
-    FormatType,
+    DataFormat,
     Scoring,
     ProgramType,
     CMSFeedbackLevel,
@@ -92,8 +92,8 @@ class TaskConfig(BaseEnv):
     judge_needs_in: bool
     judge_needs_out: bool
 
-    in_format: FormatType
-    out_format: FormatType
+    in_format: DataFormat
+    out_format: DataFormat
 
     stub: OptionalStr
     headers: ListStr

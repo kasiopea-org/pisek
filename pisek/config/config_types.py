@@ -28,7 +28,7 @@ class JudgeType(StrEnum):
     opendata_v1 = "opendata-v1"
 
 
-class FormatType(StrEnum):
+class DataFormat(StrEnum):
     text = auto()
     binary = auto()
 
