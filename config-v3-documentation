@@ -85,18 +85,6 @@ judge_needs_out=0
 # Set to 1 if judge needs input/output
 # Defaults to 1
 
-stub=src/stub
-# Only for C/C++ CMS tasks
-# Link each solution with given program (without suffix)
-# Used commonly for interactive tasks
-# TODO: Move to better section
-
-headers=src/blecha.h
-# Only for C/C++ CMS tasks
-# Allow each solution to include the given headers
-# Used commonly for interactive tasks
-# TODO: Move to better section
-
 [test01]
 # Section for each subtask (indexed from one)
 # Keys default to [all_tests] keys if test is not set
@@ -176,6 +164,19 @@ points=X
 points_above=X
 points_below=X
 subtasks=@auto
+
+# There are also keys that are specific to [all_solutions]
+# and cannot be configured on a per solution basis:
+
+stub=src/stub
+# Only for C/C++ CMS tasks
+# Link each solution with given program (without suffix)
+# Used commonly for interactive tasks
+
+headers=src/blecha.h
+# Only for C/C++ CMS tasks
+# Allow each solution to include the given headers
+# Used commonly for interactive tasks
 
 [limits]
 # Resource limits for various programs: all of them are called KEY_LIMIT,

@@ -156,8 +156,8 @@ class TaskConfig(BaseEnv):
             ("tests", "out_check"),
             ("tests", "in_format"),
             ("tests", "out_format"),
-            ("tests", "stub"),
-            ("tests", "headers"),
+            ("all_solutions", "stub"),
+            ("all_solutions", "headers"),
         ]
         JUDGE_KEYS = [
             ("out_judge", None),
