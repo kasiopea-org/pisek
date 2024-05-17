@@ -14,8 +14,6 @@ checker=
 judge_type=opendata-v1
 judge_needs_in=1
 judge_needs_out=1
-stub=
-headers=
 
 [all_tests]
 name=@auto 
@@ -35,6 +33,8 @@ points=X
 points_above=X
 points_below=X
 subtasks=@auto
+stub=
+headers=
 
 [limits]
 tool_time_limit=0

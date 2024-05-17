@@ -28,6 +28,15 @@ def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
         del config[section][key_from]
 
 
+def move_key(config: ConfigParser, key: str, section_from: str, section_to: str):
+    if key in config[section_from]:
+        if section_to not in config:
+            config.add_section("all_solutions")
+
+        config[section_to][key] = config[section_from][key]
+        del config[section_from][key]
+
+
 def maybe_delete_key(config: ConfigParser, section: str, key: str):
     if section in config and key in config[section]:
         del config[section][key]
@@ -181,6 +190,9 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
             "limits", f"{program_type}_clock_limit", fallback="360"
         )
         maybe_delete_key(config, "limits", f"{program_type}_clock_limit")
+
+    move_key(config, "stub", "tests", "all_solutions")
+    move_key(config, "headers", "tests", "all_solutions")
 
     IGNORED_KEYS = [
         ("task", "tests"),
