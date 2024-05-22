@@ -164,12 +164,13 @@ class SolutionManager(TaskJobManager):
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
         self.solution_points = 0
-        solution_conf = self._env.config.solutions[self.solution_label]
-        expected = solution_conf.subtasks
         for sub_job in self.subtasks:
-            sub_job.as_expected(expected[sub_job.num])
             self.solution_points += sub_job.points
             self._subtasks_results[sub_job.num] = sub_job.normalized_points
+
+        solution_conf = self._env.config.solutions[self.solution_label]
+        for sub_job in self.subtasks:
+            sub_job.as_expected(solution_conf.subtasks[sub_job.num])
 
         points = solution_conf.points
         above = solution_conf.points_above
