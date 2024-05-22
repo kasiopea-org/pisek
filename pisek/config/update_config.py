@@ -184,6 +184,8 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     config["task"]["use"] = f"@{contest_type}"
     # TODO: del config["task"]["contest_type"]
 
+    if "limits" not in config:
+        config.add_section("limits")
     for program_type in ProgramType:
         config["limits"][f"{program_type}_clock_mul"] = "0"
         config["limits"][f"{program_type}_clock_min"] = config.get(
