@@ -380,7 +380,7 @@ class SubtaskJobGroup:
         ):
             return True
 
-        if expected_str == "X" and self.points > 0:
+        if expected_str == "X" and self.normalized_points > 0:
             return False  # Cause X is very very special
 
         return self._as_expected(expected_str)[1]
