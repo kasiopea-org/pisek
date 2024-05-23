@@ -212,9 +212,9 @@ class InputSmall(DataJob):
 
     def _run(self):
         max_size = self._env.config.limits.input_max_size
-        if self._file_size(self.data) > max_size * MB:
+        if (sz := self._file_size(self.data)) > max_size * MB:
             raise PipelineItemFailure(
-                f"Input {self.data:p} is bigger than {max_size}MB."
+                f"Input {self.data:p} is bigger than {max_size}MB: {(sz+MB-1)//MB}MB"
             )
 
 
@@ -231,7 +231,7 @@ class OutputSmall(DataJob):
 
     def _run(self):
         max_size = self._env.config.limits.output_max_size
-        if self._file_size(self.data) > max_size * MB:
+        if (sz := self._file_size(self.data)) > max_size * MB:
             raise PipelineItemFailure(
-                f"Output {self.data} is bigger than {max_size}MB."
+                f"Output {self.data} is bigger than {max_size}MB: {(sz+MB-1)//MB}MB"
             )
