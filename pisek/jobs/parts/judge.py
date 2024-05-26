@@ -280,7 +280,7 @@ class RunJudge(ProgramsJob):
             return self.state.name
 
     def verdict_mark(self) -> str:
-        if self.state == State.canceled:
+        if self.state == State.cancelled:
             return "-"
         elif self.result is None:
             return " "

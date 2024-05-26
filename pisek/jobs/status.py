@@ -39,8 +39,8 @@ class StatusJobManager(JobManager):
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
-        if self.state == State.canceled:
-            return f"{pad(msg, MSG_LEN)}{colored_env('canceled', 'yellow', self._env)}"
+        if self.state == State.cancelled:
+            return f"{pad(msg, MSG_LEN)}{colored_env('cancelled', 'yellow', self._env)}"
         elif self.state == State.succeeded:
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():

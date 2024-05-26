@@ -132,7 +132,7 @@ class SolutionManager(TaskJobManager):
 
     def _get_status(self) -> str:
         msg = f"Testing {self.solution_label}"
-        if self.state == State.canceled:
+        if self.state == State.cancelled:
             return self._job_bar(msg)
 
         points_places = len(str(self._env.config.total_points)) + POINTS_DEC_PLACES + 2
