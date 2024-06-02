@@ -24,6 +24,12 @@ class OutCheck(StrEnum):
     judge = auto()
 
 
+class GenType(StrEnum):
+    opendata_v1 = "opendata-v1"
+    cms_old = "cms-old"
+    pisek_v1 = "pisek-v1"
+
+
 class JudgeType(StrEnum):
     cms = auto()
     opendata_v1 = "opendata-v1"

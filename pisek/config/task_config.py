@@ -37,6 +37,7 @@ from pisek.env.base_env import BaseEnv
 from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
 from pisek.config.config_types import (
     TaskType,
+    GenType,
     OutCheck,
     JudgeType,
     DataFormat,
@@ -95,6 +96,7 @@ class TaskConfig(BaseEnv):
     data_subdir: TaskPathFromStr
 
     in_gen: TaskPathFromStr
+    gen_type: Optional[GenType]
     checker: OptionalTaskPathFromStr
     out_check: OutCheck
     out_judge: OptionalTaskPathFromStr
@@ -168,6 +170,7 @@ class TaskConfig(BaseEnv):
             ("task", "static_subdir"),
             ("task", "data_subdir"),
             ("tests", "in_gen"),
+            ("tests", "gen_type"),
             ("tests", "checker"),
             ("tests", "out_check"),
             ("tests", "in_format"),

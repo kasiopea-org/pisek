@@ -13,6 +13,7 @@ version=v3
 
 [tests]
 # generator source file
+gen_type=cms-old
 in_gen=src/gen
 
 # checker=check
