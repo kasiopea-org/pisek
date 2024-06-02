@@ -96,7 +96,7 @@ class TaskConfig(BaseEnv):
     data_subdir: TaskPathFromStr
 
     in_gen: TaskPathFromStr
-    gen_type: Optional[GenType]
+    gen_type: GenType
     checker: OptionalTaskPathFromStr
     out_check: OutCheck
     out_judge: OptionalTaskPathFromStr
