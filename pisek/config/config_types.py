@@ -20,6 +20,7 @@ class TaskType(StrEnum):
 
 class OutCheck(StrEnum):
     diff = auto()
+    tokens = auto()
     judge = auto()
 
 

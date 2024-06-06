@@ -13,7 +13,7 @@ in_gen=gen
 checker=check
 out_mode=solve
 online_validity=360
-out_check=diff
+out_check=tokens
 
 [test01]
 name=Easy input

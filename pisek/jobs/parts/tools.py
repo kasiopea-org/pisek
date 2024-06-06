@@ -102,7 +102,7 @@ class PrepareTextPreprocessor(TaskJob):
 
 
 class PrepareJudgeToken(TaskJob):
-    """Compiles Text Preprocessor."""
+    """Compiles the generic token-based judge."""
 
     def __init__(self, env: Env, **kwargs) -> None:
         super().__init__(env=env, name="Prepare token judge", **kwargs)

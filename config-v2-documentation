@@ -55,6 +55,7 @@ checker=check
 out_check=judge
 # Describes how to check outputs
 #   - diff: checks that contestant output equals correct output (ignores whitespace) (default)
+#   - tokens: uses a fast, versatile file equality checker (ignores whitespace)
 #   - judge: if there can be multiple solutions, checks with program (called 'judge')
 # In communication, only judge is allowed
 
