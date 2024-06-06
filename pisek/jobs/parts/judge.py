@@ -451,6 +451,21 @@ class RunTokenJudge(RunBatchJudge):
         executable = TaskPath.executable_path(self._env, "judge-token")
         flags = ["-t"]
 
+        if self._env.config.tokens_ignore_newlines:
+            flags.append("-n")
+        if self._env.config.tokens_ignore_case:
+            flags.append("-i")
+        if self._env.config.tokens_float_rel_error != None:
+            flags.extend(
+                [
+                    "-r",
+                    "-e",
+                    str(self._env.config.tokens_float_rel_error),
+                    "-E",
+                    str(self._env.config.tokens_float_abs_error),
+                ]
+            )
+
         judge = subprocess.run(
             [executable.path, *flags, self.output.path, self.correct_output.path],
             stdout=subprocess.PIPE,

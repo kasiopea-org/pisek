@@ -69,6 +69,25 @@ judge_needs_out=0
 # Set to 1 if judge needs input/output
 # Defaults to 1
 
+tokens_ignore_newlines=0
+# Only for out_check=tokens
+# If set to 1, newline characters will be ignored when checking the output,
+# as if they were any other whitespace characters
+# By default, newline characters are only ignored at the end of the file
+
+tokens_ignore_case=0
+# Only for out_check=tokens
+# If set to 1, ASCII characters will be compared in a case-insensitive manner
+
+tokens_float_rel_error=0.00001
+tokens_float_abs_error=1e-30
+# Only for out_check=tokens
+# When these options are specified, floating-point numbers
+# will be parsed and compared with a given error margin
+# Any tokens that can't be parsed as a float will be compared character-by-character
+# If used, both of these options must be specified
+# Set both options to X to disable
+
 stub=src/stub
 # Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix)
