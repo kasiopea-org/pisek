@@ -51,11 +51,9 @@ from pisek.jobs.parts.solution_result import SUBTASK_SPEC
 MaybeInt = Annotated[
     Optional[int], BeforeValidator(lambda i: (None if i == "X" else i))
 ]
-MaybeFloat = Annotated[
-    Optional[float], BeforeValidator(lambda i: (None if i == "X" else i))
-]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
+OptionalFloat = Annotated[Optional[float], BeforeValidator(lambda s: s or None)]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -96,8 +94,8 @@ class TaskConfig(BaseEnv):
     judge_needs_out: bool
     tokens_ignore_newlines: bool
     tokens_ignore_case: bool
-    tokens_float_rel_error: MaybeFloat
-    tokens_float_abs_error: MaybeFloat
+    tokens_float_rel_error: OptionalFloat
+    tokens_float_abs_error: OptionalFloat
 
     in_format: DataFormat
     out_format: DataFormat
@@ -237,8 +235,8 @@ class TaskConfig(BaseEnv):
                 {"task_type": self.task_type, "out_check": self.out_check},
             )
 
-        if (self.tokens_float_abs_error == None) != (
-            self.tokens_float_rel_error == None
+        if (self.tokens_float_abs_error is not None) != (
+            self.tokens_float_rel_error is not None
         ):
             raise PydanticCustomError(
                 "tokens_errors_must_be_set_together",

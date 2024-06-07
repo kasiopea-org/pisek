@@ -44,7 +44,7 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
-        comp = None
+        comp: Optional[Job] = None
 
         if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
