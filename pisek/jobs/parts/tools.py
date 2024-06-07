@@ -38,7 +38,6 @@ class ToolsManager(TaskJobManager):
         jobs: list[Job] = [
             PrepareMinibox(self._env),
             PrepareTextPreprocessor(self._env),
-            PrepareJudgeToken(self._env),
         ]
         return jobs
 
@@ -101,7 +100,7 @@ class PrepareTextPreprocessor(TaskJob):
             raise PipelineItemFailure("Text preprocessor compilation failed.")
 
 
-class PrepareJudgeToken(TaskJob):
+class PrepareTokenJudge(TaskJob):
     """Compiles the generic token-based judge."""
 
     def __init__(self, env: Env, **kwargs) -> None:

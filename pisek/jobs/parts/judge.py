@@ -30,7 +30,7 @@ from pisek.jobs.parts.run_result import RunResult, RunResultKind
 from pisek.jobs.parts.program import ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.jobs.parts.tools import Sanitize
+from pisek.jobs.parts.tools import PrepareTokenJudge, Sanitize
 from pisek.jobs.parts.solution_result import Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
@@ -44,6 +44,8 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
+        comp = None
+
         if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
                 raise RuntimeError(
@@ -52,6 +54,8 @@ class JudgeManager(TaskJobManager):
             jobs.append(
                 comp := Compile(self._env, TaskPath(self._env.config.out_judge))
             )
+        elif self._env.config.out_check == OutCheck.tokens:
+            jobs.append(comp := PrepareTokenJudge(self._env))
 
         samples = self._get_samples()
         if self._env.config.task_type == "communication":
@@ -69,7 +73,7 @@ class JudgeManager(TaskJobManager):
                     self._env,
                 )
             )
-            if self._env.config.out_check == OutCheck.judge:
+            if comp is not None:
                 judge_j.add_prerequisite(comp)
 
             JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
@@ -94,7 +98,7 @@ class JudgeManager(TaskJobManager):
                             self._env,
                         ),
                     ]
-                    if self._env.config.out_check == OutCheck.judge:
+                    if comp is not None:
                         run_judge.add_prerequisite(comp)
                     run_judge.add_prerequisite(invalidate)
         return jobs
