@@ -16,7 +16,7 @@ Each item has a state that represent their progress:
  - `running` - The item is running.
  - `succeeded` - The item has successfully ended.
  - `failed` - The item has failed, and the something is wrong with the task being tested.
- - `canceled` - A prerequisite (see below) of this item has failed, therefore this item cannot be run.
+ - `cancelled` - A prerequisite (see below) of this item has failed, therefore this item cannot be run.
 
 ### Prerequisites
 Each item can have items that must be run before it. (E.g. Running after compilation.) 

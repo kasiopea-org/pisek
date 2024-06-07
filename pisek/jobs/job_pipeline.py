@@ -89,7 +89,7 @@ class JobPipeline(ABC):
                 if job_man.state == State.failed:
                     self._print(job_man.failures(), env, end="", file=sys.stderr)
                     return False
-            elif job_man.state == State.canceled:
+            elif job_man.state == State.cancelled:
                 self._print(ongoing_msg, env)
             else:
                 self._print_tmp(ongoing_msg, env)

@@ -26,21 +26,21 @@ class StatusJobManager(JobManager):
 
     def _bar(self, msg: str, part: int, full: int, color: str = "cyan") -> str:
         """Return progress bar with given parameters."""
-        msg = pad(msg, MSG_LEN)
+        msg = pad(msg, MSG_LEN - 1)
         progress_msg = f"  ({part}/{full})"
 
-        bar_len = min(
-            TARGET_BAR_WIDTH, TARGET_LINE_WIDTH - len(msg) - len(progress_msg)
-        )
+        bar_len = min(TARGET_BAR_WIDTH, TARGET_LINE_WIDTH - MSG_LEN - len(progress_msg))
         filled = bar_len * part // full
 
-        return f"{msg}{colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"
+        return f"{msg} {colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
-        if self.state == State.canceled:
-            return f"{pad(msg, MSG_LEN)}{colored_env('canceled', 'yellow', self._env)}"
+        if self.state == State.cancelled:
+            return (
+                f"{pad(msg, MSG_LEN-1)} {colored_env('cancelled', 'yellow', self._env)}"
+            )
         elif self.state == State.succeeded:
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():

@@ -35,7 +35,7 @@ class State(Enum):
     running = auto()
     succeeded = auto()
     failed = auto()
-    canceled = auto()
+    cancelled = auto()
 
     def finished(self) -> bool:
         return self in (State.succeeded, State.failed)
@@ -106,9 +106,9 @@ class PipelineItem(ABC):
 
     def cancel(self) -> None:
         """Cancels job and all that require it."""
-        if self.state in (State.succeeded, State.canceled):
+        if self.state in (State.succeeded, State.cancelled):
             return  # No need to cancel
-        self.state = State.canceled
+        self.state = State.cancelled
         for item, _ in self.required_by:
             if not item.run_always:
                 item.cancel()
@@ -242,7 +242,7 @@ class Job(PipelineItem, CaptureInitParams):
             raise RuntimeError(
                 "Job must be initialized before running it. (call Job.init)"
             )
-        if self.state == State.canceled:
+        if self.state == State.cancelled:
             return None
         self._check_prerequisites()
         self.state = State.running
@@ -278,7 +278,7 @@ class JobManager(PipelineItem):
         """Crates this JobManager's jobs."""
         self.result: Optional[dict[str, Any]]
         self._env = env
-        if self.state == State.canceled:
+        if self.state == State.cancelled:
             self.jobs = []
         else:
             self.state = State.running
@@ -311,7 +311,7 @@ class JobManager(PipelineItem):
         """Update this manager's state according to its jobs and return status."""
         self._update()
         states = self._job_states()
-        if self.state in (State.failed, State.canceled):
+        if self.state in (State.failed, State.cancelled):
             pass
         elif State.in_queue in states or State.running in states:
             self.state = State.running
@@ -334,7 +334,7 @@ class JobManager(PipelineItem):
         """
         return self.state == State.running and len(
             self._jobs_with_state(State.succeeded)
-            + self._jobs_with_state(State.canceled)
+            + self._jobs_with_state(State.cancelled)
         ) == len(self.jobs)
 
     def any_failed(self) -> bool:

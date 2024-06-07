@@ -16,9 +16,10 @@
 
 from abc import abstractmethod
 from functools import cache
+import os
 import random
-from typing import Optional, Union, Callable
 import subprocess
+from typing import Optional, Union, Callable
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -76,31 +77,32 @@ class JudgeManager(TaskJobManager):
             if comp is not None:
                 judge_j.add_prerequisite(comp)
 
-            JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
+            if os.stat(out.path).st_size > 0:
+                JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
 
-            total = sum(map(lambda x: x[1], JOBS))
-            random.seed(4)  # Reproducibility!
-            seeds = random.sample(range(0, 16**4), total)
+                total = sum(map(lambda x: x[1], JOBS))
+                random.seed(4)  # Reproducibility!
+                seeds = random.sample(range(0, 16**4), total)
 
-            for job, times in JOBS:
-                for i in range(times):
-                    seed = seeds.pop()
-                    inv_out = TaskPath.invalid_file(self._env, out.name, seed)
-                    jobs += [
-                        invalidate := job(self._env, out, inv_out, seed),
-                        run_judge := judge_job(
-                            inp,
-                            inv_out,
-                            out,
-                            0,
-                            lambda: "0",
-                            None,
-                            self._env,
-                        ),
-                    ]
-                    if comp is not None:
-                        run_judge.add_prerequisite(comp)
-                    run_judge.add_prerequisite(invalidate)
+                for job, times in JOBS:
+                    for _ in range(times):
+                        seed = seeds.pop()
+                        inv_out = TaskPath.invalid_file(self._env, out.name, seed)
+                        jobs += [
+                            invalidate := job(self._env, out, inv_out, seed),
+                            run_judge := judge_job(
+                                inp,
+                                inv_out,
+                                out,
+                                0,
+                                lambda: "0",
+                                None,
+                                self._env,
+                            ),
+                        ]
+                        if comp is not None:
+                            run_judge.add_prerequisite(comp)
+                        run_judge.add_prerequisite(invalidate)
         return jobs
 
 
@@ -284,7 +286,7 @@ class RunJudge(ProgramsJob):
             return self.state.name
 
     def verdict_mark(self) -> str:
-        if self.state == State.canceled:
+        if self.state == State.cancelled:
             return "-"
         elif self.result is None:
             return " "
