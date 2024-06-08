@@ -103,7 +103,7 @@ tokens_float_abs_error=1e-30
 # will be parsed and compared with a given error margin
 # Any tokens that can't be parsed as a float will be compared character-by-character
 # If used, both of these options must be specified
-# Set both options to X to disable
+# To explicitly disable float checking, set both options to the empty string
 
 [test01]
 # Section for each subtask (indexed from one)
