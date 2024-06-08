@@ -100,6 +100,41 @@ class PrepareTextPreprocessor(TaskJob):
             raise PipelineItemFailure("Text preprocessor compilation failed.")
 
 
+class PrepareTokenJudge(TaskJob):
+    """Compiles the generic token-based judge."""
+
+    def __init__(self, env: Env, **kwargs) -> None:
+        super().__init__(env=env, name="Prepare token judge", **kwargs)
+
+    def _run(self):
+        source_files = ["util.cc", "io.cc", "token.cc", "random.cc", "judge-token.cc"]
+        source_dir = files("pisek").joinpath("tools/judgelib")
+        sources = [source_dir.joinpath(file) for file in source_files]
+
+        executable = TaskPath.executable_path(self._env, "judge-token")
+        self._access_file(executable)
+
+        gpp = subprocess.run(
+            [
+                "g++",
+                *sources,
+                "-I",
+                source_dir,
+                "-o",
+                executable.path,
+                "-std=gnu++17",
+                "-O2",
+                "-Wall",
+                "-Wextra",
+                "-Wno-parentheses",
+                "-Wno-sign-compare",
+            ]
+        )
+
+        if gpp.returncode != 0:
+            raise PipelineItemFailure("Token judge compilation failed.")
+
+
 class SanitizeAbstract(ProgramsJob):
     """Abstract job that has method for file sanitization."""
 

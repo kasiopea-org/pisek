@@ -31,7 +31,7 @@ from pisek.jobs.parts.run_result import RunResult, RunResultKind
 from pisek.jobs.parts.program import ProgramsJob
 from pisek.jobs.parts.compile import Compile
 from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.jobs.parts.tools import Sanitize
+from pisek.jobs.parts.tools import PrepareTokenJudge, Sanitize
 from pisek.jobs.parts.solution_result import Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
@@ -45,6 +45,8 @@ class JudgeManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
+        comp: Optional[Job] = None
+
         if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
                 raise RuntimeError(
@@ -53,6 +55,8 @@ class JudgeManager(TaskJobManager):
             jobs.append(
                 comp := Compile(self._env, TaskPath(self._env.config.out_judge))
             )
+        elif self._env.config.out_check == OutCheck.tokens:
+            jobs.append(comp := PrepareTokenJudge(self._env))
 
         samples = self._get_samples()
         if self._env.config.task_type == "communication":
@@ -70,7 +74,7 @@ class JudgeManager(TaskJobManager):
                     self._env,
                 )
             )
-            if self._env.config.out_check == OutCheck.judge:
+            if comp is not None:
                 judge_j.add_prerequisite(comp)
 
             if os.stat(out.path).st_size > 0:
@@ -96,7 +100,7 @@ class JudgeManager(TaskJobManager):
                                 self._env,
                             ),
                         ]
-                        if self._env.config.out_check == OutCheck.judge:
+                        if comp is not None:
                             run_judge.add_prerequisite(comp)
                         run_judge.add_prerequisite(invalidate)
         return jobs
@@ -264,7 +268,7 @@ class RunJudge(ProgramsJob):
                 + tab(
                     self._format_run_result(
                         judge_rr,
-                        status=isinstance(self, RunDiffJudge),
+                        status=isinstance(self, RunDiffJudge | RunTokenJudge),
                         stderr_force_content=True,
                     )
                 )
@@ -426,6 +430,74 @@ class RunDiffJudge(RunBatchJudge):
             )
 
 
+class RunTokenJudge(RunBatchJudge):
+    """Judges solution output and correct output using judge-token."""
+
+    def __init__(
+        self,
+        env: Env,
+        input_: TaskPath,
+        output: TaskPath,
+        correct_output: TaskPath,
+        expected_points: Optional[float],
+    ) -> None:
+        super().__init__(
+            env=env,
+            judge_name="judge-token",
+            input_=input_,
+            output=output,
+            correct_output=correct_output,
+            expected_points=expected_points,
+        )
+
+    def _judge(self) -> SolutionResult:
+        self._access_file(self.output)
+        self._access_file(self.correct_output)
+
+        executable = TaskPath.executable_path(self._env, "judge-token")
+        flags = ["-t"]
+
+        if self._env.config.tokens_ignore_newlines:
+            flags.append("-n")
+        if self._env.config.tokens_ignore_case:
+            flags.append("-i")
+        if self._env.config.tokens_float_rel_error != None:
+            flags.extend(
+                [
+                    "-r",
+                    "-e",
+                    str(self._env.config.tokens_float_rel_error),
+                    "-E",
+                    str(self._env.config.tokens_float_abs_error),
+                ]
+            )
+
+        judge = subprocess.run(
+            [executable.path, *flags, self.output.path, self.correct_output.path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        stderr = judge.stderr.decode("utf-8")
+
+        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
+        rr = RunResult(
+            RunResultKind.OK,
+            judge.returncode,
+            0,
+            0,
+            status=(stderr.strip() or "Files are equivalent")
+            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
+        )
+
+        if judge.returncode == 42:
+            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)
+        elif judge.returncode == 43:
+            return SolutionResult(Verdict.wrong_answer, 0.0, self._solution_run_res, rr)
+        else:
+            raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
+
+
 class RunKasiopeaJudge(RunBatchJudge):
     """Judges solution output using judge with Kasiopea interface."""
 
@@ -534,10 +606,13 @@ def judge_job(
     get_seed: Callable[[], str],
     expected_points: Optional[float],
     env: Env,
-) -> Union[RunDiffJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
+) -> Union[RunDiffJudge, RunTokenJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(env, input_, output, correct_output, expected_points)
+
+    if env.config.out_check == OutCheck.tokens:
+        return RunTokenJudge(env, input_, output, correct_output, expected_points)
 
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")

@@ -53,6 +53,7 @@ MaybeInt = Annotated[
 ]
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
+OptionalFloat = Annotated[Optional[float], BeforeValidator(lambda s: s or None)]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -91,6 +92,10 @@ class TaskConfig(BaseEnv):
     judge_type: Optional[JudgeType]
     judge_needs_in: bool
     judge_needs_out: bool
+    tokens_ignore_newlines: bool
+    tokens_ignore_case: bool
+    tokens_float_rel_error: OptionalFloat
+    tokens_float_abs_error: OptionalFloat
 
     in_format: DataFormat
     out_format: DataFormat
@@ -159,19 +164,23 @@ class TaskConfig(BaseEnv):
             ("all_solutions", "stub"),
             ("all_solutions", "headers"),
         ]
-        JUDGE_KEYS = [
-            ("out_judge", None),
-            ("judge_type", None),
-            ("judge_needs_in", "0"),
-            ("judge_needs_out", "1"),
+        OUT_CHECK_SPECIFIC_KEYS = [
+            ("judge", "out_judge", None),
+            ("judge", "judge_type", None),
+            ("judge", "judge_needs_in", "0"),
+            ("judge", "judge_needs_out", "1"),
+            ("tokens", "tokens_ignore_newlines", "0"),
+            ("tokens", "tokens_ignore_case", "0"),
+            ("tokens", "tokens_float_rel_error", None),
+            ("tokens", "tokens_float_abs_error", None),
         ]
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
 
         # Load judge specific keys
-        for key, default in JUDGE_KEYS:
-            if args["out_check"].value == "judge":
+        for out_check, key, default in OUT_CHECK_SPECIFIC_KEYS:
+            if args["out_check"].value == out_check:
                 args[key] = configs.get("tests", key)
             else:
                 args[key] = ConfigValue(default, "_internal", "tests", key, True)
@@ -224,6 +233,18 @@ class TaskConfig(BaseEnv):
                 "communication_must_have_judge",
                 "For communication task 'out_check' must be 'judge'",
                 {"task_type": self.task_type, "out_check": self.out_check},
+            )
+
+        if (self.tokens_float_abs_error is not None) != (
+            self.tokens_float_rel_error is not None
+        ):
+            raise PydanticCustomError(
+                "tokens_errors_must_be_set_together",
+                "Both types of floating point error must be set together",
+                {
+                    "tokens_float_abs_error": self.tokens_float_abs_error,
+                    "tokens_float_rel_error": self.tokens_float_rel_error,
+                },
             )
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
