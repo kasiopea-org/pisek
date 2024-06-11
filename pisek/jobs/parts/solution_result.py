@@ -24,6 +24,7 @@ from pisek.jobs.parts.run_result import RunResult
 
 
 class Verdict(Enum):
+    # Higher value means more unsuccessful verdict.
     ok = 1
     partial_ok = 2
     timeout = 3

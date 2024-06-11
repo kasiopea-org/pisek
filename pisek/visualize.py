@@ -232,7 +232,7 @@ def show_all(results: list[LoggedResult]) -> list[LoggedResult]:
 
 
 def show_slowest(results: list[LoggedResult]) -> list[LoggedResult]:
-    return [max(results, key=lambda r: r.time)]
+    return [max(results, key=lambda r: (r.verdict.value, r.time))]
 
 
 def visualize(
