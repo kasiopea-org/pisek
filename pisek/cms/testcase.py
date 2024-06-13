@@ -54,7 +54,6 @@ def get_testcases(env: Env) -> list[tuple[str, TaskPath, TaskPath | None]]:
     test_dir = TaskPath.generated_path(env)
     sample_dir = TaskPath.static_path(env)
 
-    sample_globs = config.subtasks[0].in_globs
     test_globs = config.input_globs
     solution = config.solutions[config.primary_solution].source
 
@@ -62,7 +61,7 @@ def get_testcases(env: Env) -> list[tuple[str, TaskPath, TaskPath | None]]:
 
     testcases = []
 
-    for input in get_inputs_in(sample_globs, sample_dir):
+    for input in get_inputs_in(test_globs, sample_dir):
         codename = input[:-3]
         input_file = TaskPath.static_path(env, input)
 
