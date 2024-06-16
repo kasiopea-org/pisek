@@ -47,7 +47,7 @@ from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task, set_task_settings
-from pisek.env.env import Env
+from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import with_env
@@ -61,6 +61,7 @@ def prepare_files(env: Env):
 
     env = env.fork()
     env.solutions = [env.config.primary_solution]
+    env.target = TestingTarget.solution
 
     if TaskPipeline(env).run_jobs(Cache(env), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
