@@ -175,6 +175,8 @@ def check(env: Env, args: Namespace) -> int:
 
 @with_env
 def export(env: Env, args: Namespace) -> int:
+    prepare_files(env)
+
     directory = args.output
     makedirs(directory, exist_ok=True)
 
