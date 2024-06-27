@@ -176,12 +176,12 @@ def check(env: Env, args: Namespace) -> int:
 @with_env
 def export(env: Env, args: Namespace) -> int:
     directory = args.output
-    makedirs(directory)
+    makedirs(directory, exist_ok=True)
 
     for name, input, output in get_testcases(env):
         copyfile(input.path, path.join(directory, f"{name}.in"))
 
         if output is not None:
-            copyfile(input.path, path.join(directory, f"{name}.out"))
+            copyfile(output.path, path.join(directory, f"{name}.out"))
 
     return 0
