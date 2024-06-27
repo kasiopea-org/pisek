@@ -42,11 +42,14 @@
 from argparse import Namespace
 from cms.db.session import Session
 from sqlalchemy.exc import IntegrityError
+from os import path, makedirs
+from shutil import copyfile
 
 from pisek.cms.dataset import create_dataset, get_dataset
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task, set_task_settings
+from pisek.cms.testcase import get_testcases
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
@@ -168,3 +171,15 @@ def check(env: Env, args: Namespace) -> int:
     success = check_results(session, env, dataset)
 
     return 0 if success else 1
+
+
+@with_env
+def export(env: Env, args: Namespace) -> int:
+    directory = args.output
+    makedirs(directory)
+
+    for name, input, output in get_testcases(env):
+        copyfile(input.path, path.join(directory, f"{name}.in"))
+
+        if output is not None:
+            copyfile(input.path, path.join(directory, f"{name}.out"))

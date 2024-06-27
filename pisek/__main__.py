@@ -345,6 +345,18 @@ def main(argv):
     )
     add_argument_dataset(parser_cms_check)
 
+    parser_cms_export = subparsers_cms.add_parser(
+        "export",
+        help="Export inputs and outputs, for publishing.",
+    )
+    parser_cms_export.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        required=True,
+        help="Save tests into this directory.",
+    )
+
     args = parser.parse_args(argv)
 
     result = None
