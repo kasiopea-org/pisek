@@ -398,6 +398,8 @@ def main(argv):
             result = cms.testing_log(args)
         elif args.cms_subcommand == "check":
             result = cms.check(args)
+        elif args.cms_subcommand == "export":
+            result = cms.export(args)
         else:
             raise RuntimeError(f"Unknown CMS command {args.cms_subcommand}")
 

@@ -183,3 +183,5 @@ def export(env: Env, args: Namespace) -> int:
 
         if output is not None:
             copyfile(input.path, path.join(directory, f"{name}.out"))
+
+    return 0
