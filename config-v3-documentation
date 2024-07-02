@@ -65,7 +65,7 @@ out_format=text
 #   text    ASCII plain text (LF newlines)
 #   binary  can be anything
 #
-# TODO: Server mode
+# TODO: Mention auto normalization in Server mode when it's done (#137)
 
 checker=check
 # Program (without suffix) that validates inputs
