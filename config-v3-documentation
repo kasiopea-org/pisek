@@ -193,7 +193,7 @@ stub=src/stub
 # Link each solution with given program (without suffix)
 # Used commonly for interactive tasks
 
-headers=src/blecha.h
+headers=src/a-plus-b.h
 # Only for C/C++ CMS tasks
 # Allow each solution to include the given headers
 # Used commonly for interactive tasks
