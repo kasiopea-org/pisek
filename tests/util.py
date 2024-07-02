@@ -25,14 +25,21 @@ class TestFixture(unittest.TestCase):
         self.task_dir_orig = os.path.abspath(
             os.path.join(os.path.dirname(__file__), self.fixture_path())
         )
-        self.fixtures_dir = tempfile.mkdtemp()
+        self.fixtures_dir = tempfile.mkdtemp(prefix="pisek-test_")
         self.task_dir = os.path.join(
             self.fixtures_dir, os.path.relpath(self.fixture_path(), "../fixtures")
         )
 
         # shutil.copytree() requires that the destination directory does not exist,
         os.rmdir(self.fixtures_dir)
-        shutil.copytree(os.path.join(self.task_dir_orig, ".."), self.fixtures_dir)
+        shutil.copytree(
+            self.task_dir_orig,
+            os.path.join(self.fixtures_dir, os.path.basename(self.task_dir_orig)),
+        )
+        shutil.copytree(
+            os.path.join(self.task_dir_orig, "../pisek"),
+            os.path.join(self.fixtures_dir, "pisek"),
+        )
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
@@ -52,8 +59,8 @@ class TestFixture(unittest.TestCase):
 
         os.chdir(self.cwd_orig)
 
-        assert self.task_dir.startswith("/tmp") or self.task_dir.startswith("/var")
-        shutil.rmtree(self.task_dir)
+        assert self.fixtures_dir.startswith("/tmp") or self.fixtures_dir.startswith("/var")
+        shutil.rmtree(self.fixtures_dir)
 
     def log_files(self):
         """Log all files for checking whether new ones have been created."""
