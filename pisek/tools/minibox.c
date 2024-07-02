@@ -40,6 +40,8 @@
 #define UNUSED __attribute__((unused))
 #define ARRAY_SIZE(a) (int)(sizeof(a)/sizeof(a[0]))
 
+#define TIMER_INTERVAL_US 100000
+
 static int timeout;			/* milliseconds */
 static int wall_timeout;
 static int extra_timeout;
@@ -408,7 +410,6 @@ signal_alarm(int unused UNUSED)
 {
   /* Time limit checks are synchronous, so we only schedule them there. */
   timer_tick = 1;
-  alarm(1);
 }
 
 static void
@@ -563,7 +564,11 @@ box_keeper(void)
       bzero(&sa, sizeof(sa));
       sa.sa_handler = signal_alarm;
       sigaction(SIGALRM, &sa, NULL);
-      alarm(1);
+      struct itimerval timer = {
+	.it_interval = { .tv_usec = TIMER_INTERVAL_US },
+	.it_value = { .tv_usec = TIMER_INTERVAL_US },
+      };
+      setitimer(ITIMER_REAL, &timer, NULL);
     }
 
   for(;;)
