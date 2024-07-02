@@ -59,7 +59,9 @@ class TestFixture(unittest.TestCase):
 
         os.chdir(self.cwd_orig)
 
-        assert self.fixtures_dir.startswith("/tmp") or self.fixtures_dir.startswith("/var")
+        assert self.fixtures_dir.startswith("/tmp") or self.fixtures_dir.startswith(
+            "/var"
+        )
         shutil.rmtree(self.fixtures_dir)
 
     def log_files(self):
