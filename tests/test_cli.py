@@ -23,7 +23,7 @@ class TestCLI(TestFixture):
         return "../fixtures/sum_cms/"
 
     def args(self):
-        return [["--timeout", "1"]]
+        return [["--timeout", "0.2"]]
 
     def runTest(self):
         if not self.fixture_path():
