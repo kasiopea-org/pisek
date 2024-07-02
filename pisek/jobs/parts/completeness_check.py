@@ -71,7 +71,9 @@ class CompletenessCheck(TaskJobManager):
                 with open(judge_out.path) as f:
                     lines = f.read().rstrip().split("\n")
                 if len(lines) > 1:
-                    return self._warn(f"{judge_out:p} contains multiple lines")
+                    self._warn(f"{judge_out:p} contains multiple lines")
+                    if self._env.verbosity <= 0:
+                        return
 
     def _evaluate(self) -> None:
         self._check_dedicated_solutions()
