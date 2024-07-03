@@ -71,7 +71,7 @@ class CompletenessCheck(TaskJobManager):
             for judge_out in self._get_judge_outs():
                 with open(judge_out.path) as f:
                     lines = f.read().rstrip().split("\n")
-                if len(lines) != 1:
+                if len(lines) > 1 or lines[0] == "":  # Python splitting is weird
                     self._warn(f"{judge_out:p} should contain exactly one line")
                     if self._env.verbosity <= 0:
                         return
