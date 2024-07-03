@@ -11,6 +11,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pisek.utils.paths import TaskPath
+from pisek.env.env import TestingTarget
 from pisek.config.config_types import JudgeType
 from pisek.jobs.jobs import Job
 from pisek.jobs.parts.task_job import TaskJobManager, JUDGE_MAN_CODE, SOLUTION_MAN_CODE
@@ -76,5 +77,7 @@ class CompletenessCheck(TaskJobManager):
                         return
 
     def _evaluate(self) -> None:
-        self._check_dedicated_solutions()
         self._check_cms_judge()
+
+        if self._env.target == TestingTarget.all:
+            self._check_dedicated_solutions()
