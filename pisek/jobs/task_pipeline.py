@@ -102,6 +102,7 @@ class TaskPipeline(JobPipeline):
 
         if env.target == TestingTarget.all:
             named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
+            completeness_check[0].add_prerequisite(*judge)
             for solution in solutions:
                 completeness_check[0].add_prerequisite(*solution)
 

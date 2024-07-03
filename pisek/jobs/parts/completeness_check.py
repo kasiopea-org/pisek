@@ -13,7 +13,7 @@
 from pisek.utils.paths import TaskPath
 from pisek.config.config_types import JudgeType
 from pisek.jobs.jobs import Job
-from pisek.jobs.parts.task_job import TaskJobManager, SOLUTION_MAN_CODE
+from pisek.jobs.parts.task_job import TaskJobManager, JUDGE_MAN_CODE, SOLUTION_MAN_CODE
 
 
 class CompletenessCheck(TaskJobManager):
@@ -26,7 +26,7 @@ class CompletenessCheck(TaskJobManager):
         return []
 
     def _get_judge_outs(self) -> set[TaskPath]:
-        judge_outs = set()
+        judge_outs = self.prerequisites_results[JUDGE_MAN_CODE]["judge_outs"]
         for solution in self._env.solutions:
             judge_outs |= self.prerequisites_results[f"{SOLUTION_MAN_CODE}{solution}"][
                 "judge_outs"
