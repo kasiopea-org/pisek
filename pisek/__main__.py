@@ -264,15 +264,17 @@ def main(argv):
     add_argument_testing_log(parser)
     add_argument_pisek_dir(parser)
 
-    subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand")
+    subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand", required=True)
 
     parser_version = subparsers.add_parser("version", help="Print current version.")
 
     parser_test = subparsers.add_parser("test", help="test")
     parser_test.add_argument(
         "target",
-        choices=["solution", "generator"],
-        help="Test this program type ('solution' or 'generator').",
+        choices=["generator", "solution", "all"],
+        nargs="?",
+        default="all",
+        help="What to test?",
     )
     parser_test.add_argument(
         "solution", type=str, help="Test the solution with this name.", nargs="?"
@@ -356,15 +358,15 @@ def main(argv):
     if args.subcommand == "version":
         result = print_version()
     elif args.subcommand == "test":
-        if args.target == "solution":
-            result = test_solution(args)
-        elif args.target == "generator":
+        if args.target == "generator":
             result = test_generator(args)
+        elif args.target == "solution":
+            result = test_solution(args)
+        elif args.target == "all":
+            result = test_task(args, solutions=None)
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
-    elif args.subcommand is None:
-        result = test_task(args, solutions=None, target="all")
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
 
