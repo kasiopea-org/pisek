@@ -19,7 +19,7 @@ from functools import cache
 import os
 import random
 import subprocess
-from typing import Optional, Union, Callable
+from typing import Any, Optional, Union, Callable
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -104,6 +104,17 @@ class JudgeManager(TaskJobManager):
                             run_judge.add_prerequisite(comp)
                         run_judge.add_prerequisite(invalidate)
         return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        result["judge_outs"] = set()
+        for job in self.jobs:
+            if isinstance(job, RunJudge):
+                if isinstance(job, RunCMSJudge):
+                    result["judge_outs"].add(job.points_file)
+                result["judge_outs"].add(job.judge_log_file)
+
+        return result
 
 
 class RunKasiopeaJudgeMan(TaskJobManager):

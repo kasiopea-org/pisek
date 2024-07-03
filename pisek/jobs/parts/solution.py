@@ -203,8 +203,20 @@ class SolutionManager(TaskJobManager):
                 result["outputs"][job.result.verdict].append(output)
 
         result["results"] = {}
-        for inp in self._judges:
-            result["results"][inp] = self._judges[inp].result
+        result["judge_outs"] = set()
+        for inp, judge_job in self._judges.items():
+            result["results"][inp] = judge_job.result
+
+            if judge_job.result is None or judge_job.result.verdict not in (
+                Verdict.ok,
+                Verdict.partial_ok,
+                Verdict.wrong_answer,
+            ):
+                continue
+
+            if isinstance(judge_job, RunCMSJudge):
+                result["judge_outs"].add(judge_job.points_file)
+            result["judge_outs"].add(judge_job.judge_log_file)
 
         result["subtasks"] = self._subtasks_results
 
