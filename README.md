@@ -5,6 +5,9 @@ Currently used by:
  - [Kasiopea](https://kasiopea.matfyz.cz/)
  - [Czech Informatics Olympiad](https://mo.mff.cuni.cz/p/)
 
+And was used by:
+ - [CEOI 2024](https://ceoi2024.fi.muni.cz/)
+
 ## Install
 
 Pisek requires Python ≥ 3.11. Install with pip:
@@ -33,11 +36,11 @@ It tests all task parts (generator, checker, solutions and judge).
 ### Task testing overview
 
 What pisek verifies (roughly in order):
- - Samples exist and are not empty
+ - Samples exist
  - The generator generates inputs
     - In Kasiopea mode the generator respects the seed and is deterministic
  - The checker accepts all inputs
-    - It rejects inputs for harder subtasks
+    - If `checker_distinguishes_subtasks`, it rejects inputs for harder subtasks
  - The judge works
     - It accepts the samples
     - It doesn't crash on malicious output
@@ -49,6 +52,10 @@ What pisek verifies (roughly in order):
     - They don't contain unprintable characters
     - They have a newline at the end
     - In Kasiopea mode the files are reasonably small
+ - Task is complete
+    - In CMS there are no redundant lines in judge's stdout/stderr.
+    - If `solution_for_each_subtask`, there exists dedicated solution for each subtask
+ 
 
 ### Testing given programs
 
