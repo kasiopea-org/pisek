@@ -55,6 +55,18 @@ data_subdir=tests/
 in_gen=src/gen
 # Source code of generator (without suffix)
 
+in_format=text
+# Format of input:
+#   text    ASCII plain text (LF newlines)
+#   binary  can be anything
+
+out_format=text
+# Format of output:
+#   text    ASCII plain text (LF newlines)
+#   binary  can be anything
+#
+# TODO: Mention auto normalization in Server mode when it's done (#137)
+
 checker=check
 # Program (without suffix) that validates inputs
 # No value means no checking
