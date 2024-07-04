@@ -38,7 +38,7 @@ It tests all task parts (generator, checker, solutions and judge).
 What pisek verifies (roughly in order):
  - Samples exist
  - The generator generates inputs
-    - In Kasiopea mode the generator respects the seed and is deterministic
+    - Kasiopea generator respects the seed and is deterministic
  - The checker accepts all inputs
     - If `checker_distinguishes_subtasks=on`, it rejects inputs for harder subtasks
  - The judge works
