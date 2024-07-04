@@ -51,9 +51,9 @@ What pisek verifies (roughly in order):
     - They are in the correct encoding
     - They don't contain unprintable characters
     - They have a newline at the end
-    - In Kasiopea mode the files are reasonably small
+    - The files are reasonably small
  - The task is complete
-    - In CMS there are no redundant lines in the judge's stdout/stderr
+    - CMS judge has no redundant lines in its stdout/stderr
     - If `solution_for_each_subtask=on`, there exists a dedicated solution for each subtask
  
 
