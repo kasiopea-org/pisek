@@ -48,6 +48,6 @@ subtasks=1WW
 
 [limits]
 # Time limit (seconds) for solutions
-solve_time_limit=1
+solve_time_limit=0.2
 # Memory (address space) limit (MB) for solutions
 solve_mem_limit=128

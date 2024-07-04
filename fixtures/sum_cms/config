@@ -40,7 +40,7 @@ predecessors=1 2
 
 [limits]
 # Time limit (seconds) for solutions
-solve_time_limit=2
+solve_time_limit=0.2
 
 [solution_solve]
 source=solve

@@ -124,7 +124,7 @@ class TestFixtureVariant(TestFixture):
                 inputs=1,
                 strict=False,
                 full=False,
-                timeout=1,
+                timeout=0.2,
                 plain=False,
             )
 
