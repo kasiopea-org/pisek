@@ -38,7 +38,7 @@ It tests all task parts (generator, checker, solutions and judge).
 What pisek verifies (roughly in order):
  - Samples exist
  - The generator generates inputs
-    - Kasiopea generator respects the seed and is deterministic
+    - A Kasiopea generator respects the seed and is deterministic
  - The checker accepts all inputs
     - If `checker_distinguishes_subtasks=on`, it rejects inputs for harder subtasks
  - The judge works
@@ -53,7 +53,7 @@ What pisek verifies (roughly in order):
     - They have a newline at the end
     - The files are reasonably small
  - The task is complete
-    - CMS judge has no redundant lines in its stdout/stderr
+    - A CMS judge has no redundant lines in its stdout/stderr
     - If `solution_for_each_subtask=on`, there exists a dedicated solution for each subtask
  
 
