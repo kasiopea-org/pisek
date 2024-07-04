@@ -40,7 +40,7 @@ What pisek verifies (roughly in order):
  - The generator generates inputs
     - In Kasiopea mode the generator respects the seed and is deterministic
  - The checker accepts all inputs
-    - If `checker_distinguishes_subtasks`, it rejects inputs for harder subtasks
+    - If `checker_distinguishes_subtasks=on`, it rejects inputs for harder subtasks
  - The judge works
     - It accepts the samples
     - It doesn't crash on malicious output
@@ -52,9 +52,9 @@ What pisek verifies (roughly in order):
     - They don't contain unprintable characters
     - They have a newline at the end
     - In Kasiopea mode the files are reasonably small
- - Task is complete
-    - In CMS there are no redundant lines in judge's stdout/stderr.
-    - If `solution_for_each_subtask`, there exists dedicated solution for each subtask
+ - The task is complete
+    - In CMS there are no redundant lines in the judge's stdout/stderr
+    - If `solution_for_each_subtask=on`, there exists a dedicated solution for each subtask
  
 
 ### Testing given programs
