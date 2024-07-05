@@ -92,7 +92,7 @@ class TaskConfig(BaseEnv):
     data_subdir: str
 
     in_gen: TaskPathFromStr
-    checker: OptionalStr
+    checker: OptionalTaskPathFromStr
     out_check: OutCheck
     out_judge: OptionalTaskPathFromStr
     judge_type: Optional[JudgeType]
