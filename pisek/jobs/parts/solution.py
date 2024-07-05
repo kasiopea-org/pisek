@@ -119,8 +119,9 @@ class SolutionManager(TaskJobManager):
         if self._env.config.out_judge is None:
             raise RuntimeError("Unset judge for communication.")
 
-        judge = TaskPath(self._env.config.out_judge)
-        return RunCommunication(self._env, self._solution, self.is_primary, judge, inp)
+        return RunCommunication(
+            self._env, self._solution, self.is_primary, self._env.config.out_judge, inp
+        )
 
     def _update(self):
         """Cancel running on inputs that can't change anything."""

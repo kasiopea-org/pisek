@@ -57,7 +57,9 @@ OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 OptionalFloat = Annotated[Optional[float], BeforeValidator(lambda s: s or None)]
 
 TaskPathFromStr = Annotated[TaskPath, BeforeValidator(lambda s: TaskPath(s))]
-
+OptionalTaskPathFromStr = Annotated[
+    Optional[TaskPath], BeforeValidator(lambda s: TaskPath(s) if s else None)
+]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -92,7 +94,7 @@ class TaskConfig(BaseEnv):
     in_gen: TaskPathFromStr
     checker: OptionalStr
     out_check: OutCheck
-    out_judge: Optional[str]
+    out_judge: OptionalTaskPathFromStr
     judge_type: Optional[JudgeType]
     judge_needs_in: bool
     judge_needs_out: bool
