@@ -47,9 +47,7 @@ class SolutionManager(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         self.is_primary: bool = self._env.config.solutions[self.solution_label].primary
-        self._solution = TaskPath.solution_path(
-            self._env, self._env.config.solutions[self.solution_label].source
-        )
+        self._solution = self._env.config.solutions[self.solution_label].source
 
         jobs: list[Job] = []
 
@@ -97,7 +95,7 @@ class SolutionManager(TaskJobManager):
         else:
             primary_sol = self._env.config.solutions[
                 self._env.config.primary_solution
-            ].source
+            ].raw_source
             c_out = TaskPath.output_file(self._env, inp.name, primary_sol)
 
         out = TaskPath.output_file(self._env, inp.name, self._solution.name)
@@ -442,10 +440,7 @@ class RunPrimarySolutionMan(TaskJobManager):
         super().__init__("Running primary solution")
 
     def _get_jobs(self) -> list[Job]:
-        solution = TaskPath.solution_path(
-            self._env,
-            self._env.config.solutions[self._env.config.primary_solution].source,
-        )
+        solution = self._env.config.solutions[self._env.config.primary_solution].source
 
         jobs: list[Job] = [
             compile := Compile(self._env, solution, True),

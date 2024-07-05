@@ -23,10 +23,10 @@ class UnknownSolutions(TaskConfigError):
         self, unknown: list[str], solutions: dict[str, "SolutionConfig"]
     ) -> None:
         def format_solution(s: SolutionConfig) -> str:
-            if s.name == s.source:
+            if s.name == s.raw_source:
                 return s.name
             else:
-                return f"{s.name} (source: {s.source})"
+                return f"{s.name} (source: {s.raw_source})"
 
         unknown_text = "', '".join(unknown)
         sols_text = "\n".join(map(format_solution, solutions.values()))

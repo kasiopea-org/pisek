@@ -146,7 +146,9 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def get_solution_by_source(self, source: str) -> Optional[str]:
-        sources = (name for name, sol in self.solutions.items() if sol.source == source)
+        sources = (
+            name for name, sol in self.solutions.items() if sol.raw_source == source
+        )
         return next(sources, None)
 
     def __init__(self, **kwargs):
@@ -255,6 +257,9 @@ class TaskConfig(BaseEnv):
                     "tokens_float_rel_error": self.tokens_float_rel_error,
                 },
             )
+
+        for sol_conf in self.solutions.values():
+            sol_conf.source = self.solutions_subdir.join(sol_conf.raw_source)
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
         if len(primary) > 1:
@@ -413,7 +418,8 @@ class SolutionConfig(BaseEnv):
     _section: str
     name: str
     primary: bool
-    source: str
+    raw_source: str
+    source: TaskPathFromStr
     points: MaybeInt
     points_above: MaybeInt
     points_below: MaybeInt
@@ -438,7 +444,12 @@ class SolutionConfig(BaseEnv):
             )
             for key in KEYS
         }
-        return {"_section": configs.get(name.section, None), "name": name, **args}
+        return {
+            "_section": configs.get(name.section, None),
+            "name": name,
+            "raw_source": args["source"],
+            **args,
+        }
 
     @field_validator("name", mode="after")
     @classmethod
@@ -463,7 +474,7 @@ class SolutionConfig(BaseEnv):
             "Must be one of (yes, no)",
         )
 
-    @field_validator("source", mode="before")
+    @field_validator("raw_source", mode="before")
     @classmethod
     def convert_auto(cls, value: str, info: ValidationInfo) -> str:
         if value == "@auto":
