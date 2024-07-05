@@ -30,6 +30,7 @@ from pydantic import (
 import re
 from typing import Optional, Any, Annotated, Union
 
+from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
 from pisek.utils.text import eprint, colored, warn
 from pisek.env.base_env import BaseEnv
@@ -54,6 +55,9 @@ MaybeInt = Annotated[
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 OptionalFloat = Annotated[Optional[float], BeforeValidator(lambda s: s or None)]
+
+TaskPathFromStr = Annotated[TaskPath, BeforeValidator(lambda s: TaskPath(s))]
+
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -85,7 +89,7 @@ class TaskConfig(BaseEnv):
     static_subdir: str
     data_subdir: str
 
-    in_gen: str
+    in_gen: TaskPathFromStr
     checker: OptionalStr
     out_check: OutCheck
     out_judge: Optional[str]
