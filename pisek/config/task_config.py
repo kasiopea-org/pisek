@@ -60,6 +60,9 @@ TaskPathFromStr = Annotated[TaskPath, BeforeValidator(lambda s: TaskPath(s))]
 OptionalTaskPathFromStr = Annotated[
     Optional[TaskPath], BeforeValidator(lambda s: TaskPath(s) if s else None)
 ]
+ListTaskPathFromStr = Annotated[
+    list[TaskPath], BeforeValidator(lambda s: [TaskPath(p) for p in s.split()])
+]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -106,8 +109,8 @@ class TaskConfig(BaseEnv):
     in_format: DataFormat
     out_format: DataFormat
 
-    stub: OptionalStr
-    headers: ListStr
+    stub: OptionalTaskPathFromStr
+    headers: ListTaskPathFromStr
 
     subtasks: dict[int, "SubtaskConfig"]
 

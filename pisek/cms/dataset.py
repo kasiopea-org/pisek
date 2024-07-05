@@ -163,7 +163,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     elif config.task_type == TaskType.communication:
         stub_basename = "stub"
 
-    directory, target_basename = path.split(config.stub)
+    directory, target_basename = path.split(config.stub.path)
     directory = path.normpath(directory)
 
     exts = set()
@@ -200,12 +200,10 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     config = env.config
 
     for header in config.headers:
-        basename = path.basename(header)
-
         header = files.put_file_from_path(
-            header, f"Header {basename} for {config.name}"
+            header, f"Header {header.name} for {config.name}"
         )
-        session.add(Manager(dataset=dataset, filename=basename, digest=header))
+        session.add(Manager(dataset=dataset, filename=header.name, digest=header))
 
 
 def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:

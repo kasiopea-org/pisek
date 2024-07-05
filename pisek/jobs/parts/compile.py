@@ -44,10 +44,9 @@ class Compile(ProgramsJob):
         self.stub = None
         self.headers = []
 
-        if use_stub and self._env.config.stub:
-            self.stub = TaskPath(self._env.config.stub)
-        if use_stub and self._env.config.headers:
-            self.headers = [TaskPath(header) for header in self._env.config.headers]
+        if use_stub:
+            self.stub = self._env.config.stub
+            self.headers = self._env.config.headers
 
     def _resolve_extension(self, name: TaskPath) -> TaskPath:
         """
