@@ -71,17 +71,20 @@ class TaskPath:
         path = os.path.splitext(self.path)[0] + new_suffix
         return TaskPath(path)
 
+    def join(self, *path: str) -> "TaskPath":
+        return TaskPath(os.path.join(self.path, *path))
+
     @staticmethod
     def from_abspath(*path: str) -> "TaskPath":
         return TaskPath(os.path.relpath(os.path.join(*path), "."))
 
     @staticmethod
     def static_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.static_subdir, *path)
+        return env.config.static_subdir.join(*path)
 
     @staticmethod
     def solution_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.solutions_subdir, *path)
+        return env.config.solutions_subdir.join(*path)
 
     @staticmethod
     def executable_path(env: "Env", *path: str) -> "TaskPath":
@@ -94,7 +97,7 @@ class TaskPath:
 
     @staticmethod
     def data_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.data_subdir, *path)
+        return env.config.data_subdir.join(*path)
 
     @staticmethod
     def generated_path(env: "Env", *path: str) -> "TaskPath":

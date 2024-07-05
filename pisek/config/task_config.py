@@ -87,9 +87,9 @@ class TaskConfig(BaseEnv):
     task_type: TaskType
     scoring: Scoring
 
-    solutions_subdir: str
-    static_subdir: str
-    data_subdir: str
+    solutions_subdir: TaskPathFromStr
+    static_subdir: TaskPathFromStr
+    data_subdir: TaskPathFromStr
 
     in_gen: TaskPathFromStr
     checker: OptionalTaskPathFromStr
