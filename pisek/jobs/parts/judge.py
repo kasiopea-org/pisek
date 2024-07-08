@@ -19,7 +19,7 @@ from functools import cache
 import os
 import random
 import subprocess
-from typing import Optional, Union, Callable
+from typing import Any, Optional, Union, Callable
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -52,9 +52,7 @@ class JudgeManager(TaskJobManager):
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
                 )
-            jobs.append(
-                comp := Compile(self._env, TaskPath(self._env.config.out_judge))
-            )
+            jobs.append(comp := Compile(self._env, self._env.config.out_judge))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
 
@@ -105,6 +103,17 @@ class JudgeManager(TaskJobManager):
                         run_judge.add_prerequisite(invalidate)
         return jobs
 
+    def _compute_result(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        result["judge_outs"] = set()
+        for job in self.jobs:
+            if isinstance(job, RunJudge):
+                if isinstance(job, RunCMSJudge):
+                    result["judge_outs"].add(job.points_file)
+                result["judge_outs"].add(job.judge_log_file)
+
+        return result
+
 
 class RunKasiopeaJudgeMan(TaskJobManager):
     def __init__(
@@ -149,9 +158,7 @@ class RunKasiopeaJudgeMan(TaskJobManager):
                 )
             jobs.insert(
                 0,
-                compile_judge := Compile(
-                    self._env, TaskPath(self._env.config.out_judge)
-                ),
+                compile_judge := Compile(self._env, self._env.config.out_judge),
             )
             judge.add_prerequisite(compile_judge)
 
@@ -616,16 +623,15 @@ def judge_job(
 
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
-    judge = TaskPath(env.config.out_judge)
 
     if env.config.judge_type == JudgeType.cms:
         return RunCMSBatchJudge(
-            env, judge, input_, output, correct_output, expected_points
+            env, env.config.out_judge, input_, output, correct_output, expected_points
         )
     else:
         return RunKasiopeaJudge(
             env,
-            judge,
+            env.config.out_judge,
             input_,
             output,
             correct_output,

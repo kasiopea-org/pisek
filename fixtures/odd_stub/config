@@ -17,7 +17,7 @@ points=10
 in_globs=*.in
 
 [limits]
-solve_time_limit=1
+solve_time_limit=0.2
 
 [solution_solve]
 source=solve

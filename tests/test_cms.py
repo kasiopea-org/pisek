@@ -46,7 +46,7 @@ class TestOldInputsDeleted(TestSumCMS):
     def modify_task(self):
         task_config = load_config(self.task_dir)
         self.inputs_dir = os.path.join(
-            self.task_dir, task_config.data_subdir, GENERATED_SUBDIR
+            self.task_dir, task_config.data_subdir.path, GENERATED_SUBDIR
         )
 
         # We only care about the generation part, so remove solve.py to stop the tests
