@@ -132,7 +132,7 @@ def get_submission_of_digest(
 def resolve_solution(
     contest: Contest, env: Env, solution: SolutionConfig
 ) -> tuple[TaskPath, Language]:
-    source: str = solution.source
+    source: str = solution.raw_source
 
     for language_name in contest.languages:
         language: Language = get_language(language_name)

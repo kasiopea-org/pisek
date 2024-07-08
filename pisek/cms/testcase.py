@@ -55,7 +55,7 @@ def get_testcases(env: Env) -> list[tuple[str, TaskPath, TaskPath | None]]:
     sample_dir = TaskPath.static_path(env)
 
     test_globs = config.input_globs
-    solution = config.solutions[config.primary_solution].source
+    solution = config.solutions[config.primary_solution].raw_source
 
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
 

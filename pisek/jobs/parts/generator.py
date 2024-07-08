@@ -38,7 +38,7 @@ class GeneratorManager(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath(self._env.config.in_gen)
+        generator = self._env.config.in_gen
 
         jobs: list[Job] = [compile_gen := Compile(self._env, generator)]
 
@@ -110,13 +110,11 @@ class RunOnlineGeneratorMan(TaskJobManager):
         super().__init__("Running generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = TaskPath(self._env.config.in_gen)
-
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, generator),
+            compile_gen := Compile(self._env, self._env.config.in_gen),
             gen := OnlineGeneratorGenerate(
                 self._env,
-                generator,
+                self._env.config.in_gen,
                 TaskPath(self._file),
                 self._subtask,
                 self._seed,

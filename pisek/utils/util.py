@@ -75,7 +75,7 @@ def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
     # directory
 
     rm_f(os.path.join(task_dir, CACHE_FILENAME))
-    _clean_subdirs(task_dir, [config.data_subdir, BUILD_DIR])
+    _clean_subdirs(task_dir, [config.data_subdir.path, BUILD_DIR])
     return True
 
 
