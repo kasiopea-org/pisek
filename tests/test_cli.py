@@ -23,7 +23,7 @@ class TestCLI(TestFixture):
         return "../fixtures/sum_cms/"
 
     def args(self):
-        return [["--timeout", "0.2"]]
+        return [["test", "--timeout", "0.2"]]
 
     def runTest(self):
         if not self.fixture_path():
@@ -61,7 +61,7 @@ class TestCLIClean(TestCLI):
 
 class TestCLITestingLog(TestCLI):
     def args(self):
-        return [["--testing-log"]]
+        return [["test", "--testing-log"]]
 
     def created_files(self):
         return ["testing_log.json"]
@@ -69,7 +69,7 @@ class TestCLITestingLog(TestCLI):
 
 class TestCLIVisualize(TestCLI):
     def args(self):
-        return [["--testing-log"], ["visualize"]]
+        return [["test", "--testing-log"], ["visualize"]]
 
     def created_files(self):
         return ["testing_log.json"]

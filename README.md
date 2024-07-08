@@ -27,7 +27,7 @@ You can also reference the examples for
 and [CMS mode](https://github.com/kasiopea-org/pisek/blob/master/fixtures/sum_cms/config).
 
 ```bash
-pisek
+pisek test
 ```
 
 This command tests the task in the current directory.
@@ -78,22 +78,22 @@ pisek test generator
 
 Test all solutions, don't stop on first failure:
 ```bash
-pisek --full
+pisek test --full
 ```
 
 Test each solution on all inputs, even when the result is clear:
 ```bash
-pisek --all-inputs
+pisek test --all-inputs
 ```
 
 Use a different time limit (in seconds) for testing solutions:
 ```bash
-pisek --timeout 5
+pisek test --timeout 5
 ```
 
 Interpret warnings as failures (for a final check):
 ```bash
-pisek --strict
+pisek test --strict
 ```
 
 ### Cleaning
@@ -107,7 +107,7 @@ pisek clean
 
 For visualizing the running time for each solution and testcase:
 ```bash
-pisek --testing-log  # test the task
+pisek test --testing-log  # test the task
 pisek visualize      # visualize
 ```
 
