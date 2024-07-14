@@ -266,7 +266,7 @@ class Job(PipelineItem, CaptureInitParams):
             self.state = State.succeeded
 
     @abstractmethod
-    def _run(self):
+    def _run(self) -> Any:
         """What this job actually does (without all the management)."""
         pass
 
