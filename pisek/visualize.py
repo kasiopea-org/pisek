@@ -22,8 +22,8 @@ from pisek.config.task_config import load_config
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import Scoring
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
-from pisek.jobs.parts.solution_result import Verdict
-from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
+from pisek.task_jobs.solution_result import Verdict
+from pisek.task_jobs.verdicts_eval import evaluate_verdicts
 
 
 class MissingSolution(Exception):

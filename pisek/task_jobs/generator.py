@@ -24,10 +24,10 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, GENERATED_SUBDIR
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.run_result import RunResult, RunResultKind
-from pisek.jobs.parts.program import ProgramsJob
-from pisek.jobs.parts.compile import Compile
+from pisek.task_jobs.task_job import TaskJob, TaskJobManager
+from pisek.task_jobs.run_result import RunResult, RunResultKind
+from pisek.task_jobs.program import ProgramsJob
+from pisek.task_jobs.compile import Compile
 
 
 class GeneratorManager(TaskJobManager):

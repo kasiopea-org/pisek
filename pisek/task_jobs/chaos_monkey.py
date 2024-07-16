@@ -19,7 +19,7 @@ import string
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.jobs.parts.task_job import TaskJob
+from pisek.task_jobs.task_job import TaskJob
 
 
 def randword(length: int):

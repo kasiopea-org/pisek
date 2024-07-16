@@ -47,7 +47,7 @@ from pisek.config.config_types import (
     CMSScoreMode,
 )
 from pisek.env.context import init_context
-from pisek.jobs.parts.solution_result import SUBTASK_SPEC
+from pisek.task_jobs.solution_result import SUBTASK_SPEC
 
 
 MaybeInt = Annotated[

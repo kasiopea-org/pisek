@@ -23,8 +23,8 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.task_config import ProgramType
-from pisek.jobs.parts.task_job import TaskJob, TaskJobManager
-from pisek.jobs.parts.program import ProgramsJob
+from pisek.task_jobs.task_job import TaskJob, TaskJobManager
+from pisek.task_jobs.program import ProgramsJob
 
 
 class ToolsManager(TaskJobManager):

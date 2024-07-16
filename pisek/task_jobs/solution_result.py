@@ -20,7 +20,7 @@ from functools import partial, cache
 from typing import Callable, Optional
 import yaml
 
-from pisek.jobs.parts.run_result import RunResult
+from pisek.task_jobs.run_result import RunResult
 
 
 class Verdict(Enum):
