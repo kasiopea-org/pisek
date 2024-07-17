@@ -14,14 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import glob
+from abc import abstractmethod
+from dataclasses import dataclass
 import random
 import os
 import shutil
 from typing import Any
+import yaml
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, GENERATED_SUBDIR
+from pisek.config.config_types import GenType
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.task_jobs.task_job import TaskJob, TaskJobManager
@@ -30,76 +33,97 @@ from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 
 
+@dataclass
+class InputInfo:
+    name: str
+    repeat: int = 1
+
+    def seeded_name(self, seed: int) -> str:
+        return f"{self.name}_{seed:x}.in"
+
+
+def task_path_representer(dumper, input_info: InputInfo):
+    return dumper.represent_sequence("!InputInfo", [input_info.name, input_info.repeat])
+
+
+def task_path_constructor(loader, value):
+    [name, repeat] = loader.construct_sequence(value)
+    return InputInfo(name, repeat)
+
+
+yaml.add_representer(InputInfo, task_path_representer)
+yaml.add_constructor("!InputInfo", task_path_constructor)
+
+
 class GeneratorManager(TaskJobManager):
     """Manager that generates inputs and test generator."""
 
     def __init__(self):
         self._inputs = []
-        super().__init__("Running generator")
+        super().__init__("Prepare generator")
 
     def _get_jobs(self) -> list[Job]:
         generator = self._env.config.in_gen
 
-        jobs: list[Job] = [compile_gen := Compile(self._env, generator)]
-
-        if self._env.config.contest_type == "kasiopea":
-            random.seed(4)  # Reproducibility!
-            seeds = random.sample(range(0, 16**4), self._env.inputs)
-            for sub_num, _ in self._env.config.subtasks.items():
-                if sub_num == 0:
-                    continue  # skip samples
-                last_gen: OnlineGeneratorGenerate
-                for i, seed in enumerate(seeds):
-                    self._inputs.append(
-                        input_ := TaskPath.generated_input_file(
-                            self._env, int(sub_num), seed
-                        )
-                    )
-
-                    jobs.append(
-                        gen := OnlineGeneratorGenerate(
-                            self._env, generator, input_, sub_num, seed
-                        )
-                    )
-                    gen.add_prerequisite(compile_gen)
-                    if i == 0:
-                        jobs.append(
-                            det := OnlineGeneratorDeterministic(
-                                self._env, generator, input_, sub_num, seed
-                            )
-                        )
-                        det.add_prerequisite(gen)
-                    elif i == 1:
-                        jobs.append(
-                            rs := OnlineGeneratorRespectsSeed(
-                                self._env,
-                                sub_num,
-                                last_gen.seed,
-                                gen.seed,
-                                last_gen.input_,
-                                gen.input_,
-                            )
-                        )
-                        rs.add_prerequisite(last_gen)
-                        rs.add_prerequisite(gen)
-                    last_gen = gen
-        else:
-            jobs.append(gen2 := OfflineGeneratorGenerate(self._env, generator))
-            gen2.add_prerequisite(compile_gen)
+        jobs: list[Job] = [
+            compile_gen := Compile(self._env, generator),
+            list_inputs := list_inputs_job(self._env, generator),
+        ]
+        list_inputs.add_prerequisite(compile_gen)
+        self._list_inputs = list_inputs
 
         return jobs
 
     def _compute_result(self) -> dict[str, Any]:
-        res = {}
-        if self._env.config.contest_type == "kasiopea":
-            res["inputs"] = self._inputs
-        else:
-            res["inputs"] = self.globs_to_files(
-                self._env.config.input_globs,
-                TaskPath.generated_path(self._env, "."),
-            )
+        return {"inputs": self._list_inputs.result}
 
-        return res
+
+def gen():
+    return None
+    if self._env.config.contest_type == "kasiopea":
+        random.seed(4)  # Reproducibility!
+        seeds = random.sample(range(0, 16**4), self._env.inputs)
+        for sub_num, _ in self._env.config.subtasks.items():
+            if sub_num == 0:
+                continue  # skip samples
+            last_gen: OnlineGeneratorGenerate
+            for i, seed in enumerate(seeds):
+                self._inputs.append(
+                    input_ := TaskPath.generated_input_file(
+                        self._env, int(sub_num), seed
+                    )
+                )
+
+                jobs.append(
+                    gen := OnlineGeneratorGenerate(
+                        self._env, generator, input_, sub_num, seed
+                    )
+                )
+                gen.add_prerequisite(compile_gen)
+                if i == 0:
+                    jobs.append(
+                        det := OnlineGeneratorDeterministic(
+                            self._env, generator, input_, sub_num, seed
+                        )
+                    )
+                    det.add_prerequisite(gen)
+                elif i == 1:
+                    jobs.append(
+                        rs := OnlineGeneratorRespectsSeed(
+                            self._env,
+                            sub_num,
+                            last_gen.seed,
+                            gen.seed,
+                            last_gen.input_,
+                            gen.input_,
+                        )
+                    )
+                    rs.add_prerequisite(last_gen)
+                    rs.add_prerequisite(gen)
+                last_gen = gen
+    else:
+        jobs.append(gen2 := CmsOldListInputs(self._env, generator))
+        gen2.add_prerequisite(compile_gen)
 
 
 class RunOnlineGeneratorMan(TaskJobManager):
@@ -123,6 +147,95 @@ class RunOnlineGeneratorMan(TaskJobManager):
         gen.add_prerequisite(compile_gen)
 
         return jobs
+
+
+class GeneratorListInputs(ProgramsJob):
+    """Lists all inputs generator can generate."""
+
+    def __init__(
+        self, env: Env, generator: TaskPath, *, name: str = "", **kwargs
+    ) -> None:
+        self.generator = generator
+        super().__init__(env, name or "List generator inputs", **kwargs)
+
+    @abstractmethod
+    def _run(self) -> list[InputInfo]:
+        pass
+
+
+def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
+    return {
+        GenType.opendata_v1: OpendataV1ListInputs,
+        GenType.cms_old: CmsOldListInputs,
+    }[env.config.gen_type](env, generator)
+
+
+class GenerateInput(ProgramsJob):
+    """Generates input with given name."""
+
+    def __init__(
+        self, env: Env, input_name: str, seed: int, *, name: str = "", **kwargs
+    ) -> None:
+        if env.config.gen_type != GenType.cms_old:
+            filename = f"{input_name}_{seed:x}.in"
+        else:
+            filename = f"{input_name}.in"
+
+        self._input_name = input_name
+        self._seed = seed
+        self._input = TaskPath.input_path(env, filename)
+        super().__init__(env, name or f"Generate {filename}", **kwargs)
+
+    def _run(self) -> None:
+        self._gen()
+
+    @abstractmethod
+    def _gen(self) -> None:
+        pass
+
+
+class OpendataV1ListInputs(GeneratorListInputs):
+    """Lists all inputs for opendata-v1 gen - one for each subtask."""
+
+    def _run(self) -> list[InputInfo]:
+        return [
+            InputInfo(f"{subtask:02}")
+            for subtask in self._env.config.subtasks
+            if subtask != 0
+        ]
+
+
+class CmsOldListInputs(GeneratorListInputs):
+    """Lists all inputs for cms-old generator - by running it."""
+
+    def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
+        super().__init__(env, generator, name="Run generator", **kwargs)
+
+    def _run(self) -> list[InputInfo]:
+        """Generates all inputs."""
+        gen_dir = TaskPath.generated_path(self._env, ".")
+        try:
+            shutil.rmtree(gen_dir.path)
+        except FileNotFoundError:
+            pass
+        self.makedirs(gen_dir, exist_ok=False)
+
+        run_result = self._run_program(
+            ProgramType.in_gen,
+            self.generator,
+            args=[gen_dir.path],
+            stderr=TaskPath.log_file(self._env, None, self.generator.name),
+        )
+        self._access_file(gen_dir)
+
+        if run_result.kind != RunResultKind.OK:
+            raise self._create_program_failure("Generator failed:", run_result)
+
+        inputs = []
+        for inp in os.listdir(TaskPath.generated_path(self._env, ".").path):
+            if inp.endswith(".in"):
+                inputs.append(InputInfo(inp.removesuffix(".in")))
+        return inputs
 
 
 class OnlineGeneratorJob(ProgramsJob):
@@ -208,7 +321,7 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Generator is deterministic (subtask {subtask}, seed {seed:x})",
+            name=f"Generator is deterministic (name {subtask}, seed {seed:x})",
             generator=generator,
             input_=input_,
             subtask=subtask,
@@ -224,64 +337,3 @@ class OnlineGeneratorDeterministic(OnlineGeneratorJob):
                 f"Generator is not deterministic. Files {self.input_:p} and {copy_file:p} differ "
                 f"(subtask {self.subtask}, seed {self.seed})",
             )
-
-
-class OnlineGeneratorRespectsSeed(TaskJob):
-    """Test whether two files generated with different seed are different."""
-
-    def __init__(
-        self,
-        env: Env,
-        subtask: int,
-        seed1: int,
-        seed2: int,
-        file1: TaskPath,
-        file2: TaskPath,
-        **kwargs,
-    ) -> None:
-        self.file1, self.file2 = file1, file2
-        self.subtask = subtask
-        self.seed1, self.seed2 = seed1, seed2
-        super().__init__(
-            env=env,
-            name=f"Generator respects seeds ({self.file1:n} and {self.file2:n} are different)",
-            **kwargs,
-        )
-
-    def _run(self) -> None:
-        if self._files_equal(self.file1, self.file2):
-            raise PipelineItemFailure(
-                f"Generator doesn't respect seed."
-                f"Files {self.file1:n} (seed {self.seed1:x}) and {self.file2:n} (seed {self.seed2:x}) are same."
-            )
-
-
-class OfflineGeneratorGenerate(ProgramsJob):
-    """Job that generates all inputs using OfflineGenerator."""
-
-    def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
-        super().__init__(env=env, name="Generate inputs", **kwargs)
-        self.generator = generator
-
-    def _gen(self) -> None:
-        """Generates all inputs."""
-        gen_dir = TaskPath.generated_path(self._env, ".")
-        try:
-            shutil.rmtree(gen_dir.path)
-        except FileNotFoundError:
-            pass
-        self.makedirs(gen_dir, exist_ok=False)
-
-        run_result = self._run_program(
-            ProgramType.in_gen,
-            self.generator,
-            args=[gen_dir.path],
-            stderr=TaskPath.log_file(self._env, None, self.generator.name),
-        )
-        self._access_file(gen_dir)
-
-        if run_result.kind != RunResultKind.OK:
-            raise self._create_program_failure("Generator failed:", run_result)
-
-    def _run(self) -> None:
-        self._gen()
