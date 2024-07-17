@@ -36,50 +36,45 @@ class DataManager(TaskJobManager):
     """Moves data to correct folders."""
 
     def __init__(self) -> None:
-        self._static_inputs: list[TaskPath] = []
-        self._generated_inputs: list[TaskPath] = []
-        self._static_outputs: list[TaskPath] = []
         super().__init__("Moving data")
 
     def _get_jobs(self) -> list[Job]:
-        self._static_inputs = self.globs_to_files(
+        static_inputs = self.globs_to_files(
             self._env.config.input_globs, TaskPath.static_path(self._env, ".")
         )
-        self._static_outputs = self.globs_to_files(
+        static_outputs = self.globs_to_files(
             map(
                 lambda g: re.sub(r"\.in$", ".out", g),
                 self._env.config.input_globs,
             ),
             TaskPath.static_path(self._env, "."),
         )
-        self._generated_inputs = self.prerequisites_results[GENERATOR_MAN_CODE][
-            "inputs"
-        ]
+        generated_input_infos = self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
 
-        all_input_files = self._static_inputs + self._generated_inputs
-        all_output_files = self._static_outputs
         jobs: list[Job] = []
 
         if self._env.config.task_type != "communication":
-            for static_inp in self._static_inputs:
+            for static_inp in static_inputs:
                 static_out = static_inp.replace_suffix(".out")
-                if static_out not in self._static_outputs:
+                if static_out not in static_outputs:
                     raise PipelineItemFailure(
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
-        self._inputs: list[TaskPath] = []
-        self._outputs: list[TaskPath] = []
+        self._static_inputs: list[TaskPath] = []
+        self._static_outputs: list[TaskPath] = []
         link: LinkData
-        for fname in all_input_files:
+        for fname in static_inputs:
             jobs.append(link := LinkInput(self._env, fname))
-            self._inputs.append(link.dest)
-        for fname in all_output_files:
+            self._static_inputs.append(link.dest)
+        for fname in static_outputs:
             jobs.append(link := LinkOutput(self._env, fname))
-            self._outputs.append(link.dest)
+            self._static_outputs.append(link.dest)
 
+        input_names = [p.name for p in self._static_inputs]
+        input_names += [p.seeded_name(26526) for p in generated_input_infos]
         for num, sub in self._env.config.subtasks.items():
-            inputs = list(filter(lambda p: sub.in_subtask(p.name), all_input_files))
+            inputs = list(filter(lambda n: sub.in_subtask(n), input_names))
             if len(inputs) == 0:
                 raise PipelineItemFailure(
                     f"No inputs for subtask {num} with globs {sub.all_globs}."
@@ -89,9 +84,8 @@ class DataManager(TaskJobManager):
 
     def _compute_result(self) -> dict[str, Any]:
         res = {
-            "inputs": self._inputs,
-            "outputs": self._outputs,
-            "all": self._inputs + self._outputs,
+            "static_inputs": self._static_inputs,
+            "static_outputs": self._static_outputs,
         }
 
         return res
@@ -112,7 +106,7 @@ class LinkData(DataJob):
 
     def __init__(self, env: Env, data: TaskPath, dest: TaskPath, **kwargs) -> None:
         super().__init__(
-            env=env, name=f"Copy {data:p} to {dest:p}/", data=data, **kwargs
+            env=env, name=f"Link {data:p} to {dest:p}/", data=data, **kwargs
         )
         self.dest = TaskPath(dest.path, self.data.name)
 
