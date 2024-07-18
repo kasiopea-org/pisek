@@ -26,12 +26,12 @@ from pisek.utils.paths import TaskPath
 from pisek.config.config_types import ProgramType, Scoring
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
-from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
-from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.program import RunResult, ProgramsJob
-from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.solution_result import Verdict, SolutionResult
-from pisek.jobs.parts.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
+from pisek.task_jobs.verdicts_eval import evaluate_verdicts
+from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.program import RunResult, ProgramsJob
+from pisek.task_jobs.compile import Compile
+from pisek.task_jobs.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
 
 class SolutionManager(TaskJobManager):

@@ -19,7 +19,7 @@ from collections import deque
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
 
-from pisek.jobs.parts.task_job import (
+from pisek.task_jobs.task_job import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,
@@ -29,15 +29,15 @@ from pisek.jobs.parts.task_job import (
     DATA_MAN_CODE,
 )
 
-from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.data import DataManager
-from pisek.jobs.parts.generator import GeneratorManager
-from pisek.jobs.parts.checker import CheckerManager
-from pisek.jobs.parts.judge import JudgeManager
-from pisek.jobs.parts.solution import SolutionManager
-from pisek.jobs.parts.data import DataCheckingManager
-from pisek.jobs.parts.testing_log import CreateTestingLog
-from pisek.jobs.parts.completeness_check import CompletenessCheck
+from pisek.task_jobs.tools import ToolsManager
+from pisek.task_jobs.data import DataManager
+from pisek.task_jobs.generator import GeneratorManager
+from pisek.task_jobs.checker import CheckerManager
+from pisek.task_jobs.judge import JudgeManager
+from pisek.task_jobs.solution import SolutionManager
+from pisek.task_jobs.data import DataCheckingManager
+from pisek.task_jobs.testing_log import CreateTestingLog
+from pisek.task_jobs.completeness_check import CompletenessCheck
 
 
 class TaskPipeline(JobPipeline):

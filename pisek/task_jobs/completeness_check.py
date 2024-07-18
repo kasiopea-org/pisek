@@ -14,7 +14,7 @@ from pisek.utils.paths import TaskPath
 from pisek.env.env import TestingTarget
 from pisek.config.config_types import JudgeType
 from pisek.jobs.jobs import Job
-from pisek.jobs.parts.task_job import TaskJobManager, JUDGE_MAN_CODE, SOLUTION_MAN_CODE
+from pisek.task_jobs.task_job import TaskJobManager, JUDGE_MAN_CODE, SOLUTION_MAN_CODE
 
 
 class CompletenessCheck(TaskJobManager):

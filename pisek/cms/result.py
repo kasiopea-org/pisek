@@ -19,8 +19,8 @@ import json
 
 from pisek.cms.submission import get_submission
 from pisek.env.env import Env
-from pisek.jobs.parts.testing_log import TESTING_LOG
-from pisek.jobs.parts.solution_result import Verdict
+from pisek.task_jobs.testing_log import TESTING_LOG
+from pisek.task_jobs.solution_result import Verdict
 from pisek.config.task_config import SolutionConfig, SubtaskConfig
 from pisek.utils.terminal import colored_env
 from pisek.utils.text import eprint, tab

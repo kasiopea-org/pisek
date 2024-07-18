@@ -26,13 +26,13 @@ from pisek.utils.paths import TaskPath
 from pisek.config.config_types import ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.jobs.parts.task_job import TaskJobManager
-from pisek.jobs.parts.run_result import RunResult, RunResultKind
-from pisek.jobs.parts.program import ProgramsJob
-from pisek.jobs.parts.compile import Compile
-from pisek.jobs.parts.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.jobs.parts.tools import PrepareTokenJudge, Sanitize
-from pisek.jobs.parts.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.run_result import RunResult, RunResultKind
+from pisek.task_jobs.program import ProgramsJob
+from pisek.task_jobs.compile import Compile
+from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
+from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
+from pisek.task_jobs.solution_result import Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
 

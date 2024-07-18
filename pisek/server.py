@@ -25,11 +25,11 @@ from pisek.utils.pipeline_tools import run_pipeline
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
-from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.generator import RunOnlineGeneratorMan
-from pisek.jobs.parts.solution import RunPrimarySolutionMan
-from pisek.jobs.parts.solution_result import SolutionResult
-from pisek.jobs.parts.judge import RunKasiopeaJudgeMan
+from pisek.task_jobs.tools import ToolsManager
+from pisek.task_jobs.generator import RunOnlineGeneratorMan
+from pisek.task_jobs.solution import RunPrimarySolutionMan
+from pisek.task_jobs.solution_result import SolutionResult
+from pisek.task_jobs.judge import RunKasiopeaJudgeMan
 
 
 class KasiopeaInputCase:

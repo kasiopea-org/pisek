@@ -21,15 +21,15 @@ from pisek.config.config_types import DataFormat
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.jobs.parts.task_job import (
+from pisek.task_jobs.task_job import (
     TaskJob,
     TaskJobManager,
     GENERATOR_MAN_CODE,
     INPUTS_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
-from pisek.jobs.parts.solution_result import Verdict
-from pisek.jobs.parts.tools import IsClean
+from pisek.task_jobs.solution_result import Verdict
+from pisek.task_jobs.tools import IsClean
 
 
 class DataManager(TaskJobManager):
