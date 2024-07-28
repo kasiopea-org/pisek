@@ -58,12 +58,13 @@ class Lock:
         self._locked = False
 
     def __enter__(self):
-        if os.path.exists(self._lock_file):
+        try:
+            with open(self._lock_file, "x") as f:
+                f.write(f"Locked by pisek at {datetime.now()}")
+        except FileExistsError:
             eprint("Another pisek instance running in same directory.")
             sys.exit(2)
 
-        with open(self._lock_file, "w") as f:
-            f.write(f"Locked by pisek at {datetime.now()}")
         self._locked = True
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
