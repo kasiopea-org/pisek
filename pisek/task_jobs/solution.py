@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import random
 import tempfile
 import time
 from typing import Any, Optional
@@ -30,6 +31,7 @@ from pisek.task_jobs.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskJobManager
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
+from pisek.task_jobs.generator import InputInfo
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
@@ -37,8 +39,9 @@ from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudg
 class SolutionManager(TaskJobManager):
     """Runs a solution and checks if it works as expected."""
 
-    def __init__(self, solution_label: str) -> None:
+    def __init__(self, solution_label: str, is_first: bool) -> None:
         self.solution_label: str = solution_label
+        self._is_first = is_first
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
         self._outputs: list[tuple[TaskPath, RunJudge]] = []
@@ -77,6 +80,23 @@ class SolutionManager(TaskJobManager):
                     self.subtasks[-1].previous_jobs.append(self._judges[inp])
 
         return jobs
+
+    def _create_inputs(self, input_info: InputInfo) -> list[Job]:
+        repeat = input_info * (self._env.inputs if input_info.seeded else 1)
+
+        random.seed(4)  # Reproducibility!
+        seeds = random.sample(range(0, 16**4), repeat)
+        for i, seed in enumerate(seeds):
+            if self._is_first:
+                # generator
+                # determinism if i == 0
+                # run checker
+                # input size
+                # input cleanliness
+                pass
+            # run solution
+            # output size
+            # output cleanliness
 
     def _create_batch_jobs(
         self, sub_num: int, inp: TaskPath
