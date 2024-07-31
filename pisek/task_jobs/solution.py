@@ -43,7 +43,7 @@ class SolutionManager(TaskJobManager):
         self.subtasks: list[SubtaskJobGroup] = []
         self._outputs: list[tuple[TaskPath, RunJudge]] = []
         self._subtasks_results: dict[int, float] = {}
-        super().__init__(f"Solution {solution_label} Manager")
+        super().__init__(f"Run {solution_label}")
 
     def _get_jobs(self) -> list[Job]:
         self.is_primary: bool = self._env.config.solutions[self.solution_label].primary

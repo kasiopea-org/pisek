@@ -203,6 +203,7 @@ class TaskConfig(BaseEnv):
 
         # Load subtasks
         args["subtasks"] = subtasks = {}
+        # Sort so subtasks.keys() returns subtasks in sorted order
         for section in sorted(section_names, key=lambda cv: cv.value):
             section_name = section.value
             if m := re.match(r"test(\d{2})", section_name):
@@ -338,11 +339,11 @@ class SubtaskConfig(BaseEnv):
     direct_predecessors: list[int]
     all_predecessors: list[int] = []
 
-    def in_subtask(self, filename: str) -> bool:
-        return any(fnmatch.fnmatch(filename, g) for g in self.all_globs)
+    def in_subtask(self, filename: TaskPath) -> bool:
+        return any(fnmatch.fnmatch(filename.name, g) for g in self.all_globs)
 
-    def new_in_subtask(self, filename: str) -> bool:
-        return any(fnmatch.fnmatch(filename, g) for g in self.in_globs)
+    def new_in_subtask(self, filename: TaskPath) -> bool:
+        return any(fnmatch.fnmatch(filename.name, g) for g in self.in_globs)
 
     @staticmethod
     def load_dict(number: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:

@@ -28,6 +28,7 @@ from pisek.task_jobs.task_job import (
     INPUTS_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
+from pisek.task_jobs.generator import InputInfo
 from pisek.task_jobs.solution_result import Verdict
 from pisek.task_jobs.tools import IsClean
 
@@ -36,7 +37,7 @@ class DataManager(TaskJobManager):
     """Moves data to correct folders."""
 
     def __init__(self) -> None:
-        super().__init__("Moving data")
+        super().__init__("Processing data")
 
     def _get_jobs(self) -> list[Job]:
         static_inputs = self.globs_to_files(
@@ -49,9 +50,6 @@ class DataManager(TaskJobManager):
             ),
             TaskPath.static_path(self._env, "."),
         )
-        generated_input_infos = self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
-
-        jobs: list[Job] = []
 
         if self._env.config.task_type != "communication":
             for static_inp in static_inputs:
@@ -61,33 +59,32 @@ class DataManager(TaskJobManager):
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
-        self._static_inputs: list[TaskPath] = []
-        self._static_outputs: list[TaskPath] = []
-        link: LinkData
-        for fname in static_inputs:
-            jobs.append(link := LinkInput(self._env, fname))
-            self._static_inputs.append(link.dest)
-        for fname in static_outputs:
-            jobs.append(link := LinkOutput(self._env, fname))
-            self._static_outputs.append(link.dest)
+        all_input_infos: list[InputInfo] = [
+            InputInfo.static(inp.name) for inp in static_inputs
+        ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
+        all_input_infos.sort(key=lambda info: info.name)
 
-        input_names = [p.name for p in self._static_inputs]
-        input_names += [p.seeded_name(26526) for p in generated_input_infos]
+        self._input_infos = {}
         for num, sub in self._env.config.subtasks.items():
-            inputs = list(filter(lambda n: sub.in_subtask(n), input_names))
-            if len(inputs) == 0:
+            self._input_infos[sub.num] = []
+            for input_info in all_input_infos:
+                if sub.in_subtask(input_info.task_path(self._env, 25265)):
+                    self._input_infos[sub.num].append(input_info)
+            if len(self._input_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
                     f"No inputs for subtask {num} with globs {sub.all_globs}."
                 )
 
+        jobs: list[Job] = []
+        for fname in static_inputs:
+            jobs.append(LinkInput(self._env, fname))
+        for fname in static_outputs:
+            jobs.append(LinkOutput(self._env, fname))
+
         return jobs
 
     def _compute_result(self) -> dict[str, Any]:
-        res = {
-            "static_inputs": self._static_inputs,
-            "static_outputs": self._static_outputs,
-        }
-
+        res = {"input_info": self._input_infos}
         return res
 
 

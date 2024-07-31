@@ -37,22 +37,45 @@ from pisek.task_jobs.compile import Compile
 class InputInfo:
     name: str
     repeat: int = 1
+    is_generated: bool = True
+    seeded: bool = True
 
-    def seeded_name(self, seed: int) -> str:
-        return f"{self.name}_{seed:x}.in"
+    @staticmethod
+    def generated(name: str, repeat: int = 1, seeded: bool = True) -> "InputInfo":
+        return InputInfo(name, repeat, True, seeded)
+
+    @staticmethod
+    def static(name: str) -> "InputInfo":
+        return InputInfo(name, 1, False, False)
+
+    def task_path(self, env: Env, seed: int) -> TaskPath:
+        filename = self.name
+        if self.seeded:
+            filename += f"_{seed:x}"
+        filename += ".in"
+
+        return TaskPath.input_path(env, filename)
 
 
-def task_path_representer(dumper, input_info: InputInfo):
-    return dumper.represent_sequence("!InputInfo", [input_info.name, input_info.repeat])
+def input_info_representer(dumper, input_info: InputInfo):
+    return dumper.represent_sequence(
+        "!InputInfo",
+        [
+            input_info.name,
+            input_info.repeat,
+            input_info.is_generated,
+            input_info.seeded,
+        ],
+    )
 
 
-def task_path_constructor(loader, value):
-    [name, repeat] = loader.construct_sequence(value)
-    return InputInfo(name, repeat)
+def input_info_constructor(loader, value):
+    [name, repeat, generated, seeded] = loader.construct_sequence(value)
+    return InputInfo(name, repeat, generated, seeded)
 
 
-yaml.add_representer(InputInfo, task_path_representer)
-yaml.add_constructor("!InputInfo", task_path_constructor)
+yaml.add_representer(InputInfo, input_info_representer)
+yaml.add_constructor("!InputInfo", input_info_constructor)
 
 
 class GeneratorManager(TaskJobManager):
@@ -199,7 +222,7 @@ class OpendataV1ListInputs(GeneratorListInputs):
 
     def _run(self) -> list[InputInfo]:
         return [
-            InputInfo(f"{subtask:02}")
+            InputInfo.generated(f"{subtask:02}")
             for subtask in self._env.config.subtasks
             if subtask != 0
         ]
@@ -234,7 +257,9 @@ class CmsOldListInputs(GeneratorListInputs):
         inputs = []
         for inp in os.listdir(TaskPath.generated_path(self._env, ".").path):
             if inp.endswith(".in"):
-                inputs.append(InputInfo(inp.removesuffix(".in")))
+                inputs.append(
+                    InputInfo.generated(inp.removesuffix(".in"), seeded=False)
+                )
         return inputs
 
 
