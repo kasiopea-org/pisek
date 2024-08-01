@@ -87,7 +87,6 @@ class TaskConfig(BaseEnv):
     """Configuration of task loaded from config file."""
 
     name: str
-    contest_type: str
     task_type: TaskType
     scoring: Scoring
 
@@ -163,7 +162,6 @@ class TaskConfig(BaseEnv):
     def load_dict(configs: ConfigHierarchy) -> ConfigValuesDict:
         GLOBAL_KEYS = [
             ("task", "name"),
-            ("task", "contest_type"),
             ("task", "task_type"),
             ("task", "scoring"),
             ("task", "solutions_subdir"),
@@ -225,18 +223,6 @@ class TaskConfig(BaseEnv):
         args["checks"] = ChecksConfig.load_dict(configs)
 
         return args
-
-    @field_validator("contest_type", mode="after")
-    @classmethod
-    def validate_contest_type(cls, value: str) -> str:
-        # TODO: Redo to general task types
-        ALLOWED = ["kasiopea", "cms"]
-        if value not in ALLOWED:
-            raise PydanticCustomError(
-                "contest_type_invalid",
-                f"Must be one of ({', '.join(ALLOWED)})",
-            )
-        return value
 
     @model_validator(mode="after")
     def validate_model(self):

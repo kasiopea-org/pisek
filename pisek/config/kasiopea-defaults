@@ -2,7 +2,6 @@
 
 [task]
 version=v3
-contest_type=kasiopea
 task_type=batch
 scoring=equal
 solutions_subdir=.
