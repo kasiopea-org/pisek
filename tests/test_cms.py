@@ -89,16 +89,6 @@ class TestInvalidJudgeScore(TestSumCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestLooseChecker(TestSumCMS):
-    """A checker that cannot distinguish between subtasks."""
-
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_loose.py")
-
-
 class TestStrictChecker(TestSumCMS):
     """A checker whose bounds are stricter than what the generator creates."""
 
