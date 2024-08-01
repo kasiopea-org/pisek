@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from dataclasses import dataclass
 import random
 import os
 import shutil
@@ -31,30 +30,7 @@ from pisek.task_jobs.task_job import TaskJob, TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
-
-
-@dataclass
-class InputInfo:
-    name: str
-    repeat: int = 1
-    is_generated: bool = True
-    seeded: bool = True
-
-    @staticmethod
-    def generated(name: str, repeat: int = 1, seeded: bool = True) -> "InputInfo":
-        return InputInfo(name, repeat, True, seeded)
-
-    @staticmethod
-    def static(name: str) -> "InputInfo":
-        return InputInfo(name, 1, False, False)
-
-    def task_path(self, env: Env, seed: int) -> TaskPath:
-        filename = self.name
-        if self.seeded:
-            filename += f"_{seed:x}"
-        filename += ".in"
-
-        return TaskPath.input_path(env, filename)
+from pisek.task_jobs.input_info import InputInfo
 
 
 def input_info_representer(dumper, input_info: InputInfo):
@@ -109,7 +85,7 @@ def gen():
         for sub_num, _ in self._env.config.subtasks.items():
             if sub_num == 0:
                 continue  # skip samples
-            last_gen: OnlineGeneratorGenerate
+            last_gen: OpendataV1Generate
             for i, seed in enumerate(seeds):
                 self._inputs.append(
                     input_ := TaskPath.generated_input_file(
@@ -118,7 +94,7 @@ def gen():
                 )
 
                 jobs.append(
-                    gen := OnlineGeneratorGenerate(
+                    gen := OpendataV1Generate(
                         self._env, generator, input_, sub_num, seed
                     )
                 )
@@ -159,7 +135,7 @@ class RunOnlineGeneratorMan(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = [
             compile_gen := Compile(self._env, self._env.config.in_gen),
-            gen := OnlineGeneratorGenerate(
+            gen := OpendataV1Generate(
                 self._env,
                 self._env.config.in_gen,
                 TaskPath(self._file),
@@ -197,16 +173,24 @@ class GenerateInput(ProgramsJob):
     """Generates input with given name."""
 
     def __init__(
-        self, env: Env, input_name: str, seed: int, *, name: str = "", **kwargs
+        self,
+        env: Env,
+        generator: TaskPath,
+        input_name: str,
+        seed: int,
+        *,
+        name: str = "",
+        **kwargs,
     ) -> None:
         if env.config.gen_type != GenType.cms_old:
             filename = f"{input_name}_{seed:x}.in"
         else:
             filename = f"{input_name}.in"
 
+        self.generator = generator
         self._input_name = input_name
         self._seed = seed
-        self._input = TaskPath.input_path(env, filename)
+        self.input = TaskPath.input_path(env, filename)
         super().__init__(env, name or f"Generate {filename}", **kwargs)
 
     def _run(self) -> None:
@@ -215,6 +199,15 @@ class GenerateInput(ProgramsJob):
     @abstractmethod
     def _gen(self) -> None:
         pass
+
+
+def generate_input(env: Env, generator: TaskPath, input_name: str, seed: int) -> None:
+    return {
+        GenType.opendata_v1: OpendataV1Generate,
+        GenType.cms_old: CmsOldGenerate,
+    }[
+        env.config.gen_type
+    ](env, generator, input_name, seed)
 
 
 class OpendataV1ListInputs(GeneratorListInputs):
@@ -263,30 +256,30 @@ class CmsOldListInputs(GeneratorListInputs):
         return inputs
 
 
-class OnlineGeneratorJob(ProgramsJob):
+class CmsOldGenerate(GenerateInput):
+    def __init__(
+        self, env: Env, generator: TaskPath, input_name: str, seed: int, **kwargs
+    ) -> None:
+        super().__init__(
+            env, generator, input_name, seed, name=f"Serve {input_name}", **kwargs
+        )
+
+    def _run(self):
+        self._link_file(
+            TaskPath.generated_path(self._env, self._input_name.name),
+            TaskPath.input_path(self._env, self.input_name.name),
+            overwrite=True,
+        )
+
+
+class OpendataV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
-    def __init__(
-        self,
-        env: Env,
-        name: str,
-        generator: TaskPath,
-        input_: TaskPath,
-        subtask: int,
-        seed: int,
-        **kwargs,
-    ) -> None:
-        super().__init__(env=env, name=name, **kwargs)
-        self.generator = generator
-        self.subtask = subtask
-        self.seed = seed
-        self.input_ = input_
+    generator: TaskPath
 
     def _gen(self, input_file: TaskPath, seed: int, subtask: int) -> RunResult:
         if seed < 0:
             raise PipelineItemFailure(f"Seed {seed} is negative.")
-
-        input_dir = os.path.dirname(input_file.path)
 
         difficulty = str(subtask)
         hexa_seed = f"{seed:x}"
@@ -296,7 +289,7 @@ class OnlineGeneratorJob(ProgramsJob):
             self.generator,
             args=[difficulty, hexa_seed],
             stdout=input_file,
-            stderr=TaskPath.log_file(self._env, self.input_.name, self.generator.name),
+            stderr=TaskPath.log_file(self._env, input_file.name, self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -306,33 +299,14 @@ class OnlineGeneratorJob(ProgramsJob):
         return result
 
 
-class OnlineGeneratorGenerate(OnlineGeneratorJob):
+class OpendataV1Generate(GenerateInput, OpendataV1GeneratorJob):
     """Generates single input using OnlineGenerator."""
 
-    def __init__(
-        self,
-        env: Env,
-        generator: TaskPath,
-        input_: TaskPath,
-        subtask: int,
-        seed: int,
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            env=env,
-            name=f"Generate {input_.name}",
-            generator=generator,
-            input_=input_,
-            subtask=subtask,
-            seed=seed,
-            **kwargs,
-        )
-
     def _run(self) -> RunResult:
-        return self._gen(self.input_, self.seed, self.subtask)
+        return self._gen(self.input, self._seed, int(self._input_name))
 
 
-class OnlineGeneratorDeterministic(OnlineGeneratorJob):
+class OnlineGeneratorDeterministic(OpendataV1GeneratorJob):
     """Test whether generating given input again has same result."""
 
     def __init__(

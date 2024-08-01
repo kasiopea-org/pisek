@@ -28,7 +28,7 @@ from pisek.task_jobs.task_job import (
     INPUTS_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
-from pisek.task_jobs.generator import InputInfo
+from pisek.task_jobs.input_info import InputInfo
 from pisek.task_jobs.solution_result import Verdict
 from pisek.task_jobs.tools import IsClean
 
@@ -60,11 +60,12 @@ class DataManager(TaskJobManager):
                     )
 
         all_input_infos: list[InputInfo] = [
-            InputInfo.static(inp.name) for inp in static_inputs
+            InputInfo.static(re.sub(r"\.in$", "", inp.name))
+            for inp in static_inputs
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         all_input_infos.sort(key=lambda info: info.name)
 
-        self._input_infos = {}
+        self._input_infos: dict[int, list[InputInfo]] = {}
         for num, sub in self._env.config.subtasks.items():
             self._input_infos[sub.num] = []
             for input_info in all_input_infos:
@@ -74,6 +75,23 @@ class DataManager(TaskJobManager):
                 raise PipelineItemFailure(
                     f"No inputs for subtask {num} with globs {sub.all_globs}."
                 )
+
+        used_inputs = set(sum(self._input_infos.values(), start=[]))
+        unused_inputs = list(set(all_input_infos) - used_inputs)
+        if len(unused_inputs):
+            if self._env.verbosity <= 0:
+                CUTOFF = 3
+                unused_inputs_text = ", ".join(
+                    map(lambda inp: inp.name, unused_inputs[:CUTOFF])
+                )
+                if len(unused_inputs) > CUTOFF:
+                    unused_inputs_text += ",..."
+                self._warn(
+                    f"{len(unused_inputs)} unused inputs. ({unused_inputs_text})"
+                )
+            else:
+                for inp in unused_inputs:
+                    self._warn(f"Unused input: '{inp.name}'")
 
         jobs: list[Job] = []
         for fname in static_inputs:

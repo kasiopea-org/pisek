@@ -30,6 +30,7 @@ from pisek.utils.text import tab
 from pisek.config.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
+from pisek.task_jobs.input_info import InputInfo
 
 
 TOOLS_MAN_CODE = "tools"
@@ -116,25 +117,20 @@ class TaskHelper:
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
 
-    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
+    def _get_static_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._subtask_inputs(self._env.config.subtasks[0])
-        outs = (TaskPath.output_static_file(self._env, inp.name) for inp in ins)
-        return list(zip(ins, outs))
-
-    def _all_inputs(self) -> list[TaskPath]:
-        """Get all input files"""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
-
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
-        """Get all inputs of given subtask."""
-        return list(filter(lambda p: subtask.in_subtask(p.name), self._all_inputs()))
-
-    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
-        """Get new inputs of given subtask."""
-        return list(
-            filter(lambda p: subtask.new_in_subtask(p.name), self._all_inputs())
+        ins = filter(
+            lambda inp: not inp.is_generated,
+            self._subtask_inputs(self._env.config.subtasks[0]),
         )
+        return [
+            (inp.task_path(self._env), TaskPath.output_static_file(self._env, inp.name))
+            for inp in ins
+        ]
+
+    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[InputInfo]:
+        """Get all inputs of given subtask."""
+        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"][subtask.num]
 
 
 class TaskJob(Job, TaskHelper):

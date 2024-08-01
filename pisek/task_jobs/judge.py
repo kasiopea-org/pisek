@@ -56,7 +56,7 @@ class JudgeManager(TaskJobManager):
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
 
-        samples = self._get_samples()
+        samples = self._get_static_samples()
         if self._env.config.task_type == "communication":
             return jobs
 

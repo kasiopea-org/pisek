@@ -67,7 +67,7 @@ class TaskPipeline(JobPipeline):
             ):
                 named_pipeline.append(
                     primary_solution := (
-                        SolutionManager(env.config.primary_solution),
+                        SolutionManager(env.config.primary_solution, True),
                         f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
                     )
                 )
@@ -78,7 +78,7 @@ class TaskPipeline(JobPipeline):
                 continue
             named_pipeline.append(
                 solution := (
-                    SolutionManager(sol_name),
+                    SolutionManager(sol_name, False),
                     f"{SOLUTION_MAN_CODE}{sol_name}",
                 )
             )

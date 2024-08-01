@@ -28,10 +28,10 @@ from pisek.config.config_types import ProgramType, Scoring
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.verdicts_eval import evaluate_verdicts
-from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.task_job import TaskJobManager, INPUTS_MAN_CODE
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
-from pisek.task_jobs.generator import InputInfo
+from pisek.task_jobs.input_info import InputInfo
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
@@ -58,26 +58,30 @@ class SolutionManager(TaskJobManager):
         self._compile_job = compile_
 
         self._judges: dict[TaskPath, RunJudge] = {}
-        for sub_num, sub in self._env.config.subtasks.items():
+
+        sub_num: int
+        inputs: list[InputInfo]
+        for sub_num, inputs in self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]:
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
-            for inp in self._subtask_inputs(sub):
-                if inp not in self._judges:
-                    run_sol: RunSolution
-                    run_judge: RunJudge
-                    if self._env.config.task_type == "batch":
-                        run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
-                        jobs += [run_sol, run_judge]
-                        self._outputs.append((run_judge.output, run_judge))
+            for inp in inputs:
+                jobs += self._create_inputs(inp)
+                # if inp not in self._judges:
+                #     run_sol: RunSolution
+                #     run_judge: RunJudge
+                #     if self._env.config.task_type == "batch":
+                #         run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
+                #         jobs += [run_sol, run_judge]
+                #         self._outputs.append((run_judge.output, run_judge))
 
-                    elif self._env.config.task_type == "communication":
-                        run_sol = run_judge = self._create_communication_jobs(inp)
-                        jobs.append(run_sol)
+                #     elif self._env.config.task_type == "communication":
+                #         run_sol = run_judge = self._create_communication_jobs(inp)
+                #         jobs.append(run_sol)
 
-                    self._judges[inp] = run_judge
-                    self.subtasks[-1].new_jobs.append(run_judge)
-                    self.subtasks[-1].new_run_jobs.append(run_sol)
-                else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
+                #     self._judges[inp] = run_judge
+                #     self.subtasks[-1].new_jobs.append(run_judge)
+                #     self.subtasks[-1].new_run_jobs.append(run_sol)
+                # else:
+                #     self.subtasks[-1].previous_jobs.append(self._judges[inp])
 
         return jobs
 
