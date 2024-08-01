@@ -529,30 +529,6 @@ class SubtaskJobGroup:
             job.cancel()
 
 
-class RunPrimarySolutionMan(TaskJobManager):
-    def __init__(self, input_: str, output: Optional[str]):
-        self._input = input_
-        self._output = output
-        super().__init__("Running primary solution")
-
-    def _get_jobs(self) -> list[Job]:
-        solution = self._env.config.solutions[self._env.config.primary_solution].source
-
-        jobs: list[Job] = [
-            compile := Compile(self._env, solution, True),
-            run_solution := RunBatchSolution(
-                self._env,
-                solution,
-                True,
-                TaskPath(self._input),
-                TaskPath(self._output) if self._output else None,
-            ),
-        ]
-        run_solution.add_prerequisite(compile)
-
-        return jobs
-
-
 RUN_JOB_NAME = r"Run (.*) on input (.*)"
 
 

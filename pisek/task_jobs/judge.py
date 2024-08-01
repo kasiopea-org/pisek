@@ -115,65 +115,6 @@ class JudgeManager(TaskJobManager):
         return result
 
 
-class RunKasiopeaJudgeMan(TaskJobManager):
-    def __init__(
-        self,
-        subtask: int,
-        seed: int,
-        input_: str,
-        output: str,
-        correct_output: str,
-    ) -> None:
-        self._subtask = subtask
-        self._seed = seed
-        self._input = input_
-        self._output = output
-        self._correct_output = correct_output
-        super().__init__("Running judge")
-
-    def _get_jobs(self) -> list[Job]:
-        input_, output, correct_output = map(
-            TaskPath,
-            (self._input, self._output, self._correct_output),
-        )
-        clean_output = TaskPath.sanitized_file(self._env, output.name)
-
-        jobs: list[Job] = [
-            sanitize := Sanitize(self._env, output, clean_output),
-            judge := judge_job(
-                input_,
-                clean_output,
-                correct_output,
-                self._subtask,
-                lambda: f"{self._seed:x}",
-                None,
-                self._env,
-            ),
-        ]
-        judge.add_prerequisite(sanitize)
-        if self._env.config.out_check == OutCheck.judge:
-            if self._env.config.out_judge is None:
-                raise RuntimeError(
-                    f"Unset judge for out_check={self._env.config.out_check.name}"
-                )
-            jobs.insert(
-                0,
-                compile_judge := Compile(self._env, self._env.config.out_judge),
-            )
-            judge.add_prerequisite(compile_judge)
-
-        self._judge_job = judge
-
-        return jobs
-
-    def judge_result(self) -> SolutionResult:
-        if self.state != State.succeeded:
-            raise RuntimeError("Judging hasn't successfully finished.")
-        elif not isinstance(self._judge_job.result, SolutionResult):
-            raise RuntimeError("Judging result invalid.")
-        return self._judge_job.result
-
-
 JUDGE_JOB_NAME = r"Judge (\w+)"
 
 
