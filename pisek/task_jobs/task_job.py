@@ -132,7 +132,7 @@ class TaskJobManager(StatusJobManager, TaskHelper):
         """Get all inputs of given subtask."""
         return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"][subtask.num]
 
-    def _all_inputs(self) -> dict[int, InputInfo]:
+    def _all_inputs(self) -> dict[int, list[InputInfo]]:
         """Get all inputs grouped by subtask."""
         return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]
 
@@ -178,6 +178,11 @@ class TaskJob(Job, TaskHelper):
     def _copy_file(self, filename: TaskPath, dst: TaskPath):
         self.make_filedirs(dst)
         return shutil.copy(filename.path, dst.path)
+
+    @_file_access(2)
+    def _rename_file(self, filename: TaskPath, dst: TaskPath) -> None:
+        self.make_filedirs(dst)
+        return os.rename(filename.path, dst.path)
 
     @_file_access(2)
     def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):

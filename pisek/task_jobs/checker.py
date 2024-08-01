@@ -69,7 +69,7 @@ class CheckerJob(ProgramsJob):
         checker: TaskPath,
         input_: TaskPath,
         subtask: int,
-        expected: Optional[RunResultKind],
+        expected: Optional[RunResultKind] = RunResultKind.OK,
         **kwargs,
     ):
         super().__init__(

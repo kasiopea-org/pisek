@@ -45,18 +45,22 @@ class CmsOldListInputs(GeneratorListInputs):
         return inputs
 
 
-
 class CmsOldGenerate(GenerateInput):
     def __init__(
         self, env: Env, generator: TaskPath, input_info: InputInfo, seed: int, **kwargs
     ) -> None:
         super().__init__(
-            env, generator, input_info, seed, name=f"Serve {input_info.task_path(env).name}", **kwargs
+            env,
+            generator,
+            input_info,
+            seed,
+            name=f"Serve {input_info.task_path(env).name}",
+            **kwargs,
         )
 
     def _gen(self):
         self._link_file(
-            TaskPath.generated_path(self._env, self.input.name),
-            TaskPath.input_path(self._env, self.input.name),
+            TaskPath.generated_path(self._env, self.input_path.name),
+            TaskPath.input_path(self._env, self.input_path.name),
             overwrite=True,
         )

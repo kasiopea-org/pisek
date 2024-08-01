@@ -121,9 +121,12 @@ class PipelineItem(ABC):
             )
 
     def add_prerequisite(
-        self, item: "PipelineItem", name: Optional[str] = None
+        self, item: Optional["PipelineItem"], name: Optional[str] = None
     ) -> None:
         """Adds given PipelineItem as a prerequisite to this job."""
+        if item is None:
+            return
+
         self.prerequisites += 1
         item.required_by.append((self, name))
 

@@ -1,11 +1,11 @@
 from abc import abstractmethod
 
 from pisek.env.env import Env
+from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.paths import TaskPath
 from pisek.task_jobs.program import ProgramsJob
 
 from .input_info import InputInfo
-
 
 
 class GeneratorListInputs(ProgramsJob):
@@ -37,8 +37,9 @@ class GenerateInput(ProgramsJob):
     ) -> None:
         self.generator = generator
         self.seed = seed
-        self.input = input_info.task_path(env, seed)
-        super().__init__(env, name or f"Generate {self.input.name}", **kwargs)
+        self.input_info = input_info
+        self.input_path = input_info.task_path(env, seed)
+        super().__init__(env, name or f"Generate {self.input_path.name}", **kwargs)
 
     def _run(self) -> None:
         self._gen()
@@ -47,3 +48,37 @@ class GenerateInput(ProgramsJob):
     def _gen(self) -> None:
         pass
 
+
+class GeneratorTestDeterminism(ProgramsJob):
+    """Tests determinism of generating a given input."""
+
+    def __init__(
+        self,
+        env: Env,
+        generator: TaskPath,
+        input_info: InputInfo,
+        seed: int,
+        *,
+        name: str = "",
+        **kwargs,
+    ) -> None:
+        self.generator = generator
+        self.seed = seed
+        self.input_info = input_info
+        self.input = input_info.task_path(env, seed)
+        super().__init__(env, name or f"Generate {self.input.name}", **kwargs)
+
+    def _run(self) -> None:
+        original = self.input.replace_suffix(".in2")
+        self._rename_file(self.input, original)
+        self._gen()
+        if not self._files_equal(self.input, original):
+            raise PipelineItemFailure(
+                f"Generator is not deterministic. Files {self.input:p} and {original:p} differ"
+                + (f" (seed {self.seed:x})" if self.input_info.seeded else "")
+                + "."
+            )
+
+    @abstractmethod
+    def _gen(self) -> None:
+        pass

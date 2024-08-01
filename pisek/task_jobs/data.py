@@ -148,43 +148,6 @@ class LinkOutput(LinkData):
 
 MB = 1024 * 1024
 
-
-class DataCheckingManager(TaskJobManager):
-    def __init__(self):
-        super().__init__("Checking data")
-
-    def _get_jobs(self) -> list[Job]:
-        jobs: list[Job] = []
-
-        inputs = []
-        outputs = []
-        for name, data in self.prerequisites_results.items():
-            if name.startswith(INPUTS_MAN_CODE):
-                inputs += data["inputs"]
-            elif name.startswith(SOLUTION_MAN_CODE):
-                outs = data["outputs"]
-                outputs += (
-                    outs[Verdict.ok]
-                    + outs[Verdict.partial_ok]
-                    + outs[Verdict.wrong_answer]
-                )
-        for inp in inputs:
-            if self._env.config.in_format == DataFormat.text:
-                jobs.append(IsClean(self._env, inp))
-
-            if self._env.config.limits.input_max_size != 0:
-                jobs.append(InputSmall(self._env, inp))
-
-        for out in outputs:
-            if self._env.config.out_format == DataFormat.text:
-                jobs.append(IsClean(self._env, out))
-
-            if self._env.config.limits.output_max_size != 0:
-                jobs.append(OutputSmall(self._env, out))
-
-        return jobs
-
-
 class InputSmall(DataJob):
     """Checks that input is small enough to download."""
 

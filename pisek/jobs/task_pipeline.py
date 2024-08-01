@@ -26,7 +26,6 @@ from pisek.task_jobs.task_job import (
     CHECKER_MAN_CODE,
     JUDGE_MAN_CODE,
     SOLUTION_MAN_CODE,
-    DATA_MAN_CODE,
 )
 
 from pisek.task_jobs.tools import ToolsManager
@@ -35,7 +34,6 @@ from pisek.task_jobs.generator.generator import GeneratorManager
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution import SolutionManager
-from pisek.task_jobs.data import DataCheckingManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
 
@@ -89,11 +87,6 @@ class TaskPipeline(JobPipeline):
         for solution in solutions:
             solution[0].add_prerequisite(*inputs)
             solution[0].add_prerequisite(*judge)
-
-        named_pipeline.append(data_check := (DataCheckingManager(), DATA_MAN_CODE))
-        data_check[0].add_prerequisite(*inputs)
-        for solution in solutions:
-            data_check[0].add_prerequisite(*solution)
 
         if env.testing_log:
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))

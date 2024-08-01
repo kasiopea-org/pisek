@@ -28,9 +28,13 @@ from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 
 from .input_info import InputInfo
-from .base_classes import GeneratorListInputs
+from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeterminism
 from .cms_old import CmsOldListInputs, CmsOldGenerate
-from .opendata_v1 import OpendataV1ListInputs, OpendataV1Generate
+from .opendata_v1 import (
+    OpendataV1ListInputs,
+    OpendataV1Generate,
+    OpendataV1TestDeterminism,
+)
 
 
 class GeneratorManager(TaskJobManager):
@@ -56,77 +60,6 @@ class GeneratorManager(TaskJobManager):
         return {"inputs": self._list_inputs.result}
 
 
-def gen():
-    return None
-    if self._env.config.contest_type == "kasiopea":
-        random.seed(4)  # Reproducibility!
-        seeds = random.sample(range(0, 16**4), self._env.inputs)
-        for sub_num, _ in self._env.config.subtasks.items():
-            if sub_num == 0:
-                continue  # skip samples
-            last_gen: OpendataV1Generate
-            for i, seed in enumerate(seeds):
-                self._inputs.append(
-                    input_ := TaskPath.generated_input_file(
-                        self._env, int(sub_num), seed
-                    )
-                )
-
-                jobs.append(
-                    gen := OpendataV1Generate(
-                        self._env, generator, input_, sub_num, seed
-                    )
-                )
-                gen.add_prerequisite(compile_gen)
-                if i == 0:
-                    jobs.append(
-                        det := OnlineGeneratorDeterministic(
-                            self._env, generator, input_, sub_num, seed
-                        )
-                    )
-                    det.add_prerequisite(gen)
-                elif i == 1:
-                    jobs.append(
-                        rs := OnlineGeneratorRespectsSeed(
-                            self._env,
-                            sub_num,
-                            last_gen.seed,
-                            gen.seed,
-                            last_gen.input_,
-                            gen.input_,
-                        )
-                    )
-                    rs.add_prerequisite(last_gen)
-                    rs.add_prerequisite(gen)
-                last_gen = gen
-    else:
-        jobs.append(gen2 := CmsOldListInputs(self._env, generator))
-        gen2.add_prerequisite(compile_gen)
-
-
-class RunOnlineGeneratorMan(TaskJobManager):
-    def __init__(self, subtask: int, seed: int, file: str):
-        self._subtask = subtask
-        self._seed = seed
-        self._file = file
-        super().__init__("Running generator")
-
-    def _get_jobs(self) -> list[Job]:
-        jobs: list[Job] = [
-            compile_gen := Compile(self._env, self._env.config.in_gen),
-            gen := OpendataV1Generate(
-                self._env,
-                self._env.config.in_gen,
-                TaskPath(self._file),
-                self._subtask,
-                self._seed,
-            ),
-        ]
-        gen.add_prerequisite(compile_gen)
-
-        return jobs
-
-
 def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
     return {
         GenType.opendata_v1: OpendataV1ListInputs,
@@ -134,10 +67,20 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
     }[env.config.gen_type](env, generator)
 
 
-def generate_input(env: Env, generator: TaskPath, input_info: InputInfo, seed: int) -> None:
+def generate_input(
+    env: Env, generator: TaskPath, input_info: InputInfo, seed: int
+) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
         GenType.cms_old: CmsOldGenerate,
     }[
         env.config.gen_type
     ](env, generator, input_info, seed)
+
+
+def generator_test_determinism(
+    env: Env, generator: TaskPath, input_info: InputInfo, seed: int
+) -> GeneratorTestDeterminism:
+    return {GenType.opendata_v1: OpendataV1TestDeterminism}[env.config.gen_type](
+        env, generator, input_info, seed
+    )

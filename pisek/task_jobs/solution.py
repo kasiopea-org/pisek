@@ -24,7 +24,7 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, Scoring
+from pisek.config.config_types import ProgramType, Scoring, DataFormat
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.verdicts_eval import evaluate_verdicts
@@ -32,7 +32,16 @@ from pisek.task_jobs.task_job import TaskJobManager, INPUTS_MAN_CODE
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.generator.input_info import InputInfo
-from pisek.task_jobs.generator.generator import generate_input
+from pisek.task_jobs.generator.base_classes import (
+    GenerateInput,
+    GeneratorTestDeterminism,
+)
+from pisek.task_jobs.generator.generator import (
+    generate_input,
+    generator_test_determinism,
+)
+from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.data import InputSmall, OutputSmall, IsClean
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
@@ -45,7 +54,6 @@ class SolutionManager(TaskJobManager):
         self._is_first = is_first
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
-        self._outputs: list[tuple[TaskPath, RunJudge]] = []
         self._subtasks_results: dict[int, float] = {}
         super().__init__(f"Run {solution_label}")
 
@@ -63,52 +71,110 @@ class SolutionManager(TaskJobManager):
         for sub_num, inputs in self._all_inputs().items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in inputs:
-                jobs += self._create_input_info_jobs(inp)
-                # if inp not in self._judges:
-                #     run_sol: RunSolution
-                #     run_judge: RunJudge
-                #     if self._env.config.task_type == "batch":
-                #         run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
-                #         jobs += [run_sol, run_judge]
-                #         self._outputs.append((run_judge.output, run_judge))
-
-                #     elif self._env.config.task_type == "communication":
-                #         run_sol = run_judge = self._create_communication_jobs(inp)
-                #         jobs.append(run_sol)
-
-                #     self._judges[inp] = run_judge
-                #     self.subtasks[-1].new_jobs.append(run_judge)
-                #     self.subtasks[-1].new_run_jobs.append(run_sol)
-                # else:
-                #     self.subtasks[-1].previous_jobs.append(self._judges[inp])
+                jobs += self._input_info_jobs(inp, sub_num)
 
         return jobs
 
-    def _create_input_info_jobs(self, input_info: InputInfo) -> list[Job]:
-        jobs = []
+    def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
         repeat = input_info.repeat * (self._env.inputs if input_info.seeded else 1)
 
         random.seed(4)  # Reproducibility!
         seeds = random.sample(range(0, 16**4), repeat)
         for i, seed in enumerate(seeds):
+            inp_path = input_info.task_path(self._env, seed)
+            if inp_path.name in self._judges:
+                self.subtasks[-1].previous_jobs.append(self._judges[inp_path])
+                continue
+            
+            input_jobs: list[Optional[Job]] = []
             if self._is_first:
-                jobs.append(generate_input(self._env, self._env.config.in_gen, input_info, seed))
-                if input_info.seeded and i == 0:
-                    # determinism
-                    pass
-                # run checker
-                # input size
-                # input cleanliness
-                pass
-            # run solution
-            # output size
-            # output cleanliness
+                # test_seeded
+                input_jobs = list(self._generate_input_jobs(
+                    input_info, seed, subtask, i == 0
+                ))
+            output_jobs: list[Optional[Job]] = list(self._solution_jobs(inp_path, subtask))
 
-        return []
+        jobs: list[Job] = []
+        for j in input_jobs + output_jobs:
+            if j is not None:
+                jobs.append(j)
+
+        return jobs
+
+    def _generate_input_jobs(
+        self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
+    ) -> tuple[
+        Optional[GenerateInput],
+        Optional[GeneratorTestDeterminism],
+        Optional[CheckerJob],
+        Optional[IsClean],
+        Optional[InputSmall]
+    ]:
+        if not input_info.is_generated:
+            return (None, None, None, None, None)
+
+        test_det: Optional[GeneratorTestDeterminism] = None
+        check_input: Optional[CheckerJob] = None
+        input_clean: Optional[IsClean] = None
+        input_small: Optional[InputSmall] = None
+
+        input_path = input_info.task_path(self._env, seed)
+        gen_inp = generate_input(self._env, self._env.config.in_gen, input_info, seed)
+
+        if input_info.seeded and test_determinism:
+            test_det = generator_test_determinism(
+                self._env, self._env.config.in_gen, input_info, seed
+            )
+            test_det.add_prerequisite(gen_inp)
+
+        if self._env.config.in_format == DataFormat.text:
+            input_clean = IsClean(self._env, input_path)
+            input_clean.add_prerequisite(gen_inp)
+
+        if self._env.config.limits.input_max_size != 0:
+            input_small = InputSmall(self._env, input_path)
+            input_small.add_prerequisite(gen_inp)
+
+        if self._env.config.checker is not None:
+            check_input = CheckerJob(
+                self._env,
+                self._env.config.checker,
+                input_path,
+                subtask,
+            )
+            check_input.add_prerequisite(gen_inp)
+
+        return (gen_inp, test_det, check_input, input_clean, input_small)
+
+    def _checker_jobs(self, input_path: TaskPath, subtask: int):
+        return None
+
+    def _solution_jobs(self, input_path: TaskPath, subtask: int) -> tuple["RunSolution", Optional["RunJudge"], Optional[IsClean], Optional[OutputSmall]]:
+        run_sol: RunSolution
+        run_judge: Optional[RunJudge] = None
+        out_clean: Optional[IsClean] = None
+        out_small: Optional[OutputSmall] = None
+
+        if self._env.config.task_type == "batch":
+            run_batch_sol, run_judge = self._create_batch_jobs(input_path, subtask)
+            run_sol = run_batch_sol
+            self._judges[input_path] = run_judge
+            self.subtasks[-1].new_jobs.append(run_judge)
+            out_clean = IsClean(self._env, run_batch_sol.output)
+            if self._env.config.limits.output_max_size != 0:
+                out_small = OutputSmall(self._env, run_batch_sol.output)
+
+        elif self._env.config.task_type == "communication":
+            run_sol = self._create_communication_jobs(input_path)
+            self._judges[input_path] = run_sol
+            self.subtasks[-1].new_jobs.append(run_sol)
+
+        self.subtasks[-1].new_run_jobs.append(run_sol)
+        return (run_sol, run_judge, out_clean, out_small)
 
     def _create_batch_jobs(
-        self, sub_num: int, inp: TaskPath
-    ) -> tuple["RunSolution", RunBatchJudge]:
+        self, inp: TaskPath, subtask: int
+    ) -> tuple["RunBatchSolution", RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
         run_solution = RunBatchSolution(
             self._env,
@@ -118,7 +184,7 @@ class SolutionManager(TaskJobManager):
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        if sub_num == 0:
+        if subtask == 0:
             c_out = TaskPath.output_static_file(self._env, inp.name)
         else:
             primary_sol = self._env.config.solutions[
@@ -131,7 +197,7 @@ class SolutionManager(TaskJobManager):
             inp,
             out,
             c_out,
-            sub_num,
+            subtask,
             lambda: self._get_seed(inp.name),
             None,
             self._env,
@@ -218,16 +284,6 @@ class SolutionManager(TaskJobManager):
 
     def _compute_result(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
-        result["outputs"] = {
-            Verdict.ok: [],
-            Verdict.partial_ok: [],
-            Verdict.wrong_answer: [],
-            Verdict.timeout: [],
-            Verdict.error: [],
-        }
-        for output, job in self._outputs:
-            if job.result is not None:
-                result["outputs"][job.result.verdict].append(output)
 
         result["results"] = {}
         result["judge_outs"] = set()
