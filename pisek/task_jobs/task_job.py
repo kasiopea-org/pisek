@@ -30,7 +30,7 @@ from pisek.utils.text import tab
 from pisek.config.task_config import SubtaskConfig, ProgramType
 from pisek.jobs.jobs import Job
 from pisek.jobs.status import StatusJobManager
-from pisek.task_jobs.input_info import InputInfo
+from pisek.task_jobs.generator.input_info import InputInfo
 
 
 TOOLS_MAN_CODE = "tools"
@@ -131,6 +131,10 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     def _subtask_inputs(self, subtask: SubtaskConfig) -> list[InputInfo]:
         """Get all inputs of given subtask."""
         return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"][subtask.num]
+
+    def _all_inputs(self) -> dict[int, InputInfo]:
+        """Get all inputs grouped by subtask."""
+        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]
 
 
 class TaskJob(Job, TaskHelper):

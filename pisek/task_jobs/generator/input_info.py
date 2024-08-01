@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+import yaml
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -28,3 +29,24 @@ class InputInfo:
         filename += ".in"
 
         return TaskPath.input_path(env, filename)
+
+
+def input_info_representer(dumper, input_info: InputInfo):
+    return dumper.represent_sequence(
+        "!InputInfo",
+        [
+            input_info.name,
+            input_info.repeat,
+            input_info.is_generated,
+            input_info.seeded,
+        ],
+    )
+
+
+def input_info_constructor(loader, value):
+    [name, repeat, generated, seeded] = loader.construct_sequence(value)
+    return InputInfo(name, repeat, generated, seeded)
+
+
+yaml.add_representer(InputInfo, input_info_representer)
+yaml.add_constructor("!InputInfo", input_info_constructor)

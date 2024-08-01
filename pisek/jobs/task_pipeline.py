@@ -31,7 +31,7 @@ from pisek.task_jobs.task_job import (
 
 from pisek.task_jobs.tools import ToolsManager
 from pisek.task_jobs.data import DataManager
-from pisek.task_jobs.generator import GeneratorManager
+from pisek.task_jobs.generator.generator import GeneratorManager
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution import SolutionManager

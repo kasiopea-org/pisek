@@ -28,7 +28,7 @@ from pisek.task_jobs.task_job import (
     INPUTS_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
-from pisek.task_jobs.input_info import InputInfo
+from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.solution_result import Verdict
 from pisek.task_jobs.tools import IsClean
 
@@ -60,8 +60,7 @@ class DataManager(TaskJobManager):
                     )
 
         all_input_infos: list[InputInfo] = [
-            InputInfo.static(re.sub(r"\.in$", "", inp.name))
-            for inp in static_inputs
+            InputInfo.static(inp.name.removesuffix(".in")) for inp in static_inputs
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         all_input_infos.sort(key=lambda info: info.name)
 

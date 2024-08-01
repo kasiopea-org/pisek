@@ -31,7 +31,8 @@ from pisek.task_jobs.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskJobManager, INPUTS_MAN_CODE
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
-from pisek.task_jobs.input_info import InputInfo
+from pisek.task_jobs.generator.input_info import InputInfo
+from pisek.task_jobs.generator.generator import generate_input
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
@@ -59,12 +60,10 @@ class SolutionManager(TaskJobManager):
 
         self._judges: dict[TaskPath, RunJudge] = {}
 
-        sub_num: int
-        inputs: list[InputInfo]
-        for sub_num, inputs in self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]:
+        for sub_num, inputs in self._all_inputs().items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in inputs:
-                jobs += self._create_inputs(inp)
+                jobs += self._create_input_info_jobs(inp)
                 # if inp not in self._judges:
                 #     run_sol: RunSolution
                 #     run_judge: RunJudge
@@ -85,15 +84,18 @@ class SolutionManager(TaskJobManager):
 
         return jobs
 
-    def _create_inputs(self, input_info: InputInfo) -> list[Job]:
-        repeat = input_info * (self._env.inputs if input_info.seeded else 1)
+    def _create_input_info_jobs(self, input_info: InputInfo) -> list[Job]:
+        jobs = []
+        repeat = input_info.repeat * (self._env.inputs if input_info.seeded else 1)
 
         random.seed(4)  # Reproducibility!
         seeds = random.sample(range(0, 16**4), repeat)
         for i, seed in enumerate(seeds):
             if self._is_first:
-                # generator
-                # determinism if i == 0
+                jobs.append(generate_input(self._env, self._env.config.in_gen, input_info, seed))
+                if input_info.seeded and i == 0:
+                    # determinism
+                    pass
                 # run checker
                 # input size
                 # input cleanliness
@@ -101,6 +103,8 @@ class SolutionManager(TaskJobManager):
             # run solution
             # output size
             # output cleanliness
+
+        return []
 
     def _create_batch_jobs(
         self, sub_num: int, inp: TaskPath

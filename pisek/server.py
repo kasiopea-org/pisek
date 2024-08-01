@@ -26,7 +26,7 @@ from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 from pisek.task_jobs.tools import ToolsManager
-from pisek.task_jobs.generator import RunOnlineGeneratorMan
+from pisek.task_jobs.generator.generator import RunOnlineGeneratorMan
 from pisek.task_jobs.solution import RunPrimarySolutionMan
 from pisek.task_jobs.solution_result import SolutionResult
 from pisek.task_jobs.judge import RunKasiopeaJudgeMan
