@@ -27,19 +27,8 @@ from pisek.config.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
 from pisek.utils.terminal import colored_env
 from pisek.utils.text import tab
-from pisek.config.task_config import SubtaskConfig, ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
-from pisek.jobs.status import StatusJobManager
-from pisek.task_jobs.generator.input_info import InputInfo
-
-
-TOOLS_MAN_CODE = "tools"
-GENERATOR_MAN_CODE = "generator"
-INPUTS_MAN_CODE = "inputs"
-CHECKER_MAN_CODE = "checker"
-JUDGE_MAN_CODE = "judge"
-SOLUTION_MAN_CODE = "solution_"
-DATA_MAN_CODE = "data"
 
 
 class TaskHelper:
@@ -112,29 +101,6 @@ class TaskHelper:
     def make_filedirs(path: TaskPath, exist_ok: bool = True):
         """Make directories for given file"""
         os.makedirs(os.path.dirname(path.path), exist_ok=exist_ok)
-
-
-class TaskJobManager(StatusJobManager, TaskHelper):
-    """JobManager class that implements useful methods"""
-
-    def _get_static_samples(self) -> list[tuple[TaskPath, TaskPath]]:
-        """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = filter(
-            lambda inp: not inp.is_generated,
-            self._subtask_inputs(self._env.config.subtasks[0]),
-        )
-        return [
-            (inp.task_path(self._env), TaskPath.output_static_file(self._env, inp.name))
-            for inp in ins
-        ]
-
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[InputInfo]:
-        """Get all inputs of given subtask."""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"][subtask.num]
-
-    def _all_inputs(self) -> dict[int, list[InputInfo]]:
-        """Get all inputs grouped by subtask."""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]
 
 
 class TaskJob(Job, TaskHelper):

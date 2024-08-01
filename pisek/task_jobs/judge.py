@@ -26,7 +26,7 @@ from pisek.utils.paths import TaskPath
 from pisek.config.config_types import ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile

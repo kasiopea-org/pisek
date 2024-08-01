@@ -21,13 +21,8 @@ from pisek.config.config_types import DataFormat
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.task_jobs.task_job import (
-    TaskJob,
-    TaskJobManager,
-    GENERATOR_MAN_CODE,
-    INPUTS_MAN_CODE,
-    SOLUTION_MAN_CODE,
-)
+from pisek.task_jobs.task_job import TaskJob
+from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.solution_result import Verdict
 from pisek.task_jobs.tools import IsClean
@@ -147,6 +142,7 @@ class LinkOutput(LinkData):
 
 
 MB = 1024 * 1024
+
 
 class InputSmall(DataJob):
     """Checks that input is small enough to download."""

@@ -1,3 +1,15 @@
+# pisek  - Tool for developing tasks for programming competitions.
+#
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
@@ -9,6 +21,9 @@ from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeter
 
 class OpendataV1ListInputs(GeneratorListInputs):
     """Lists all inputs for opendata-v1 generator - one for each subtask."""
+
+    def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
+        super().__init__(env=env, generator=generator, **kwargs)
 
     def _run(self) -> list[InputInfo]:
         return [
@@ -23,20 +38,26 @@ class OpendataV1GeneratorJob(ProgramsJob):
 
     generator: TaskPath
     seed: int
-    input: TaskPath
+    input_info: InputInfo
+    input_path: TaskPath
+
+    def __init__(self, env: Env, *, name: str = "", **kwargs) -> None:
+        super().__init__(env=env, name=name, **kwargs)
 
     def _gen(self) -> None:
         if self.seed < 0:
             raise ValueError(f"Seed {self.seed} is negative.")
 
-        subtask = int(self.input.name.removesuffix(".in"))
+        subtask = int(self.input_info.name)
 
         result = self._run_program(
             ProgramType.in_gen,
             self.generator,
             args=[str(subtask), f"{self.seed:x}"],
-            stdout=self.input,
-            stderr=TaskPath.log_file(self._env, self.input.name, self.generator.name),
+            stdout=self.input_path,
+            stderr=TaskPath.log_file(
+                self._env, self.input_path.name, self.generator.name
+            ),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(

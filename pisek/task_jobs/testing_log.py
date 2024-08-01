@@ -19,7 +19,7 @@ from typing import Any
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.utils.terminal import colored_env
-from pisek.task_jobs.task_job import (
+from pisek.task_jobs.task_manager import (
     TaskJobManager,
     SOLUTION_MAN_CODE,
 )

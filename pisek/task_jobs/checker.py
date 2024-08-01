@@ -22,7 +22,7 @@ from pisek.utils.paths import TaskPath
 from pisek.config.task_config import ProgramType
 from pisek.config.config_types import Scoring
 from pisek.utils.terminal import colored_env
-from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile

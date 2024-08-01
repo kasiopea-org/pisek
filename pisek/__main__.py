@@ -158,7 +158,7 @@ def main(argv):
         "--inputs",
         "-n",
         type=int,
-        default=5,
+        default=1,
         help="Test on INPUTS difference inputs (only for Kasiopea tasks).",
     )
     parser_test.add_argument(

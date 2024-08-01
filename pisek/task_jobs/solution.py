@@ -28,7 +28,7 @@ from pisek.config.config_types import ProgramType, Scoring, DataFormat
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.verdicts_eval import evaluate_verdicts
-from pisek.task_jobs.task_job import TaskJobManager, INPUTS_MAN_CODE
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.generator.input_info import InputInfo
@@ -78,26 +78,29 @@ class SolutionManager(TaskJobManager):
     def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
         repeat = input_info.repeat * (self._env.inputs if input_info.seeded else 1)
 
+        jobs: list[Job] = []
+
         random.seed(4)  # Reproducibility!
         seeds = random.sample(range(0, 16**4), repeat)
         for i, seed in enumerate(seeds):
             inp_path = input_info.task_path(self._env, seed)
-            if inp_path.name in self._judges:
+            if inp_path in self._judges:
                 self.subtasks[-1].previous_jobs.append(self._judges[inp_path])
                 continue
-            
+
             input_jobs: list[Optional[Job]] = []
             if self._is_first:
                 # test_seeded
-                input_jobs = list(self._generate_input_jobs(
-                    input_info, seed, subtask, i == 0
-                ))
-            output_jobs: list[Optional[Job]] = list(self._solution_jobs(inp_path, subtask))
+                input_jobs = list(
+                    self._generate_input_jobs(input_info, seed, subtask, i == 0)
+                )
+            output_jobs: list[Optional[Job]] = list(
+                self._solution_jobs(inp_path, subtask)
+            )
 
-        jobs: list[Job] = []
-        for j in input_jobs + output_jobs:
-            if j is not None:
-                jobs.append(j)
+            for j in input_jobs + output_jobs:
+                if j is not None:
+                    jobs.append(j)
 
         return jobs
 
@@ -108,7 +111,7 @@ class SolutionManager(TaskJobManager):
         Optional[GeneratorTestDeterminism],
         Optional[CheckerJob],
         Optional[IsClean],
-        Optional[InputSmall]
+        Optional[InputSmall],
     ]:
         if not input_info.is_generated:
             return (None, None, None, None, None)
@@ -149,7 +152,11 @@ class SolutionManager(TaskJobManager):
     def _checker_jobs(self, input_path: TaskPath, subtask: int):
         return None
 
-    def _solution_jobs(self, input_path: TaskPath, subtask: int) -> tuple["RunSolution", Optional["RunJudge"], Optional[IsClean], Optional[OutputSmall]]:
+    def _solution_jobs(
+        self, input_path: TaskPath, subtask: int
+    ) -> tuple[
+        "RunSolution", Optional["RunJudge"], Optional[IsClean], Optional[OutputSmall]
+    ]:
         run_sol: RunSolution
         run_judge: Optional[RunJudge] = None
         out_clean: Optional[IsClean] = None
@@ -160,9 +167,12 @@ class SolutionManager(TaskJobManager):
             run_sol = run_batch_sol
             self._judges[input_path] = run_judge
             self.subtasks[-1].new_jobs.append(run_judge)
+
             out_clean = IsClean(self._env, run_batch_sol.output)
+            out_clean.add_prerequisite(run_judge)  # TODO: Conditional
             if self._env.config.limits.output_max_size != 0:
                 out_small = OutputSmall(self._env, run_batch_sol.output)
+                out_small.add_prerequisite(run_judge)
 
         elif self._env.config.task_type == "communication":
             run_sol = self._create_communication_jobs(input_path)

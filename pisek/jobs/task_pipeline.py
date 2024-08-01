@@ -19,7 +19,7 @@ from collections import deque
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
 
-from pisek.task_jobs.task_job import (
+from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,

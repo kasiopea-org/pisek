@@ -1,3 +1,15 @@
+# pisek  - Tool for developing tasks for programming competitions.
+#
+# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from abc import abstractmethod
 
 from pisek.env.env import Env
@@ -15,7 +27,7 @@ class GeneratorListInputs(ProgramsJob):
         self, env: Env, generator: TaskPath, *, name: str = "", **kwargs
     ) -> None:
         self.generator = generator
-        super().__init__(env, name or "List generator inputs", **kwargs)
+        super().__init__(env=env, name=name or "List generator inputs", **kwargs)
 
     @abstractmethod
     def _run(self) -> list[InputInfo]:
@@ -39,7 +51,9 @@ class GenerateInput(ProgramsJob):
         self.seed = seed
         self.input_info = input_info
         self.input_path = input_info.task_path(env, seed)
-        super().__init__(env, name or f"Generate {self.input_path.name}", **kwargs)
+        super().__init__(
+            env=env, name=name or f"Generate {self.input_path.name}", **kwargs
+        )
 
     def _run(self) -> None:
         self._gen()
@@ -66,7 +80,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         self.seed = seed
         self.input_info = input_info
         self.input = input_info.task_path(env, seed)
-        super().__init__(env, name or f"Generate {self.input.name}", **kwargs)
+        super().__init__(env=env, name=name or f"Generate {self.input.name}", **kwargs)
 
     def _run(self) -> None:
         original = self.input.replace_suffix(".in2")

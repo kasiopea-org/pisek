@@ -20,11 +20,8 @@ from typing import Any
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, GENERATED_SUBDIR
 from pisek.config.config_types import GenType
-from pisek.config.task_config import ProgramType
-from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.task_jobs.task_job import TaskJob, TaskJobManager
-from pisek.task_jobs.run_result import RunResult, RunResultKind
-from pisek.task_jobs.program import ProgramsJob
+from pisek.jobs.jobs import Job
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
 
 from .input_info import InputInfo
@@ -64,7 +61,7 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
     return {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
-    }[env.config.gen_type](env, generator)
+    }[env.config.gen_type](env=env, generator=generator)
 
 
 def generate_input(
@@ -75,12 +72,12 @@ def generate_input(
         GenType.cms_old: CmsOldGenerate,
     }[
         env.config.gen_type
-    ](env, generator, input_info, seed)
+    ](env=env, generator=generator, input_info=input_info, seed=seed)
 
 
 def generator_test_determinism(
     env: Env, generator: TaskPath, input_info: InputInfo, seed: int
 ) -> GeneratorTestDeterminism:
     return {GenType.opendata_v1: OpendataV1TestDeterminism}[env.config.gen_type](
-        env, generator, input_info, seed
+        env=env, generator=generator, input_info=input_info, seed=seed
     )
