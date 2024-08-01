@@ -41,7 +41,8 @@ from pisek.task_jobs.generator.generator import (
     generator_test_determinism,
 )
 from pisek.task_jobs.checker import CheckerJob
-from pisek.task_jobs.data import InputSmall, OutputSmall, IsClean
+from pisek.task_jobs.data import InputSmall, OutputSmall
+from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
@@ -168,8 +169,9 @@ class SolutionManager(TaskJobManager):
             self._judges[input_path] = run_judge
             self.subtasks[-1].new_jobs.append(run_judge)
 
-            out_clean = IsClean(self._env, run_batch_sol.output)
-            out_clean.add_prerequisite(run_judge)  # TODO: Conditional
+            if self._env.config.out_format == DataFormat.text:
+                out_clean = IsClean(self._env, run_batch_sol.output)
+                out_clean.add_prerequisite(run_judge)  # TODO: Conditional
             if self._env.config.limits.output_max_size != 0:
                 out_small = OutputSmall(self._env, run_batch_sol.output)
                 out_small.add_prerequisite(run_judge)

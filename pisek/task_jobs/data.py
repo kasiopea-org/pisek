@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import re
-from typing import Any, Callable
+from typing import Any
 
 from pisek.config.config_types import DataFormat
 from pisek.jobs.jobs import Job, PipelineItemFailure
@@ -24,7 +24,6 @@ from pisek.utils.paths import TaskPath
 from pisek.task_jobs.task_job import TaskJob
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.generator.input_info import InputInfo
-from pisek.task_jobs.solution_result import Verdict
 from pisek.task_jobs.tools import IsClean
 
 
@@ -63,7 +62,7 @@ class DataManager(TaskJobManager):
         for num, sub in self._env.config.subtasks.items():
             self._input_infos[sub.num] = []
             for input_info in all_input_infos:
-                if sub.in_subtask(input_info.task_path(self._env, 25265)):
+                if sub.in_subtask(input_info.task_path(self._env, 25265).name):
                     self._input_infos[sub.num].append(input_info)
             if len(self._input_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
@@ -88,10 +87,19 @@ class DataManager(TaskJobManager):
                     self._warn(f"Unused input: '{inp.name}'")
 
         jobs: list[Job] = []
-        for fname in static_inputs:
-            jobs.append(LinkInput(self._env, fname))
-        for fname in static_outputs:
-            jobs.append(LinkOutput(self._env, fname))
+        for path in static_inputs:
+            jobs.append(LinkInput(self._env, path))
+            if self._env.config.in_format == DataFormat.text:
+                jobs.append(IsClean(self._env, path))
+            if self._env.config.limits.input_max_size != 0:
+                jobs.append(InputSmall(self._env, path))
+
+        for path in static_outputs:
+            jobs.append(LinkOutput(self._env, path))
+            if self._env.config.out_format == DataFormat.text:
+                jobs.append(IsClean(self._env, path))
+            if self._env.config.limits.output_max_size != 0:
+                jobs.append(InputSmall(self._env, path))
 
         return jobs
 

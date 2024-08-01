@@ -47,46 +47,50 @@ class TaskPipeline(JobPipeline):
             tools := (ToolsManager(), TOOLS_MAN_CODE),
             generator := (GeneratorManager(), GENERATOR_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
+            checker := (CheckerManager(), CHECKER_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
         inputs[0].add_prerequisite(*generator)
 
-        if env.target != "solution":
-            named_pipeline.append(checker := (CheckerManager(), CHECKER_MAN_CODE))
-            checker[0].add_prerequisite(*inputs)
+        if env.target == TestingTarget.generator:
+            pass
 
-        solutions = []
-        if env.solutions:
+        else:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
             judge[0].add_prerequisite(*inputs)
 
-            if env.config.judge_needs_out or (
-                env.config.primary_solution in env.solutions
-            ):
-                named_pipeline.append(
-                    primary_solution := (
-                        SolutionManager(env.config.primary_solution, True),
-                        f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
-                    )
-                )
-                solutions.append(primary_solution)
+            first_solution_name = (
+                env.config.primary_solution
+                if env.config.judge_needs_out
+                or env.config.primary_solution in env.solutions
+                else env.solutions[0]
+            )
 
-        for sol_name in env.solutions:
-            if sol_name == env.config.primary_solution:
-                continue
             named_pipeline.append(
-                solution := (
-                    SolutionManager(sol_name, False),
-                    f"{SOLUTION_MAN_CODE}{sol_name}",
+                first_solution := (
+                    SolutionManager(first_solution_name, True),
+                    f"{SOLUTION_MAN_CODE}{first_solution_name}",
                 )
             )
-            if env.config.judge_needs_out:
-                solution[0].add_prerequisite(*primary_solution)
-            solutions.append(solution)
+            solutions = [first_solution]
 
-        for solution in solutions:
-            solution[0].add_prerequisite(*inputs)
-            solution[0].add_prerequisite(*judge)
+            for sol_name in env.solutions:
+                if sol_name == first_solution_name:
+                    continue
+                named_pipeline.append(
+                    solution := (
+                        SolutionManager(sol_name, False),
+                        f"{SOLUTION_MAN_CODE}{sol_name}",
+                    )
+                )
+
+                if env.config.judge_needs_out:
+                    solution[0].add_prerequisite(*first_solution)
+                solutions.append(solution)
+
+            for solution in solutions:
+                solution[0].add_prerequisite(*inputs)
+                solution[0].add_prerequisite(*judge)
 
         if env.testing_log:
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))

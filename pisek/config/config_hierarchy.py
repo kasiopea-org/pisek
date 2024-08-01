@@ -65,6 +65,7 @@ class ConfigHierarchy:
         self,
         task_path: str,
         no_colors: bool = False,
+        info: bool = True,
         pisek_directory: Optional[str] = None,
     ) -> None:
         self._task_path = task_path
@@ -73,8 +74,8 @@ class ConfigHierarchy:
         self._config_paths: list[str] = []
         self._configs: list[ConfigParser] = []
 
-        self._load_config(os.path.join(task_path, CONFIG_FILENAME))
-        self._load_config(GLOBAL_DEFAULTS, info=False)
+        self._load_config(os.path.join(task_path, CONFIG_FILENAME), no_colors, info)
+        self._load_config(GLOBAL_DEFAULTS, no_colors, False)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
 
