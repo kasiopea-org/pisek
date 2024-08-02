@@ -102,6 +102,7 @@ class GeneratorTestDeterminism(ProgramsJob):
     def _gen(self) -> None:
         pass
 
+
 class GeneratorRespectsSeed(TaskJob):
     def __init__(self, env: Env, input_info: InputInfo, seed1: int, seed2: int) -> None:
         assert input_info.is_generated and input_info.seeded
@@ -109,17 +110,17 @@ class GeneratorRespectsSeed(TaskJob):
         self.input_info = input_info
         self.seed1 = seed1
         self.seed2 = seed2
-        self.input1 = input_info.seeded(seed1)
-        self.input2 = input_info.seeded(seed2)
+        self.input1 = input_info.task_path(self._env, seed1)
+        self.input2 = input_info.task_path(self._env, seed2)
         super().__init__(
             env=env,
-            name=f"Generator respects seeds ({self.input1:n} and {self.input2:n} are different)"
+            name=f"Generator respects seed ({self.input1:n} and {self.input2:n})",
         )
 
     def _run(self) -> None:
         if self._files_equal(self.input1, self.input2):
             raise PipelineItemFailure(
-                f"Generator doesn't respect seed."
-                f"Files {self.input1:n} (seed {self.seed1:x}) and {self.input2:n} (seed {self.seed2:x}) are same."
+                f"Inputs generated with different seed are same:\n"
+                f"- {self.input1:p} (seed {self.seed1:x})\n"
+                f"- {self.input2:p} (seed {self.seed2:x})"
             )
-

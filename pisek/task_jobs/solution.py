@@ -71,9 +71,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         input_path = input_info.task_path(self._env, seed)
         if input_path in self._judges:
             self.subtasks[-1].previous_jobs.append(self._judges[input_path])
-            return True
-        else:
-            return False
+        return super()._skip_input(input_info, seed, subtask)
 
     def _generate_input_jobs(
         self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
@@ -81,6 +79,13 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         if not self._is_first:
             return []
         return super()._generate_input_jobs(input_info, seed, subtask, test_determinism)
+
+    def _respects_seed_jobs(
+        self, input_info: InputInfo, seeds: list[int], subtask: int
+    ) -> list[Job]:
+        if not self._is_first:
+            return []
+        return super()._respects_seed_jobs(input_info, seeds, subtask)
 
     def _solution_jobs(
         self, input_info: InputInfo, seed: int, subtask: int
