@@ -647,7 +647,6 @@ class ChecksConfig(BaseEnv):
 
     _section: str = "checks"
 
-    checker_distinguishes_subtasks: bool
     solution_for_each_subtask: bool
 
     @classmethod
