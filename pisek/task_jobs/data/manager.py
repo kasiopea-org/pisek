@@ -19,6 +19,7 @@ from pisek.config.config_types import DataFormat
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.tools import IsClean
+from pisek.task_jobs.checker import CheckerJob
 
 from .data import LinkInput, LinkOutput, InputSmall, OutputSmall
 
@@ -96,6 +97,23 @@ class DataManager(TaskJobManager):
                 jobs.append(IsClean(self._env, path))
             if self._env.config.limits.output_max_size != 0:
                 jobs.append(OutputSmall(self._env, path))
+
+        for subtask, inputs in self._input_infos.items():
+            for inp in inputs:
+                if inp.is_generated:
+                    continue
+
+                if subtask > 0 and self._env.config.checker is not None:
+                    jobs.append(
+                        CheckerJob(
+                            self._env,
+                            self._env.config.checker,
+                            TaskPath.static_path(
+                                self._env, inp.task_path(self._env).name
+                            ),
+                            subtask,
+                        )
+                    )
 
         return jobs
 

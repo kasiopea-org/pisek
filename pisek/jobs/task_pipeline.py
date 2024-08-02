@@ -46,17 +46,17 @@ class TaskPipeline(JobPipeline):
         named_pipeline = [
             tools := (ToolsManager(), TOOLS_MAN_CODE),
             generator := (PrepareGenerator(), GENERATOR_MAN_CODE),
-            inputs := (DataManager(), INPUTS_MAN_CODE),
             checker := (CheckerManager(), CHECKER_MAN_CODE),
+            inputs := (DataManager(), INPUTS_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
-        inputs[0].add_prerequisite(*generator)
         checker[0].add_prerequisite(*tools)
+        inputs[0].add_prerequisite(*generator)
+        inputs[0].add_prerequisite(*checker)
 
         if env.target == TestingTarget.generator:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))
             gen_inputs[0].add_prerequisite(*inputs)
-            gen_inputs[0].add_prerequisite(*checker)
 
         else:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
@@ -76,7 +76,6 @@ class TaskPipeline(JobPipeline):
                 )
             )
             solutions = [first_solution]
-            first_solution[0].add_prerequisite(*checker)
             first_solution[0].add_prerequisite(*judge)
 
             for sol_name in env.solutions:
