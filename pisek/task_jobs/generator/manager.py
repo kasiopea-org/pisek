@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import random
-from typing import Any
+from typing import Any, Optional
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -87,8 +87,12 @@ def generate_input(
 
 def generator_test_determinism(
     env: Env, generator: TaskPath, input_info: InputInfo, seed: int
-) -> GeneratorTestDeterminism:
-    return {GenType.opendata_v1: OpendataV1TestDeterminism}[env.config.gen_type](
+) -> Optional[GeneratorTestDeterminism]:
+    TEST_DETERMINISM = {GenType.opendata_v1: OpendataV1TestDeterminism}
+
+    if env.config.gen_type not in TEST_DETERMINISM:
+        return None
+    return TEST_DETERMINISM[env.config.gen_type](
         env=env, generator=generator, input_info=input_info, seed=seed
     )
 
@@ -134,13 +138,13 @@ class InputsInfoMixin(JobManager):
         self._generate_inputs[seed] = gen_inp
         input_path = input_info.task_path(self._env, seed)
 
-        if input_info.seeded and test_determinism:
-            jobs.append(
-                test_det := generator_test_determinism(
-                    self._env, self._env.config.in_gen, input_info, seed
-                )
+        if test_determinism:
+            test_det = generator_test_determinism(
+                self._env, self._env.config.in_gen, input_info, seed
             )
-            test_det.add_prerequisite(gen_inp)
+            if test_det is not None:
+                jobs.append(test_det)
+                test_det.add_prerequisite(gen_inp)
 
         if self._env.config.in_format == DataFormat.text:
             jobs.append(input_clean := IsClean(self._env, input_path))
