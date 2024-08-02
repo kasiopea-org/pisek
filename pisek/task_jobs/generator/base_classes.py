@@ -15,6 +15,7 @@ from abc import abstractmethod
 from pisek.env.env import Env
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.paths import TaskPath
+from pisek.task_jobs.task_job import TaskJob
 from pisek.task_jobs.program import ProgramsJob
 
 from .input_info import InputInfo
@@ -47,6 +48,8 @@ class GenerateInput(ProgramsJob):
         name: str = "",
         **kwargs,
     ) -> None:
+        assert input_info.is_generated
+
         self.generator = generator
         self.seed = seed
         self.input_info = input_info
@@ -76,6 +79,8 @@ class GeneratorTestDeterminism(ProgramsJob):
         name: str = "",
         **kwargs,
     ) -> None:
+        assert input_info.is_generated and input_info.seeded
+
         self.generator = generator
         self.seed = seed
         self.input_info = input_info
@@ -96,3 +101,25 @@ class GeneratorTestDeterminism(ProgramsJob):
     @abstractmethod
     def _gen(self) -> None:
         pass
+
+class GeneratorRespectsSeed(TaskJob):
+    def __init__(self, env: Env, input_info: InputInfo, seed1: int, seed2: int) -> None:
+        assert input_info.is_generated and input_info.seeded
+
+        self.input_info = input_info
+        self.seed1 = seed1
+        self.seed2 = seed2
+        self.input1 = input_info.seeded(seed1)
+        self.input2 = input_info.seeded(seed2)
+        super().__init__(
+            env=env,
+            name=f"Generator respects seeds ({self.input1:n} and {self.input2:n} are different)"
+        )
+
+    def _run(self) -> None:
+        if self._files_equal(self.input1, self.input2):
+            raise PipelineItemFailure(
+                f"Generator doesn't respect seed."
+                f"Files {self.input1:n} (seed {self.seed1:x}) and {self.input2:n} (seed {self.seed2:x}) are same."
+            )
+
