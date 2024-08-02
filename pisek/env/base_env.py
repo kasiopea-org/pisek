@@ -14,16 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum, auto
-from pydantic import Field
-from typing import Any, TYPE_CHECKING, Callable, TypeVar
-
+from typing import Any, TYPE_CHECKING, Callable
 
 from pisek.env.context import ContextModel
-
-
-T = TypeVar("T")
-TFunc = Callable[..., T]
 
 
 class BaseEnv(ContextModel):
