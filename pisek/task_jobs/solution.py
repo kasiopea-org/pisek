@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import random
 import tempfile
 import time
 from typing import Any, Optional
@@ -29,7 +28,7 @@ from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_point
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_manager import TaskJobManager
-from pisek.task_jobs.program import RunResult, ProgramsJob
+from pisek.task_jobs.program import RunResult, RunResultKind, ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.data.data import OutputSmall
@@ -99,7 +98,10 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
             if self._env.config.out_format == DataFormat.text:
                 jobs.append(out_clean := IsClean(self._env, run_batch_sol.output))
-                out_clean.add_prerequisite(run_judge)  # TODO: Conditional
+                out_clean.add_prerequisite(
+                    run_batch_sol,
+                    condition=lambda r: r.kind == RunResultKind.OK,
+                )
             if self._env.config.limits.output_max_size != 0:
                 jobs.append(out_small := OutputSmall(self._env, run_batch_sol.output))
                 out_small.add_prerequisite(run_judge)

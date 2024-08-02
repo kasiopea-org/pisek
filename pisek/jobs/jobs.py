@@ -20,7 +20,7 @@ import hashlib
 from enum import Enum, auto
 from functools import wraps
 import sys
-from typing import Optional, AbstractSet, MutableSet, Any
+from typing import Optional, AbstractSet, MutableSet, Any, Callable
 import yaml
 
 import os.path
@@ -83,7 +83,9 @@ class PipelineItem(ABC):
         self.dirty = False  # Prints something to console?
 
         self.prerequisites = 0
-        self.required_by: list[tuple["PipelineItem", Optional[str]]] = []
+        self.required_by: list[
+            tuple["PipelineItem", Optional[str], Callable[[Any], bool]]
+        ] = []
         self.prerequisites_results: dict[str, Any] = {}
 
     def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
@@ -109,7 +111,7 @@ class PipelineItem(ABC):
         if self.state in (State.succeeded, State.cancelled):
             return  # No need to cancel
         self.state = State.cancelled
-        for item, _ in self.required_by:
+        for item, _, _ in self.required_by:
             if not item.run_always:
                 item.cancel()
 
@@ -121,19 +123,24 @@ class PipelineItem(ABC):
             )
 
     def add_prerequisite(
-        self, item: Optional["PipelineItem"], name: Optional[str] = None
+        self,
+        item: Optional["PipelineItem"],
+        name: Optional[str] = None,
+        condition: Callable[[Any], bool] = lambda _: True,
     ) -> None:
         """Adds given PipelineItem as a prerequisite to this job."""
         if item is None:
             return
 
         self.prerequisites += 1
-        item.required_by.append((self, name))
+        item.required_by.append((self, name, condition))
 
     def finish(self) -> None:
         """Notifies PipelineItems that depend on this job."""
-        for item, name in self.required_by:
-            if item.run_always or self.state == State.succeeded:
+        for item, name, condition in self.required_by:
+            if item.run_always or (
+                self.state == State.succeeded and condition(self.result)
+            ):
                 item.prerequisites -= 1
                 if name is not None:
                     item.prerequisites_results[name] = deepcopy(self.result)
