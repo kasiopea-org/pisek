@@ -35,12 +35,12 @@ It tests all task parts (generator, checker, solutions and judge).
 
 ### Task testing overview
 
-What pisek verifies (roughly in order):
+What pisek verifies:
  - Samples exist
  - The generator generates inputs
-    - A Kasiopea generator respects the seed and is deterministic
+    - Generator is deterministic
+    - Generator respects seed on seeded inputs
  - The checker accepts all inputs
-    - If `checker_distinguishes_subtasks=on`, it rejects inputs for harder subtasks
  - The judge works
     - It accepts the samples
     - It doesn't crash on malicious output
@@ -64,11 +64,6 @@ For fast testing of only the solution `solve_cool.cpp` use:
 pisek test solution solve_cool
 ```
 
-For testing on multiple inputs use (only in Kasiopea mode) use:
-```bash
-pisek test solution solve_cool -n 42
-```
-
 Similarly the generator can be tested using:
 ```bash
 pisek test generator
@@ -76,25 +71,8 @@ pisek test generator
 
 ### Useful options
 
-Test all solutions, don't stop on first failure:
-```bash
-pisek test --full
-```
-
-Test each solution on all inputs, even when the result is clear:
-```bash
-pisek test --all-inputs
-```
-
-Use a different time limit (in seconds) for testing solutions:
-```bash
-pisek test --timeout 5
-```
-
-Interpret warnings as failures (for a final check):
-```bash
-pisek test --strict
-```
+``pisek test`` has many options that can make testing much easier and faster.
+Check out ``--help`` message for more.
 
 ### Cleaning
 
