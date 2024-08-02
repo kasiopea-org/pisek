@@ -86,7 +86,7 @@ def generator_test_determinism(
     )
 
 
-class GenInputsMixin(JobManager):
+class InputsInfoMixin(JobManager):
     def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
         repeat = input_info.repeat * (self._env.inputs if input_info.seeded else 1)
 
@@ -98,8 +98,12 @@ class GenInputsMixin(JobManager):
             if self._skip_input(input_info, seed, subtask):
                 continue
 
-            jobs += self._generate_input_jobs(input_info, seed, subtask, i == 0)
-            jobs += self._solution_jobs(input_info, seed, subtask)
+            inp_jobs = self._generate_input_jobs(input_info, seed, subtask, i == 0)
+            out_jobs = self._solution_jobs(input_info, seed, subtask)
+            if len(inp_jobs) > 0 and len(out_jobs) > 0:
+                out_jobs[0].add_prerequisite(inp_jobs[0])
+
+            jobs += inp_jobs + out_jobs
 
         return jobs
 
@@ -154,7 +158,7 @@ class GenInputsMixin(JobManager):
         return []
 
 
-class RunGenerator(TaskJobManager, GenInputsMixin):
+class RunGenerator(TaskJobManager, InputsInfoMixin):
     def __init__(self) -> None:
         super().__init__("Run generator")
 

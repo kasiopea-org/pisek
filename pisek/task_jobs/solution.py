@@ -33,13 +33,13 @@ from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.data.data import OutputSmall
-from pisek.task_jobs.generator.manager import GenInputsMixin
+from pisek.task_jobs.generator.manager import InputsInfoMixin
 from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 
 
-class SolutionManager(TaskJobManager, GenInputsMixin):
+class SolutionManager(TaskJobManager, InputsInfoMixin):
     """Runs a solution and checks if it works as expected."""
 
     def __init__(self, solution_label: str, is_first: bool) -> None:
