@@ -29,8 +29,8 @@ from pisek.task_jobs.task_manager import (
 )
 
 from pisek.task_jobs.tools import ToolsManager
-from pisek.task_jobs.data import DataManager
-from pisek.task_jobs.generator.generator import GeneratorManager
+from pisek.task_jobs.data.manager import DataManager
+from pisek.task_jobs.generator.manager import PrepareGenerator, RunGenerator
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution import SolutionManager
@@ -45,15 +45,18 @@ class TaskPipeline(JobPipeline):
         super().__init__()
         named_pipeline = [
             tools := (ToolsManager(), TOOLS_MAN_CODE),
-            generator := (GeneratorManager(), GENERATOR_MAN_CODE),
+            generator := (PrepareGenerator(), GENERATOR_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
             checker := (CheckerManager(), CHECKER_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
         inputs[0].add_prerequisite(*generator)
+        checker[0].add_prerequisite(*tools)
 
         if env.target == TestingTarget.generator:
-            pass
+            named_pipeline.append(gen_inputs := (RunGenerator(), ""))
+            gen_inputs[0].add_prerequisite(*inputs)
+            gen_inputs[0].add_prerequisite(*checker)
 
         else:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
@@ -73,6 +76,8 @@ class TaskPipeline(JobPipeline):
                 )
             )
             solutions = [first_solution]
+            first_solution[0].add_prerequisite(*checker)
+            first_solution[0].add_prerequisite(*judge)
 
             for sol_name in env.solutions:
                 if sol_name == first_solution_name:
@@ -84,13 +89,11 @@ class TaskPipeline(JobPipeline):
                     )
                 )
 
-                if env.config.judge_needs_out:
-                    solution[0].add_prerequisite(*first_solution)
+                solution[0].add_prerequisite(*first_solution)
                 solutions.append(solution)
 
             for solution in solutions:
                 solution[0].add_prerequisite(*inputs)
-                solution[0].add_prerequisite(*judge)
 
         if env.testing_log:
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))
