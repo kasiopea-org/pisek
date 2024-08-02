@@ -48,7 +48,7 @@ class Env(BaseEnv):
         timeout: Timeout for (overrides config)
         skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if scoring=equal)
         all_inputs: Finish testing all inputs of a solution
-        inputs: Number of inputs generated (Only for task_type=kasiopea)
+        repeat_inputs: Generate REPEAT_INPUTS times more inputs. (Seeded inputs only)
     """
 
     target: TestingTarget
@@ -64,7 +64,7 @@ class Env(BaseEnv):
     timeout: Optional[float] = Field(ge=0)
     skip_on_timeout: bool
     all_inputs: bool
-    inputs: int = Field(ge=1)
+    repeat_inputs: int = Field(ge=1)
 
     @staticmethod
     def load(
@@ -81,7 +81,7 @@ class Env(BaseEnv):
         testing_log: bool = False,
         solutions: Optional[list[str]] = None,
         timeout: Optional[float] = None,
-        inputs: int = 5,
+        repeat_inputs: int = 1,
         pisek_dir: Optional[str] = None,
         **_,
     ) -> Optional["Env"]:
@@ -112,5 +112,5 @@ class Env(BaseEnv):
             timeout=timeout,
             skip_on_timeout=skip_on_timeout,
             all_inputs=all_inputs,
-            inputs=inputs,
+            repeat_inputs=repeat_inputs,
         )

@@ -103,7 +103,9 @@ class InputsInfoMixin(JobManager):
         super().__init__(name=name, **kwargs)
 
     def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
-        repeat = input_info.repeat * (self._env.inputs if input_info.seeded else 1)
+        repeat = input_info.repeat * (
+            self._env.repeat_inputs if input_info.seeded else 1
+        )
 
         jobs: list[Job] = []
 

@@ -155,11 +155,11 @@ def main(argv):
         help="Interpret warnings as failures (for final check).",
     )
     parser_test.add_argument(
-        "--inputs",
+        "--repeat-inputs",
         "-n",
         type=int,
         default=1,
-        help="Test on INPUTS difference inputs (only for Kasiopea tasks).",
+        help="Generate REPEAT_INPUTS times more inputs. (Seeded inputs only)",
     )
     parser_test.add_argument(
         "--all-inputs",
