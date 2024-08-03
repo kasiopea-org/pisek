@@ -33,7 +33,7 @@ from pisek.task_jobs.data.manager import DataManager
 from pisek.task_jobs.generator.manager import PrepareGenerator, RunGenerator
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
-from pisek.task_jobs.solution import SolutionManager
+from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
 

@@ -32,7 +32,7 @@ from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
-from pisek.task_jobs.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
 
