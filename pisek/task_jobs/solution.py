@@ -97,7 +97,9 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         run_sol: RunSolution
         run_judge: RunJudge
         if self._env.config.task_type == TaskType.batch:
-            run_batch_sol, run_judge = self._create_batch_jobs(input_path, subtask)
+            run_batch_sol, run_judge = self._create_batch_jobs(
+                input_info, seed, subtask
+            )
             run_sol = run_batch_sol
             jobs += [run_batch_sol, run_judge]
 
@@ -122,32 +124,33 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         return jobs
 
     def _create_batch_jobs(
-        self, inp: TaskPath, subtask: int
+        self, input_info: InputInfo, seed: int, subtask: int
     ) -> tuple["RunBatchSolution", RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
+        input_path = input_info.task_path(self._env, seed)
         run_solution = RunBatchSolution(
             self._env,
             self._solution,
             self.is_primary,
-            inp,
+            input_path,
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        if subtask == 0:
-            c_out = TaskPath.output_static_file(self._env, inp.name)
-        else:
+        if input_info.is_generated:
             primary_sol = self._env.config.solutions[
                 self._env.config.primary_solution
             ].raw_source
-            c_out = TaskPath.output_file(self._env, inp.name, primary_sol)
+            c_out = TaskPath.output_file(self._env, input_path.name, primary_sol)
+        else:
+            c_out = TaskPath.output_static_file(self._env, input_path.name)
 
-        out = TaskPath.output_file(self._env, inp.name, self._solution.name)
+        out = TaskPath.output_file(self._env, input_path.name, self._solution.name)
         run_judge = judge_job(
-            inp,
+            input_path,
             out,
             c_out,
             subtask,
-            lambda: self._get_seed(inp.name),
+            lambda: f"{seed:x}",
             None,
             self._env,
         )

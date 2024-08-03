@@ -34,14 +34,6 @@ from pisek.jobs.jobs import Job
 class TaskHelper:
     _env: Env
 
-    def _get_seed(self, input_name: str):
-        """Get seed from input name."""
-        parts = os.path.splitext(os.path.basename(input_name))[0].split("_")
-        if len(parts) == 1:
-            return "0"
-        else:
-            return parts[-1]
-
     def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
         """Get execution limits for given program type."""
         limits: ProgramLimits = getattr(self._env.config.limits, program_type.name)
