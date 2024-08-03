@@ -106,9 +106,8 @@ class TestDirtySample(TestSumCMS):
         return False
 
     def modify_task(self):
-        sample = ["3", "1 2", "-8 5", "0 0"]
         with open(os.path.join(self.task_dir, "sample_01.in"), "w") as f:
-            f.write("\n".join(sample))
+            f.write("1 2")
 
 
 class TestNoLFInTextInput(TestSumCMS):
