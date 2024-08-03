@@ -23,7 +23,7 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, Scoring, DataFormat
+from pisek.config.config_types import TaskType, ProgramType, Scoring, DataFormat
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.verdicts_eval import evaluate_verdicts
@@ -96,7 +96,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
         run_sol: RunSolution
         run_judge: RunJudge
-        if self._env.config.task_type == "batch":
+        if self._env.config.task_type == TaskType.batch:
             run_batch_sol, run_judge = self._create_batch_jobs(input_path, subtask)
             run_sol = run_batch_sol
             jobs += [run_batch_sol, run_judge]
@@ -111,7 +111,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
                 jobs.append(out_small := OutputSmall(self._env, run_batch_sol.output))
                 out_small.add_prerequisite(run_judge)
 
-        elif self._env.config.task_type == "communication":
+        elif self._env.config.task_type == TaskType.communication:
             run_sol = run_judge = self._create_communication_jobs(input_path)
             jobs.append(run_sol)
 

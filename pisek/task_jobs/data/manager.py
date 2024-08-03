@@ -15,13 +15,15 @@ from typing import Any
 
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.config.config_types import DataFormat
+from pisek.config.config_types import TaskType, DataFormat
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.generator.input_info import InputInfo
 from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.checker import CheckerJob
 
 from .data import LinkInput, LinkOutput, InputSmall, OutputSmall
+
+TEST_SEED = 25265
 
 
 class DataManager(TaskJobManager):
@@ -34,18 +36,13 @@ class DataManager(TaskJobManager):
         static_inputs = self.globs_to_files(
             self._env.config.input_globs, TaskPath.static_path(self._env, ".")
         )
-        static_outputs = self.globs_to_files(
-            map(
-                lambda g: re.sub(r"\.in$", ".out", g),
-                self._env.config.input_globs,
-            ),
-            TaskPath.static_path(self._env, "."),
-        )
 
-        if self._env.config.task_type != "communication":
-            for static_inp in static_inputs:
-                static_out = static_inp.replace_suffix(".out")
-                if static_out not in static_outputs:
+        if self._env.config.task_type == TaskType.communication:
+            static_outputs = []
+        else:
+            static_outputs = [path.replace_suffix(".out") for path in static_inputs]
+            for static_inp, static_out in zip(static_inputs, static_outputs):
+                if static_out.exists():
                     raise PipelineItemFailure(
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
@@ -59,7 +56,7 @@ class DataManager(TaskJobManager):
         for num, sub in self._env.config.subtasks.items():
             self._input_infos[sub.num] = []
             for input_info in all_input_infos:
-                if sub.in_subtask(input_info.task_path(self._env, 25265).name):
+                if sub.in_subtask(input_info.task_path(self._env, TEST_SEED).name):
                     self._input_infos[sub.num].append(input_info)
             if len(self._input_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
@@ -75,7 +72,7 @@ class DataManager(TaskJobManager):
                     map(lambda inp: inp.name, unused_inputs[:CUTOFF])
                 )
                 if len(unused_inputs) > CUTOFF:
-                    unused_inputs_text += ",..."
+                    unused_inputs_text += ",…"
                 self._warn(
                     f"{len(unused_inputs)} unused inputs. ({unused_inputs_text})"
                 )

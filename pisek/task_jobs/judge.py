@@ -23,7 +23,7 @@ from typing import Any, Optional, Union, Callable
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, OutCheck, JudgeType
+from pisek.config.config_types import TaskType, ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -57,7 +57,7 @@ class JudgeManager(TaskJobManager):
             jobs.append(comp := PrepareTokenJudge(self._env))
 
         samples = self._get_static_samples()
-        if self._env.config.task_type == "communication":
+        if self._env.config.task_type == TaskType.communication:
             return jobs
 
         for inp, out in samples:

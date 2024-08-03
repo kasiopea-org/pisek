@@ -45,7 +45,7 @@ SEED_RANGE = range(0, 16**8)
 
 
 class PrepareGenerator(TaskJobManager):
-    """Manager that generates inputs and test generator."""
+    """Prepares generator for use."""
 
     def __init__(self):
         self._inputs = []

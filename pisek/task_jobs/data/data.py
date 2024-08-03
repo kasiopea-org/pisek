@@ -31,7 +31,7 @@ class DataJob(TaskJob):
 
 
 class LinkData(DataJob):
-    """Copy data to into dest folder."""
+    """Link data to into dest folder."""
 
     def __init__(self, env: Env, data: TaskPath, dest: TaskPath, **kwargs) -> None:
         super().__init__(

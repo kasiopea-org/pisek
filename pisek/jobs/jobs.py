@@ -20,7 +20,7 @@ import hashlib
 from enum import Enum, auto
 from functools import wraps
 import sys
-from typing import Optional, AbstractSet, MutableSet, Any, Callable
+from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
 import yaml
 
 import os.path
@@ -69,6 +69,12 @@ class CaptureInitParams:
         cls.__init__ = wrapped_init
 
 
+class RequiredBy(NamedTuple):
+    pipeline_item: "PipelineItem"
+    name: Optional[str]
+    run_condition: Callable[[Any], bool]
+
+
 class PipelineItem(ABC):
     """Generic PipelineItem with state and dependencies."""
 
@@ -83,9 +89,7 @@ class PipelineItem(ABC):
         self.dirty = False  # Prints something to console?
 
         self.prerequisites = 0
-        self.required_by: list[
-            tuple["PipelineItem", Optional[str], Callable[[Any], bool]]
-        ] = []
+        self.required_by: list[RequiredBy] = []
         self.prerequisites_results: dict[str, Any] = {}
 
     def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
@@ -133,7 +137,7 @@ class PipelineItem(ABC):
             return
 
         self.prerequisites += 1
-        item.required_by.append((self, name, condition))
+        item.required_by.append(RequiredBy(self, name, condition))
 
     def finish(self) -> None:
         """Notifies PipelineItems that depend on this job."""

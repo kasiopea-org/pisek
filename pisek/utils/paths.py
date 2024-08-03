@@ -74,6 +74,9 @@ class TaskPath:
     def join(self, *path: str) -> "TaskPath":
         return TaskPath(os.path.join(self.path, *path))
 
+    def exists(self) -> bool:
+        return os.path.exists(self.path)
+
     @staticmethod
     def from_abspath(*path: str) -> "TaskPath":
         return TaskPath(os.path.relpath(os.path.join(*path), "."))

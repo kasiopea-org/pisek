@@ -69,11 +69,6 @@ Similarly the generator can be tested using:
 pisek test generator
 ```
 
-### Useful options
-
-``pisek test`` has many options that can make testing much easier and faster.
-Check out ``--help`` message for more.
-
 ### Cleaning
 
 Pisek can create a lot of files used for testing. Remove them by running:
