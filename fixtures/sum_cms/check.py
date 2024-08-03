@@ -6,6 +6,7 @@ import argparse
 
 def main(diff):
     BOUNDS = [(0, 1e9), (-1e9, 1e9), (-1e18, 1e18)]
+    assert 0 <= diff < len(BOUNDS)
     read_values(2, *BOUNDS[diff])
 
 
