@@ -99,7 +99,7 @@ def generator_test_determinism(
 
 class InputsInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
-        self._generate_inputs: dict[int, GenerateInput] = {}
+        self._gen_inputs_job: dict[int, GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
     def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
@@ -116,8 +116,8 @@ class InputsInfoMixin(JobManager):
 
             inp_jobs = self._generate_input_jobs(input_info, seed, subtask, i == 0)
             out_jobs = self._solution_jobs(input_info, seed, subtask)
-            if seed in self._generate_inputs and len(out_jobs) > 0:
-                out_jobs[0].add_prerequisite(self._generate_inputs[seed])
+            if seed in self._gen_inputs_job and len(out_jobs) > 0:
+                out_jobs[0].add_prerequisite(self._gen_inputs_job[seed])
 
             jobs += inp_jobs + out_jobs
 
@@ -136,7 +136,7 @@ class InputsInfoMixin(JobManager):
             return []
 
         jobs: list[Job] = [gen_inp := self._generate_input_job(input_info, seed)]
-        self._generate_inputs[seed] = gen_inp
+        self._gen_inputs_job[seed] = gen_inp
         input_path = input_info.task_path(self._env, seed)
 
         if test_determinism:
@@ -170,7 +170,7 @@ class InputsInfoMixin(JobManager):
 
     def _generate_input_job(self, input_info: InputInfo, seed: int) -> GenerateInput:
         gen_inp = generate_input(self._env, self._env.config.in_gen, input_info, seed)
-        self._generate_inputs[seed] = gen_inp
+        self._gen_inputs_job[seed] = gen_inp
         return gen_inp
 
     def _solution_jobs(
@@ -200,7 +200,7 @@ class InputsInfoMixin(JobManager):
             check_seeded := GeneratorRespectsSeed(self._env, input_info, *seeds[:2])
         )
         for i in range(2):
-            check_seeded.add_prerequisite(self._generate_inputs[seeds[i]])
+            check_seeded.add_prerequisite(self._gen_inputs_job[seeds[i]])
 
         return jobs
 

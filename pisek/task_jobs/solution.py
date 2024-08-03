@@ -41,9 +41,9 @@ from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudg
 class SolutionManager(TaskJobManager, InputsInfoMixin):
     """Runs a solution and checks if it works as expected."""
 
-    def __init__(self, solution_label: str, is_first: bool) -> None:
+    def __init__(self, solution_label: str, generate_inputs: bool) -> None:
         self.solution_label: str = solution_label
-        self._is_first = is_first
+        self._generate_inputs = generate_inputs
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
         self._subtasks_results: dict[int, float] = {}
@@ -76,14 +76,14 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
     def _generate_input_jobs(
         self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
     ) -> list[Job]:
-        if not self._is_first:
+        if not self._generate_inputs:
             return []
         return super()._generate_input_jobs(input_info, seed, subtask, test_determinism)
 
     def _respects_seed_jobs(
         self, input_info: InputInfo, seeds: list[int], subtask: int
     ) -> list[Job]:
-        if not self._is_first:
+        if not self._generate_inputs:
             return []
         return super()._respects_seed_jobs(input_info, seeds, subtask)
 

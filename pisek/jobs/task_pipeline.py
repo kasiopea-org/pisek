@@ -62,6 +62,7 @@ class TaskPipeline(JobPipeline):
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
             judge[0].add_prerequisite(*inputs)
 
+            # First solution generates inputs
             first_solution_name = (
                 env.config.primary_solution
                 if env.config.judge_needs_out
