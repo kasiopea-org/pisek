@@ -42,7 +42,7 @@ class DataManager(TaskJobManager):
         else:
             static_outputs = [path.replace_suffix(".out") for path in static_inputs]
             for static_inp, static_out in zip(static_inputs, static_outputs):
-                if static_out.exists():
+                if not static_out.exists():
                     raise PipelineItemFailure(
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
