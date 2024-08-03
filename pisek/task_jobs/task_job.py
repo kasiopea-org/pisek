@@ -19,7 +19,7 @@ import glob
 from math import ceil
 import os
 import shutil
-from typing import Any, Callable, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal, Optional
 
 import subprocess
 from pisek.env.env import Env
@@ -29,6 +29,7 @@ from pisek.utils.terminal import colored_env
 from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
+from pisek.task_jobs.generator.input_info import InputInfo
 
 
 class TaskHelper:
@@ -49,6 +50,16 @@ class TaskHelper:
             "mem_limit": limits.mem_limit,
             "process_limit": limits.process_limit,
         }
+
+    def _get_reference_output(self, input_info: InputInfo, seed: Optional[int] = None):
+        input_path = input_info.task_path(self._env, seed)
+        if input_info.is_generated:
+            primary_sol = self._env.config.solutions[
+                self._env.config.primary_solution
+            ].raw_source
+            return TaskPath.output_file(self._env, input_path.name, primary_sol)
+        else:
+            return TaskPath.output_static_file(self._env, input_path.name)
 
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath

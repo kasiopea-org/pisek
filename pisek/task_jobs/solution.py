@@ -97,21 +97,17 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         run_sol: RunSolution
         run_judge: RunJudge
         if self._env.config.task_type == TaskType.batch:
+            if not input_info.is_generated and self._generate_inputs:
+                jobs += self._check_input_jobs(
+                    self._get_reference_output(input_info, seed)
+                )
+
             run_batch_sol, run_judge = self._create_batch_jobs(
                 input_info, seed, subtask
             )
             run_sol = run_batch_sol
             jobs += [run_batch_sol, run_judge]
-
-            if self._env.config.out_format == DataFormat.text:
-                jobs.append(out_clean := IsClean(self._env, run_batch_sol.output))
-                out_clean.add_prerequisite(
-                    run_batch_sol,
-                    condition=lambda r: r.kind == RunResultKind.OK,
-                )
-            if self._env.config.limits.output_max_size != 0:
-                jobs.append(out_small := OutputSmall(self._env, run_batch_sol.output))
-                out_small.add_prerequisite(run_judge)
+            jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
 
         elif self._env.config.task_type == TaskType.communication:
             run_sol = run_judge = self._create_communication_jobs(input_path)
@@ -136,19 +132,11 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        if input_info.is_generated:
-            primary_sol = self._env.config.solutions[
-                self._env.config.primary_solution
-            ].raw_source
-            c_out = TaskPath.output_file(self._env, input_path.name, primary_sol)
-        else:
-            c_out = TaskPath.output_static_file(self._env, input_path.name)
-
         out = TaskPath.output_file(self._env, input_path.name, self._solution.name)
         run_judge = judge_job(
             input_path,
             out,
-            c_out,
+            self._get_reference_output(input_info, seed),
             subtask,
             lambda: f"{seed:x}",
             None,

@@ -83,17 +83,9 @@ class DataManager(TaskJobManager):
         jobs: list[Job] = []
         for path in static_inputs:
             jobs.append(LinkInput(self._env, path))
-            if self._env.config.in_format == DataFormat.text:
-                jobs.append(IsClean(self._env, path))
-            if self._env.config.limits.input_max_size != 0:
-                jobs.append(InputSmall(self._env, path))
 
         for path in static_outputs:
             jobs.append(LinkOutput(self._env, path))
-            if self._env.config.out_format == DataFormat.text:
-                jobs.append(IsClean(self._env, path))
-            if self._env.config.limits.output_max_size != 0:
-                jobs.append(OutputSmall(self._env, path))
 
         for subtask, inputs in self._input_infos.items():
             for inp in inputs:

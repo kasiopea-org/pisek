@@ -23,7 +23,8 @@ from pisek.config.config_types import GenType, DataFormat
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
-from pisek.task_jobs.data.data import InputSmall
+from pisek.task_jobs.program import RunResultKind
+from pisek.task_jobs.data.data import InputSmall, OutputSmall
 from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.checker import CheckerJob
 
@@ -132,14 +133,17 @@ class InputsInfoMixin(JobManager):
     def _generate_input_jobs(
         self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
     ) -> list[Job]:
-        if not input_info.is_generated:
-            return []
-
-        jobs: list[Job] = [gen_inp := self._generate_input_job(input_info, seed)]
-        self._gen_inputs_job[seed] = gen_inp
+        jobs: list[Job] = []
         input_path = input_info.task_path(self._env, seed)
 
-        if test_determinism:
+        gen_inp: Optional[GenerateInput]
+        if input_info.is_generated:
+            jobs.append(gen_inp := self._generate_input_job(input_info, seed))
+            self._gen_inputs_job[seed] = gen_inp
+        else:
+            gen_inp = None
+
+        if input_info.is_generated and test_determinism:
             test_det = generator_test_determinism(
                 self._env, self._env.config.in_gen, input_info, seed
             )
@@ -147,15 +151,9 @@ class InputsInfoMixin(JobManager):
                 jobs.append(test_det)
                 test_det.add_prerequisite(gen_inp)
 
-        if self._env.config.in_format == DataFormat.text:
-            jobs.append(input_clean := IsClean(self._env, input_path))
-            input_clean.add_prerequisite(gen_inp)
+        jobs += self._check_input_jobs(input_path)
 
-        if self._env.config.limits.input_max_size != 0:
-            jobs.append(input_small := InputSmall(self._env, input_path))
-            input_small.add_prerequisite(gen_inp)
-
-        if self._env.config.checker is not None:
+        if self._env.config.checker is not None and subtask > 0:
             jobs.append(
                 check_input := CheckerJob(
                     self._env,
@@ -201,6 +199,38 @@ class InputsInfoMixin(JobManager):
         )
         for i in range(2):
             check_seeded.add_prerequisite(self._gen_inputs_job[seeds[i]])
+
+        return jobs
+
+    def _check_input_jobs(
+        self, input_path: TaskPath, prerequisite: Optional[Job] = None
+    ) -> list[Job]:
+        jobs: list[Job] = []
+        if self._env.config.in_format == DataFormat.text:
+            jobs.append(input_clean := IsClean(self._env, input_path))
+            input_clean.add_prerequisite(prerequisite)
+
+        if self._env.config.limits.input_max_size != 0:
+            jobs.append(input_small := InputSmall(self._env, input_path))
+            input_small.add_prerequisite(prerequisite)
+
+        return jobs
+
+    def _check_output_jobs(
+        self, output_path: TaskPath, prerequisite: Optional[Job]
+    ) -> list[Job]:
+        jobs: list[Job] = []
+        if self._env.config.out_format == DataFormat.text:
+            jobs.append(out_clean := IsClean(self._env, output_path))
+            if prerequisite is not None:
+                out_clean.add_prerequisite(
+                    prerequisite,
+                    condition=lambda r: r.kind == RunResultKind.OK,
+                )
+
+        if self._env.config.limits.output_max_size != 0:
+            jobs.append(out_small := OutputSmall(self._env, output_path))
+            out_small.add_prerequisite(prerequisite)
 
         return jobs
 
