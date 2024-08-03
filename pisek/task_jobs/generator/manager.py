@@ -27,6 +27,7 @@ from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.data import InputSmall, OutputSmall
 from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.solution.solution import RunBatchSolution
 
 from .input_info import InputInfo
 from .base_classes import (
@@ -217,7 +218,7 @@ class InputsInfoMixin(JobManager):
         return jobs
 
     def _check_output_jobs(
-        self, output_path: TaskPath, prerequisite: Optional[Job]
+        self, output_path: TaskPath, prerequisite: Optional[RunBatchSolution]
     ) -> list[Job]:
         jobs: list[Job] = []
         if self._env.config.out_format == DataFormat.text:
