@@ -109,8 +109,7 @@ class InputsInfoMixin(JobManager):
 
         jobs: list[Job] = []
 
-        random.seed(4)  # Reproducibility!
-        seeds = random.sample(SEED_RANGE, repeat)
+        seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
         for i, seed in enumerate(seeds):
             if self._skip_input(input_info, seed, subtask):
                 continue
