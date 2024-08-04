@@ -23,16 +23,16 @@ from typing import Any, Optional, Union, Callable
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, OutCheck, JudgeType
+from pisek.config.config_types import TaskType, ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
-from pisek.task_jobs.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 
 DIFF_NAME = "diff.sh"
 
@@ -56,8 +56,8 @@ class JudgeManager(TaskJobManager):
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
 
-        samples = self._get_samples()
-        if self._env.config.task_type == "communication":
+        samples = self._get_static_samples()
+        if self._env.config.task_type == TaskType.communication:
             return jobs
 
         for inp, out in samples:
@@ -113,65 +113,6 @@ class JudgeManager(TaskJobManager):
                 result["judge_outs"].add(job.judge_log_file)
 
         return result
-
-
-class RunKasiopeaJudgeMan(TaskJobManager):
-    def __init__(
-        self,
-        subtask: int,
-        seed: int,
-        input_: str,
-        output: str,
-        correct_output: str,
-    ) -> None:
-        self._subtask = subtask
-        self._seed = seed
-        self._input = input_
-        self._output = output
-        self._correct_output = correct_output
-        super().__init__("Running judge")
-
-    def _get_jobs(self) -> list[Job]:
-        input_, output, correct_output = map(
-            TaskPath,
-            (self._input, self._output, self._correct_output),
-        )
-        clean_output = TaskPath.sanitized_file(self._env, output.name)
-
-        jobs: list[Job] = [
-            sanitize := Sanitize(self._env, output, clean_output),
-            judge := judge_job(
-                input_,
-                clean_output,
-                correct_output,
-                self._subtask,
-                lambda: f"{self._seed:x}",
-                None,
-                self._env,
-            ),
-        ]
-        judge.add_prerequisite(sanitize)
-        if self._env.config.out_check == OutCheck.judge:
-            if self._env.config.out_judge is None:
-                raise RuntimeError(
-                    f"Unset judge for out_check={self._env.config.out_check.name}"
-                )
-            jobs.insert(
-                0,
-                compile_judge := Compile(self._env, self._env.config.out_judge),
-            )
-            judge.add_prerequisite(compile_judge)
-
-        self._judge_job = judge
-
-        return jobs
-
-    def judge_result(self) -> SolutionResult:
-        if self.state != State.succeeded:
-            raise RuntimeError("Judging hasn't successfully finished.")
-        elif not isinstance(self._judge_job.result, SolutionResult):
-            raise RuntimeError("Judging result invalid.")
-        return self._judge_job.result
 
 
 JUDGE_JOB_NAME = r"Judge (\w+)"

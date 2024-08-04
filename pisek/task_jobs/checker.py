@@ -20,9 +20,8 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.task_config import ProgramType
-from pisek.config.config_types import Scoring
 from pisek.utils.terminal import colored_env
-from pisek.task_jobs.task_job import TaskJobManager
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
@@ -33,7 +32,7 @@ class CheckerManager(TaskJobManager):
 
     def __init__(self):
         self.skipped_checker = ""
-        super().__init__("Running checker")
+        super().__init__("Prepare checker")
 
     def _get_jobs(self) -> list[Job]:
         if self._env.config.checker is None:
@@ -48,45 +47,7 @@ class CheckerManager(TaskJobManager):
                 )
             return []
 
-        checker = self._env.config.checker
-
-        jobs: list[Job] = [compile_checker := Compile(self._env, checker)]
-
-        self.loose_subtasks = []
-        for sub_num, sub in self._env.config.subtasks.items():
-            if sub_num == 0:
-                continue  # Skip samples
-            for inp in self._subtask_inputs(sub):
-                jobs.append(
-                    check := CheckerJob(
-                        self._env, checker, inp, sub_num, RunResultKind.OK
-                    )
-                )
-                check.add_prerequisite(compile_checker)
-            if self._env.config.checks.checker_distinguishes_subtasks:
-                if sub.direct_predecessors:
-                    self.loose_subtasks.append(LooseCheckJobGroup(sub_num))
-                    for pred in sub.direct_predecessors:
-                        if pred == 0:
-                            continue  # Skip samples
-                        self.loose_subtasks[-1].jobs[pred] = []
-                        for inp in self._subtask_new_inputs(sub):
-                            jobs.append(
-                                check := CheckerJob(self._env, checker, inp, pred, None)
-                            )
-                            self.loose_subtasks[-1].jobs[pred].append(check)
-                            check.add_prerequisite(compile_checker)
-
-        return jobs
-
-    def _evaluate(self) -> None:
-        if len(self.jobs) == 0:
-            return
-
-        for loose_subtask in self.loose_subtasks:
-            err = loose_subtask.failed(self._env.config.scoring)
-            if err is not None:
-                raise PipelineItemFailure(err)
+        return [Compile(self._env, self._env.config.checker)]
 
     def _get_status(self) -> str:
         if self.skipped_checker:
@@ -98,50 +59,6 @@ class CheckerManager(TaskJobManager):
             return super()._get_status()
 
 
-class LooseCheckJobGroup:
-    """
-    Groups jobs on subtask where checker is run on predecessors instead.
-    Checking that checker is strict enough - checking fails when run on predecessor.
-    """
-
-    def __init__(self, num: int):
-        self.num = num
-        self.jobs: dict[int, list[CheckerJob]] = {}
-
-    def failed(self, scoring: Scoring) -> Optional[str]:
-        """Returns whether jobs resulted as expected."""
-
-        def result_kind(job: CheckerJob) -> RunResultKind:
-            if job.result is None:
-                raise RuntimeError(f"Job {job.name} has not finished yet.")
-            return job.result.kind
-
-        for pred in self.jobs:
-            results = list(map(result_kind, self.jobs[pred]))
-            if scoring == Scoring.equal and RunResultKind.OK in results:
-                job = self._index_job(pred, results, RunResultKind.OK)
-                return (
-                    f"Checker is not strict enough:\n"
-                    f"All inputs of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
-                    f"but on input {job.input} did not."
-                )
-            if scoring == Scoring.min and RunResultKind.RUNTIME_ERROR not in results:
-                return (
-                    f"Checker is not strict enough:\n"
-                    f"An input of subtask {self.num} should have not passed on predecessor subtask {pred}\n"
-                    f"but all have passed."
-                )
-            if RunResultKind.TIMEOUT in results:
-                to_job = self._index_job(pred, results, RunResultKind.TIMEOUT)
-                return f"Checker timeouted on input {to_job.input}, subtask {self.num}."
-        return None
-
-    def _index_job(
-        self, pred: int, results: list[RunResultKind], result: RunResultKind
-    ) -> "CheckerJob":
-        return self.jobs[pred][results.index(result)]
-
-
 class CheckerJob(ProgramsJob):
     """Runs checker on single input."""
 
@@ -151,7 +68,7 @@ class CheckerJob(ProgramsJob):
         checker: TaskPath,
         input_: TaskPath,
         subtask: int,
-        expected: Optional[RunResultKind],
+        expected: Optional[RunResultKind] = RunResultKind.OK,
         **kwargs,
     ):
         super().__init__(

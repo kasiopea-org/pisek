@@ -47,7 +47,7 @@ from pisek.config.config_types import (
     CMSScoreMode,
 )
 from pisek.env.context import init_context
-from pisek.task_jobs.solution_result import SUBTASK_SPEC
+from pisek.task_jobs.solution.solution_result import SUBTASK_SPEC
 
 
 MaybeInt = Annotated[
@@ -87,7 +87,6 @@ class TaskConfig(BaseEnv):
     """Configuration of task loaded from config file."""
 
     name: str
-    contest_type: str
     task_type: TaskType
     scoring: Scoring
 
@@ -96,7 +95,7 @@ class TaskConfig(BaseEnv):
     data_subdir: TaskPathFromStr
 
     in_gen: TaskPathFromStr
-    gen_type: Optional[GenType]
+    gen_type: GenType
     checker: OptionalTaskPathFromStr
     out_check: OutCheck
     out_judge: OptionalTaskPathFromStr
@@ -163,7 +162,6 @@ class TaskConfig(BaseEnv):
     def load_dict(configs: ConfigHierarchy) -> ConfigValuesDict:
         GLOBAL_KEYS = [
             ("task", "name"),
-            ("task", "contest_type"),
             ("task", "task_type"),
             ("task", "scoring"),
             ("task", "solutions_subdir"),
@@ -203,6 +201,7 @@ class TaskConfig(BaseEnv):
 
         # Load subtasks
         args["subtasks"] = subtasks = {}
+        # Sort so subtasks.keys() returns subtasks in sorted order
         for section in sorted(section_names, key=lambda cv: cv.value):
             section_name = section.value
             if m := re.match(r"test(\d{2})", section_name):
@@ -224,18 +223,6 @@ class TaskConfig(BaseEnv):
         args["checks"] = ChecksConfig.load_dict(configs)
 
         return args
-
-    @field_validator("contest_type", mode="after")
-    @classmethod
-    def validate_contest_type(cls, value: str) -> str:
-        # TODO: Redo to general task types
-        ALLOWED = ["kasiopea", "cms"]
-        if value not in ALLOWED:
-            raise PydanticCustomError(
-                "contest_type_invalid",
-                f"Must be one of ({', '.join(ALLOWED)})",
-            )
-        return value
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -371,7 +358,7 @@ class SubtaskConfig(BaseEnv):
                 glob = f"{info.data['num']:02}*.in"
             if not glob.endswith(".in"):
                 raise PydanticCustomError(
-                    "in_globs_end_in", "In_globs must end with '.in'"
+                    "in_globs_end_in", "In_globs must end with '*.in'"
                 )
             globs.append(glob)
 
@@ -660,7 +647,6 @@ class ChecksConfig(BaseEnv):
 
     _section: str = "checks"
 
-    checker_distinguishes_subtasks: bool
     solution_for_each_subtask: bool
 
     @classmethod
@@ -709,7 +695,9 @@ def load_config(
 ) -> Optional[TaskConfig]:
     """Loads config from given path."""
     try:
-        config_hierarchy = ConfigHierarchy(path, no_colors, pisek_directory)
+        config_hierarchy = ConfigHierarchy(
+            path, no_colors, not suppress_warnings, pisek_directory
+        )
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()

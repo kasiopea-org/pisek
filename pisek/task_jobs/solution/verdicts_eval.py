@@ -15,7 +15,11 @@ from typing import Optional
 
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import Scoring
-from pisek.task_jobs.solution_result import Verdict, SUBTASK_SPEC, verdict_always
+from pisek.task_jobs.solution.solution_result import (
+    Verdict,
+    SUBTASK_SPEC,
+    verdict_always,
+)
 
 
 def evaluate_verdicts(

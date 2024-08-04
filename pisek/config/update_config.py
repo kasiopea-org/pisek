@@ -182,7 +182,7 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     if contest_type not in ["kasiopea", "cms"]:
         raise TaskConfigError(f"Invalid contest_type: '{contest_type}'")
     config["task"]["use"] = f"@{contest_type}"
-    # TODO: del config["task"]["contest_type"]
+    maybe_delete_key(config, "task", "contest_type")
 
     if "limits" not in config:
         config.add_section("limits")

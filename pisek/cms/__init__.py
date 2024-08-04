@@ -54,11 +54,6 @@ from pisek.utils.pipeline_tools import with_env
 
 
 def prepare_files(env: Env):
-    contest_type = env.config.contest_type
-
-    if contest_type != "cms":
-        raise RuntimeError(f"Cannot upload {contest_type}-type task to CMS")
-
     env = env.fork()
     env.solutions = [env.config.primary_solution]
     env.target = TestingTarget.solution

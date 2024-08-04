@@ -19,7 +19,7 @@ import glob
 from math import ceil
 import os
 import shutil
-from typing import Any, Callable, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal, Optional
 
 import subprocess
 from pisek.env.env import Env
@@ -27,30 +27,13 @@ from pisek.config.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
 from pisek.utils.terminal import colored_env
 from pisek.utils.text import tab
-from pisek.config.task_config import SubtaskConfig, ProgramType
+from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
-from pisek.jobs.status import StatusJobManager
-
-
-TOOLS_MAN_CODE = "tools"
-GENERATOR_MAN_CODE = "generator"
-INPUTS_MAN_CODE = "inputs"
-CHECKER_MAN_CODE = "checker"
-JUDGE_MAN_CODE = "judge"
-SOLUTION_MAN_CODE = "solution_"
-DATA_MAN_CODE = "data"
+from pisek.task_jobs.generator.input_info import InputInfo
 
 
 class TaskHelper:
     _env: Env
-
-    def _get_seed(self, input_name: str):
-        """Get seed from input name."""
-        parts = os.path.splitext(os.path.basename(input_name))[0].split("_")
-        if len(parts) == 1:
-            return "0"
-        else:
-            return parts[-1]
 
     def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
         """Get execution limits for given program type."""
@@ -67,6 +50,16 @@ class TaskHelper:
             "mem_limit": limits.mem_limit,
             "process_limit": limits.process_limit,
         }
+
+    def _get_reference_output(self, input_info: InputInfo, seed: Optional[int] = None):
+        input_path = input_info.task_path(self._env, seed)
+        if input_info.is_generated:
+            primary_sol = self._env.config.solutions[
+                self._env.config.primary_solution
+            ].raw_source
+            return TaskPath.output_file(self._env, input_path.name, primary_sol)
+        else:
+            return TaskPath.output_static_file(self._env, input_path.name)
 
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
@@ -113,30 +106,6 @@ class TaskHelper:
         os.makedirs(os.path.dirname(path.path), exist_ok=exist_ok)
 
 
-class TaskJobManager(StatusJobManager, TaskHelper):
-    """JobManager class that implements useful methods"""
-
-    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
-        """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = self._subtask_inputs(self._env.config.subtasks[0])
-        outs = (TaskPath.output_static_file(self._env, inp.name) for inp in ins)
-        return list(zip(ins, outs))
-
-    def _all_inputs(self) -> list[TaskPath]:
-        """Get all input files"""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["inputs"]
-
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
-        """Get all inputs of given subtask."""
-        return list(filter(lambda p: subtask.in_subtask(p.name), self._all_inputs()))
-
-    def _subtask_new_inputs(self, subtask: SubtaskConfig) -> list[TaskPath]:
-        """Get new inputs of given subtask."""
-        return list(
-            filter(lambda p: subtask.new_in_subtask(p.name), self._all_inputs())
-        )
-
-
 class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
 
@@ -178,6 +147,11 @@ class TaskJob(Job, TaskHelper):
     def _copy_file(self, filename: TaskPath, dst: TaskPath):
         self.make_filedirs(dst)
         return shutil.copy(filename.path, dst.path)
+
+    @_file_access(2)
+    def _rename_file(self, filename: TaskPath, dst: TaskPath) -> None:
+        self.make_filedirs(dst)
+        return os.rename(filename.path, dst.path)
 
     @_file_access(2)
     def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):

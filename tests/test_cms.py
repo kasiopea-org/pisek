@@ -89,16 +89,6 @@ class TestInvalidJudgeScore(TestSumCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestLooseChecker(TestSumCMS):
-    """A checker that cannot distinguish between subtasks."""
-
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_loose.py")
-
-
 class TestStrictChecker(TestSumCMS):
     """A checker whose bounds are stricter than what the generator creates."""
 
@@ -116,9 +106,8 @@ class TestDirtySample(TestSumCMS):
         return False
 
     def modify_task(self):
-        sample = ["3", "1 2", "-8 5", "0 0"]
-        with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
-            f.write("\n".join(sample))
+        with open(os.path.join(self.task_dir, "sample_01.in"), "w") as f:
+            f.write("1 2")
 
 
 class TestNoLFInTextInput(TestSumCMS):

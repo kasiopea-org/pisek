@@ -23,13 +23,6 @@ name=a-plus-b
 use=organization-config
 # Config to use defaults from
 
-contest_type=cms
-# Environment for which is task developed
-# kasiopea (default) / cmscontest_type=cms
-#
-# Currently determines generator / judge format
-# TODO: Remove this key and split to multiple ones
-
 task_type=communication
 # Task type:
 # - batch (default)
@@ -54,6 +47,14 @@ data_subdir=tests/
 
 in_gen=src/gen
 # Source code of generator (without suffix)
+
+gen_type=opendata-v1
+# Specifies how generator generates inputs
+# - cms-old
+#       ./gen [folder]
+#       Generates all inputs into fiven folder
+# - opendata-v1
+#       ./gen [subtask] [seed] > input
 
 in_format=text
 # Format of input:
@@ -85,7 +86,7 @@ out_judge=judge
 judge_type=cms
 # Specifies how to call judge and how judge reports result
 # Only for task_type=batch and out_check=judge
-# - cms 
+# - cms
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#checker
 # - opendata-v1
 #       ./judge [subtask] [seed] < ouput
@@ -296,10 +297,6 @@ output_max_size=5
 # task making into a minefield
 
 # Values are on/off and keys defaults to these values: 
-
-checker_distinguishes_subtasks=off
-# checks that this subtasks's inputs doesn't pass checker in predecessor subtasks
-# Whether one/all must not pass depends on scoring 
 
 solution_for_each_subtask=off
 # checks that a dedicated solution exists for each subtask (aside from samples)

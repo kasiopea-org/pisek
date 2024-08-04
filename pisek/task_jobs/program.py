@@ -26,7 +26,6 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored_env
 from pisek.task_jobs.run_result import RunResultKind, RunResult
 from pisek.task_jobs.task_job import TaskJob
 

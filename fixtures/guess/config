@@ -5,7 +5,6 @@
 name=guess
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
-contest_type=cms
 use=interactive
 
 solutions_subdir=solutions/
@@ -13,7 +12,6 @@ version=v3
 
 [tests]
 # generator source file
-gen_type=cms-old
 in_gen=src/gen
 
 # checker=check

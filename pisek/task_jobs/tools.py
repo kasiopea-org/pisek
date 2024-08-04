@@ -14,16 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 from importlib.resources import files
 from typing import Optional
 
 import subprocess
-from pisek.jobs.jobs import State, Job, PipelineItemFailure
+from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.task_config import ProgramType
-from pisek.task_jobs.task_job import TaskJob, TaskJobManager
+from pisek.task_jobs.task_job import TaskJob
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.program import ProgramsJob
 
 

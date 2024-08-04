@@ -15,35 +15,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import tempfile
-import time
 from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import ProgramType, Scoring
+from pisek.config.config_types import TaskType, Scoring
 from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
-from pisek.task_jobs.verdicts_eval import evaluate_verdicts
-from pisek.task_jobs.task_job import TaskJobManager
-from pisek.task_jobs.program import RunResult, ProgramsJob
+from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
+from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
-from pisek.task_jobs.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.generator.input_info import InputInfo
+from pisek.task_jobs.generator.manager import InputsInfoMixin
+from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
+from pisek.task_jobs.solution.solution import (
+    RunSolution,
+    RunBatchSolution,
+    RunCommunication,
+)
 
 
-class SolutionManager(TaskJobManager):
+class SolutionManager(TaskJobManager, InputsInfoMixin):
     """Runs a solution and checks if it works as expected."""
 
-    def __init__(self, solution_label: str) -> None:
+    def __init__(self, solution_label: str, generate_inputs: bool) -> None:
         self.solution_label: str = solution_label
+        self._generate_inputs = generate_inputs
         self.solution_points: Optional[float] = None
         self.subtasks: list[SubtaskJobGroup] = []
-        self._outputs: list[tuple[TaskPath, RunJudge]] = []
         self._subtasks_results: dict[int, float] = {}
-        super().__init__(f"Solution {solution_label} Manager")
+        super().__init__(f"Run {solution_label}")
 
     def _get_jobs(self) -> list[Job]:
         self.is_primary: bool = self._env.config.solutions[self.solution_label].primary
@@ -55,56 +58,86 @@ class SolutionManager(TaskJobManager):
         self._compile_job = compile_
 
         self._judges: dict[TaskPath, RunJudge] = {}
-        for sub_num, sub in self._env.config.subtasks.items():
+
+        for sub_num, inputs in self._all_inputs().items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
-            for inp in self._subtask_inputs(sub):
-                if inp not in self._judges:
-                    run_sol: RunSolution
-                    run_judge: RunJudge
-                    if self._env.config.task_type == "batch":
-                        run_sol, run_judge = self._create_batch_jobs(sub_num, inp)
-                        jobs += [run_sol, run_judge]
-                        self._outputs.append((run_judge.output, run_judge))
+            for inp in inputs:
+                jobs += self._input_info_jobs(inp, sub_num)
 
-                    elif self._env.config.task_type == "communication":
-                        run_sol = run_judge = self._create_communication_jobs(inp)
-                        jobs.append(run_sol)
+        return jobs
 
-                    self._judges[inp] = run_judge
-                    self.subtasks[-1].new_jobs.append(run_judge)
-                    self.subtasks[-1].new_run_jobs.append(run_sol)
-                else:
-                    self.subtasks[-1].previous_jobs.append(self._judges[inp])
+    def _skip_input(self, input_info: InputInfo, seed: int, subtask: int) -> bool:
+        input_path = input_info.task_path(self._env, seed)
+        if input_path in self._judges:
+            self.subtasks[-1].previous_jobs.append(self._judges[input_path])
+        return super()._skip_input(input_info, seed, subtask)
+
+    def _generate_input_jobs(
+        self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
+    ) -> list[Job]:
+        if not self._generate_inputs:
+            return []
+        return super()._generate_input_jobs(input_info, seed, subtask, test_determinism)
+
+    def _respects_seed_jobs(
+        self, input_info: InputInfo, seeds: list[int], subtask: int
+    ) -> list[Job]:
+        if not self._generate_inputs:
+            return []
+        return super()._respects_seed_jobs(input_info, seeds, subtask)
+
+    def _solution_jobs(
+        self, input_info: InputInfo, seed: int, subtask: int
+    ) -> list[Job]:
+        input_path = input_info.task_path(self._env, seed)
+
+        jobs: list[Job] = []
+
+        run_sol: RunSolution
+        run_judge: RunJudge
+        if self._env.config.task_type == TaskType.batch:
+            if not input_info.is_generated and self._generate_inputs:
+                jobs += self._check_input_jobs(
+                    self._get_reference_output(input_info, seed)
+                )
+
+            run_batch_sol, run_judge = self._create_batch_jobs(
+                input_info, seed, subtask
+            )
+            run_sol = run_batch_sol
+            jobs += [run_batch_sol, run_judge]
+            jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
+
+        elif self._env.config.task_type == TaskType.communication:
+            run_sol = run_judge = self._create_communication_jobs(input_path)
+            jobs.append(run_sol)
+
+        self._judges[input_path] = run_judge
+        self.subtasks[-1].new_jobs.append(run_judge)
+        self.subtasks[-1].new_run_jobs.append(run_sol)
 
         return jobs
 
     def _create_batch_jobs(
-        self, sub_num: int, inp: TaskPath
-    ) -> tuple["RunSolution", RunBatchJudge]:
+        self, input_info: InputInfo, seed: int, subtask: int
+    ) -> tuple[RunBatchSolution, RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
+        input_path = input_info.task_path(self._env, seed)
         run_solution = RunBatchSolution(
             self._env,
             self._solution,
             self.is_primary,
-            inp,
+            input_path,
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        if sub_num == 0:
-            c_out = TaskPath.output_static_file(self._env, inp.name)
-        else:
-            primary_sol = self._env.config.solutions[
-                self._env.config.primary_solution
-            ].raw_source
-            c_out = TaskPath.output_file(self._env, inp.name, primary_sol)
-
-        out = TaskPath.output_file(self._env, inp.name, self._solution.name)
+        out = TaskPath.output_file(self._env, input_path.name, self._solution.name)
         run_judge = judge_job(
-            inp,
+            input_path,
             out,
-            c_out,
-            sub_num,
-            lambda: self._get_seed(inp.name),
+            self._get_reference_output(input_info, seed),
+            subtask,
+            lambda: f"{seed:x}",
             None,
             self._env,
         )
@@ -112,7 +145,7 @@ class SolutionManager(TaskJobManager):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: TaskPath) -> "RunCommunication":
+    def _create_communication_jobs(self, inp: TaskPath) -> RunCommunication:
         """Create RunCommunication job for communication task type."""
         if self._env.config.out_judge is None:
             raise RuntimeError("Unset judge for communication.")
@@ -190,16 +223,6 @@ class SolutionManager(TaskJobManager):
 
     def _compute_result(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
-        result["outputs"] = {
-            Verdict.ok: [],
-            Verdict.partial_ok: [],
-            Verdict.wrong_answer: [],
-            Verdict.timeout: [],
-            Verdict.error: [],
-        }
-        for output, job in self._outputs:
-            if job.result is not None:
-                result["outputs"][job.result.verdict].append(output)
 
         result["results"] = {}
         result["judge_outs"] = set()
@@ -431,166 +454,3 @@ class SubtaskJobGroup:
     def cancel(self):
         for job in self.new_run_jobs:
             job.cancel()
-
-
-class RunPrimarySolutionMan(TaskJobManager):
-    def __init__(self, input_: str, output: Optional[str]):
-        self._input = input_
-        self._output = output
-        super().__init__("Running primary solution")
-
-    def _get_jobs(self) -> list[Job]:
-        solution = self._env.config.solutions[self._env.config.primary_solution].source
-
-        jobs: list[Job] = [
-            compile := Compile(self._env, solution, True),
-            run_solution := RunBatchSolution(
-                self._env,
-                solution,
-                True,
-                TaskPath(self._input),
-                TaskPath(self._output) if self._output else None,
-            ),
-        ]
-        run_solution.add_prerequisite(compile)
-
-        return jobs
-
-
-RUN_JOB_NAME = r"Run (.*) on input (.*)"
-
-
-class RunSolution(ProgramsJob):
-    """Runs solution on given input."""
-
-    def __init__(
-        self,
-        env: Env,
-        name: str,
-        solution: TaskPath,
-        is_primary: bool,
-        **kwargs,
-    ) -> None:
-        super().__init__(env=env, name=name, **kwargs)
-        self.solution = solution
-        self.is_primary = is_primary
-
-    def _solution_type(self) -> ProgramType:
-        return (ProgramType.solve) if self.is_primary else (ProgramType.sec_solve)
-
-
-class RunBatchSolution(RunSolution):
-    def __init__(
-        self,
-        env: Env,
-        solution: TaskPath,
-        is_primary: bool,
-        input_: TaskPath,
-        output: Optional[TaskPath] = None,
-        **kwargs,
-    ) -> None:
-        name = RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
-            r"(.*)", input_.name, 1
-        )
-        super().__init__(
-            env=env, name=name, solution=solution, is_primary=is_primary, **kwargs
-        )
-        self.input = input_
-        self.output = (
-            output
-            if output
-            else TaskPath.output_file(self._env, self.input.name, solution.name)
-        )
-        self.log_file = TaskPath.log_file(self._env, input_.name, self.solution.name)
-
-    def _run(self) -> RunResult:
-        return self._run_program(
-            program_type=self._solution_type(),
-            program=self.solution,
-            stdin=self.input,
-            stdout=self.output,
-            stderr=self.log_file,
-        )
-
-
-class RunCommunication(RunCMSJudge, RunSolution):
-    def __init__(
-        self,
-        env: Env,
-        solution: TaskPath,
-        is_primary: bool,
-        judge: TaskPath,
-        input_: TaskPath,
-        expected_points: Optional[float] = None,
-        **kwargs,
-    ):
-        super().__init__(
-            env=env,
-            name=RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
-                r"(.*)", input_.name, 1
-            ),
-            judge=judge,
-            input_=input_,
-            expected_points=expected_points,
-            judge_log_file=TaskPath.log_file(
-                self._env, input_.name, f"{solution.name}.{judge.name}"
-            ),
-            solution=solution,
-            is_primary=is_primary,
-            **kwargs,
-        )
-        self.solution = solution
-        self.sol_log_file = TaskPath.log_file(
-            self._env, self.input.name, self.solution.name
-        )
-
-    def _get_solution_run_res(self) -> RunResult:
-        with tempfile.TemporaryDirectory() as fifo_dir:
-            fifo_from_solution = os.path.join(fifo_dir, "solution-to-manager")
-            fifo_to_solution = os.path.join(fifo_dir, "manager-to-solution")
-
-            os.mkfifo(fifo_from_solution)
-            os.mkfifo(fifo_to_solution)
-
-            pipes = [
-                os.open(fifo_from_solution, os.O_RDWR),
-                os.open(fifo_to_solution, os.O_RDWR),
-                # Open fifos to prevent blocking on future opens
-                fd_from_solution := os.open(fifo_from_solution, os.O_WRONLY),
-                fd_to_solution := os.open(fifo_to_solution, os.O_RDONLY),
-            ]
-
-            self._load_program(
-                ProgramType.judge,
-                self.judge,
-                stdin=self.input,
-                stdout=self.points_file,
-                stderr=self.judge_log_file,
-                args=[fifo_from_solution, fifo_to_solution],
-            )
-
-            self._load_program(
-                self._solution_type(),
-                self.solution,
-                stdin=fd_to_solution,
-                stdout=fd_from_solution,
-                stderr=self.sol_log_file,
-            )
-
-            def close_pipes(_):
-                time.sleep(0.05)
-                for pipe in pipes:
-                    os.close(pipe)
-
-            self._load_callback(close_pipes)
-
-            judge_res, sol_res = self._run_programs()
-            self._judge_run_result = judge_res
-
-            return sol_res
-
-    def _judge(self) -> SolutionResult:
-        return self._load_solution_result(self._judge_run_result)
-
-    def _judging_message(self) -> str:
-        return f"solution {self.solution:p} on input {self.input:p}"
