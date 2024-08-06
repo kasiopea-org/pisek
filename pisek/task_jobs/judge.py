@@ -34,8 +34,6 @@ from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 
-DIFF_NAME = "diff.sh"
-
 
 class JudgeManager(TaskJobManager):
     """Manager that prepares and test judge."""
@@ -113,9 +111,6 @@ class JudgeManager(TaskJobManager):
                 result["judge_outs"].add(job.judge_log_file)
 
         return result
-
-
-JUDGE_JOB_NAME = r"Judge (\w+)"
 
 
 class RunJudge(ProgramsJob):
@@ -308,7 +303,7 @@ class RunBatchJudge(RunJudge):
     ) -> None:
         super().__init__(
             env=env,
-            name=JUDGE_JOB_NAME.replace(r"(\w+)", output.name, 1),
+            name=f"Judge {output:n}",
             judge_name=judge_name,
             input_=input_,
             judge_log_file=TaskPath.log_file(self._env, output.name, judge_name),

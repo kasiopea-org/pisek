@@ -24,9 +24,6 @@ from pisek.task_jobs.solution.solution_result import SolutionResult
 from pisek.task_jobs.judge import RunCMSJudge
 
 
-RUN_JOB_NAME = r"Run (.*) on input (.*)"
-
-
 class RunSolution(ProgramsJob):
     """Runs solution on given input."""
 
@@ -56,11 +53,12 @@ class RunBatchSolution(RunSolution):
         output: Optional[TaskPath] = None,
         **kwargs,
     ) -> None:
-        name = RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
-            r"(.*)", input_.name, 1
-        )
         super().__init__(
-            env=env, name=name, solution=solution, is_primary=is_primary, **kwargs
+            env=env,
+            name=f"Run {solution:n} on input {input_:n}",
+            solution=solution,
+            is_primary=is_primary,
+            **kwargs,
         )
         self.input = input_
         self.output = (
@@ -93,9 +91,7 @@ class RunCommunication(RunCMSJudge, RunSolution):
     ):
         super().__init__(
             env=env,
-            name=RUN_JOB_NAME.replace(r"(.*)", solution.name, 1).replace(
-                r"(.*)", input_.name, 1
-            ),
+            name=f"Run {solution:n} on input {input_:n}",
             judge=judge,
             input_=input_,
             expected_points=expected_points,
