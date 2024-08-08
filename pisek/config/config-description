@@ -1,0 +1,131 @@
+[task]
+version=
+name=
+use=
+task_type=
+scoring=
+solutions_subdir=
+static_subdir=
+data_subdir=
+
+[tests]
+in_gen=
+gen_type=
+in_format=
+out_format=
+checker=
+
+out_check=
+out_judge=
+#!if out_check=judge
+judge_type=
+#!if task_type=batch
+#!if out_check=judge
+judge_needs_in=
+#!if task_type=batch
+#!if out_check=judge
+judge_needs_out=
+#!if task_type=batch
+#!if out_check=judge
+
+tokens_ignore_newlines=
+#!if out_check=tokens
+tokens_ignore_case=
+#!if out_check=tokens
+tokens_float_rel_error=
+#!if out_check=tokens
+tokens_float_abs_error=
+#!if out_check=tokens
+
+[test\d{2}]
+#!regex
+name=
+points=
+in_globs=
+predecessors=
+
+[all_tests]
+name=
+in_globs=
+predecessors=
+
+[solution_(.*)]
+#!regex
+source=
+primary=
+points=
+#!if points_above=
+#!if points_below=
+points_above=
+#!if points=
+points_below=
+#!if points=
+subtasks=
+
+[all_solutions]
+source=
+primary=
+points=
+#!if points_above=
+#!if points_below=
+points_above=
+#!if points=
+points_below=
+#!if points=
+subtasks=
+stub=
+headers=
+
+[limits]
+tool_time_limit=
+tool_clock_mul=
+tool_clock_min=
+tool_mem_limit=
+tool_process_limit=
+
+in_gen_time_limit=
+in_gen_clock_mul=
+in_gen_clock_min=
+in_gen_mem_limit=
+in_gen_process_limit=
+
+checker_time_limit=
+checker_clock_mul=
+checker_clock_min=
+checker_mem_limit=
+checker_process_limit=
+
+judge_time_limit=
+judge_clock_mul=
+judge_clock_min=
+judge_mem_limit=
+judge_process_limit=
+
+solve_time_limit=
+solve_clock_mul=
+solve_clock_min=
+solve_mem_limit=
+solve_process_limit=
+
+sec_solve_time_limit=
+sec_solve_clock_mul=
+sec_solve_clock_min=
+sec_solve_mem_limit=
+sec_solve_process_limit=
+
+input_max_size=
+output_max_size=
+
+[checks]
+solution_for_each_subtask=
+
+[cms]
+title=
+submission_format=
+time_limit=
+mem_limit=
+max_submissions=
+min_submission_interval=
+score_precision=
+score_mode=
+feedback_level=

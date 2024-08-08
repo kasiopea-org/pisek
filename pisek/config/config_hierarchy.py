@@ -17,10 +17,8 @@
 from collections import defaultdict
 from configparser import ConfigParser
 from dataclasses import dataclass
-import editdistance
 from importlib.resources import files
 import os
-import re
 from typing import Optional, Any
 
 from pisek.utils.text import tab
@@ -32,7 +30,6 @@ V2_DEFAULTS = {
     task_type: str(files("pisek").joinpath(f"config/{task_type}-defaults"))
     for task_type in ["kasiopea", "cms"]
 }
-V3_DOCUMENTATION = str(files("pisek").joinpath("config/config-v3-documentation"))
 
 CONFIG_FILENAME = "config"
 
