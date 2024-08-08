@@ -11,6 +11,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any
+
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
@@ -39,7 +41,7 @@ class PisekGenV1ListInputs(GeneratorListInputs):
 
         args = line.split(" ")
         input_name = args[0]
-        info_args = {}
+        info_args: dict[str, Any] = {}
 
         for arg in args[1:]:
             if "=" not in arg:
