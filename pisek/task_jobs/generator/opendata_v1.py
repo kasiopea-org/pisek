@@ -46,7 +46,7 @@ class OpendataV1GeneratorJob(ProgramsJob):
 
     def _gen(self) -> None:
         if self.seed < 0:
-            raise ValueError(f"Seed {self.seed} is negative.")
+            raise ValueError(f"seed {self.seed} is negative")
 
         subtask = int(self.input_info.name)
 

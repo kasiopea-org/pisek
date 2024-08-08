@@ -84,19 +84,24 @@ class GeneratorTestDeterminism(ProgramsJob):
         self.generator = generator
         self.seed = seed
         self.input_info = input_info
-        self.input = input_info.task_path(env, seed)
-        super().__init__(env=env, name=name or f"Generate {self.input.name}", **kwargs)
+        self.input_path = input_info.task_path(env, seed)
+        super().__init__(
+            env=env,
+            name=name or f"Generator is deterministic ({self.input_info.name})",
+            **kwargs,
+        )
 
     def _run(self) -> None:
-        original = self.input.replace_suffix(".in2")
-        self._rename_file(self.input, original)
+        original = self.input_path.replace_suffix(".in2")
+        self._rename_file(self.input_path, original)
         self._gen()
-        if not self._files_equal(self.input, original):
+        if not self._files_equal(self.input_path, original):
             raise PipelineItemFailure(
-                f"Generator is not deterministic. Files {self.input:p} and {original:p} differ"
+                f"Generator is not deterministic. Files {self.input_path:p} and {original:p} differ"
                 + (f" (seed {self.seed:x})" if self.input_info.seeded else "")
                 + "."
             )
+        self._remove_file(original)
 
     @abstractmethod
     def _gen(self) -> None:

@@ -42,6 +42,11 @@ from .opendata_v1 import (
     OpendataV1Generate,
     OpendataV1TestDeterminism,
 )
+from .pisek_gen_v1 import (
+    PisekGenV1ListInputs,
+    PisekGenV1Generate,
+    PisekGenV1TestDeterminism,
+)
 
 SEED_RANGE = range(0, 16**8)
 
@@ -70,10 +75,13 @@ class PrepareGenerator(TaskJobManager):
 
 
 def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
-    return {
+    LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
-    }[env.config.gen_type](env=env, generator=generator)
+        GenType.pisek_gen_v1: PisekGenV1ListInputs,
+    }
+
+    return LIST_INPUTS[env.config.gen_type](env=env, generator=generator)
 
 
 def generate_input(
@@ -82,15 +90,19 @@ def generate_input(
     return {
         GenType.opendata_v1: OpendataV1Generate,
         GenType.cms_old: CmsOldGenerate,
-    }[
-        env.config.gen_type
-    ](env=env, generator=generator, input_info=input_info, seed=seed)
+        GenType.pisek_gen_v1: PisekGenV1Generate,
+    }[env.config.gen_type](
+        env=env, generator=generator, input_info=input_info, seed=seed
+    )
 
 
 def generator_test_determinism(
     env: Env, generator: TaskPath, input_info: InputInfo, seed: int
 ) -> Optional[GeneratorTestDeterminism]:
-    TEST_DETERMINISM = {GenType.opendata_v1: OpendataV1TestDeterminism}
+    TEST_DETERMINISM = {
+        GenType.opendata_v1: OpendataV1TestDeterminism,
+        GenType.pisek_gen_v1: PisekGenV1TestDeterminism,
+    }
 
     if env.config.gen_type not in TEST_DETERMINISM:
         return None

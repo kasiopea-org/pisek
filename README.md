@@ -106,4 +106,5 @@ Copyright (c)   2020 - 2022 Michal Töpfer <michal.topfer@gmail.com>
 Copyright (c)   2022        Jiří Kalvoda <jirikalvoda@kam.mff.cuni.cz>
 Copyright (c)   2023        Daniel Skýpala <skipy@kam.mff.cuni.cz>
 Copyright (c)   2024        Benjamin Swart <benjaminswart@email.cz>
+Copyright (c)   2024        Antonín Maloň <git@tonyl.eu>
 ```
