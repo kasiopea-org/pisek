@@ -133,6 +133,11 @@ class TaskJob(Job, TaskHelper):
     def _file_exists(self, filename: TaskPath):
         return os.path.isfile(filename.path)
 
+    def _remove_file(self, filename: TaskPath):
+        "Removes given file. It must be created inside this job."
+        self._accessed_files.remove(filename.path)
+        return os.remove(filename.path)
+
     @_file_access(1)
     def _file_size(self, filename: TaskPath):
         return os.path.getsize(filename.path)

@@ -75,11 +75,13 @@ class PrepareGenerator(TaskJobManager):
 
 
 def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
-    return {
+    LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
         GenType.pisek_gen_v1: PisekGenV1ListInputs,
-    }[env.config.gen_type](env=env, generator=generator)
+    }
+
+    return LIST_INPUTS[env.config.gen_type](env=env, generator=generator)
 
 
 def generate_input(
