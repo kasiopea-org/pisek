@@ -1,7 +1,7 @@
 # pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2024        Antonín Maloň  <git@tonyl.eu>
-# Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+# Copyright (c)   2024        Daniel Skýpala <daniel@honza.info>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ class PisekGenV1ListInputs(GeneratorListInputs):
 
     def _run(self) -> list[InputInfo]:
         input_infos = []
+        self._create_inputs_list()
         for i, line in enumerate(self._get_input_lines()):
             input_infos.append(self._get_input_info_from_line(line, i))
         return input_infos
@@ -77,24 +78,25 @@ class PisekGenV1ListInputs(GeneratorListInputs):
         )
         raise self._create_program_failure(message, self._run_result)
 
-    def _get_input_lines(self) -> list[str]:
-        inputs_list_path = TaskPath.data_path(self._env, "inputs_list")
-
+    def _create_inputs_list(self) -> None:
         self._run_result = self._run_program(
             ProgramType.in_gen,
             self.generator,
-            stdout=inputs_list_path,
+            stdout=self._get_inputs_list_path(),
             stderr=TaskPath.log_file(self._env, "inputs_list", self.generator.name),
         )
-
         if self._run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(
                 f"{self.generator} failed to list inputs",
                 self._run_result,
             )
 
-        with self._open_file(inputs_list_path) as f:
+    def _get_input_lines(self) -> list[str]:
+        with self._open_file(self._get_inputs_list_path()) as f:
             return f.readlines()
+
+    def _get_inputs_list_path(self):
+        return TaskPath.data_path(self._env, "inputs_list")
 
 
 class PisekGenV1GeneratorJob(ProgramsJob):
@@ -110,7 +112,7 @@ class PisekGenV1GeneratorJob(ProgramsJob):
 
     def _gen(self) -> None:
         if self.seed < 0:
-            raise ValueError(f"Seed {self.seed} is negative.")
+            raise ValueError(f"seed {self.seed} is negative")
 
         args = [self.input_info.name]
         if self.input_info.seeded:

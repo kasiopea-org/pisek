@@ -5,10 +5,10 @@ import os
 import sys
 
 if len(sys.argv) == 1:
-    print("01 repeat=10")
+    print("random-uniform repeat=10")
     exit()
 
-assert sys.argv[1] == "01"
+assert sys.argv[1] == "random-uniform"
 random = Random(int(sys.argv[2], base=16))
 
 nums = set()
