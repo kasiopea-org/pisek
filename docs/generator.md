@@ -11,7 +11,7 @@ However we strongly recommend using the pisek-gen format
 for better debugging and easy conversion between open data and closed data tasks.
 
 ## Terminology
-We have two types of requirements for generators:
+There are two requirements for generators:
 - Generators **must** be deterministic. (For the same arguments, it should generate the same input(s).) 
 - If a generator takes a seed as an argument, the generator **should** respect the seed. (For different seeds
   it should generate different inputs.) This can be disabled in the `[checks]` section, but be careful.
@@ -32,7 +32,7 @@ The following keys are supported:
 | repeat | How many times should this input be generated? | int        | 1             |
 | seeded | Is this input generated depending on a seed?   | bool       | true          | 
 
-If the input is seeded, repeat must be 1.
+If the input is not seeded, repeat must be 1.
 
 For example:
 ```
