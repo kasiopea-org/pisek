@@ -24,8 +24,8 @@ from .input_info import InputInfo
 from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeterminism
 
 
-class PisekGenV1ListInputs(GeneratorListInputs):
-    """Lists all inputs for pisek-gen-v1 generator."""
+class PisekV1ListInputs(GeneratorListInputs):
+    """Lists all inputs for pisek-v1 generator."""
 
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
@@ -108,7 +108,7 @@ class PisekGenV1ListInputs(GeneratorListInputs):
         return TaskPath.data_path(self._env, "inputs_list")
 
 
-class PisekGenV1GeneratorJob(ProgramsJob):
+class PisekV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
     generator: TaskPath
@@ -143,13 +143,13 @@ class PisekGenV1GeneratorJob(ProgramsJob):
             )
 
 
-class PisekGenV1Generate(PisekGenV1GeneratorJob, GenerateInput):
+class PisekV1Generate(PisekV1GeneratorJob, GenerateInput):
     """Generates input with given name."""
 
     pass
 
 
-class PisekGenV1TestDeterminism(PisekGenV1GeneratorJob, GeneratorTestDeterminism):
+class PisekV1TestDeterminism(PisekV1GeneratorJob, GeneratorTestDeterminism):
     """Tests determinism of generating a given input."""
 
     pass

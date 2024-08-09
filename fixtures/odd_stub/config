@@ -8,7 +8,7 @@ version=v2
 
 [tests]
 in_gen=gen
-gen_type=pisek-gen-v1
+gen_type=pisek-v1
 out_check=diff
 stub=stubs/grader
 headers=stubs/odd.h
