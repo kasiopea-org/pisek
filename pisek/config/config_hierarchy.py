@@ -186,9 +186,13 @@ class ConfigHierarchy:
             If unused sections or keys are present.
         """
         IGNORED_KEYS = defaultdict(set, {"task": {"version", "use"}})
+        self._config_helper = ConfigKeysHelper()
         for section in self._configs[0].sections():
             if section not in self._used_keys:
-                raise TaskConfigError(f"Unexpected section [{section}] in config.")
+                raise TaskConfigError(
+                    f"Unexpected section [{section}] in config. "
+                    f"(Did you mean [{self._config_helper.find_section(section)}]?)"
+                )
             for key in self._configs[0][section].keys():
                 if key in IGNORED_KEYS[section]:
                     continue
@@ -209,7 +213,7 @@ class ConfigHierarchy:
         return False
 
     def _help_invalid_key(self, section: str, key: str) -> str:
-        guess = ConfigKeysHelper().find_key(section, key, self)
+        guess = self._config_helper.find_key(section, key, self)
         if guess is None:
             return ""
 

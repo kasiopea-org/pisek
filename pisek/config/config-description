@@ -52,8 +52,10 @@ predecessors=
 [solution_(.*)]
 #!regex
 #!default all_solutions
+
 source=
 primary=
+
 points=
 #!if solution_(.*) points_above=X
 #!if solution_(.*) points_below=X
@@ -61,6 +63,7 @@ points_above=
 #!if solution_(.*) points=X
 points_below=
 #!if solution_(.*) points=X
+
 subtasks=
 
 [all_solutions]
