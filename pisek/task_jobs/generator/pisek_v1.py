@@ -18,7 +18,7 @@ from pisek.utils.terminal import colored_env
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
-from pisek.task_jobs.program import ProgramsJob, RunResult, RunResultKind
+from pisek.task_jobs.program import ProgramsJob, RunResultKind
 
 from .input_info import InputInfo
 from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeterminism
@@ -56,11 +56,15 @@ class PisekV1ListInputs(GeneratorListInputs):
             if arg_name in info_args:
                 self._line_invalid(line_number, line, f"Repeated key '{arg_name}'")
             elif arg_name == "repeat":
-                if not arg_value.isnumeric() or int(arg_value) == 0:
+                try:
+                    repeat_times = int(arg_value)
+                    assert repeat_times > 0
+                except (ValueError, AssertionError):
                     self._line_invalid(
                         line_number, line, "'repeat' should be a positive number"
                     )
-                info_args[arg_name] = int(arg_value)
+
+                info_args[arg_name] = repeat_times
             elif arg_name == "seeded":
                 if arg_value not in ("true", "false"):
                     self._line_invalid(
