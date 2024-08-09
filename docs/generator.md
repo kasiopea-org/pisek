@@ -27,10 +27,10 @@ Where `input_name` is the name of the given input. The input will be generated i
 This is followed by any number of key=value pairs separated by spaces.
 The following keys are supported:
 
-| Key    | Meaning                                       | Value type | Default value |
-| ------ | --------------------------------------------- | ---------- | ------------- |
+| Key    | Meaning                                        | Value type | Default value |
+| ------ | ---------------------------------------------- | ---------- | ------------- |
 | repeat | How many times should this input be generated? | int        | 1             |
-| seeded | Is this input generated depending on a seed?   | bool       | true          | 
+| seeded | Is this input generated with a random seed?    | bool       | true          | 
 
 If the input is not seeded, repeat must be 1.
 
