@@ -52,5 +52,12 @@ Issues = "https://github.com/kasiopea-org/pisek/issues"
 [tool.setuptools.packages.find]
 exclude = ["fixtures"]
 
+[tool.setuptools.package-data]
+pisek = [
+    "tools/**",
+    "config/*-defaults",
+    "config/config-v3-documentation",
+]
+
 [tool.setuptools.dynamic]
 version = {attr = "pisek.version.__version__"}
