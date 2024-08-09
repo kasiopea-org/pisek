@@ -560,7 +560,7 @@ def judge_job(
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
 
-    if env.config.judge_type == JudgeType.cms:
+    if env.config.judge_type == JudgeType.cms_batch:
         return RunCMSBatchJudge(
             env, env.config.out_judge, input_, output, correct_output, expected_points
         )

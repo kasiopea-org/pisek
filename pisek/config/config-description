@@ -19,7 +19,6 @@ out_check=
 out_judge=
 #!if tests out_check=judge
 judge_type=
-#!if task task_type=batch
 #!if tests out_check=judge
 judge_needs_in=
 #!if task task_type=batch

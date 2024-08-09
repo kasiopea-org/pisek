@@ -178,22 +178,24 @@ class TaskConfig(BaseEnv):
             ("all_solutions", "headers"),
         ]
         OUT_CHECK_SPECIFIC_KEYS = [
-            ("judge", "out_judge", ""),
-            ("judge", "judge_type", ""),
-            ("judge", "judge_needs_in", "0"),
-            ("judge", "judge_needs_out", "1"),
-            ("tokens", "tokens_ignore_newlines", "0"),
-            ("tokens", "tokens_ignore_case", "0"),
-            ("tokens", "tokens_float_rel_error", ""),
-            ("tokens", "tokens_float_abs_error", ""),
+            ((None, "judge"), "out_judge", ""),
+            ((None, "judge"), "judge_type", ""),
+            ((TaskType.batch, "judge"), "judge_needs_in", "0"),
+            ((TaskType.batch, "judge"), "judge_needs_out", "1"),
+            ((None, "tokens"), "tokens_ignore_newlines", "0"),
+            ((None, "tokens"), "tokens_ignore_case", "0"),
+            ((None, "tokens"), "tokens_float_rel_error", ""),
+            ((None, "tokens"), "tokens_float_abs_error", ""),
         ]
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
 
         # Load judge specific keys
-        for out_check, key, default in OUT_CHECK_SPECIFIC_KEYS:
-            if args["out_check"].value == out_check:
+        for (task_type, out_check), key, default in OUT_CHECK_SPECIFIC_KEYS:
+            if (task_type is None or task_type == args["task_type"].value) and args[
+                "out_check"
+            ].value == out_check:
                 args[key] = configs.get("tests", key)
             else:
                 args[key] = ConfigValue(default, "_internal", "tests", key, True)
@@ -235,6 +237,18 @@ class TaskConfig(BaseEnv):
                 "communication_must_have_judge",
                 "For communication task 'out_check' must be 'judge'",
                 {"task_type": self.task_type, "out_check": self.out_check},
+            )
+
+        JUDGE_TYPES = {
+            TaskType.batch: [None, JudgeType.opendata_v1, JudgeType.cms_batch],
+            TaskType.communication: [JudgeType.cms_communication],
+        }
+
+        if self.judge_type not in JUDGE_TYPES[self.task_type]:
+            raise PydanticCustomError(
+                "task_judge_type_mismatch",
+                f"'{self.judge_type}' judge for '{self.task_type}' task is not allowed",
+                {"task_type": self.task_type, "judge_type": self.judge_type},
             )
 
         if (self.tokens_float_abs_error is not None) != (

@@ -31,7 +31,8 @@ class GenType(StrEnum):
 
 
 class JudgeType(StrEnum):
-    cms = auto()
+    cms_batch = "cms-batch"
+    cms_communication = "cms-communication"
     opendata_v1 = "opendata-v1"
 
 
