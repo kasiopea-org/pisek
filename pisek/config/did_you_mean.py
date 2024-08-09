@@ -119,6 +119,7 @@ class ConfigKeysHelper:
                         if len(args) != 2 or args[1].count("=") != 1:
                             self._invalid_function_args(fun, args)
                         key_name, value = args[1].split("=")
+                        # Key with key_name might not exist yet
                         add_applicability_conditions.append(
                             (last_key, self._gen_has_keyvalue(args[0], key_name, value))
                         )
