@@ -79,7 +79,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         name: str = "",
         **kwargs,
     ) -> None:
-        assert input_info.is_generated and input_info.seeded
+        assert input_info.is_generated
 
         self.generator = generator
         self.seed = seed
