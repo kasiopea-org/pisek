@@ -80,7 +80,7 @@ class PisekV1ListInputs(GeneratorListInputs):
     def _line_invalid(self, line_index: int, contents: str, reason: str) -> NoReturn:
         message = (
             f"Inputs list invalid (line {line_index}) - {reason}:\n"
-            f"{tab(colored_env(contents, "yellow", self._env))}\n"
+            f"{tab(colored_env(contents, 'yellow', self._env))}\n"
             f"Generator:"
         )
         raise self._create_program_failure(
