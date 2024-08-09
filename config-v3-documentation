@@ -311,7 +311,7 @@ solution_for_each_subtask=off
 # - Doesn't get full points on other subtasks.
 
 generator_respects_seed=on
-# checks that for two different seeds generator generates two different inputs 
+# Checks that the generator generates two different inputs for two different seeds 
 
 # TODO: Implement keys in this section
 
