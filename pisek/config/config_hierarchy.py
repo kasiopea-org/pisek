@@ -19,11 +19,13 @@ from configparser import ConfigParser
 from dataclasses import dataclass
 from importlib.resources import files
 import os
-from typing import Optional, Any
+from typing import Optional, Iterable
 
 from pisek.utils.text import tab
-from pisek.config.config_errors import TaskConfigError
-from pisek.config.update_config import update_config
+
+from .config_errors import TaskConfigError
+from .update_config import update_config
+from .did_you_mean import ConfigKeysHelper
 
 GLOBAL_DEFAULTS = str(files("pisek").joinpath("config/global-defaults"))
 V2_DEFAULTS = {
@@ -36,7 +38,7 @@ CONFIG_FILENAME = "config"
 
 @dataclass
 class ConfigValue:
-    value: Any
+    value: str
     config: str
     section: str
     key: Optional[str]
@@ -130,7 +132,7 @@ class ConfigHierarchy:
         return self.get_from_candidates([(section, key)])
 
     def get_from_candidates(
-        self, candidates: list[tuple[str, str | None]]
+        self, candidates: Iterable[tuple[str, str | None]]
     ) -> ConfigValue:
         for section, key in candidates:
             if key is None:
@@ -207,7 +209,7 @@ class ConfigHierarchy:
         return False
 
     def _help_invalid_key(self, section: str, key: str) -> str:
-        guess = self._guess_key(section, key)
+        guess = ConfigKeysHelper().find_key(section, key, self)
         if guess is None:
             return ""
 
@@ -216,19 +218,3 @@ class ConfigHierarchy:
             + (f" in section [{guess[0]}]" if section != guess[0] else "")
             + "?)"
         )
-
-    def _guess_key(self, section: str, key: str) -> Optional[tuple[str, str]]:
-        v3_docs = ConfigParser()
-        v3_docs.read(V3_DOCUMENTATION)
-
-        best_guess = None
-        best_score = len(key)
-        for section2 in v3_docs.sections():
-            for key2 in v3_docs[section2].keys():
-                score = editdistance.distance(key, key2) + 5 * (section2 != section)
-                if score < best_score:
-                    best_guess, best_score = (section2, key2), score
-
-        if best_score == 0 or best_guess is None:
-            return None
-        return best_guess

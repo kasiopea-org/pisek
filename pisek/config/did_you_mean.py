@@ -2,74 +2,108 @@ from abc import ABC, abstractmethod
 import editdistance
 from importlib.resources import files
 import re
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
+from pisek.utils.text import tab
+
+from .config_errors import TaskConfigError
+
+if TYPE_CHECKING:
+    from .config_hierarchy import ConfigHierarchy
 
 CONFIG_DESCRIPTION = str(files("pisek").joinpath("config/config-description"))
 
-sections = []
-keys = []
 
 def regex_cmp(regex: str, name: str) -> int:
     if re.match(regex, name):
         return 0
     else:
-        return 10
+        return 5
 
 
 class ApplicabilityCondition(ABC):
     @abstractmethod
-    def check(self, config: "ConfigHeirarchy") -> Optional[str]:
+    def check(self, section: str, config: "ConfigHierarchy") -> str:
         pass
 
+
 class HasKeyValue(ApplicabilityCondition):
-    def __init__(self, section: str, key: str, value: str) -> None:
+    def __init__(
+        self,
+        section: "ConfigDescriptionSection",
+        key: "ConfigDescriptionKey",
+        value: str,
+    ) -> None:
         self.section = section
         self.key = key
         self.value = value
         super().__init__()
-    
-    def check(self, config: "ConfigHeirarchy") -> Optional[str]:
-        current_value = config.get(self.section, self.key)
+
+    def check(self, section: str, config: "ConfigHierarchy") -> str:
+        section = self.section.transform_name(section)
+        current_value = self.key.get(config, section=section)
         if current_value == self.value:
-            return None
-        return f"[{self.section}] {self.key}={current_value}"
+            return ""
+        return f"[{section}] {self.key.key}={current_value}\n"
+
+
+class ConfigDescriptionSection:
+    def __init__(self, section: str) -> None:
+        self.section = section
+        self.defaults_to: list[str] = []
+        self.similarity_function: Optional[Callable[[str, str], int]] = None
+
+    def similarity(self, section: str) -> int:
+        if self.similarity_function is None:
+            return 5 * editdistance.distance(self.section, section)
+        else:
+            return self.similarity_function(self.section, section)
+
+    def transform_name(self, name: str) -> str:
+        return name if self.similarity(name) == 0 else self.section
+
 
 class ConfigDescriptionKey:
-    def __init__(self, section: str, key: str) -> None:
+    def __init__(self, section: ConfigDescriptionSection, key: str) -> None:
         self.section = section
         self.key = key
-        self.section_similarity: Optional[Callable[[str, str], int]] = None
-        self.key_similarity: Optional[Callable[[str, str], int]] = None
+        self.defaults_to: list[tuple[str, str]] = []
         self.applicability_conditions: list[ApplicabilityCondition] = []
 
+    def get(self, config: "ConfigHierarchy", section: str) -> str:
+        return config.get_from_candidates(
+            [(self.section.transform_name(section), self.key)] + self.defaults()
+        ).value
+
+    def defaults(self) -> list[tuple[str, str]]:
+        return self.defaults_to + [(d, self.key) for d in self.section.defaults_to]
+
+    def similarity(self, key: str) -> int:
+        return editdistance.distance(self.key, key)
+
     def score(self, section: str, key: str) -> int:
-        score = 0
-        if self.key_similarity is None:
-            score += editdistance.distance(self.key, key)
-        else:
-            score += self.key_similarity(self.key, key)
+        return self.section.similarity(section) + self.similarity(key)
 
-        if self.section_similarity is None:
-            score += 5 * editdistance.distance(self.section, section)
-        else:
-            score += self.section_similarity(self.section, section)
-
-        return score
-
-    def applicable(self, config: "ConfigHierarchy") -> Optional[str]:
+    def applicable(self, section: str, config: "ConfigHierarchy") -> Optional[str]:
+        text = ""
         for cond in self.applicability_conditions:
-            if not cond(config):
-                return 
+            text += cond.check(section, config)
+        return text
+
+    def guess(self, section: str, key: str) -> tuple[str, str]:
+        return (self.section.transform_name(section), self.key)
+
 
 class ConfigKeysHelper:
     def __init__(self) -> None:
-        self.sections: list[str] = []
-        self.keys: list[ConfigDescriptionKey] = []
+        self.sections: dict[str, ConfigDescriptionSection] = {}
+        self.keys: dict[tuple[str, str], ConfigDescriptionKey] = {}
+        add_applicability_conditions: list[
+            tuple[ConfigDescriptionKey, Callable[[], ApplicabilityCondition]]
+        ] = []
         with open(CONFIG_DESCRIPTION) as f:
+            section: Optional[ConfigDescriptionSection] = None
             last_key: Optional[ConfigDescriptionKey] = None
-            section_name: str = ""
-            section_similarity = None
             for line in f:
                 line = line.strip()
 
@@ -77,31 +111,80 @@ class ConfigKeysHelper:
                     pass
 
                 elif line.startswith("#!"):
+                    assert section is not None
                     [fun, *args] = line.removeprefix("#!").split()
                     if fun == "regex":
-                        if last_key is None:
-                            section_similarity = regex_cmp
-                        else:                    
-                            last_key.key_similarity = regex_cmp
+                        assert last_key is None
+                        section.similarity_function = regex_cmp
                     elif fun == "if":
-                        if len(args) != 1 or args[0].count("=") != 1:
-                            raise ValueError(f"invalid config-description function if arguments: '{' '.join(args)}'")
-                        key, value = args[0].split("=")
-                        last_key.applicability_conditions.append(HasKeyValue(section_name, key, value))
+                        assert section is not None
+                        assert last_key is not None
+                        if len(args) != 2 or args[1].count("=") != 1:
+                            self._invalid_function_args(fun, args)
+                        key_name, value = args[1].split("=")
+                        add_applicability_conditions.append(
+                            (last_key, self._gen_has_keyvalue(args[0], key_name, value))
+                        )
+                    elif fun == "default":
+                        if last_key is None:
+                            if len(args) != 1:
+                                self._invalid_function_args(fun, args)
+                            section.defaults_to.append(args[0])
+                        else:
+                            if len(args) != 2:
+                                self._invalid_function_args(fun, args)
+                            last_key.defaults_to.append((args[0], args[1]))
                     else:
-                        raise ValueError(f"invalid config-description function: '{fun}'")
+                        raise ValueError(
+                            f"invalid config-description function: '{fun}'"
+                        )
 
                 elif line.count("=") == 1 and line[-1] == "=":
-                    last_key = ConfigDescriptionKey(section_name, line.removesuffix("="))
-                    self.keys.append(last_key)
-                    last_key.section_similarity = section_similarity
+                    assert section is not None
+                    last_key = ConfigDescriptionKey(section, line.removesuffix("="))
+                    self.keys[(section.section, last_key.key)] = last_key
 
                 elif line[0] == "[" and line[-1] == "]":
                     last_key = None
-                    section_similarity = None
-                    section_name = line.removeprefix("[").removesuffix("]")
-                    self.sections.append(section_name)
+                    section = ConfigDescriptionSection(
+                        line.removeprefix("[").removesuffix("]")
+                    )
+                    self.sections[section.section] = section
 
                 else:
                     raise ValueError(f"invalid config-description line: '{line}'")
 
+        for key, lambda_cond in add_applicability_conditions:
+            key.applicability_conditions.append(lambda_cond())
+
+    def _gen_has_keyvalue(
+        self, section: str, key: str, value: str
+    ) -> Callable[[], HasKeyValue]:
+        def f():
+            return HasKeyValue(self.sections[section], self.keys[(section, key)], value)
+
+        return f
+
+    def _invalid_function_args(self, fun_name: str, args: list[str]) -> None:
+        raise ValueError(
+            f"invalid config-description function {fun_name} arguments: '{' '.join(args)}'"
+        )
+
+    def find_section(self, section: str) -> ConfigDescriptionSection:
+        return min(
+            self.sections.values(),
+            key=lambda s: editdistance.distance(section, s.section),
+        )
+
+    def find_key(
+        self, section: str, key: str, config: "ConfigHierarchy"
+    ) -> Optional[tuple[str, str]]:
+        best_key = min(self.keys.values(), key=lambda k: k.score(section, key))
+        if not (text := best_key.applicable(section, config)):
+            return best_key.guess(section, key)
+        elif best_key.score(section, key) == 0:
+            raise TaskConfigError(
+                f"Key '{key}' not applicable in this context:\n{tab(text).rstrip()}"
+            )
+        else:
+            return None

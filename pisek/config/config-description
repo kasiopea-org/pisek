@@ -17,28 +17,29 @@ checker=
 
 out_check=
 out_judge=
-#!if out_check=judge
+#!if tests out_check=judge
 judge_type=
-#!if task_type=batch
-#!if out_check=judge
+#!if task task_type=batch
+#!if tests out_check=judge
 judge_needs_in=
-#!if task_type=batch
-#!if out_check=judge
+#!if task task_type=batch
+#!if tests out_check=judge
 judge_needs_out=
-#!if task_type=batch
-#!if out_check=judge
+#!if task task_type=batch
+#!if tests out_check=judge
 
 tokens_ignore_newlines=
-#!if out_check=tokens
+#!if tests out_check=tokens
 tokens_ignore_case=
-#!if out_check=tokens
+#!if tests out_check=tokens
 tokens_float_rel_error=
-#!if out_check=tokens
+#!if tests out_check=tokens
 tokens_float_abs_error=
-#!if out_check=tokens
+#!if tests out_check=tokens
 
 [test\d{2}]
 #!regex
+#!default all_tests
 name=
 points=
 in_globs=
@@ -51,27 +52,24 @@ predecessors=
 
 [solution_(.*)]
 #!regex
+#!default all_solutions
 source=
 primary=
 points=
-#!if points_above=
-#!if points_below=
+#!if solution_(.*) points_above=X
+#!if solution_(.*) points_below=X
 points_above=
-#!if points=
+#!if solution_(.*) points=X
 points_below=
-#!if points=
+#!if solution_(.*) points=X
 subtasks=
 
 [all_solutions]
 source=
 primary=
 points=
-#!if points_above=
-#!if points_below=
 points_above=
-#!if points=
 points_below=
-#!if points=
 subtasks=
 stub=
 headers=
@@ -108,10 +106,15 @@ solve_mem_limit=
 solve_process_limit=
 
 sec_solve_time_limit=
+#!default limits solve_time_limit
 sec_solve_clock_mul=
+#!default limits solve_clock_mul
 sec_solve_clock_min=
+#!default limits solve_clock_min
 sec_solve_mem_limit=
+#!default limits solve_mem_limit
 sec_solve_process_limit=
+#!default limits solve_process_limit
 
 input_max_size=
 output_max_size=
