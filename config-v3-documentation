@@ -310,6 +310,9 @@ solution_for_each_subtask=off
 # - Gets full points on this subtask and its predecessors.
 # - Doesn't get full points on other subtasks.
 
+generator_respects_seed=on
+# checks that for two different seeds generator generates two different inputs 
+
 # TODO: Implement keys in this section
 
 [cms]
