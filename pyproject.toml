@@ -56,7 +56,7 @@ exclude = ["fixtures"]
 pisek = [
     "tools/**",
     "config/*-defaults",
-    "config/config-v3-documentation",
+    "config/config-description",
 ]
 
 [tool.setuptools.dynamic]

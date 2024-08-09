@@ -71,7 +71,10 @@ class CompletenessCheck(TaskJobManager):
 
     def _check_cms_judge(self) -> None:
         """Checks that cms judge's stdout & stderr contains only one line."""
-        if self._env.config.judge_type == JudgeType.cms:
+        if self._env.config.judge_type in (
+            JudgeType.cms_batch,
+            JudgeType.cms_communication,
+        ):
             for judge_out in self._get_judge_outs():
                 with open(judge_out.path) as f:
                     lines = f.read().rstrip().split("\n")

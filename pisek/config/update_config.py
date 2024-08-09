@@ -184,6 +184,14 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     config["task"]["use"] = f"@{contest_type}"
     maybe_delete_key(config, "task", "contest_type")
 
+    task_type = config.get("task", "task_type", fallback="batch")
+    out_check = config.get("tests", "out_check")
+    if contest_type == "cms" and out_check == "judge":
+        if task_type == "batch":
+            config["tests"]["judge_type"] = "cms-batch"
+        elif task_type == "communication":
+            config["tests"]["judge_type"] = "cms-communication"
+
     if "limits" not in config:
         config.add_section("limits")
     for program_type in ProgramType:

@@ -11,7 +11,6 @@ data_subdir=data/
 [tests]
 gen_type=cms-old
 checker=
-judge_type=cms
 judge_needs_in=1
 judge_needs_out=1
 
