@@ -8,14 +8,15 @@ version=v2
 
 [tests]
 in_gen=gen
-gen_type=pisek-gen-v1
+gen_type=pisek-v1
 out_check=diff
 stub=stubs/grader
 headers=stubs/odd.h
 
 [test01]
 points=10
-in_globs=*.in
+in_globs=random-uniform*.in
+predecessors=0
 
 [limits]
 solve_time_limit=0.2

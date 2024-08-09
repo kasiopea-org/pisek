@@ -243,9 +243,11 @@ class ProgramsJob(TaskJob):
         self._load_program(program_type, program, **kwargs)
         return self._run_programs()[0]
 
-    def _create_program_failure(self, msg: str, res: RunResult):
+    def _create_program_failure(self, msg: str, res: RunResult, **kwargs):
         """Create PipelineItemFailure that nicely formats RunResult"""
-        return PipelineItemFailure(f"{msg}\n{tab(self._format_run_result(res))}")
+        return PipelineItemFailure(
+            f"{msg}\n{tab(self._format_run_result(res, **kwargs))}"
+        )
 
     def _format_run_result(
         self,

@@ -49,12 +49,11 @@ in_gen=src/gen
 # Source code of generator (without suffix)
 
 gen_type=opendata-v1
-# Specifies how generator generates inputs
+# Specifies how generator format. 
+# - pisek-v1 (recommended)
 # - cms-old
-#       ./gen [folder]
-#       Generates all inputs into fiven folder
 # - opendata-v1
-#       ./gen [subtask] [seed] > input
+# For more see docs/generator.md
 
 in_format=text
 # Format of input:

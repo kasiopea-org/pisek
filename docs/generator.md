@@ -3,7 +3,7 @@ The generator is used for generating inputs. Solutions are then run and judged o
 
 ## Generator format
 There are currently 3 generator formats available:
-- pisek-gen-v1
+- pisek-v1
 - cms-old
 - opendata-v1
 
@@ -16,7 +16,7 @@ There are two requirements for generators:
 - If a generator takes a seed as an argument, the generator **should** respect the seed. (For different seeds
   it should generate different inputs.) This can be disabled in the `[checks]` section, but be careful.
 
-## Pisek-gen-v1
+## Pisek-v1
 ### Listing inputs
 When run without arguments it should list all inputs it can generate in the following format: 
 ```
