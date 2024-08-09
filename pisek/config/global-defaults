@@ -78,8 +78,8 @@ input_max_size=50
 output_max_size=10
 
 [checks]
-checker_distinguishes_subtasks=off
 solution_for_each_subtask=off
+generator_respects_seed=on
 
 [cms]
 title=@name

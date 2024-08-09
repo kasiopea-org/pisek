@@ -135,7 +135,8 @@ class InputsInfoMixin(JobManager):
 
             jobs += inp_jobs + out_jobs
 
-        jobs += self._respects_seed_jobs(input_info, seeds, subtask)
+        if self._env.config.checks.generator_respects_seed:
+            jobs += self._respects_seed_jobs(input_info, seeds, subtask)
         return jobs
 
     def _skip_input(self, input_info: InputInfo, seed: int, subtask: int) -> bool:

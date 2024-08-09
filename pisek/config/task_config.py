@@ -663,6 +663,7 @@ class ChecksConfig(BaseEnv):
     _section: str = "checks"
 
     solution_for_each_subtask: bool
+    generator_respects_seed: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
