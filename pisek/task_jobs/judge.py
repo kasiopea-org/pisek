@@ -441,8 +441,18 @@ class RunTokenJudge(RunBatchJudge):
             raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
 
 
-class RunKasiopeaJudge(RunBatchJudge):
-    """Judges solution output using judge with Kasiopea interface."""
+class RunOpendataJudge(RunBatchJudge):
+    """Judges solution output using judge with the opendata interface. (Abstract class)"""
+
+    @property
+    @abstractmethod
+    def return_code_ok(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def return_code_wa(self) -> int:
+        pass
 
     def __init__(
         self,
@@ -486,9 +496,9 @@ class RunKasiopeaJudge(RunBatchJudge):
             stderr=self.judge_log_file,
             env=envs,
         )
-        if result.returncode == 0:
+        if result.returncode == self.return_code_ok:
             return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, result)
-        elif result.returncode == 1:
+        elif result.returncode == self.return_code_wa:
             return SolutionResult(
                 Verdict.wrong_answer, 0.0, self._solution_run_res, result
             )
@@ -496,6 +506,18 @@ class RunKasiopeaJudge(RunBatchJudge):
             raise self._create_program_failure(
                 f"Judge failed on output {self.output:n}:", result
             )
+
+
+class RunOpendataV1Judge(RunOpendataJudge):
+    """Judges solution output using judge with the opendataV1 interface."""
+
+    @property
+    def return_code_ok(self) -> int:
+        return 0
+
+    @property
+    def return_code_wa(self) -> int:
+        return 1
 
 
 class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
@@ -549,7 +571,7 @@ def judge_job(
     get_seed: Callable[[], str],
     expected_points: Optional[float],
     env: Env,
-) -> Union[RunDiffJudge, RunTokenJudge, RunKasiopeaJudge, RunCMSBatchJudge]:
+) -> Union[RunDiffJudge, RunTokenJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(env, input_, output, correct_output, expected_points)
@@ -565,7 +587,7 @@ def judge_job(
             env, env.config.out_judge, input_, output, correct_output, expected_points
         )
     else:
-        return RunKasiopeaJudge(
+        return RunOpendataV1Judge(
             env,
             env.config.out_judge,
             input_,
