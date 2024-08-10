@@ -11,14 +11,14 @@
 
 [task]
 
+version=v2
 # Task version
 # - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
 # - v2 - Current stable version, Added solution sections and redone test sections.
 # - v3 - Current experimental version, generalized contest_type to use. More changes incoming
-version=v2
 
-# Name of task (for automatic CMS import)
 name=a-plus-b
+# Name of task (for automatic CMS import)
 
 contest_type=cms
 # Environment for which is task developed
@@ -199,6 +199,7 @@ subtasks=X10
 #   clock_limit    360s
 #   mem_limit      unlimited
 #   process_limit  1
+
 solve_time_limit=3
 
 input_max_size=20
