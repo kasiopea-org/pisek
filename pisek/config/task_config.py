@@ -207,7 +207,7 @@ class TaskConfig(BaseEnv):
         # Sort so subtasks.keys() returns subtasks in sorted order
         for section in sorted(section_names, key=lambda cv: cv.value):
             section_name = section.value
-            if m := re.match(r"test(\d{2})", section_name):
+            if m := re.fullmatch(r"test(\d{2})", section_name):
                 num = m[1]
                 subtasks[int(num)] = SubtaskConfig.load_dict(
                     ConfigValue(str(int(num)), section.config, section.section, None),
@@ -216,7 +216,7 @@ class TaskConfig(BaseEnv):
 
         args["solutions"] = solutions = {}
         for section in section_names:
-            if m := re.match(r"solution_(.+)", section.value):
+            if m := re.fullmatch(r"solution_(.+)", section.value):
                 solutions[m[1]] = SolutionConfig.load_dict(
                     ConfigValue(m[1], section.config, section.section, None), configs
                 )
@@ -284,7 +284,7 @@ class TaskConfig(BaseEnv):
             if i not in self.subtasks:
                 raise PydanticCustomError(
                     "missing_subtask",
-                    f"Missing section for subtask {i}",
+                    f"Missing section [test{i:02}]",
                     {},
                 )
 

@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import defaultdict
-from configparser import ConfigParser
+from configparser import (
+    ConfigParser,
+    DuplicateSectionError,
+    DuplicateOptionError,
+    MissingSectionHeaderError,
+)
 from dataclasses import dataclass
 from importlib.resources import files
 import os
@@ -23,7 +28,7 @@ from typing import Optional, Iterable
 
 from pisek.utils.text import tab
 
-from .config_errors import TaskConfigError
+from .config_errors import TaskConfigError, TaskConfigParsingError
 from .update_config import update_config
 from .did_you_mean import ConfigKeysHelper
 
@@ -83,12 +88,25 @@ class ConfigHierarchy:
     ) -> None:
         self._config_paths.append(path)
         self._configs.append(config := ConfigParser())
-        if not config.read(path):
+        if not self._read_config(config, path):
             raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
         update_config(config, self._task_path, info, no_colors)
         if defaults := config.get("task", "use", fallback=None):
             self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
+
+    def _read_config(self, config: ConfigParser, path: str) -> bool:
+        try:
+            res = config.read(path)
+        except DuplicateSectionError as e:
+            raise TaskConfigParsingError(path, f"Duplicate section [{e.section}]")
+        except DuplicateOptionError as e:
+            raise TaskConfigParsingError(
+                path, f"Duplicate key '{e.option}' in section [{e.section}]"
+            )
+        except MissingSectionHeaderError as e:
+            raise TaskConfigParsingError(path, f"Missing section header")
+        return len(res) > 0
 
     def _resolve_defaults_config(self, name: str):
         def load_from_path(path: str) -> str:
