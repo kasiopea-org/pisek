@@ -82,7 +82,7 @@ out_judge=judge
 # Only for out_check=judge
 # Source code of judge (without suffix)
 
-judge_type=cms
+judge_type=cms-batch
 # Specifies how to call judge and how judge reports result
 # Only if out_check=judge
 #
