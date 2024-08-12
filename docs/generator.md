@@ -74,7 +74,7 @@ The generator is run:
 ./gen [subtask] [seed]
 ```
 
-The fenerator should generate the input for this subtask to its stdout. The generator must be deterministic
+The generator should generate the input for this subtask to its stdout. The generator must be deterministic
 and respect the given seed.
 
 (Please note that the generator can generate only one input for each subtask.)
