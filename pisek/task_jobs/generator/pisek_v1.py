@@ -32,9 +32,14 @@ class PisekV1ListInputs(GeneratorListInputs):
 
     def _run(self) -> list[InputInfo]:
         input_infos = []
+        input_names: set[str] = set()
         self._create_inputs_list()
         for i, line in enumerate(self._get_input_lines()):
-            input_infos.append(self._get_input_info_from_line(line, i))
+            input_info = self._get_input_info_from_line(line, i)
+            if input_info.name in input_names:
+                self._line_invalid(i, line, "Input already listed")
+            input_names.add(input_info.name)
+            input_infos.append(input_info)
         return input_infos
 
     def _get_input_info_from_line(self, line: str, line_number: int) -> InputInfo:
