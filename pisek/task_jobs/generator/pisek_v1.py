@@ -37,7 +37,7 @@ class PisekV1ListInputs(GeneratorListInputs):
         for i, line in enumerate(self._get_input_lines()):
             input_info = self._get_input_info_from_line(line, i)
             if input_info.name in input_names:
-                self._line_invalid(i, line, "Input already listed")
+                self._line_invalid(i, line, f"Input '{input_info.name}' already listed")
             input_names.add(input_info.name)
             input_infos.append(input_info)
         return input_infos
@@ -87,6 +87,7 @@ class PisekV1ListInputs(GeneratorListInputs):
         return InputInfo.generated(input_name, **info_args)
 
     def _line_invalid(self, line_index: int, contents: str, reason: str) -> NoReturn:
+        contents = contents.rstrip("\n")
         message = (
             f"Inputs list invalid (line number {line_index+1}) - {reason}:\n"
             f"{tab(colored_env(contents, 'yellow', self._env))}\n"
