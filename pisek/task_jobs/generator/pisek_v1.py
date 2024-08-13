@@ -89,7 +89,7 @@ class PisekV1ListInputs(GeneratorListInputs):
     def _line_invalid(self, line_index: int, contents: str, reason: str) -> NoReturn:
         contents = contents.rstrip("\n")
         message = (
-            f"Inputs list invalid (line number {line_index+1}) - {reason}:\n"
+            f"Inputs list invalid (line {line_index+1}) - {reason}:\n"
             f"{tab(colored_env(contents, 'yellow', self._env))}\n"
             f"Generator:"
         )
