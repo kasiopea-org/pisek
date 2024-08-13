@@ -42,10 +42,10 @@ class PisekV1ListInputs(GeneratorListInputs):
             input_infos.append(input_info)
         return input_infos
 
-    def _get_input_info_from_line(self, line: str, line_number: int) -> InputInfo:
+    def _get_input_info_from_line(self, line: str, line_index: int) -> InputInfo:
         line = line.rstrip("\n")
         if not line:
-            self._line_invalid(line_number, line, "Line empty")
+            self._line_invalid(line_index, line, "Line empty")
 
         args = line.split(" ")
         input_name = args[0]
@@ -53,42 +53,42 @@ class PisekV1ListInputs(GeneratorListInputs):
 
         for arg in args[1:]:
             if "=" not in arg:
-                self._line_invalid(line_number, line, "Missing '='")
+                self._line_invalid(line_index, line, "Missing '='")
             parts = arg.split("=")
             if len(parts) != 2:
-                self._line_invalid(line_number, line, "Too many '='")
+                self._line_invalid(line_index, line, "Too many '='")
             arg_name, arg_value = parts
             if arg_name in info_args:
-                self._line_invalid(line_number, line, f"Repeated key '{arg_name}'")
+                self._line_invalid(line_index, line, f"Repeated key '{arg_name}'")
             elif arg_name == "repeat":
                 try:
                     repeat_times = int(arg_value)
                     assert repeat_times > 0
                 except (ValueError, AssertionError):
                     self._line_invalid(
-                        line_number, line, "'repeat' should be a positive number"
+                        line_index, line, "'repeat' should be a positive number"
                     )
 
                 info_args[arg_name] = repeat_times
             elif arg_name == "seeded":
                 if arg_value not in ("true", "false"):
                     self._line_invalid(
-                        line_number, line, "'seeded' should be 'true' or 'false'"
+                        line_index, line, "'seeded' should be 'true' or 'false'"
                     )
                 info_args[arg_name] = arg_value == "true"
             else:
-                self._line_invalid(line_number, line, f"Unknown argument: '{arg_name}'")
+                self._line_invalid(line_index, line, f"Unknown argument: '{arg_name}'")
 
         if not info_args.get("seeded", True) and info_args.get("repeat", 1) > 1:
             self._line_invalid(
-                line_number, line, "For unseeded input 'repeat' must be '1'"
+                line_index, line, "For unseeded input 'repeat' must be '1'"
             )
 
         return InputInfo.generated(input_name, **info_args)
 
     def _line_invalid(self, line_index: int, contents: str, reason: str) -> NoReturn:
         message = (
-            f"Inputs list invalid (line {line_index}) - {reason}:\n"
+            f"Inputs list invalid (line number {line_index+1}) - {reason}:\n"
             f"{tab(colored_env(contents, 'yellow', self._env))}\n"
             f"Generator:"
         )
