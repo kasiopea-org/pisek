@@ -87,6 +87,7 @@ def submit(
         language=language.name,
         participation=participation,
         task=task,
+        comment=solution.name
     )
     session.add(submission)
 
