@@ -32,6 +32,8 @@ scoring=equal
 # Type of subtask scoring
 # - equal - all inputs should result the same
 # - min   - worst input in subtask determines the result
+score_precision=0
+# How many decimal digits scores are rounded to (defaults to 0)
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config
@@ -304,8 +306,6 @@ min_submission_interval=60
 # The number of seconds a contestant has to wait between consecutive submissions
 # Defaults to 0
 
-score_precision=0
-# How many decimal digits scores are rounded to (defaults to 0)
 score_mode=max_subtask
 # Describes how the final score is computed from the scores of individual submissions
 # May be 'max', 'max_subtask' (default) or 'max_tokened_last'
