@@ -256,7 +256,7 @@ def main(argv):
 
     parser_cms = subparsers.add_parser("cms", help="Import tasks into CMS.")
     subparsers_cms = parser_cms.add_subparsers(
-        help="The subcommand to run.", dest="cms_subcommand"
+        help="The subcommand to run.", dest="cms_subcommand", required=True
     )
 
     parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task.")
