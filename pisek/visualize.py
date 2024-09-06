@@ -11,6 +11,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from decimal import Decimal
 import json
 from math import ceil, inf
 import os
@@ -34,10 +35,19 @@ class MissingSolution(Exception):
 @dataclass
 class LoggedResult:
     verdict: Verdict
-    points: float
+    relative_points: Optional[Decimal]
+    absolute_points: Optional[Decimal]
     time: float
     test: str
     original_verdict: Verdict
+
+    def points(self, subtask_points: int) -> Decimal:
+        if self.relative_points is not None:
+            return self.relative_points * subtask_points
+        elif self.absolute_points is not None:
+            return self.absolute_points
+        else:
+            raise ValueError("Relative and absolute points unset")
 
     def to_str(
         self,
@@ -84,11 +94,21 @@ def limit_result(result: LoggedResult, limit: float) -> LoggedResult:
             new_verdict = Verdict.ok
 
         return LoggedResult(
-            new_verdict, 1.0, result.time, result.test, result.original_verdict
+            new_verdict,
+            Decimal(1),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     if result.time > limit:
         return LoggedResult(
-            Verdict.timeout, 0.0, result.time, result.test, result.original_verdict
+            Verdict.timeout,
+            Decimal(0),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     return result
 
@@ -140,11 +160,16 @@ class SolutionResults:
 
         results = []
         for result in testing_log[name]["results"]:
+
+            def tryDecimal(s: Optional[str]) -> Optional[Decimal]:
+                return None if s is None else Decimal(s)
+
             results.append(
                 limit_result(
                     LoggedResult(
                         Verdict[result["result"]],
-                        result["points"],
+                        tryDecimal(result["relative_points"]),
+                        tryDecimal(result["absolute_points"]),
                         result["time"],
                         result["test"],
                         Verdict[result["result"]],
@@ -180,10 +205,10 @@ class SolutionResults:
         return None
 
     def check_points(self) -> Optional[str]:
-        achieved = 0.0
+        achieved = Decimal(0)
         results = self.get_by_subtask()
         for num, sub in self._config.subtasks.items():
-            achieved += min(results[num], key=lambda r: r.points).points * sub.points
+            achieved += min(map(lambda r: r.points(sub.points), results[num]))
 
         points = self._solution.points
         points_above = self._solution.points_above

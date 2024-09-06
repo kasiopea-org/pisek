@@ -20,7 +20,7 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.config_types import ProgramType
 from pisek.task_jobs.program import RunResult, ProgramsJob
-from pisek.task_jobs.solution.solution_result import SolutionResult
+from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import RunCMSJudge
 
 
@@ -85,16 +85,18 @@ class RunCommunication(RunCMSJudge, RunSolution):
         solution: TaskPath,
         is_primary: bool,
         judge: TaskPath,
+        subtask: int,
         input_: TaskPath,
-        expected_points: Optional[float] = None,
+        expected_verdict: Optional[Verdict] = None,
         **kwargs,
     ):
         super().__init__(
             env=env,
             name=f"Run {solution:n} on input {input_:n}",
             judge=judge,
+            subtask=subtask,
             input_=input_,
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
             judge_log_file=TaskPath.log_file(
                 self._env, input_.name, f"{solution.name}.{judge.name}"
             ),

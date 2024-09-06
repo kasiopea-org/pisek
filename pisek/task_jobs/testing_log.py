@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
-from typing import Any
+from typing import Any, Optional
 
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
@@ -22,7 +22,11 @@ from pisek.task_jobs.task_manager import (
     TaskJobManager,
     SOLUTION_MAN_CODE,
 )
-from pisek.task_jobs.solution.solution_result import SolutionResult
+from pisek.task_jobs.solution.solution_result import (
+    SolutionResult,
+    RelativeSolutionResult,
+    AbsoluteSolutionResult,
+)
 
 TESTING_LOG = "testing_log.json"
 
@@ -51,7 +55,7 @@ class CreateTestingLog(TaskJobManager):
             log[solution] = {"results": []}
 
             inp: TaskPath
-            sol_res: SolutionResult
+            sol_res: Optional[SolutionResult]
             for inp, sol_res in data["results"].items():
                 if sol_res is None:
                     warn_skipped = True
@@ -61,7 +65,16 @@ class CreateTestingLog(TaskJobManager):
                         "time": sol_res.solution_rr.time,
                         "wall_clock_time": sol_res.solution_rr.wall_time,
                         "test": inp.name,
-                        "points": sol_res.points,
+                        "relative_points": (
+                            str(sol_res.relative_points)
+                            if isinstance(sol_res, RelativeSolutionResult)
+                            else None
+                        ),
+                        "absolute_points": (
+                            str(sol_res.absolute_points)
+                            if isinstance(sol_res, AbsoluteSolutionResult)
+                            else None
+                        ),
                         "result": sol_res.verdict.name,
                     }
                 )
