@@ -30,12 +30,12 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
     config = env.config
     files = FileCacher()
 
-    payload: dict[str, Any] = {"source": "cms"}
+    payload: dict[str, Any] = {"source": "cms", "solutions": {}}
     success = True
 
     for name, solution in config.solutions.items():
-        results: list[Any] = []
-        payload[name] = {"results": results}
+        results: dict[str, Any] = {}
+        payload["solutions"][name] = {"results": results}
 
         try:
             result = get_submission_result(session, files, env, solution, dataset)
@@ -70,14 +70,13 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
                     if evaluation.execution_memory is not None
                     else None
                 ),
-                "test": f"{evaluation.codename}.in",
                 "points": points,
                 "result": result_type,
             }
 
             result = dict(filter(lambda p: p[1] is not None, result.items()))
 
-            results.append(result)
+            results[f"{evaluation.codename}.in"] = result
 
     with open(TESTING_LOG, "w") as file:
         json.dump(payload, file, indent=4)
