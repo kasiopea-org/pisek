@@ -19,10 +19,13 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 from functools import partial, cache
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
 import yaml
 
 from pisek.task_jobs.run_result import RunResult
+
+if TYPE_CHECKING:
+    from pisek.env.env import Env
 
 
 class Verdict(Enum):
@@ -60,7 +63,7 @@ class SolutionResult(ABC):
     judge_rr: Optional[RunResult]
 
     @abstractmethod
-    def points(self, subtask_points: int) -> Decimal:
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
         pass
 
     def mark(self) -> str:
@@ -74,8 +77,10 @@ class RelativeSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     relative_points: Decimal
 
-    def points(self, subtask_points: int) -> Decimal:
-        return self.relative_points * subtask_points
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
+        return (self.relative_points * subtask_points).quantize(
+            Decimal("0.1") ** env.config.score_precision
+        )
 
     def mark(self) -> str:
         if self.verdict == Verdict.partial_ok:
@@ -90,7 +95,7 @@ class AbsoluteSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     absolute_points: Decimal
 
-    def points(self, subtask_points: int) -> Decimal:
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
         return self.absolute_points
 
     def mark(self) -> str:

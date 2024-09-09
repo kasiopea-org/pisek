@@ -272,7 +272,7 @@ class SubtaskJobGroup(TaskHelper):
     @property
     def points(self) -> Decimal:
         results = self._results(self.all_jobs)
-        points = map(lambda r: r.points(self.subtask.points), results)
+        points = map(lambda r: r.points(self._env, self.subtask.points), results)
         return min(points, default=Decimal(self.subtask.points))
 
     @property
@@ -306,7 +306,7 @@ class SubtaskJobGroup(TaskHelper):
     def _jobs_points(self) -> list[Decimal]:
         return list(
             map(
-                lambda r: r.points(self.subtask.points),
+                lambda r: r.points(self._env, self.subtask.points),
                 self._results(self.new_jobs + self.previous_jobs),
             )
         )
@@ -404,7 +404,7 @@ class SubtaskJobGroup(TaskHelper):
             if job.result is not None:
                 input_verdict = tab(
                     f"{job.input.name:<{max_inp_name_len}} "
-                    f"({self._format_points(job.result.points(self.subtask.points))}): "
+                    f"({self._format_points(job.result.points(self._env, self.subtask.points))}): "
                     f"{job.verdict_text()}"
                 )
                 text += right_aligned_text(
