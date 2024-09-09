@@ -188,7 +188,7 @@ class RunJudge(ProgramsJob):
             and result.verdict != self.expected_verdict
         ):
             raise PipelineItemFailure(
-                f"{self._judging_message_capitalized()} should have got verdict '{self.expected_verdict}' but got '{result.points}'."
+                f"{self._judging_message_capitalized()} should have got verdict '{self.expected_verdict}' but got '{result.verdict}'."
             )
 
         return result
