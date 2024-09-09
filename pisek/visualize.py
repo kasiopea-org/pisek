@@ -155,11 +155,11 @@ class SolutionResults:
     def from_log(
         name: str, config: TaskConfig, testing_log, limit: float
     ) -> "SolutionResults":
-        if name not in testing_log:
+        if name not in testing_log["solutions"]:
             raise MissingSolution(name)
 
         results = []
-        for result in testing_log[name]["results"]:
+        for test_name, result in testing_log["solutions"][name]["results"].items():
 
             def tryDecimal(s: Optional[str]) -> Optional[Decimal]:
                 return None if s is None else Decimal(s)
@@ -171,7 +171,7 @@ class SolutionResults:
                         tryDecimal(result["relative_points"]),
                         tryDecimal(result["absolute_points"]),
                         result["time"],
-                        result["test"],
+                        test_name,
                         Verdict[result["result"]],
                     ),
                     limit,
