@@ -79,6 +79,7 @@ output_max_size=10
 
 [checks]
 solution_for_each_subtask=off
+no_unused_inputs=on
 generator_respects_seed=on
 
 [cms]

@@ -47,8 +47,11 @@ class DataManager(TaskJobManager):
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
+        all_static_inputs = self.globs_to_files(
+            ["*.in"], TaskPath.static_path(self._env, ".")
+        )
         all_input_infos: list[InputInfo] = [
-            InputInfo.static(inp.name.removesuffix(".in")) for inp in static_inputs
+            InputInfo.static(inp.name.removesuffix(".in")) for inp in all_static_inputs
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         all_input_infos.sort(key=lambda info: info.name)
 
@@ -64,21 +67,26 @@ class DataManager(TaskJobManager):
                 )
 
         used_inputs = set(sum(self._input_infos.values(), start=[]))
-        unused_inputs = list(set(all_input_infos) - used_inputs)
-        if len(unused_inputs):
+        unused_inputs = list(
+            sorted(set(all_input_infos) - used_inputs, key=lambda inp: inp.name)
+        )
+        if self._env.config.checks.no_unused_inputs and len(unused_inputs):
             if self._env.verbosity <= 0:
                 CUTOFF = 3
                 unused_inputs_text = ", ".join(
-                    map(lambda inp: inp.name, unused_inputs[:CUTOFF])
+                    map(lambda inp: f"{inp.name}.in", unused_inputs[:CUTOFF])
                 )
                 if len(unused_inputs) > CUTOFF:
                     unused_inputs_text += ",…"
                 self._warn(
-                    f"{len(unused_inputs)} unused inputs. ({unused_inputs_text})"
+                    f"{len(unused_inputs)} unused input{'s' if len(unused_inputs) >= 2 else ''}. "
+                    f"({unused_inputs_text})"
                 )
             else:
                 for inp in unused_inputs:
-                    self._warn(f"Unused input: '{inp.name}'")
+                    self._warn(
+                        f"Unused {'generated' if inp.is_generated else 'static'} input: '{inp.name}.in'"
+                    )
 
         jobs: list[Job] = []
         for path in static_inputs:

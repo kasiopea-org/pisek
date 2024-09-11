@@ -663,6 +663,7 @@ class ChecksConfig(BaseEnv):
     _section: str = "checks"
 
     solution_for_each_subtask: bool
+    no_unused_inputs: bool
     generator_respects_seed: bool
 
     @classmethod
