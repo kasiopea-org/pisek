@@ -6,11 +6,12 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "pisek.__main__",
             "console": "integratedTerminal",
             "justMyCode": true,
+            "args": ["test"],
         }
     ]
 }
