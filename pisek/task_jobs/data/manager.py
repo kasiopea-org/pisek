@@ -24,6 +24,7 @@ from pisek.task_jobs.checker import CheckerJob
 from .data import LinkInput, LinkOutput, InputSmall, OutputSmall
 
 TEST_SEED = 25265
+UNUSED_INPUTS_CUTOFF = 3
 
 
 class DataManager(TaskJobManager):
@@ -55,6 +56,7 @@ class DataManager(TaskJobManager):
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         all_input_infos.sort(key=lambda info: info.name)
 
+        # put inputs in subtasks
         self._input_infos: dict[int, list[InputInfo]] = {}
         for num, sub in self._env.config.subtasks.items():
             self._input_infos[sub.num] = []
@@ -70,23 +72,7 @@ class DataManager(TaskJobManager):
         unused_inputs = list(
             sorted(set(all_input_infos) - used_inputs, key=lambda inp: inp.name)
         )
-        if self._env.config.checks.no_unused_inputs and len(unused_inputs):
-            if self._env.verbosity <= 0:
-                CUTOFF = 3
-                unused_inputs_text = ", ".join(
-                    map(lambda inp: f"{inp.name}.in", unused_inputs[:CUTOFF])
-                )
-                if len(unused_inputs) > CUTOFF:
-                    unused_inputs_text += ",…"
-                self._warn(
-                    f"{len(unused_inputs)} unused input{'s' if len(unused_inputs) >= 2 else ''}. "
-                    f"({unused_inputs_text})"
-                )
-            else:
-                for inp in unused_inputs:
-                    self._warn(
-                        f"Unused {'generated' if inp.is_generated else 'static'} input: '{inp.name}.in'"
-                    )
+        self._report_unused_inputs(unused_inputs)
 
         jobs: list[Job] = []
         for path in static_inputs:
@@ -113,6 +99,24 @@ class DataManager(TaskJobManager):
                     )
 
         return jobs
+    
+    def _report_unused_inputs(self, unused_inputs: list[InputInfo]) -> None:
+        if self._env.config.checks.no_unused_inputs and len(unused_inputs):
+            if self._env.verbosity <= 0:
+                unused_inputs_text = ", ".join(
+                    map(lambda inp: f"{inp.name}.in", unused_inputs[:UNUSED_INPUTS_CUTOFF])
+                )
+                if len(unused_inputs) > UNUSED_INPUTS_CUTOFF:
+                    unused_inputs_text += ",…"
+                self._warn(
+                    f"{len(unused_inputs)} unused input{'s' if len(unused_inputs) >= 2 else ''}. "
+                    f"({unused_inputs_text})"
+                )
+            else:
+                for inp in unused_inputs:
+                    self._warn(
+                        f"Unused {'generated' if inp.is_generated else 'static'} input: '{inp.name}.in'"
+                    )
 
     def _compute_result(self) -> dict[str, Any]:
         res = {"input_info": self._input_infos}
