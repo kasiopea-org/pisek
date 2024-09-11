@@ -68,7 +68,6 @@ class CheckerJob(ProgramsJob):
         checker: TaskPath,
         input_: TaskPath,
         subtask: int,
-        expected: Optional[RunResultKind] = RunResultKind.OK,
         **kwargs,
     ):
         super().__init__(
@@ -80,7 +79,6 @@ class CheckerJob(ProgramsJob):
         self.log_file = TaskPath.log_file(
             self._env, input_.name, f"{self.checker.name}{subtask}"
         )
-        self.expected = expected
 
     def _check(self) -> RunResult:
         return self._run_program(
@@ -93,14 +91,9 @@ class CheckerJob(ProgramsJob):
 
     def _run(self) -> RunResult:
         result = self._check()
-        if self.expected == RunResultKind.OK != result.kind:
+        if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"Checker failed on {self.input:p} (subtask {self.subtask}) but should have succeeded.",
-                result,
-            )
-        elif self.expected == RunResultKind.RUNTIME_ERROR != result.kind:
-            raise self._create_program_failure(
-                f"Checker succeeded on {self.input:p} (subtask {self.subtask}) but should have failed.",
+                f"Checker failed on {self.input:p} (subtask {self.subtask}):",
                 result,
             )
         return result
