@@ -145,17 +145,18 @@ class Cache:
                 else:
                     raise RuntimeError(f"Unknown object in cache {entry}")
 
+        # TODO: Remove with cache seal
         self.export()  # Break the CacheSeal
 
     def move_to_top(self, entry: CacheEntry):
         """Move given entry to most recent position."""
         if entry in self.cache[entry.name]:
             self.cache[entry.name].remove(entry)
+            self.cache[entry.name].append(entry)
         else:
             raise ValueError(
                 f"Cannot move to top entry which is not in Cache:\n{entry}"
             )
-        self.add(entry)
 
     def export(self) -> None:
         """Export cache into a file. Remove unnecessary entries and add seal."""
