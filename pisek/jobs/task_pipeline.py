@@ -54,6 +54,8 @@ class TaskPipeline(JobPipeline):
         inputs[0].add_prerequisite(*generator)
         inputs[0].add_prerequisite(*checker)
 
+        solutions = []
+
         if env.target == TestingTarget.generator:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))
             gen_inputs[0].add_prerequisite(*inputs)
@@ -76,7 +78,7 @@ class TaskPipeline(JobPipeline):
                     f"{SOLUTION_MAN_CODE}{first_solution_name}",
                 )
             )
-            solutions = [first_solution]
+            solutions.append(first_solution)
             first_solution[0].add_prerequisite(*judge)
 
             for sol_name in env.solutions:
