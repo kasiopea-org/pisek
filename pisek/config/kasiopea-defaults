@@ -79,6 +79,8 @@ output_max_size=10
 [checks]
 solution_for_each_subtask=off
 no_unused_inputs=on
+all_inputs_in_last_subtask=off
+generator_respects_seed=on
 
 [cms]
 title=@name

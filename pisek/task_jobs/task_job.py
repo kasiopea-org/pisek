@@ -73,6 +73,13 @@ class TaskHelper:
         return [TaskPath.from_abspath(directory.path, file) for file in files]
 
     @staticmethod
+    def _short_list(arr: list[str], cutoff: int = 1) -> str:
+        inputs_text = ", ".join(arr[:cutoff])
+        if len(arr) > cutoff:
+            inputs_text += ",…"
+        return inputs_text
+
+    @staticmethod
     def _short_text(
         text: str,
         style: Literal["h", "t", "ht"] = "h",
