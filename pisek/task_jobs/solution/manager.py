@@ -97,8 +97,8 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         run_judge: RunJudge
         if self._env.config.task_type == TaskType.batch:
             if not input_info.is_generated and self._generate_inputs:
-                jobs += self._check_input_jobs(
-                    self._get_reference_output(input_info, seed)
+                jobs += self._check_output_jobs(
+                    self._get_reference_output(input_info, seed), None
                 )
 
             run_batch_sol, run_judge = self._create_batch_jobs(
