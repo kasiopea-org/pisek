@@ -174,7 +174,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
         if not self.state.finished() or self._env.verbosity == 0:
             points = pad_left(points, points_places)
-            header = f"{pad(msg, MSG_LEN-1)} {points}   "
+            header = f"{pad(msg, MSG_LEN-1)} {points}  {max_time:.2f}s  "
             subtasks_text = "|".join(sub.status_verbosity0() for sub in self.subtasks)
         else:
             header = (
