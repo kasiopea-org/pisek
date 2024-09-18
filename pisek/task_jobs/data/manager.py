@@ -100,7 +100,7 @@ class DataManager(TaskJobManager):
 
     def _report_unused_inputs(self, unused_inputs: Iterable[InputInfo]) -> None:
         inputs = list(sorted(unused_inputs, key=lambda inp: inp.name))
-        if self._env.config.checks.no_unused_inputs and len(inputs):
+        if self._env.config.checks.no_unused_inputs and inputs:
             if self._env.verbosity <= 0:
                 self._warn(
                     f"{len(inputs)} unused input{'s' if len(inputs) >= 2 else ''}. "
@@ -116,7 +116,7 @@ class DataManager(TaskJobManager):
         self, not_included_inputs: Iterable[InputInfo]
     ) -> None:
         inputs = list(sorted(not_included_inputs, key=lambda inp: inp.name))
-        if self._env.config.checks.all_inputs_in_last_subtask and len(inputs) > 0:
+        if self._env.config.checks.all_inputs_in_last_subtask and inputs:
             if self._env.verbosity <= 0:
                 self._warn(
                     f"{len(inputs)} input{'s' if len(inputs) >= 2 else ''} "
