@@ -256,9 +256,9 @@ class RunJudge(ProgramsJob):
 
     @property
     def full_points(self) -> float:
-        return self.abs_points(1.0)
+        return self.rel_to_abs_points(1.0)
 
-    def abs_points(self, rel_points: float) -> float:
+    def rel_to_abs_points(self, rel_points: float) -> float:
         return self._env.config.subtasks[self.subtask].points * rel_points
 
 

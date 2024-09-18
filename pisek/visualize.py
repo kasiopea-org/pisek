@@ -15,7 +15,7 @@ from decimal import Decimal
 import json
 from math import ceil, inf
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from pisek.utils.text import pad, tab, colored, eprint
 from pisek.utils.terminal import terminal_width
@@ -161,15 +161,15 @@ class SolutionResults:
         results = []
         for test_name, result in testing_log["solutions"][name]["results"].items():
 
-            def tryDecimal(s: Optional[str]) -> Optional[Decimal]:
-                return None if s is None else Decimal(s)
+            def load_decimal(result: dict[str, Any], key: str) -> Optional[Decimal]:
+                return Decimal(result[key]) if key in result else None
 
             results.append(
                 limit_result(
                     LoggedResult(
                         Verdict[result["result"]],
-                        tryDecimal(result["relative_points"]),
-                        tryDecimal(result["absolute_points"]),
+                        load_decimal(result, "relative_points"),
+                        load_decimal(result, "absolute_points"),
                         result["time"],
                         test_name,
                         Verdict[result["result"]],

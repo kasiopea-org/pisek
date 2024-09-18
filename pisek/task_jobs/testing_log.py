@@ -64,18 +64,21 @@ class CreateTestingLog(TaskJobManager):
                 solution_results[inp.name] = {
                     "time": sol_res.solution_rr.time,
                     "wall_clock_time": sol_res.solution_rr.wall_time,
-                    "relative_points": (
-                        str(sol_res.relative_points)
-                        if isinstance(sol_res, RelativeSolutionResult)
-                        else None
-                    ),
-                    "absolute_points": (
-                        str(sol_res.absolute_points)
-                        if isinstance(sol_res, AbsoluteSolutionResult)
-                        else None
-                    ),
                     "result": sol_res.verdict.name,
                 }
+
+                if isinstance(sol_res, RelativeSolutionResult):
+                    solution_results[inp.name]["relative_points"] = str(
+                        sol_res.relative_points
+                    )
+                elif isinstance(sol_res, AbsoluteSolutionResult):
+                    solution_results[inp.name]["absolute_points"] = str(
+                        sol_res.absolute_points
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown {SolutionResult.__name__} instance found: {type(sol_res)}"
+                    )
 
         if len(solutions) == 0:
             raise PipelineItemFailure("No solution was tested.")
