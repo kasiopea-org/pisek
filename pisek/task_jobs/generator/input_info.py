@@ -19,7 +19,9 @@ from pisek.utils.paths import TaskPath
 
 
 @dataclass(frozen=True)
-class InputInfo:
+class InputInfo(yaml.YAMLObject):
+    yaml_tag = "!InputInfo"
+
     name: str
     repeat: int = 1
     is_generated: bool = True
@@ -41,24 +43,3 @@ class InputInfo:
         filename += ".in"
 
         return TaskPath.input_path(env, filename)
-
-
-def input_info_representer(dumper, input_info: InputInfo):
-    return dumper.represent_sequence(
-        "!InputInfo",
-        [
-            input_info.name,
-            input_info.repeat,
-            input_info.is_generated,
-            input_info.seeded,
-        ],
-    )
-
-
-def input_info_constructor(loader, value):
-    [name, repeat, generated, seeded] = loader.construct_sequence(value)
-    return InputInfo(name, repeat, generated, seeded)
-
-
-yaml.add_representer(InputInfo, input_info_representer)
-yaml.add_constructor("!InputInfo", input_info_constructor)
