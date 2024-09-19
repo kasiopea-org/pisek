@@ -13,6 +13,7 @@
 from pisek.utils.paths import TaskPath
 from pisek.env.env import TestingTarget
 from pisek.config.config_types import JudgeType
+from pisek.task_jobs.solution.solution_result import Verdict
 from pisek.jobs.jobs import Job
 from pisek.task_jobs.task_manager import (
     TaskJobManager,
@@ -47,7 +48,7 @@ class CompletenessCheck(TaskJobManager):
         for num in self._env.config.subtasks:
             if num == 0:
                 continue  # Skip samples
-            if (subtasks_res[num] == 1.0) != (num in subtasks):
+            if (subtasks_res[num] == Verdict.ok) != (num in subtasks):
                 return False
         return True
 

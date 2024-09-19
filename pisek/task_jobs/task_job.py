@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from decimal import Decimal
 import filecmp
 import glob
 from math import ceil
@@ -71,6 +72,15 @@ class TaskHelper:
         )
         files = list(sorted(set(files)))
         return [TaskPath.from_abspath(directory.path, file) for file in files]
+
+    def _format_points(self, points: Optional[Decimal | int]) -> str:
+        precision = self._env.config.score_precision
+        if points is None:
+            text = "?" + "." * (precision > 0) + "?" * precision
+        else:
+            text = f"{points:.{precision}f}"
+
+        return text + "p"
 
     @staticmethod
     def _short_text(

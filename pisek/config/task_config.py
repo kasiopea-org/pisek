@@ -90,6 +90,7 @@ class TaskConfig(BaseEnv):
     name: str
     task_type: TaskType
     scoring: Scoring
+    score_precision: int = Field(ge=0)
 
     solutions_subdir: TaskPathFromStr
     static_subdir: TaskPathFromStr
@@ -165,6 +166,7 @@ class TaskConfig(BaseEnv):
             ("task", "name"),
             ("task", "task_type"),
             ("task", "scoring"),
+            ("task", "score_precision"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),
             ("task", "data_subdir"),
@@ -605,7 +607,6 @@ class CMSConfig(BaseEnv):
     max_submissions: MaybeInt = Field(gt=0)
     min_submission_interval: int = Field(ge=0)  # [seconds]
 
-    score_precision: int = Field(ge=0)
     score_mode: CMSScoreMode
     feedback_level: CMSFeedbackLevel
 
@@ -618,7 +619,6 @@ class CMSConfig(BaseEnv):
             "mem_limit",
             "max_submissions",
             "min_submission_interval",
-            "score_precision",
             "score_mode",
             "feedback_level",
         ]

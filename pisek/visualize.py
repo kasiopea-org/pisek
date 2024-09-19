@@ -11,10 +11,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from decimal import Decimal
 import json
 from math import ceil, inf
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from pisek.utils.text import pad, tab, colored, eprint
 from pisek.utils.terminal import terminal_width
@@ -34,10 +35,19 @@ class MissingSolution(Exception):
 @dataclass
 class LoggedResult:
     verdict: Verdict
-    points: float
+    relative_points: Optional[Decimal]
+    absolute_points: Optional[Decimal]
     time: float
     test: str
     original_verdict: Verdict
+
+    def points(self, subtask_points: int) -> Decimal:
+        if self.relative_points is not None:
+            return self.relative_points * subtask_points
+        elif self.absolute_points is not None:
+            return self.absolute_points
+        else:
+            raise ValueError("Relative and absolute points unset")
 
     def to_str(
         self,
@@ -84,11 +94,21 @@ def limit_result(result: LoggedResult, limit: float) -> LoggedResult:
             new_verdict = Verdict.ok
 
         return LoggedResult(
-            new_verdict, 1.0, result.time, result.test, result.original_verdict
+            new_verdict,
+            Decimal(1),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     if result.time > limit:
         return LoggedResult(
-            Verdict.timeout, 0.0, result.time, result.test, result.original_verdict
+            Verdict.timeout,
+            Decimal(0),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     return result
 
@@ -135,18 +155,23 @@ class SolutionResults:
     def from_log(
         name: str, config: TaskConfig, testing_log, limit: float
     ) -> "SolutionResults":
-        if name not in testing_log:
+        if name not in testing_log["solutions"]:
             raise MissingSolution(name)
 
         results = []
-        for result in testing_log[name]["results"]:
+        for test_name, result in testing_log["solutions"][name]["results"].items():
+
+            def load_decimal(result: dict[str, Any], key: str) -> Optional[Decimal]:
+                return Decimal(result[key]) if key in result else None
+
             results.append(
                 limit_result(
                     LoggedResult(
                         Verdict[result["result"]],
-                        result["points"],
+                        load_decimal(result, "relative_points"),
+                        load_decimal(result, "absolute_points"),
                         result["time"],
-                        result["test"],
+                        test_name,
                         Verdict[result["result"]],
                     ),
                     limit,
@@ -180,10 +205,10 @@ class SolutionResults:
         return None
 
     def check_points(self) -> Optional[str]:
-        achieved = 0.0
+        achieved = Decimal(0)
         results = self.get_by_subtask()
         for num, sub in self._config.subtasks.items():
-            achieved += min(results[num], key=lambda r: r.points).points * sub.points
+            achieved += min(map(lambda r: r.points(sub.points), results[num]))
 
         points = self._solution.points
         points_above = self._solution.points_above

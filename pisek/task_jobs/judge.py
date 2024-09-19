@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
+from decimal import Decimal
 from functools import cache
 import os
 import random
@@ -32,7 +33,12 @@ from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
-from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
+from pisek.task_jobs.solution.solution_result import (
+    Verdict,
+    SolutionResult,
+    RelativeSolutionResult,
+    AbsoluteSolutionResult,
+)
 
 
 class JudgeManager(TaskJobManager):
@@ -66,7 +72,7 @@ class JudgeManager(TaskJobManager):
                     out,
                     0,
                     lambda: "0",
-                    1.0,
+                    Verdict.ok,
                     self._env,
                 )
             )
@@ -120,17 +126,19 @@ class RunJudge(ProgramsJob):
         self,
         env: Env,
         name: str,
+        subtask: int,
         judge_name: str,
         input_: TaskPath,
         judge_log_file: TaskPath,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
+        self.subtask = subtask
         self.input = input_
         self.judge_name = judge_name
         self.judge_log_file = judge_log_file
-        self.expected_points = expected_points
+        self.expected_verdict = expected_verdict
 
         self.result: Optional[SolutionResult]
 
@@ -167,17 +175,20 @@ class RunJudge(ProgramsJob):
         if self._solution_run_res.kind == RunResultKind.OK:
             result = self._judge()
         elif self._solution_run_res.kind == RunResultKind.RUNTIME_ERROR:
-            result = SolutionResult(Verdict.error, 0.0, self._solution_run_res, None)
+            result = RelativeSolutionResult(
+                Verdict.error, self._solution_run_res, None, Decimal(0)
+            )
         elif self._solution_run_res.kind == RunResultKind.TIMEOUT:
-            result = SolutionResult(Verdict.timeout, 0.0, self._solution_run_res, None)
+            result = RelativeSolutionResult(
+                Verdict.timeout, self._solution_run_res, None, Decimal(0)
+            )
 
         if (
-            self.expected_points is not None
-            and result is not None
-            and result.points != self.expected_points
+            self.expected_verdict is not None
+            and result.verdict != self.expected_verdict
         ):
             raise PipelineItemFailure(
-                f"{self._judging_message_capitalized()} should have got {self.expected_points} points but got {result.points} points."
+                f"{self._judging_message_capitalized()} should have got verdict '{self.expected_verdict}' but got '{result.verdict}'."
             )
 
         return result
@@ -222,8 +233,6 @@ class RunJudge(ProgramsJob):
 
     def verdict_text(self) -> str:
         if self.result is not None:
-            if self.result.verdict == Verdict.partial_ok:
-                return f"{self.result.verdict.name} {self.result.points:.2f}"
             return self.result.verdict.name
         else:
             return self.state.name
@@ -234,9 +243,23 @@ class RunJudge(ProgramsJob):
         elif self.result is None:
             return " "
         elif self.result.verdict == Verdict.partial_ok:
-            return f"[{self.result.points:.2f}]"
+            if isinstance(self.result, RelativeSolutionResult):
+                return f"[{self.result.relative_points:.2f}]"
+            elif isinstance(self.result, AbsoluteSolutionResult):
+                return f"[={self.result.absolute_points:.{self._env.config.score_precision}f}]"
+            else:
+                raise ValueError(
+                    f"Unexpected SolutionResult type: '{type(self.result)}'"
+                )
         else:
             return self.result.verdict.mark()
+
+    @property
+    def full_points(self) -> float:
+        return self.rel_to_abs_points(1.0)
+
+    def rel_to_abs_points(self, rel_points: float) -> float:
+        return self._env.config.subtasks[self.subtask].points * rel_points
 
 
 class RunCMSJudge(RunJudge):
@@ -252,11 +275,11 @@ class RunCMSJudge(RunJudge):
         self.judge = judge
         self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
 
-    def _load_points(self, result: RunResult) -> float:
+    def _load_points(self, result: RunResult) -> Decimal:
         with self._open_file(result.stdout_file) as f:
             points_str = f.read().split("\n")[0]
         try:
-            points = float(points_str)
+            points = Decimal(points_str)
         except ValueError:
             raise self._create_program_failure(
                 "Judge didn't write points on stdout:", result
@@ -279,8 +302,8 @@ class RunCMSJudge(RunJudge):
             else:
                 verdict = Verdict.partial_ok
 
-            return SolutionResult(
-                verdict, points, self._solution_run_res, judge_run_result
+            return RelativeSolutionResult(
+                verdict, self._solution_run_res, judge_run_result, points
             )
         else:
             raise self._create_program_failure(
@@ -295,19 +318,21 @@ class RunBatchJudge(RunJudge):
         self,
         env: Env,
         judge_name: str,
+        subtask: int,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
             name=f"Judge {output:n}",
             judge_name=judge_name,
+            subtask=subtask,
             input_=input_,
             judge_log_file=TaskPath.log_file(self._env, output.name, judge_name),
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
             **kwargs,
         )
         self.output = output
@@ -332,18 +357,20 @@ class RunDiffJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
+        subtask: int,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
             env=env,
             judge_name="diff",
+            subtask=subtask,
             input_=input_,
             output=output,
             correct_output=correct_output,
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
         )
 
     def _judge(self) -> SolutionResult:
@@ -364,9 +391,13 @@ class RunDiffJudge(RunBatchJudge):
             + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
         )
         if diff.returncode == 0:
-            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)
+            return RelativeSolutionResult(
+                Verdict.ok, self._solution_run_res, rr, Decimal(1)
+            )
         elif diff.returncode == 1:
-            return SolutionResult(Verdict.wrong_answer, 0.0, self._solution_run_res, rr)
+            return RelativeSolutionResult(
+                Verdict.wrong_answer, self._solution_run_res, rr, Decimal(0)
+            )
         else:
             raise PipelineItemFailure(
                 f"Diff failed:\n{tab(diff.stderr.decode('utf-8'))}"
@@ -379,18 +410,20 @@ class RunTokenJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
+        subtask: int,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
             env=env,
             judge_name="judge-token",
+            subtask=subtask,
             input_=input_,
             output=output,
             correct_output=correct_output,
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
         )
 
     def _judge(self) -> SolutionResult:
@@ -434,9 +467,13 @@ class RunTokenJudge(RunBatchJudge):
         )
 
         if judge.returncode == 42:
-            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, rr)
+            return RelativeSolutionResult(
+                Verdict.ok, self._solution_run_res, rr, Decimal(1)
+            )
         elif judge.returncode == 43:
-            return SolutionResult(Verdict.wrong_answer, 0.0, self._solution_run_res, rr)
+            return RelativeSolutionResult(
+                Verdict.wrong_answer, self._solution_run_res, rr, Decimal(0)
+            )
         else:
             raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
 
@@ -458,25 +495,25 @@ class RunOpendataJudge(RunBatchJudge):
         self,
         env: Env,
         judge: TaskPath,
+        subtask: int,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        subtask: int,
         seed: str,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
             judge_name=judge.name,
+            subtask=subtask,
             input_=input_,
             output=output,
             correct_output=correct_output,
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
             **kwargs,
         )
         self.judge = judge
-        self.subtask = subtask
         self.seed = seed
 
     def _judge(self) -> SolutionResult:
@@ -497,10 +534,12 @@ class RunOpendataJudge(RunBatchJudge):
             env=envs,
         )
         if result.returncode == self.return_code_ok:
-            return SolutionResult(Verdict.ok, 1.0, self._solution_run_res, result)
+            return RelativeSolutionResult(
+                Verdict.ok, self._solution_run_res, result, Decimal(1)
+            )
         elif result.returncode == self.return_code_wa:
-            return SolutionResult(
-                Verdict.wrong_answer, 0.0, self._solution_run_res, result
+            return RelativeSolutionResult(
+                Verdict.wrong_answer, self._solution_run_res, result, Decimal(0)
             )
         else:
             raise self._create_program_failure(
@@ -527,19 +566,21 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
         self,
         env: Env,
         judge: TaskPath,
+        subtask: int,
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        expected_points: Optional[float],
+        expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
             judge=judge,
+            subtask=subtask,
             input_=input_,
             output=output,
             correct_output=correct_output,
-            expected_points=expected_points,
+            expected_verdict=expected_verdict,
             **kwargs,
         )
 
@@ -569,31 +610,41 @@ def judge_job(
     correct_output: TaskPath,
     subtask: int,
     get_seed: Callable[[], str],
-    expected_points: Optional[float],
+    expected_verdict: Optional[Verdict],
     env: Env,
 ) -> Union[RunDiffJudge, RunTokenJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
-        return RunDiffJudge(env, input_, output, correct_output, expected_points)
+        return RunDiffJudge(
+            env, subtask, input_, output, correct_output, expected_verdict
+        )
 
     if env.config.out_check == OutCheck.tokens:
-        return RunTokenJudge(env, input_, output, correct_output, expected_points)
+        return RunTokenJudge(
+            env, subtask, input_, output, correct_output, expected_verdict
+        )
 
     if env.config.out_judge is None:
         raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
 
     if env.config.judge_type == JudgeType.cms_batch:
         return RunCMSBatchJudge(
-            env, env.config.out_judge, input_, output, correct_output, expected_points
+            env,
+            env.config.out_judge,
+            subtask,
+            input_,
+            output,
+            correct_output,
+            expected_verdict,
         )
     else:
         return RunOpendataV1Judge(
             env,
             env.config.out_judge,
+            subtask,
             input_,
             output,
             correct_output,
-            subtask,
             get_seed(),
-            expected_points,
+            expected_verdict,
         )

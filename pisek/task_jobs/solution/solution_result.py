@@ -14,13 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import Enum
 from functools import partial, cache
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
 import yaml
 
 from pisek.task_jobs.run_result import RunResult
+
+if TYPE_CHECKING:
+    from pisek.env.env import Env
 
 
 class Verdict(Enum):
@@ -30,6 +35,9 @@ class Verdict(Enum):
     timeout = 3
     wrong_answer = 4
     error = 5
+
+    def is_zero_point(self) -> bool:
+        return self in (Verdict.timeout, Verdict.wrong_answer, Verdict.error)
 
     def mark(self) -> str:
         return {
@@ -46,35 +54,96 @@ class Verdict(Enum):
         return max(len(v.name) for v in Verdict)
 
 
-@dataclass
-class SolutionResult:
+@dataclass(init=False)
+class SolutionResult(ABC):
     """Class representing result of a solution on given input."""
 
     verdict: Verdict
-    points: float
     solution_rr: RunResult
     judge_rr: Optional[RunResult]
 
+    @abstractmethod
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
+        pass
 
-def sol_result_representer(dumper, sol_result: SolutionResult):
+    def mark(self) -> str:
+        return self.verdict.mark()
+
+
+@dataclass
+class RelativeSolutionResult(SolutionResult):
+    verdict: Verdict
+    solution_rr: RunResult
+    judge_rr: Optional[RunResult]
+    relative_points: Decimal
+
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
+        return (self.relative_points * subtask_points).quantize(
+            Decimal("0.1") ** env.config.score_precision
+        )
+
+    def mark(self) -> str:
+        if self.verdict == Verdict.partial_ok:
+            return f"[{self.relative_points:.2f}]"
+        return super().mark()
+
+
+@dataclass
+class AbsoluteSolutionResult(SolutionResult):
+    verdict: Verdict
+    solution_rr: RunResult
+    judge_rr: Optional[RunResult]
+    absolute_points: Decimal
+
+    def points(self, env: "Env", subtask_points: int) -> Decimal:
+        return self.absolute_points
+
+    def mark(self) -> str:
+        if self.verdict == Verdict.partial_ok:
+            return f"[={self.absolute_points}]"
+        return super().mark()
+
+
+def abs_sol_result_representer(dumper, sol_result: AbsoluteSolutionResult):
     return dumper.represent_sequence(
-        "!SolutionResult",
+        "!AbsoluteSolutionResult",
         [
             sol_result.verdict.name,
-            sol_result.points,
             sol_result.solution_rr,
             sol_result.judge_rr,
+            str(sol_result.absolute_points),
         ],
     )
 
 
-def sol_result_constructor(loader, value) -> SolutionResult:
+def abs_sol_result_constructor(loader, value) -> AbsoluteSolutionResult:
     verdict, points, sol_rr, judge_rr = loader.construct_sequence(value)
-    return SolutionResult(Verdict[verdict], points, sol_rr, judge_rr)
+    return AbsoluteSolutionResult(Verdict[verdict], sol_rr, judge_rr, Decimal(points))
 
 
-yaml.add_representer(SolutionResult, sol_result_representer)
-yaml.add_constructor("!SolutionResult", sol_result_constructor)
+yaml.add_representer(AbsoluteSolutionResult, abs_sol_result_representer)
+yaml.add_constructor("!AbsoluteSolutionResult", abs_sol_result_constructor)
+
+
+def rel_sol_result_representer(dumper, sol_result: RelativeSolutionResult):
+    return dumper.represent_sequence(
+        "!RelativeSolutionResult",
+        [
+            sol_result.verdict.name,
+            sol_result.solution_rr,
+            sol_result.judge_rr,
+            str(sol_result.relative_points),
+        ],
+    )
+
+
+def rel_sol_result_constructor(loader, value) -> RelativeSolutionResult:
+    verdict, sol_rr, judge_rr, points = loader.construct_sequence(value)
+    return RelativeSolutionResult(Verdict[verdict], sol_rr, judge_rr, Decimal(points))
+
+
+yaml.add_representer(RelativeSolutionResult, rel_sol_result_representer)
+yaml.add_constructor("!RelativeSolutionResult", rel_sol_result_constructor)
 
 
 def verdict_always(res: Verdict) -> bool:

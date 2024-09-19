@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
-from typing import Any
+from typing import Any, Optional
 
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
@@ -22,7 +22,11 @@ from pisek.task_jobs.task_manager import (
     TaskJobManager,
     SOLUTION_MAN_CODE,
 )
-from pisek.task_jobs.solution.solution_result import SolutionResult
+from pisek.task_jobs.solution.solution_result import (
+    SolutionResult,
+    RelativeSolutionResult,
+    AbsoluteSolutionResult,
+)
 
 TESTING_LOG = "testing_log.json"
 
@@ -37,7 +41,7 @@ class CreateTestingLog(TaskJobManager):
         return []
 
     def _evaluate(self) -> None:
-        log: dict[str, Any] = {"source": "pisek"}
+        log: dict[str, Any] = {"source": "pisek", "solutions": {}}
         solutions: set[str] = set()
         warn_skipped: bool = False
         for name, data in self.prerequisites_results.items():
@@ -48,23 +52,33 @@ class CreateTestingLog(TaskJobManager):
 
             solution = name[len(SOLUTION_MAN_CODE) :]
             solutions.add(solution)
-            log[solution] = {"results": []}
+            log["solutions"][solution] = {"results": {}}
+            solution_results = log["solutions"][solution]["results"]
 
             inp: TaskPath
-            sol_res: SolutionResult
+            sol_res: Optional[SolutionResult]
             for inp, sol_res in data["results"].items():
                 if sol_res is None:
                     warn_skipped = True
                     continue
-                log[solution]["results"].append(
-                    {
-                        "time": sol_res.solution_rr.time,
-                        "wall_clock_time": sol_res.solution_rr.wall_time,
-                        "test": inp.name,
-                        "points": sol_res.points,
-                        "result": sol_res.verdict.name,
-                    }
-                )
+                solution_results[inp.name] = {
+                    "time": sol_res.solution_rr.time,
+                    "wall_clock_time": sol_res.solution_rr.wall_time,
+                    "result": sol_res.verdict.name,
+                }
+
+                if isinstance(sol_res, RelativeSolutionResult):
+                    solution_results[inp.name]["relative_points"] = str(
+                        sol_res.relative_points
+                    )
+                elif isinstance(sol_res, AbsoluteSolutionResult):
+                    solution_results[inp.name]["absolute_points"] = str(
+                        sol_res.absolute_points
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown {SolutionResult.__name__} instance found: {type(sol_res)}"
+                    )
 
         if len(solutions) == 0:
             raise PipelineItemFailure("No solution was tested.")

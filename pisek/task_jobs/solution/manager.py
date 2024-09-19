@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from decimal import Decimal
 from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.config_types import TaskType, Scoring
-from pisek.utils.text import pad, pad_left, tab, POINTS_DEC_PLACES, format_points
+from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
+from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.generator.input_info import InputInfo
@@ -43,9 +45,9 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
     def __init__(self, solution_label: str, generate_inputs: bool) -> None:
         self.solution_label: str = solution_label
         self._generate_inputs = generate_inputs
-        self.solution_points: Optional[float] = None
+        self.solution_points: Optional[Decimal] = None
         self.subtasks: list[SubtaskJobGroup] = []
-        self._subtasks_results: dict[int, float] = {}
+        self._subtasks_results: dict[int, Verdict] = {}
         super().__init__(f"Run {solution_label}")
 
     def _get_jobs(self) -> list[Job]:
@@ -109,7 +111,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
             jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
 
         elif self._env.config.task_type == TaskType.communication:
-            run_sol = run_judge = self._create_communication_jobs(input_path)
+            run_sol = run_judge = self._create_communication_jobs(input_path, subtask)
             jobs.append(run_sol)
 
         self._judges[input_path] = run_judge
@@ -145,13 +147,20 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: TaskPath) -> RunCommunication:
+    def _create_communication_jobs(
+        self, inp: TaskPath, subtask: int
+    ) -> RunCommunication:
         """Create RunCommunication job for communication task type."""
         if self._env.config.out_judge is None:
             raise RuntimeError("Unset judge for communication.")
 
         return RunCommunication(
-            self._env, self._solution, self.is_primary, self._env.config.out_judge, inp
+            self._env,
+            self._solution,
+            self.is_primary,
+            self._env.config.out_judge,
+            subtask,
+            inp,
         )
 
     def _update(self):
@@ -167,8 +176,8 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         if self.state == State.cancelled:
             return self._job_bar(msg)
 
-        points_places = len(str(self._env.config.total_points)) + POINTS_DEC_PLACES + 2
-        points = f"{format_points(self.solution_points)}p"
+        points_places = len(self._format_points(self._env.config.total_points))
+        points = self._format_points(self.solution_points)
 
         max_time = max((s.slowest_time for s in self.subtasks), default=0)
 
@@ -195,10 +204,10 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
-        self.solution_points = 0
+        self.solution_points = Decimal(0)
         for sub_job in self.subtasks:
             self.solution_points += sub_job.points
-            self._subtasks_results[sub_job.num] = sub_job.normalized_points
+            self._subtasks_results[sub_job.num] = sub_job.verdict
 
         solution_conf = self._env.config.solutions[self.solution_label]
         for sub_job in self.subtasks:
@@ -245,7 +254,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         return result
 
 
-class SubtaskJobGroup:
+class SubtaskJobGroup(TaskHelper):
     """Groups jobs of a single subtask."""
 
     def __init__(self, env: Env, num: int) -> None:
@@ -261,18 +270,20 @@ class SubtaskJobGroup:
         return self.previous_jobs + self.new_jobs
 
     @property
-    def normalized_points(self) -> float:
-        results = self._finished_job_results(self.all_jobs)
-        points = map(lambda r: r.points, results)
-        return min(points, default=1.0)
+    def points(self) -> Decimal:
+        results = self._results(self.all_jobs)
+        points = map(lambda r: r.points(self._env, self.subtask.points), results)
+        return min(points, default=Decimal(self.subtask.points))
 
     @property
-    def points(self) -> float:
-        return self.normalized_points * self.subtask.points
+    def verdict(self) -> Verdict:
+        return max(
+            self._verdicts(self.all_jobs), default=Verdict.ok, key=lambda v: v.value
+        )
 
     @property
     def slowest_time(self) -> float:
-        results = self._finished_job_results(self.all_jobs)
+        results = self._results(self.all_jobs)
         times = map(lambda r: r.solution_rr.time, results)
         return max(times, default=0.0)
 
@@ -282,23 +293,21 @@ class SubtaskJobGroup:
     def _finished_jobs(self, jobs: list[RunJudge]) -> list[RunJudge]:
         return list(filter(lambda j: j.result is not None, jobs))
 
-    def _finished_job_results(self, jobs: list[RunJudge]) -> list[SolutionResult]:
+    def _results(self, jobs: list[RunJudge]) -> list[SolutionResult]:
         filtered = []
         for res in self._job_results(jobs):
             if res is not None:
                 filtered.append(res)
         return filtered
 
-    def _judge_verdicts(self, jobs: list[RunJudge]) -> list[Optional[Verdict]]:
-        return list(
-            map(lambda r: r.verdict if r is not None else None, self._job_results(jobs))
-        )
+    def _verdicts(self, jobs: list[RunJudge]) -> list[Verdict]:
+        return list(map(lambda r: r.verdict, self._results(jobs)))
 
-    def _jobs_points(self) -> list[float]:
+    def _jobs_points(self) -> list[Decimal]:
         return list(
             map(
-                lambda r: r.points,
-                self._finished_job_results(self.new_jobs + self.previous_jobs),
+                lambda r: r.points(self._env, self.subtask.points),
+                self._results(self.new_jobs + self.previous_jobs),
             )
         )
 
@@ -318,7 +327,7 @@ class SubtaskJobGroup:
 
     def _verdict_summary(self, jobs: list[RunJudge]) -> str:
         text = ""
-        verdicts = self._judge_verdicts(jobs)
+        verdicts = self._verdicts(jobs)
         for verdict in Verdict:
             count = verdicts.count(verdict)
             if count > 0:
@@ -342,14 +351,13 @@ class SubtaskJobGroup:
             len(subtask.name) for subtask in self._env.config.subtasks.values()
         )
         max_sub_points_len = max(
-            len(format_points(sub.points)) for sub in self._env.config.subtasks.values()
+            len(self._format_points(sub.points))
+            for sub in self._env.config.subtasks.values()
         )
 
-        subtask_name = pad(self.subtask.name + ":", max_sub_name_len + 1)
-        subtask_points = pad_left(format_points(self.points), max_sub_points_len)
-
         return right_aligned_text(
-            f"{subtask_name} {subtask_points}p  "
+            f"{self.subtask.name:<{max_sub_name_len}}  "
+            f"{self._format_points(self.points):<{max_sub_points_len}}  "
             f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}",
             f"slowest {self.slowest_time:.2f}s",
             offset=-2,
@@ -363,7 +371,7 @@ class SubtaskJobGroup:
         max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
         subtask_info = (
             right_aligned_text(
-                f"{self.subtask.name}: {format_points(self.points)}p",
+                f"{self.subtask.name}: {self._format_points(self.points)}/{self._format_points(self.subtask.points)}",
                 f"slowest {self.slowest_time:.2f}s",
                 offset=-2,
             )
@@ -395,7 +403,9 @@ class SubtaskJobGroup:
         for job in self.new_jobs:
             if job.result is not None:
                 input_verdict = tab(
-                    f"{pad(job.input.name + ':', max_inp_name_len+1)} {job.verdict_text()}"
+                    f"{job.input.name:<{max_inp_name_len}} "
+                    f"({self._format_points(job.result.points(self._env, self.subtask.points))}): "
+                    f"{job.verdict_text()}"
                 )
                 text += right_aligned_text(
                     input_verdict, f"{job.result.solution_rr.time:.2f}s", offset=-2
@@ -409,12 +419,12 @@ class SubtaskJobGroup:
         if self._env.all_inputs:
             return False
 
-        if self._env.skip_on_timeout and Verdict.timeout in self._judge_verdicts(
+        if self._env.skip_on_timeout and Verdict.timeout in self._verdicts(
             self.new_jobs
         ):
             return True
 
-        if expected_str == "X" and self.normalized_points > 0:
+        if expected_str == "X" and not self.verdict.is_zero_point():
             return False  # Cause X is very very special
 
         return self._as_expected(expected_str)[1]
@@ -441,7 +451,7 @@ class SubtaskJobGroup:
         )
 
         finished_jobs = self._finished_jobs(jobs)
-        verdicts = self._finished_job_results(jobs)
+        verdicts = self._results(jobs)
 
         result, definitive, breaker = evaluate_verdicts(
             self._env.config, list(map(lambda r: r.verdict, verdicts)), expected_str

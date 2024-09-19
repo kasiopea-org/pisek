@@ -16,7 +16,6 @@
 
 from colorama import Fore
 import sys
-from typing import Optional
 
 
 def tab(text: str, tab_str: str = "  "):
@@ -51,13 +50,3 @@ def warn(msg: str, err: type, strict: bool = False, no_colors: bool = False) -> 
     if strict:
         raise err(msg)
     eprint(colored(f"Warning: {msg}", "yellow", no_colors))
-
-
-POINTS_DEC_PLACES = 2
-
-
-def format_points(points: Optional[float]) -> str:
-    if points is None:
-        return "?." + "?" * POINTS_DEC_PLACES
-    else:
-        return format(points, f".{POINTS_DEC_PLACES}f")

@@ -1,6 +1,7 @@
 [task]
 version=v3
 task_type=batch
+score_precision=0
 solutions_subdir=.
 static_subdir=.
 data_subdir=data/
@@ -91,6 +92,5 @@ mem_limit=1024
 max_submissions=50
 min_submission_interval=0
 
-score_precision=0
 score_mode=max_subtask
 feedback_level=restricted
