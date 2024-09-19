@@ -10,20 +10,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import re
-from typing import Any
+from typing import Any, Iterable
 
 from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
-from pisek.config.config_types import TaskType, DataFormat
+from pisek.config.config_types import TaskType
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.generator.input_info import InputInfo
-from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.checker import CheckerJob
 
-from .data import LinkInput, LinkOutput, InputSmall, OutputSmall
+from .data import LinkInput, LinkOutput
 
 TEST_SEED = 25265
+SHORTEN_INPUTS_CUTOFF = 3
 
 
 class DataManager(TaskJobManager):
@@ -47,11 +46,15 @@ class DataManager(TaskJobManager):
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
 
+        all_static_inputs = self.globs_to_files(
+            ["*.in"], TaskPath.static_path(self._env, ".")
+        )
         all_input_infos: list[InputInfo] = [
-            InputInfo.static(inp.name.removesuffix(".in")) for inp in static_inputs
+            InputInfo.static(inp.name.removesuffix(".in")) for inp in all_static_inputs
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
         all_input_infos.sort(key=lambda info: info.name)
 
+        # put inputs in subtasks
         self._input_infos: dict[int, list[InputInfo]] = {}
         for num, sub in self._env.config.subtasks.items():
             self._input_infos[sub.num] = []
@@ -64,21 +67,10 @@ class DataManager(TaskJobManager):
                 )
 
         used_inputs = set(sum(self._input_infos.values(), start=[]))
-        unused_inputs = list(set(all_input_infos) - used_inputs)
-        if len(unused_inputs):
-            if self._env.verbosity <= 0:
-                CUTOFF = 3
-                unused_inputs_text = ", ".join(
-                    map(lambda inp: inp.name, unused_inputs[:CUTOFF])
-                )
-                if len(unused_inputs) > CUTOFF:
-                    unused_inputs_text += ",…"
-                self._warn(
-                    f"{len(unused_inputs)} unused inputs. ({unused_inputs_text})"
-                )
-            else:
-                for inp in unused_inputs:
-                    self._warn(f"Unused input: '{inp.name}'")
+        self._report_not_included_inputs(
+            used_inputs - set(self._input_infos[self._env.config.subtasks_count - 1])
+        )
+        self._report_unused_inputs(set(all_input_infos) - used_inputs)
 
         jobs: list[Job] = []
         for path in static_inputs:
@@ -105,6 +97,40 @@ class DataManager(TaskJobManager):
                     )
 
         return jobs
+
+    def _report_unused_inputs(self, unused_inputs: Iterable[InputInfo]) -> None:
+        inputs = list(sorted(unused_inputs, key=lambda inp: inp.name))
+        if self._env.config.checks.no_unused_inputs and inputs:
+            if self._env.verbosity <= 0:
+                self._warn(
+                    f"{len(inputs)} unused input{'s' if len(inputs) >= 2 else ''}. "
+                    f"({self._short_inputs_list(inputs)})"
+                )
+            else:
+                for inp in inputs:
+                    self._warn(
+                        f"Unused {'generated' if inp.is_generated else 'static'} input: '{inp.name}.in'"
+                    )
+
+    def _report_not_included_inputs(
+        self, not_included_inputs: Iterable[InputInfo]
+    ) -> None:
+        inputs = list(sorted(not_included_inputs, key=lambda inp: inp.name))
+        if self._env.config.checks.all_inputs_in_last_subtask and inputs:
+            if self._env.verbosity <= 0:
+                self._warn(
+                    f"{len(inputs)} input{'s' if len(inputs) >= 2 else ''} "
+                    "not included in last subtask. "
+                    f"({self._short_inputs_list(inputs)})"
+                )
+            else:
+                for inp in inputs:
+                    self._warn(f"Input '{inp.name}.in' not included in last subtask.")
+
+    def _short_inputs_list(self, inputs: Iterable[InputInfo]) -> str:
+        return self._short_list(
+            list(map(lambda inp: f"{inp.name}.in", inputs)), SHORTEN_INPUTS_CUTOFF
+        )
 
     def _compute_result(self) -> dict[str, Any]:
         res = {"input_info": self._input_infos}
