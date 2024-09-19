@@ -48,23 +48,29 @@ class PipelineItemFailure(Exception):
 class CaptureInitParams:
     """
     Class that stores __init__ args and kwargs of its descendants
-    and forks and locks Env given to it. Only does that to the topmost __init__.
+    and gets accessed Env reads. Only does that to the topmost __init__.
     """
 
     _initialized = False
+    _accessed_envs: MutableSet[str]
 
     def __init_subclass__(cls):
         real_init = cls.__init__
 
         @wraps(real_init)
         def wrapped_init(self, env: Env, *args, **kwargs):
-            if not self._initialized:
+            toplevel = not self._initialized
+            if toplevel:
                 self._args = args
                 self._kwargs = kwargs
                 self._initialized = True
-                self._env = env.fork()
-                self._env.lock()
+                self._env = env
+
             real_init(self, self._env, *args, **kwargs)
+
+            if toplevel:
+                self._accessed_envs |= self._env.get_accessed()
+                self._env.clear_accesses()
 
         cls.__init__ = wrapped_init
 
@@ -160,7 +166,8 @@ class Job(PipelineItem, CaptureInitParams):
 
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
-        self._accessed_files: MutableSet[str] = set([])
+        self._accessed_envs: MutableSet[str] = set()
+        self._accessed_files: MutableSet[str] = set()
         self._terminal_output: list[tuple[str, bool]] = []
         self.name = name
         super().__init__(name)
@@ -227,7 +234,7 @@ class Job(PipelineItem, CaptureInitParams):
     def _export(self, result: Any) -> CacheEntry:
         """Export this job into CacheEntry."""
         sign, err = self._signature(
-            set(self._env.get_accessed()),
+            self._accessed_envs,
             self._accessed_files,
             self.prerequisites_results,
         )
@@ -244,18 +251,14 @@ class Job(PipelineItem, CaptureInitParams):
             self.name,
             sign,
             result,
-            self._env.get_accessed(),
-            list(self._accessed_files),
-            list(self.prerequisites_results),
+            self._accessed_envs,
+            self._accessed_files,
+            self.prerequisites_results,
             self._terminal_output,
         )
 
     def run_job(self, cache: Cache) -> None:
         """Run this job. If result is already in cache use it instead."""
-        if not self._initialized:
-            raise RuntimeError(
-                "Job must be initialized before running it. (call Job.init)"
-            )
         if self.state == State.cancelled:
             return None
         self._check_prerequisites()
@@ -270,7 +273,9 @@ class Job(PipelineItem, CaptureInitParams):
             self.result = entry.result
         else:
             try:
+                self._env.clear_accesses()
                 self.result = self._run()
+                self._accessed_envs |= self._env.get_accessed()
             except PipelineItemFailure as failure:
                 self._fail(failure)
 
