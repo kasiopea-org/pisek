@@ -27,15 +27,7 @@ CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
 
-class YAMLObjectWithRequiredAttr(yaml.YAMLObject):
-    """Yaml object that has must have all attributes set."""
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(**loader.construct_mapping(node, deep=True))
-
-
-class CacheInfo(YAMLObjectWithRequiredAttr):
+class CacheInfo(yaml.YAMLObject):
     """Object for cache metadata."""
 
     yaml_tag = "!Info"
@@ -58,7 +50,7 @@ class CacheInfo(YAMLObjectWithRequiredAttr):
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
 
-class CacheEntry(YAMLObjectWithRequiredAttr):
+class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
 
     yaml_tag = "!Entry"
