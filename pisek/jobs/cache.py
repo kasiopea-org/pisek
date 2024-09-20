@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, TextIO
+from typing import Any, Iterable, TextIO
 import os
 import yaml
 
@@ -60,9 +60,9 @@ class CacheEntry(yaml.YAMLObject):
         name: str,
         signature: str,
         result: Any,
-        envs: list[str],
-        files: list[str],
-        prerequisites_results: list[Any],
+        envs: Iterable[str],
+        files: Iterable[str],
+        prerequisites_results: Iterable[str],
         output: list[tuple[str, bool]],
     ) -> None:
         self.name = name
