@@ -77,7 +77,7 @@ class LoggedResult:
             full_bar = ColorSettings.colored("━", color)
 
             return (
-                f"[{full_bar*bounded}{'━'*(segments-bounded)}|"
+                f"[{full_bar*bounded}{('━' if ColorSettings.colors_on else ' ')*(segments-bounded)}|"
                 f"{full_bar*overflown}{' '*(overflown_max_length - overflown)}{'⋯⋯' if cut else '  '}"
             )
 
