@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from colorama import Fore
 import sys
 
 
@@ -28,16 +27,6 @@ def pad(text: str, length: int, pad_char: str = " "):
 
 def pad_left(text: str, length: int, pad_char: str = " "):
     return pad(text[::-1], length, pad_char)[::-1]
-
-
-def colored(msg: str, color: str, no_colors: bool = False) -> str:
-    """Recolors all white text to given color."""
-    if no_colors:
-        return msg
-
-    col = getattr(Fore, color.upper())
-    msg = msg.replace(f"{Fore.RESET}", f"{Fore.RESET}{col}")
-    return f"{col}{msg}{Fore.RESET}"
 
 
 def eprint(msg, *args, **kwargs):
