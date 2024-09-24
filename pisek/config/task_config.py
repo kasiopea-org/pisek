@@ -706,20 +706,17 @@ def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list
 def load_config(
     path: str,
     strict: bool = False,
-    no_colors: bool = False,
     suppress_warnings: bool = False,
     pisek_directory: Optional[str] = None,
 ) -> Optional[TaskConfig]:
     """Loads config from given path."""
     try:
-        config_hierarchy = ConfigHierarchy(
-            path, no_colors, not suppress_warnings, pisek_directory
-        )
+        config_hierarchy = ConfigHierarchy(path, not suppress_warnings, pisek_directory)
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()
         if config_hierarchy.check_todos() and not suppress_warnings:
-            warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
+            warn("Unsolved TODOs in config.", TaskConfigError, strict)
         return config
     except TaskConfigError as err:
         eprint(ColorSettings.colored(str(err), "red"))

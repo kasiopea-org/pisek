@@ -226,9 +226,7 @@ NEWEST_VERSION = "v3"
 NEWEST_IS_EXPERIMENTAL = True
 
 
-def update_config(
-    config: ConfigParser, task_path: str, infos: bool = True, no_colors: bool = False
-) -> None:
+def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> None:
     def inform(msg: str):
         if infos:
             eprint(ColorSettings.colored(msg, "yellow"))

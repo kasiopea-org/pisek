@@ -89,7 +89,7 @@ class Env(BaseEnv):
         no_jumps |= plain
         no_colors |= plain
 
-        config = load_config(".", strict, no_colors, pisek_directory=pisek_dir)
+        config = load_config(".", strict, pisek_directory=pisek_dir)
         if config is None:
             return None
 

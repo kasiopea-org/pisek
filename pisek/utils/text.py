@@ -36,7 +36,7 @@ def eprint(msg, *args, **kwargs):
     print(msg, *args, file=sys.stderr, **kwargs)
 
 
-def warn(msg: str, err: type, strict: bool = False, no_colors: bool = False) -> None:
+def warn(msg: str, err: type, strict: bool = False) -> None:
     """Warn if strict is False, otherwise raise error."""
     if strict:
         raise err(msg)
