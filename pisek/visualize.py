@@ -17,7 +17,8 @@ from math import ceil, inf
 import os
 from typing import Any, Optional
 
-from pisek.utils.text import pad, tab, colored, eprint
+from pisek.utils.text import pad, tab, eprint
+from pisek.utils.colors import ColorSettings
 from pisek.utils.terminal import terminal_width
 from pisek.config.task_config import load_config
 from pisek.config.task_config import TaskConfig
@@ -73,7 +74,7 @@ class LoggedResult:
             else:
                 color = "green"
 
-            full_bar = colored("━", color)
+            full_bar = ColorSettings.colored("━", color)
 
             return (
                 f"[{full_bar*bounded}{'━'*(segments-bounded)}|"
@@ -290,7 +291,7 @@ def visualize(
     try:
         expanded_solutions = expand_solutions(config, solutions)
     except UnknownSolutions as err:
-        eprint(colored(str(err), "red"))
+        eprint(ColorSettings.colored(str(err), "red"))
         return 2
 
     results: dict[str, SolutionResults] = {}
@@ -304,7 +305,7 @@ def visualize(
                 max_test_length, max(map(lambda r: len(r.test), results[sol].get_all()))
             )
         except MissingSolution as err:
-            eprint(colored(str(err), "yellow"))
+            eprint(ColorSettings.colored(str(err), "yellow"))
 
     wrong_solutions = {}
     for sol, sol_res in results.items():
@@ -312,7 +313,7 @@ def visualize(
             sol_err = sol_res.check_points()
             err_msg = ""
             if sol_err is not None:
-                err_msg = colored(f" should get {sol_err}", "red")
+                err_msg = ColorSettings.colored(f" should get {sol_err}", "red")
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
@@ -320,7 +321,9 @@ def visualize(
                 subtask_err = sol_res.check_subtask(num)
                 err_msg = ""
                 if subtask_err is not None:
-                    err_msg = colored(f" should result {subtask_err}", "red")
+                    err_msg = ColorSettings.colored(
+                        f" should result {subtask_err}", "red"
+                    )
                     wrong_solutions[sol] = True
 
                 print(tab(f"{config.subtasks[num].name}{err_msg}"))
@@ -333,7 +336,7 @@ def visualize(
             sol_errs = sol_res.check_all()
             err_msg = ""
             if sol_errs:
-                err_msg = colored(f" should {', '.join(sol_errs)}", "red")
+                err_msg = ColorSettings.colored(f" should {', '.join(sol_errs)}", "red")
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
@@ -343,7 +346,7 @@ def visualize(
     print()
     if wrong_solutions:
         print(
-            colored(
+            ColorSettings.colored(
                 f"Solutions {', '.join(wrong_solutions.keys())} should result differently.",
                 "red",
             )
@@ -361,6 +364,6 @@ def visualize(
         limit_msg = f"Valid time limit between {min_possible:.2f}, {max_possible:.2f}."
     else:
         limit_msg = "No valid time limit found."
-    print(colored(limit_msg, "cyan"))
+    print(ColorSettings.colored(limit_msg, "cyan"))
 
     return 0

@@ -16,18 +16,18 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-import hashlib
 from enum import Enum, auto
 from functools import wraps
+import hashlib
+import os.path
 import sys
 from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
 import yaml
 
-import os.path
+from pisek.utils.colors import ColorSettings
 from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.utils.terminal import colored_env
 
 
 class State(Enum):
@@ -98,6 +98,10 @@ class PipelineItem(ABC):
         self.required_by: list[RequiredBy] = []
         self.prerequisites_results: dict[str, Any] = {}
 
+    def _colored(self, msg: str, color: str) -> str:
+        self._env.no_colors  # Caching
+        return ColorSettings.colored(msg, color)
+
     def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
         """Prints text to stdout/stderr."""
         self.dirty = True
@@ -107,7 +111,7 @@ class PipelineItem(ABC):
         if self._env.strict:
             raise PipelineItemFailure(msg)
         else:
-            self._print(colored_env(msg, "yellow", self._env))
+            self._print(self._colored(msg, "yellow"))
 
     def _fail(self, failure: PipelineItemFailure) -> None:
         """End this job in failure."""

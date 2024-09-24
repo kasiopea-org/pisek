@@ -20,7 +20,7 @@ from typing import Optional
 import yaml
 
 from pisek.utils.text import eprint
-from pisek.utils.terminal import colored_env
+from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 
 CACHE_FILENAME = ".pisek_cache"
@@ -124,10 +124,9 @@ class Cache:
                 entries = yaml.full_load(f)
             except (TypeError, ValueError, KeyError, yaml.constructor.ConstructorError):
                 eprint(
-                    colored_env(
+                    ColorSettings.colored(
                         "Invalid .pisek_cache file. Starting from scratch...",
                         "yellow",
-                        env,
                     )
                 )
                 entries = {}

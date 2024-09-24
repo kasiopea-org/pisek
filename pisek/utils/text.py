@@ -16,6 +16,8 @@
 
 import sys
 
+from pisek.utils.colors import ColorSettings
+
 
 def tab(text: str, tab_str: str = "  "):
     return tab_str + text.replace("\n", f"\n{tab_str}")
@@ -38,4 +40,4 @@ def warn(msg: str, err: type, strict: bool = False, no_colors: bool = False) -> 
     """Warn if strict is False, otherwise raise error."""
     if strict:
         raise err(msg)
-    eprint(colored(f"Warning: {msg}", "yellow", no_colors))
+    eprint(ColorSettings.colored(f"Warning: {msg}", "yellow"))

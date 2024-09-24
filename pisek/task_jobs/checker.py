@@ -20,7 +20,6 @@ from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.task_config import ProgramType
-from pisek.utils.terminal import colored_env
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
@@ -39,11 +38,10 @@ class CheckerManager(TaskJobManager):
             if self._env.strict:
                 raise PipelineItemFailure("No checker specified in config.")
             else:
-                self.skipped_checker = colored_env(
+                self.skipped_checker = self._colored(
                     "Warning: No checker specified in config.\n"
                     "It is recommended to set `checker` is section [tests]",
                     "yellow",
-                    self._env,
                 )
             return []
 

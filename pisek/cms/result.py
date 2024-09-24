@@ -18,11 +18,11 @@ from sqlalchemy.orm import Session
 import json
 
 from pisek.cms.submission import get_submission
+from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 from pisek.task_jobs.testing_log import TESTING_LOG
 from pisek.task_jobs.solution.solution_result import Verdict
 from pisek.config.task_config import SolutionConfig, SubtaskConfig
-from pisek.utils.terminal import colored_env
 from pisek.utils.text import eprint, tab
 
 
@@ -40,7 +40,7 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
         try:
             result = get_submission_result(session, files, env, solution, dataset)
         except SubmissionResultError as e:
-            eprint(colored_env(f"Skipping {name}: {e}", "yellow", env))
+            eprint(ColorSettings.colored(f"Skipping {name}: {e}", "yellow"))
             success = False
             continue
 
@@ -98,7 +98,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
             if not result.scored():
                 raise SubmissionResultError("This submission has not been scored yet")
         except SubmissionResultError as e:
-            print(colored_env(f"Skipping {name}: {e}", "yellow", env))
+            print(ColorSettings.colored(f"Skipping {name}: {e}", "yellow"))
             success = False
             continue
 
@@ -117,7 +117,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         if score_missed_target is not None:
             message += f" (should be {score_missed_target})"
-            message = colored_env(message, "red", env)
+            message = ColorSettings.colored(message, "red")
             success = False
 
         print(message)
@@ -127,7 +127,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         if fractions is None or len(fractions) != len(subtasks):
             message = "The task seems to use an unsupported score type, skipping checking subtasks"
-            print(tab(colored_env(message, "red", env)))
+            print(tab(ColorSettings.colored(message, "red")))
 
             success = False
             continue
@@ -161,7 +161,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
             if not correct:
                 message += f" (should be {target_name})"
-                message = colored_env(message, "red", env)
+                message = ColorSettings.colored(message, "red")
                 success = False
 
             print(tab(message))

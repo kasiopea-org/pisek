@@ -26,7 +26,7 @@ import subprocess
 from pisek.env.env import Env
 from pisek.config.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
-from pisek.utils.terminal import colored_env
+from pisek.utils.colors import ColorSettings
 from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
@@ -207,6 +207,6 @@ class TaskJob(Job, TaskHelper):
         for printing into terminal
         """
         if force_content or self._env.file_contents:
-            return f"{file.col(self._env)}\n{colored_env(tab(self._quote_file(file, **kwargs)), 'yellow', self._env)}\n"
+            return f"{file.col(self._env)}\n{self._colored(tab(self._quote_file(file, **kwargs)), 'yellow')}\n"
         else:
             return f"{file.col(self._env)}\n"

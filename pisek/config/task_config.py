@@ -32,7 +32,8 @@ from typing import Optional, Any, Annotated, Union
 
 from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
-from pisek.utils.text import eprint, colored, warn
+from pisek.utils.text import eprint, warn
+from pisek.utils.colors import ColorSettings
 from pisek.env.base_env import BaseEnv
 from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
 from pisek.config.config_types import (
@@ -721,14 +722,13 @@ def load_config(
             warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
         return config
     except TaskConfigError as err:
-        eprint(colored(str(err), "red", no_colors))
+        eprint(ColorSettings.colored(str(err), "red"))
     except ValidationError as err:
         eprint(
-            colored(
+            ColorSettings.colored(
                 "Invalid config:\n\n"
                 + "\n\n".join(_convert_errors(err, config_values)),
                 "red",
-                no_colors,
             )
         )
     return None

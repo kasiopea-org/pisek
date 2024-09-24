@@ -18,7 +18,8 @@ from enum import StrEnum, auto
 from pydantic import Field
 from typing import Optional
 
-from pisek.utils.text import eprint, colored
+from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.env.base_env import BaseEnv
 from pisek.config.task_config import load_config, TaskConfig
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
@@ -95,7 +96,7 @@ class Env(BaseEnv):
         try:
             expanded_solutions = expand_solutions(config, solutions)
         except UnknownSolutions as err:
-            eprint(colored(str(err), "red", no_colors))
+            eprint(ColorSettings.colored(str(err), "red"))
             return None
 
         return Env(

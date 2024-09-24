@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pisek.utils.text import tab, pad
-from pisek.utils.terminal import colored_env, MSG_LEN, TARGET_LINE_WIDTH, terminal_width
+from pisek.utils.terminal import MSG_LEN, TARGET_LINE_WIDTH, terminal_width
 from pisek.jobs.jobs import State, PipelineItem, JobManager
 
 TARGET_BAR_WIDTH = TARGET_LINE_WIDTH - MSG_LEN - 11
@@ -32,15 +32,13 @@ class StatusJobManager(JobManager):
         bar_len = min(TARGET_BAR_WIDTH, TARGET_LINE_WIDTH - MSG_LEN - len(progress_msg))
         filled = bar_len * part // full
 
-        return f"{msg} {colored_env(filled*'━', color, self._env)}{colored_env((bar_len-filled)*'━', 'white', self._env)}{progress_msg}"
+        return f"{msg} {self._colored(filled*'━', color)}{self._colored((bar_len-filled)*'━', 'white')}{progress_msg}"
 
     def _job_bar(self, msg: str) -> str:
         """Returns progress bar according to status of this manager's jobs."""
         color = "cyan"
         if self.state == State.cancelled:
-            return (
-                f"{pad(msg, MSG_LEN-1)} {colored_env('cancelled', 'yellow', self._env)}"
-            )
+            return f"{pad(msg, MSG_LEN-1)} {self._colored('cancelled', 'yellow')}"
         elif self.state == State.succeeded:
             color = "green"
         elif self.state == State.failed or State.failed in self._job_states():
@@ -72,4 +70,4 @@ class StatusJobManager(JobManager):
             fails.append(self._fail_message(self))
 
         msg = line_sepatator + line_sepatator.join(fails) + line_sepatator
-        return colored_env(msg, "red", self._env)
+        return self._colored(msg, "red")

@@ -3,6 +3,7 @@ from colorama import Fore
 
 class __ColorSettings:
     """Singleton object to store current color settings."""
+
     def __init__(self) -> None:
         self.colors_on = True
 
