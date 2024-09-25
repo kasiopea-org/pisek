@@ -68,7 +68,6 @@ class ConfigHierarchy:
     def __init__(
         self,
         task_path: str,
-        no_colors: bool = False,
         info: bool = True,
         pisek_directory: Optional[str] = None,
     ) -> None:
@@ -78,22 +77,20 @@ class ConfigHierarchy:
         self._config_paths: list[str] = []
         self._configs: list[ConfigParser] = []
 
-        self._load_config(os.path.join(task_path, CONFIG_FILENAME), no_colors, info)
-        self._load_config(GLOBAL_DEFAULTS, no_colors, False)
+        self._load_config(os.path.join(task_path, CONFIG_FILENAME), info)
+        self._load_config(GLOBAL_DEFAULTS, False)
 
         self._used_keys: dict[str, set[str]] = defaultdict(set)
 
-    def _load_config(
-        self, path: str, no_colors: bool = False, info: bool = True
-    ) -> None:
+    def _load_config(self, path: str, info: bool = True) -> None:
         self._config_paths.append(path)
         self._configs.append(config := ConfigParser())
         if not self._read_config(config, path):
             raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 
-        update_config(config, self._task_path, info, no_colors)
+        update_config(config, self._task_path, info)
         if defaults := config.get("task", "use", fallback=None):
-            self._load_config(self._resolve_defaults_config(defaults), no_colors, False)
+            self._load_config(self._resolve_defaults_config(defaults), False)
 
     def _read_config(self, config: ConfigParser, path: str) -> bool:
         try:

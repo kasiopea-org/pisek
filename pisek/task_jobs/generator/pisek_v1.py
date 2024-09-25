@@ -14,7 +14,6 @@
 from typing import Any, NoReturn
 
 from pisek.utils.text import tab
-from pisek.utils.terminal import colored_env
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
@@ -90,7 +89,7 @@ class PisekV1ListInputs(GeneratorListInputs):
         contents = contents.rstrip("\n")
         message = (
             f"Inputs list invalid (line {line_index+1}) - {reason}:\n"
-            f"{tab(colored_env(contents, 'yellow', self._env))}\n"
+            f"{tab(self._colored(contents, 'yellow'))}\n"
             f"Generator:"
         )
         raise self._create_program_failure(

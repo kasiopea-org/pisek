@@ -26,6 +26,7 @@ from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.license import license, license_gnu
 from pisek.visualize import visualize
 from pisek.version import print_version
@@ -101,6 +102,22 @@ def main(argv):
         help="Clean directory beforehand.",
     )
     parser.add_argument(
+        "--plain",
+        "-p",
+        action="store_true",
+        help="Do not use ANSI escape sequences.",
+    )
+    parser.add_argument(
+        "--no-jumps",
+        action="store_true",
+        help="Do not use ANSI control sequences.",
+    )
+    parser.add_argument(
+        "--no-colors",
+        action="store_true",
+        help="Do not use ANSI color sequences.",
+    )
+    parser.add_argument(
         "--pisek-dir",
         help="Pisek directory where to load configs from. (If not provided uses [git root]/pisek/)",
         type=str,
@@ -171,21 +188,6 @@ def main(argv):
         "--skip-on-timeout",
         action="store_true",
         help="Skip all following inputs on first timeout.",
-    )
-    parser_test.add_argument(
-        "--plain",
-        action="store_true",
-        help="Do not use ANSI escape sequences.",
-    )
-    parser_test.add_argument(
-        "--no-jumps",
-        action="store_true",
-        help="Do not use ANSI control sequences.",
-    )
-    parser_test.add_argument(
-        "--no-colors",
-        action="store_true",
-        help="Do not use ANSI color sequences.",
     )
     parser_test.add_argument(
         "--testing-log",
@@ -300,6 +302,7 @@ def main(argv):
     add_argument_dataset(parser_cms_check)
 
     args = parser.parse_args(argv)
+    ColorSettings.set_state(not args.plain and not args.no_colors)
 
     result = None
 

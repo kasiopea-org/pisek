@@ -17,7 +17,8 @@ from itertools import product
 import os
 import re
 
-from pisek.utils.text import eprint, colored
+from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.config.config_errors import TaskConfigError
 from pisek.config.config_types import ProgramType
 
@@ -225,12 +226,10 @@ NEWEST_VERSION = "v3"
 NEWEST_IS_EXPERIMENTAL = True
 
 
-def update_config(
-    config: ConfigParser, task_path: str, infos: bool = True, no_colors: bool = False
-) -> None:
+def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> None:
     def inform(msg: str):
         if infos:
-            eprint(colored(msg, "yellow", no_colors))
+            eprint(ColorSettings.colored(msg, "yellow"))
 
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:

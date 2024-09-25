@@ -20,7 +20,7 @@ import yaml
 
 from pisek.version import __version__
 from pisek.utils.text import eprint
-from pisek.utils.terminal import colored_env
+from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 
 CACHE_FILENAME = ".pisek_cache"
@@ -125,10 +125,9 @@ class Cache:
         with open(CACHE_FILENAME, encoding="utf-8") as f:
             if CacheInfo.read(f).version != __version__:
                 eprint(
-                    colored_env(
+                    ColorSettings.colored(
                         "Different version of .pisek_cache file found. Starting from scratch...",
                         "yellow",
-                        env,
                     )
                 )
                 return self._new_cache_file()

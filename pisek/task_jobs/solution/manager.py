@@ -23,7 +23,8 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.config_types import TaskType, Scoring
 from pisek.utils.text import pad, pad_left, tab
-from pisek.utils.terminal import MSG_LEN, colored_env, right_aligned_text
+from pisek.utils.colors import ColorSettings
+from pisek.utils.terminal import MSG_LEN, right_aligned_text
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -190,7 +191,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
                 right_aligned_text(f"{msg}: {points}", f"slowest {max_time:.2f}s")
                 + "\n"
             )
-            header = colored_env(header, "cyan", self._env)
+            header = self._colored(header, "cyan")
             subtasks_text = tab(
                 "\n".join(
                     sub.status(self.subtasks, self._env.verbosity)
@@ -377,7 +378,7 @@ class SubtaskJobGroup(TaskHelper):
             )
             + "\n"
         )
-        text += colored_env(subtask_info, "magenta", self._env)
+        text += self._env.colored(subtask_info, "magenta")
 
         max_pred_name_len = max(
             (len(subtask_name(pred)) for pred in self.subtask.all_predecessors),
