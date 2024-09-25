@@ -66,8 +66,7 @@ class TaskPath:
             return False
 
     def col(self, env: "Env") -> str:
-        env.no_colors  # Caching
-        return ColorSettings.colored(self.path, "magenta")
+        return env.colored(self.path, "magenta")
 
     def replace_suffix(self, new_suffix: str) -> "TaskPath":
         path = os.path.splitext(self.path)[0] + new_suffix

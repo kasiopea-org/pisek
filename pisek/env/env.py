@@ -115,3 +115,7 @@ class Env(BaseEnv):
             all_inputs=all_inputs,
             repeat_inputs=repeat_inputs,
         )
+
+    def colored(self, msg: str, color: str) -> str:
+        self.no_colors  # Caching
+        return ColorSettings.colored(msg, color)

@@ -99,8 +99,7 @@ class PipelineItem(ABC):
         self.prerequisites_results: dict[str, Any] = {}
 
     def _colored(self, msg: str, color: str) -> str:
-        self._env.no_colors  # Caching
-        return ColorSettings.colored(msg, color)
+        return self._env.colored(msg, color)
 
     def _print(self, msg: str, end: str = "\n", stderr: bool = False) -> None:
         """Prints text to stdout/stderr."""

@@ -378,8 +378,7 @@ class SubtaskJobGroup(TaskHelper):
             )
             + "\n"
         )
-        self._env.no_colors  # Caching
-        text += ColorSettings.colored(subtask_info, "magenta")
+        text += self._env.colored(subtask_info, "magenta")
 
         max_pred_name_len = max(
             (len(subtask_name(pred)) for pred in self.subtask.all_predecessors),
