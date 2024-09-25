@@ -59,6 +59,7 @@ class SolutionResult(ABC):
     """Class representing result of a solution on given input."""
 
     verdict: Verdict
+    message: Optional[str]
     solution_rr: RunResult
     judge_rr: Optional[RunResult]
 
@@ -73,6 +74,7 @@ class SolutionResult(ABC):
 @dataclass
 class RelativeSolutionResult(SolutionResult):
     verdict: Verdict
+    message: Optional[str]
     solution_rr: RunResult
     judge_rr: Optional[RunResult]
     relative_points: Decimal
@@ -91,6 +93,7 @@ class RelativeSolutionResult(SolutionResult):
 @dataclass
 class AbsoluteSolutionResult(SolutionResult):
     verdict: Verdict
+    message: Optional[str]
     solution_rr: RunResult
     judge_rr: Optional[RunResult]
     absolute_points: Decimal
@@ -109,6 +112,7 @@ def abs_sol_result_representer(dumper, sol_result: AbsoluteSolutionResult):
         "!AbsoluteSolutionResult",
         [
             sol_result.verdict.name,
+            sol_result.message,
             sol_result.solution_rr,
             sol_result.judge_rr,
             str(sol_result.absolute_points),
@@ -117,8 +121,10 @@ def abs_sol_result_representer(dumper, sol_result: AbsoluteSolutionResult):
 
 
 def abs_sol_result_constructor(loader, value) -> AbsoluteSolutionResult:
-    verdict, points, sol_rr, judge_rr = loader.construct_sequence(value)
-    return AbsoluteSolutionResult(Verdict[verdict], sol_rr, judge_rr, Decimal(points))
+    verdict, message, points, sol_rr, judge_rr = loader.construct_sequence(value)
+    return AbsoluteSolutionResult(
+        Verdict[verdict], message, sol_rr, judge_rr, Decimal(points)
+    )
 
 
 yaml.add_representer(AbsoluteSolutionResult, abs_sol_result_representer)
@@ -130,6 +136,7 @@ def rel_sol_result_representer(dumper, sol_result: RelativeSolutionResult):
         "!RelativeSolutionResult",
         [
             sol_result.verdict.name,
+            sol_result.message,
             sol_result.solution_rr,
             sol_result.judge_rr,
             str(sol_result.relative_points),
@@ -138,8 +145,10 @@ def rel_sol_result_representer(dumper, sol_result: RelativeSolutionResult):
 
 
 def rel_sol_result_constructor(loader, value) -> RelativeSolutionResult:
-    verdict, sol_rr, judge_rr, points = loader.construct_sequence(value)
-    return RelativeSolutionResult(Verdict[verdict], sol_rr, judge_rr, Decimal(points))
+    verdict, message, sol_rr, judge_rr, points = loader.construct_sequence(value)
+    return RelativeSolutionResult(
+        Verdict[verdict], message, sol_rr, judge_rr, Decimal(points)
+    )
 
 
 yaml.add_representer(RelativeSolutionResult, rel_sol_result_representer)

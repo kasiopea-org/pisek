@@ -176,11 +176,11 @@ class RunJudge(ProgramsJob):
             result = self._judge()
         elif self._solution_run_res.kind == RunResultKind.RUNTIME_ERROR:
             result = RelativeSolutionResult(
-                Verdict.error, self._solution_run_res, None, Decimal(0)
+                Verdict.error, None, self._solution_run_res, None, Decimal(0)
             )
         elif self._solution_run_res.kind == RunResultKind.TIMEOUT:
             result = RelativeSolutionResult(
-                Verdict.timeout, self._solution_run_res, None, Decimal(0)
+                Verdict.timeout, None, self._solution_run_res, None, Decimal(0)
             )
 
         if (
@@ -233,6 +233,8 @@ class RunJudge(ProgramsJob):
 
     def verdict_text(self) -> str:
         if self.result is not None:
+            if self.result.message is not None:
+                return self.result.message
             return self.result.verdict.name
         else:
             return self.state.name
@@ -302,8 +304,11 @@ class RunCMSJudge(RunJudge):
             else:
                 verdict = Verdict.partial_ok
 
+            with self._open_file(judge_run_result.stderr_file) as f:
+                message = f.readline().removesuffix("\n")
+
             return RelativeSolutionResult(
-                verdict, self._solution_run_res, judge_run_result, points
+                verdict, message, self._solution_run_res, judge_run_result, points
             )
         else:
             raise self._create_program_failure(
@@ -392,11 +397,11 @@ class RunDiffJudge(RunBatchJudge):
         )
         if diff.returncode == 0:
             return RelativeSolutionResult(
-                Verdict.ok, self._solution_run_res, rr, Decimal(1)
+                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
             )
         elif diff.returncode == 1:
             return RelativeSolutionResult(
-                Verdict.wrong_answer, self._solution_run_res, rr, Decimal(0)
+                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
             raise PipelineItemFailure(
@@ -468,11 +473,11 @@ class RunTokenJudge(RunBatchJudge):
 
         if judge.returncode == 42:
             return RelativeSolutionResult(
-                Verdict.ok, self._solution_run_res, rr, Decimal(1)
+                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
             )
         elif judge.returncode == 43:
             return RelativeSolutionResult(
-                Verdict.wrong_answer, self._solution_run_res, rr, Decimal(0)
+                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
             raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
@@ -535,11 +540,11 @@ class RunOpendataJudge(RunBatchJudge):
         )
         if result.returncode == self.return_code_ok:
             return RelativeSolutionResult(
-                Verdict.ok, self._solution_run_res, result, Decimal(1)
+                Verdict.ok, None, self._solution_run_res, result, Decimal(1)
             )
         elif result.returncode == self.return_code_wa:
             return RelativeSolutionResult(
-                Verdict.wrong_answer, self._solution_run_res, result, Decimal(0)
+                Verdict.wrong_answer, None, self._solution_run_res, result, Decimal(0)
             )
         else:
             raise self._create_program_failure(
