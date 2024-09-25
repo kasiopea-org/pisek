@@ -21,15 +21,16 @@ from typing import Optional
 import sys
 import signal
 
-from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
-
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
 from pisek.license import license, license_gnu
 from pisek.visualize import visualize
+from pisek.config.config_tools import update_and_replace_config
 from pisek.version import print_version
+
+from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 
 
 def sigint_handler(sig, frame):
@@ -124,7 +125,7 @@ def main(argv):
     )
 
     subparsers = parser.add_subparsers(
-        help="Run this subcommand.", dest="subcommand", required=True
+        help="The subcommand to run.", dest="subcommand", required=True
     )
 
     # ------------------------------- pisek version -------------------------------
@@ -199,6 +200,16 @@ def main(argv):
     # ------------------------------- pisek clean -------------------------------
 
     parser_clean = subparsers.add_parser("clean", help="Clean the directory.")
+
+    # ------------------------------- pisek config -------------------------------
+
+    parser_config = subparsers.add_parser("config", help="Manage task config.")
+    config_subparsers = parser_config.add_subparsers(
+        help="The subcommand to run.", dest="config_subcommand", required=True
+    )
+    config_subparsers.add_parser(
+        "update", help="Update config to newest version. (Replaces the config.)"
+    )
 
     # ------------------------------- pisek visualize -------------------------------
 
@@ -322,6 +333,13 @@ def main(argv):
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
+
+    elif args.subcommand == "config":
+        if args.config_subcommand == "update":
+            result = not update_and_replace_config(PATH, args.pisek_dir)
+        else:
+            raise RuntimeError(f"Unknown config command {args.config_subcommand}")
+
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
 
