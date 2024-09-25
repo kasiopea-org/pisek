@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Iterable
+from typing import Any, Iterable, TextIO
 import os
-from typing import Optional
 import yaml
 
+from pisek.version import __version__
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
@@ -27,15 +27,30 @@ CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
 
-class YAMLObjectWithRequiredAttr(yaml.YAMLObject):
-    """Yaml object that has must have all attributes set."""
+class CacheInfo(yaml.YAMLObject):
+    """Object for cache metadata."""
 
-    @classmethod
-    def from_yaml(cls, loader, node):
-        return cls(**loader.construct_mapping(node, deep=True))
+    yaml_tag = "!Info"
+
+    def __init__(self, version: str = __version__) -> None:
+        self.version = version
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(version={self.version})"
+
+    @staticmethod
+    def read(f: TextIO) -> "CacheInfo":
+        tag = f.readline().removeprefix("- ").strip()
+        if tag != CacheInfo.yaml_tag:
+            return CacheInfo("?.?.?")
+        version = f.readline().removeprefix("  version:").strip()
+        return CacheInfo(version)
+
+    def yaml_export(self) -> str:
+        return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
 
-class CacheEntry(YAMLObjectWithRequiredAttr):
+class CacheEntry(yaml.YAMLObject):
     """Object representing single cached job."""
 
     yaml_tag = "!Entry"
@@ -69,28 +84,16 @@ class CacheEntry(YAMLObjectWithRequiredAttr):
         return yaml.dump([self], allow_unicode=True, sort_keys=False)
 
 
-class CacheSeal(YAMLObjectWithRequiredAttr):
-    """Seal is stored after last entry containing data about run."""
-
-    yaml_tag = "!Seal"
-
-    def __init__(self, success: bool, msg: str = ""):
-        self.success = success
-        self.msg = msg
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(success={self.success}, msg={self.msg})"
-
-    def yaml_export(self) -> str:
-        return yaml.dump([self], allow_unicode=True, sort_keys=False)
-
-
 class Cache:
     """Object representing all cached jobs."""
 
     def __init__(self, env: Env) -> None:
-        self.broken_seal: Optional[CacheSeal] = None
         self._load(env)
+
+    def _new_cache_file(self) -> None:
+        """Create new cache file with metadata."""
+        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
+            f.write(CacheInfo().yaml_export())
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
@@ -117,35 +120,23 @@ class Cache:
         """Load cache file."""
         self.cache: dict[str, list[CacheEntry]] = {}
         if not os.path.exists(CACHE_FILENAME):
-            return
+            return self._new_cache_file()
 
         with open(CACHE_FILENAME, encoding="utf-8") as f:
-            try:
-                entries = yaml.full_load(f)
-            except (TypeError, ValueError, KeyError, yaml.constructor.ConstructorError):
+            if CacheInfo.read(f).version != __version__:
                 eprint(
                     ColorSettings.colored(
-                        "Invalid .pisek_cache file. Starting from scratch...",
+                        "Different version of .pisek_cache file found. Starting from scratch...",
                         "yellow",
                     )
                 )
-                entries = {}
+                return self._new_cache_file()
 
-            if entries is None:
-                return
+            entries = yaml.full_load(f)
             for entry in entries:
-                if isinstance(entry, CacheSeal):
-                    self.broken_seal = entry
-                    break
-                elif isinstance(entry, CacheEntry):
-                    if entry.name not in self.cache:
-                        self.cache[entry.name] = []
-                    self.cache[entry.name].append(entry)
-                else:
-                    raise RuntimeError(f"Unknown object in cache {entry}")
-
-        # TODO: Remove with cache seal
-        self.export()  # Break the CacheSeal
+                if entry.name not in self.cache:
+                    self.cache[entry.name] = []
+                self.cache[entry.name].append(entry)
 
     def move_to_top(self, entry: CacheEntry):
         """Move given entry to most recent position."""
@@ -158,13 +149,9 @@ class Cache:
             )
 
     def export(self) -> None:
-        """Export cache into a file. Remove unnecessary entries and add seal."""
+        """Export cache into a file. (Removes unnecessary entries.)"""
         with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
+            f.write(CacheInfo().yaml_export())
             for job, entries in self.cache.items():
                 for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
                     f.write(cache_entry.yaml_export())
-
-    def seal(self, success):
-        self.export()
-        with open(CACHE_FILENAME, "a", encoding="utf-8") as f:
-            f.write(CacheSeal(success).yaml_export())

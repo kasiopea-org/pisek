@@ -65,6 +65,7 @@ class CaptureInitParams:
                 self._kwargs = kwargs
                 self._initialized = True
                 self._env = env
+                self._env.clear_accesses()
 
             real_init(self, self._env, *args, **kwargs)
 
