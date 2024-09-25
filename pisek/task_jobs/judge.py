@@ -233,6 +233,8 @@ class RunJudge(ProgramsJob):
 
     def verdict_text(self) -> str:
         if self.result is not None:
+            if self.result.message is not None:
+                return self.result.message
             return self.result.verdict.name
         else:
             return self.state.name
