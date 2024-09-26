@@ -1,0 +1,303 @@
+{
+    "source": "pisek",
+    "solutions": {
+        "solve": {
+            "results": {
+                "sample_01.in": {
+                    "time": 0.016,
+                    "wall_clock_time": 0.019,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "sample_02.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.019,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_01.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_02.in": {
+                    "time": 0.017,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_03.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_04.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_05.in": {
+                    "time": 0.017,
+                    "wall_clock_time": 0.019,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_01.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_02.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_03.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_04.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_05.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_01.in": {
+                    "time": 0.019,
+                    "wall_clock_time": 0.019,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_02.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_03.in": {
+                    "time": 0.017,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_04.in": {
+                    "time": 0.021,
+                    "wall_clock_time": 0.021,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_05.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                }
+            }
+        },
+        "solve_3b": {
+            "results": {
+                "sample_01.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "sample_02.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "partial_ok",
+                    "relative_points": "0.5"
+                },
+                "01_01.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_02.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.001,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_03.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_04.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.001,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_05.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_01.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.0,
+                    "result": "partial_ok",
+                    "relative_points": "0.5"
+                },
+                "02_02.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_03.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.001,
+                    "result": "partial_ok",
+                    "relative_points": "0.5"
+                },
+                "02_04.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "partial_ok",
+                    "relative_points": "0.5"
+                },
+                "02_05.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.001,
+                    "result": "partial_ok",
+                    "relative_points": "0.5"
+                },
+                "03_01.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "wrong_answer",
+                    "relative_points": "0"
+                }
+            }
+        },
+        "solve_slow_4b": {
+            "results": {
+                "sample_01.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.001,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "sample_02.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.001,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_01.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_02.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_03.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_04.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_05.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_01.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_02.in": {
+                    "time": 0.001,
+                    "wall_clock_time": 0.001,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_03.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_04.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "02_05.in": {
+                    "time": 0.0,
+                    "wall_clock_time": 0.0,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "03_01.in": {
+                    "time": 0.299,
+                    "wall_clock_time": 0.3,
+                    "result": "timeout",
+                    "relative_points": "0"
+                }
+            }
+        },
+        "solve_0b": {
+            "results": {
+                "sample_01.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "wrong_answer",
+                    "relative_points": "0"
+                },
+                "01_01.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "ok",
+                    "relative_points": "1"
+                },
+                "01_02.in": {
+                    "time": 0.018,
+                    "wall_clock_time": 0.018,
+                    "result": "wrong_answer",
+                    "relative_points": "0"
+                },
+                "02_01.in": {
+                    "time": 0.023,
+                    "wall_clock_time": 0.023,
+                    "result": "wrong_answer",
+                    "relative_points": "0"
+                }
+            }
+        }
+    }
+}

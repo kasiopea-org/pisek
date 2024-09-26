@@ -12,7 +12,7 @@ void verdict(float pts, string msg){
 }
 
 int main(int argc, char** argv) {
-	assert(argc == 4);
+	assert(argc == 5);
 
 	long long a, b, c, contestant;
 

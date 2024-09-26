@@ -1,0 +1,31 @@
+# Pisek fixture
+# Source: $(pisek)/config-v3-documentation for more information
+
+[task]
+name=min-opendata
+version=v3
+scoring=equal
+score_precision=1
+
+[tests]
+in_gen=gen
+gen_type=pisek-v1
+out_check=judge
+out_judge=judge
+judge_type=opendata-v2
+
+[test01]
+points=1
+
+[test02]
+points=1
+
+[solution_solve]
+primary=yes
+subtasks=111
+
+[solution_solve_sec]
+subtasks=PPP
+
+[solution_wrong]
+subtasks=WWW

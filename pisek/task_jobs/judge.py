@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import cache
 import os
 import random
@@ -312,7 +312,9 @@ class RunCMSJudge(RunJudge):
             )
         else:
             raise self._create_program_failure(
-                f"Judge failed on {self._judging_message()}:", judge_run_result
+                f"Judge failed on {self._judging_message()}:",
+                judge_run_result,
+                stderr_force_content=True,
             )
 
 
@@ -538,22 +540,48 @@ class RunOpendataJudge(RunBatchJudge):
             stderr=self.judge_log_file,
             env=envs,
         )
+        message, points = self._load_stderr(result)
         if result.returncode == self.return_code_ok:
-            return RelativeSolutionResult(
-                Verdict.ok, None, self._solution_run_res, result, Decimal(1)
-            )
+            if points is None:
+                return RelativeSolutionResult(
+                    Verdict.ok, message, self._solution_run_res, result, Decimal(1)
+                )
+            else:
+                max_points = self._env.config.subtasks[self.subtask].points
+                if points == 0:
+                    verdict = Verdict.wrong_answer
+                elif 0 < points < max_points:
+                    verdict = Verdict.partial_ok
+                elif points == Verdict.ok:
+                    verdict = Verdict.ok
+                else:
+                    # TODO: Format technically allows any number of points
+                    raise PipelineItemFailure(f"Points awarded should be between 0 and subtask maximum ({max_points}).")
+
+                return AbsoluteSolutionResult(
+                    verdict, message, self._solution_run_res, result, points
+                )
+
         elif result.returncode == self.return_code_wa:
             return RelativeSolutionResult(
-                Verdict.wrong_answer, None, self._solution_run_res, result, Decimal(0)
+                Verdict.wrong_answer, message, self._solution_run_res, result, Decimal(0)
             )
         else:
             raise self._create_program_failure(
-                f"Judge failed on output {self.output:n}:", result
+                f"Judge failed on output {self.output:n}:",
+                result,
+                stderr_force_content=True,
             )
+
+    @abstractmethod
+    def _load_stderr(
+        self, judge_rr: RunResult
+    ) -> tuple[Optional[str], Optional[Decimal]]:
+        pass
 
 
 class RunOpendataV1Judge(RunOpendataJudge):
-    """Judges solution output using judge with the opendataV1 interface."""
+    """Judges solution output using judge with the opendata-v1 interface."""
 
     @property
     def return_code_ok(self) -> int:
@@ -562,6 +590,60 @@ class RunOpendataV1Judge(RunOpendataJudge):
     @property
     def return_code_wa(self) -> int:
         return 1
+
+    def _load_stderr(self, judge_rr: RunResult) -> tuple[Optional[str], Optional[Decimal]]:
+        return None, None
+
+
+class RunOpendataV2Judge(RunOpendataJudge):
+    """Judges solution output using judge with the opendata-v2 interface."""
+
+    @property
+    def return_code_ok(self) -> int:
+        return 42
+
+    @property
+    def return_code_wa(self) -> int:
+        return 43
+
+    def _load_stderr(
+        self, judge_rr: RunResult
+    ) -> tuple[Optional[str], Optional[Decimal]]:
+        message = None
+        points = None
+        with self._open_file(self.judge_log_file) as f:
+            message = f.readline().removesuffix("\n")
+            for line in f.readlines():
+                line = line.removesuffix("\n")
+                if line.count("=") != 1:
+                    raise self._create_program_failure(
+                        f"Invalid key=value pair in judge stderr: '{line}'",
+                        judge_rr,
+                        stderr_force_content=True,
+                    )
+                key, value = line.split("=")
+
+                if key == "POINTS":
+                    try:
+                        points = Decimal(value)
+                    except InvalidOperation:
+                        raise self._create_program_failure(
+                            f"Points should be float: '{key}'",
+                            judge_rr,
+                            stderr_force_content=True,
+                        )
+
+                elif key in ("LOG", "NOTE"):
+                    pass  # Ignored in testing
+
+                else:
+                    raise self._create_program_failure(
+                        f"Invalid key judge stderr: '{key}'",
+                        judge_rr,
+                        stderr_force_content=True,
+                    )
+
+        return message, points
 
 
 class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
@@ -642,7 +724,7 @@ def judge_job(
             correct_output,
             expected_verdict,
         )
-    else:
+    elif env.config.judge_type == JudgeType.opendata_v1:
         return RunOpendataV1Judge(
             env,
             env.config.out_judge,
@@ -653,3 +735,17 @@ def judge_job(
             get_seed(),
             expected_verdict,
         )
+    elif env.config.judge_type == JudgeType.opendata_v2:
+        return RunOpendataV2Judge(
+            env,
+            env.config.out_judge,
+            subtask,
+            input_,
+            output,
+            correct_output,
+            get_seed(),
+            expected_verdict,
+        )
+    else:
+        raise ValueError(f"Unknown judge type: {env.config.judge_type}")
+

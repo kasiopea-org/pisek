@@ -26,7 +26,7 @@ from pisek.utils.text import eprint
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
-PATH = "."
+PATH = "./fixtures/min_opendata"
 
 LOCK_FILE = ".pisek_lock"
 

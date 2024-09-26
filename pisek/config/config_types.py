@@ -34,6 +34,7 @@ class JudgeType(StrEnum):
     cms_batch = "cms-batch"
     cms_communication = "cms-communication"
     opendata_v1 = "opendata-v1"
+    opendata_v2 = "opendata-v2"
 
 
 class DataFormat(StrEnum):
