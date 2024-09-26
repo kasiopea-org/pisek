@@ -70,7 +70,7 @@ def create_testing_log(session: Session, env: Env, dataset: Dataset) -> bool:
                     if evaluation.execution_memory is not None
                     else None
                 ),
-                "points": points,
+                "relative_points": points,
                 "result": result_type,
             }
 
