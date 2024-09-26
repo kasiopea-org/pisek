@@ -202,8 +202,10 @@ class InputsInfoMixin(JobManager):
             return []
 
         jobs: list[Job] = []
+
         if len(seeds) == 1:
-            while (seed := random.choice(SEED_RANGE)) == seeds[0]:
+            rand_gen = random.Random(5)  # Reproducibility!
+            while (seed := rand_gen.choice(SEED_RANGE)) == seeds[0]:
                 pass
             seeds.append(seed)
             jobs += [self._generate_input_job(input_info, seed)]
