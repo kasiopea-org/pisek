@@ -50,27 +50,31 @@ from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.utils.paths import TaskPath
 from pisek.utils.pipeline_tools import with_env
 
 
-def prepare_files(env: Env):
+def generate_testcases(env: Env) -> list[TaskPath]:
     env = env.fork()
     env.solutions = [env.config.primary_solution]
     env.target = TestingTarget.solution
 
-    if TaskPipeline(env).run_jobs(Cache(env), env) != 0:
+    pipeline = TaskPipeline(env)
+
+    if pipeline.run_jobs(Cache(env), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
+
+    return pipeline.input_dataset()
 
 
 @with_env
 def create(env: Env, args: Namespace) -> int:
-    prepare_files(env)
-
+    testcases = generate_testcases(env)
     session = Session()
 
     description = args.description
 
-    task = create_task(session, env, description)
+    task = create_task(session, env, testcases, description)
     dataset = task.active_dataset
 
     try:
@@ -101,15 +105,14 @@ def update(env: Env, args: Namespace) -> int:
 
 @with_env
 def add(env: Env, args: Namespace) -> int:
-    prepare_files(env)
-
+    testcases = generate_testcases(env)
     session = Session()
 
     description = args.description
     autojudge = not args.no_autojudge
 
     task = get_task(session, env.config)
-    dataset = create_dataset(session, env, task, description, autojudge)
+    dataset = create_dataset(session, env, task, testcases, description, autojudge)
 
     try:
         session.commit()

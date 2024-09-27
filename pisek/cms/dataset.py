@@ -14,12 +14,12 @@ from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 from os import path, listdir
 import re
 import datetime
 
-from pisek.cms.testcase import create_testcase, get_testcases
+from pisek.cms.testcase import create_testcase
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import OutCheck, TaskType
@@ -30,6 +30,7 @@ def create_dataset(
     session: Session,
     env: Env,
     task: Task,
+    testcases: list[TaskPath],
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
@@ -72,8 +73,17 @@ def create_dataset(
 
     files = FileCacher()
 
-    for testcase in get_testcases(env):
-        create_testcase(session, files, dataset, *testcase)
+    outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
+    solution = config.solutions[config.primary_solution].raw_source
+
+    for input in testcases:
+        name = input.name.removesuffix(".in")
+        output = None
+
+        if outputs_needed:
+            output = TaskPath.output_file(env, input.name, solution)
+
+        create_testcase(session, files, dataset, name, input, output)
 
     add_judge(session, files, env, dataset)
     add_stubs(session, files, env, dataset)
@@ -200,10 +210,11 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     config = env.config
 
     for header in config.headers:
+        name = header.name
         header = files.put_file_from_path(
-            header, f"Header {header.name} for {config.name}"
+            header.path, f"Header {name} for {config.name}"
         )
-        session.add(Manager(dataset=dataset, filename=header.name, digest=header))
+        session.add(Manager(dataset=dataset, filename=name, digest=header))
 
 
 def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:

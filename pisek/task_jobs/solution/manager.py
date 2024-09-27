@@ -232,7 +232,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
             )
 
     def _compute_result(self) -> dict[str, Any]:
-        result: dict[str, Any] = {}
+        result: dict[str, Any] = super()._compute_result()
 
         result["results"] = {}
         result["judge_outs"] = set()
