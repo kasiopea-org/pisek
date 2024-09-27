@@ -113,6 +113,7 @@ def generator_test_determinism(
 
 class InputsInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
+        self.inputs: set[str] = set()
         self._gen_inputs_job: dict[int, GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
@@ -127,6 +128,8 @@ class InputsInfoMixin(JobManager):
         for i, seed in enumerate(seeds):
             if self._skip_input(input_info, seed, subtask):
                 continue
+
+            self.inputs.add(input_info.task_path(self._env, seed).name)
 
             inp_jobs = self._generate_input_jobs(input_info, seed, subtask, i == 0)
             out_jobs = self._solution_jobs(input_info, seed, subtask)
@@ -249,6 +252,9 @@ class InputsInfoMixin(JobManager):
             out_small.add_prerequisite(prerequisite)
 
         return jobs
+
+    def _compute_result(self) -> dict[str, Any]:
+        return {"inputs": list(sorted(self.inputs))}
 
 
 class RunGenerator(TaskJobManager, InputsInfoMixin):

@@ -30,7 +30,11 @@ from pisek.task_jobs.task_manager import (
 
 from pisek.task_jobs.tools import ToolsManager
 from pisek.task_jobs.data.manager import DataManager
-from pisek.task_jobs.generator.manager import PrepareGenerator, RunGenerator
+from pisek.task_jobs.generator.manager import (
+    PrepareGenerator,
+    RunGenerator,
+    InputsInfoMixin,
+)
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution.manager import SolutionManager
@@ -55,10 +59,12 @@ class TaskPipeline(JobPipeline):
         inputs[0].add_prerequisite(*checker)
 
         solutions = []
+        self.input_generator: InputsInfoMixin
 
         if env.target == TestingTarget.generator:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))
             gen_inputs[0].add_prerequisite(*inputs)
+            self.input_generator = gen_inputs[0]
 
         else:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
@@ -80,6 +86,7 @@ class TaskPipeline(JobPipeline):
             )
             solutions.append(first_solution)
             first_solution[0].add_prerequisite(*judge)
+            self.input_generator = first_solution[0]
 
             for sol_name in env.solutions:
                 if sol_name == first_solution_name:
@@ -109,3 +116,8 @@ class TaskPipeline(JobPipeline):
                 completeness_check[0].add_prerequisite(*solution)
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
+
+    def input_dataset(self) -> list[str]:
+        if self.input_generator.result is None:
+            raise RuntimeError("Input dataset has not been computed yet.")
+        return self.input_generator.result["inputs"]
