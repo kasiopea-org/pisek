@@ -212,10 +212,11 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     config = env.config
 
     for header in config.headers:
+        name = header.name
         header = files.put_file_from_path(
-            header, f"Header {header.name} for {config.name}"
+            header.path, f"Header {name} for {config.name}"
         )
-        session.add(Manager(dataset=dataset, filename=header.name, digest=header))
+        session.add(Manager(dataset=dataset, filename=name, digest=header))
 
 
 def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:
