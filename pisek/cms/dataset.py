@@ -14,12 +14,12 @@ from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 from os import path, listdir
 import re
 import datetime
 
-from pisek.cms.testcase import create_testcase, get_testcases
+from pisek.cms.testcase import create_testcase
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import OutCheck, TaskType
@@ -30,6 +30,7 @@ def create_dataset(
     session: Session,
     env: Env,
     task: Task,
+    testcases: list[str],
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
@@ -72,8 +73,19 @@ def create_dataset(
 
     files = FileCacher()
 
-    for testcase in get_testcases(env):
-        create_testcase(session, files, dataset, *testcase)
+    outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
+    solution = config.solutions[config.primary_solution].raw_source
+
+    for testcase in testcases:
+        input = TaskPath.input_path(env, testcase)
+        output = None
+
+        if outputs_needed:
+            output = TaskPath.output_file(env, testcase, solution)
+
+        create_testcase(
+            session, files, dataset, testcase.removesuffix(".in"), input, output
+        )
 
     add_judge(session, files, env, dataset)
     add_stubs(session, files, env, dataset)

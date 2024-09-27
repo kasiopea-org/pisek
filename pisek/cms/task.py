@@ -21,13 +21,13 @@ from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
 
 
-def create_task(session: Session, env: Env, description: str) -> Task:
+def create_task(session: Session, env: Env, testcases: list[str], description: str) -> Task:
     config = env.config
 
     task = Task(name=config.name, title=config.cms.title)
     set_task_settings(task, config)
 
-    dataset = create_dataset(session, env, task, description)
+    dataset = create_dataset(session, env, task, testcases, description)
 
     task.active_dataset = dataset
 
