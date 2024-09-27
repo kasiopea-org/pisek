@@ -46,4 +46,3 @@ def create_testcase(
 
     session.add(testcase)
     return testcase
-
