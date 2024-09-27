@@ -50,10 +50,11 @@ from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.utils.paths import TaskPath
 from pisek.utils.pipeline_tools import with_env
 
 
-def generate_testcases(env: Env) -> list[str]:
+def generate_testcases(env: Env) -> list[TaskPath]:
     env = env.fork()
     env.solutions = [env.config.primary_solution]
     env.target = TestingTarget.solution

@@ -40,6 +40,7 @@ from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
+from pisek.utils.paths import TaskPath
 
 
 class TaskPipeline(JobPipeline):
@@ -117,7 +118,7 @@ class TaskPipeline(JobPipeline):
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
 
-    def input_dataset(self) -> list[str]:
+    def input_dataset(self) -> list[TaskPath]:
         if self.input_generator.result is None:
             raise RuntimeError("Input dataset has not been computed yet.")
         return self.input_generator.result["inputs"]

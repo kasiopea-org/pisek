@@ -14,15 +14,15 @@ from datetime import timedelta
 from cms.db.task import Task
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
-import re
 
 from pisek.cms.dataset import create_dataset
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
+from pisek.utils.paths import TaskPath
 
 
 def create_task(
-    session: Session, env: Env, testcases: list[str], description: str
+    session: Session, env: Env, testcases: list[TaskPath], description: str
 ) -> Task:
     config = env.config
 

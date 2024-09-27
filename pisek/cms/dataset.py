@@ -30,7 +30,7 @@ def create_dataset(
     session: Session,
     env: Env,
     task: Task,
-    testcases: list[str],
+    testcases: list[TaskPath],
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
@@ -76,16 +76,14 @@ def create_dataset(
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
     solution = config.solutions[config.primary_solution].raw_source
 
-    for testcase in testcases:
-        input = TaskPath.input_path(env, testcase)
+    for input in testcases:
+        name = input.name.removesuffix(".in")
         output = None
 
         if outputs_needed:
-            output = TaskPath.output_file(env, testcase, solution)
+            output = TaskPath.output_file(env, input.name, solution)
 
-        create_testcase(
-            session, files, dataset, testcase.removesuffix(".in"), input, output
-        )
+        create_testcase(session, files, dataset, name, input, output)
 
     add_judge(session, files, env, dataset)
     add_stubs(session, files, env, dataset)
