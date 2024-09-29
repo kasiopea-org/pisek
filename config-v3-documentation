@@ -51,7 +51,7 @@ in_gen=src/gen
 # Source code of generator (without suffix)
 
 gen_type=opendata-v1
-# Specifies how generator format. 
+# Specifies the generator type. 
 # - pisek-v1 (recommended)
 # - cms-old
 # - opendata-v1
