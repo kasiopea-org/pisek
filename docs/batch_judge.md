@@ -53,14 +53,15 @@ To it's stderr it should write single-line message to the contestant.
 
 Opendata-v1 judge is run in this way:
 ```
-./judge [subtask] [seed]
+./judge [subtask] [seed] < contestant-output
 ```
-Where `subtask` is the input's subtask and `seed` is the seed input has been generated with.
-(The arguments are equivalent to `opendata-v1` generator.)
+Where `subtask` is the input's subtask and `seed` it's generating seed.
+(The arguments are equivalent to `opendata-v1` generator this input has been generated with.)
+If the input was not generated with seed, `seed` can be anything.
 
-It gets contestant output to it's stdin. If `judge_needs_in` is set, judge will get
-input filename in `TEST_INPUT` environment variable. Similarly, if `judge_needs_out`
-is set, correct output filename will be in `TEST_OUTPUT` environment variable.
+If `judge_needs_in` is set, judge will get input filename in `TEST_INPUT`
+environment variable. Similarly, if `judge_needs_out` is set, correct output
+filename will be in `TEST_OUTPUT` environment variable.
 
 If the output is correct, the judge should exit with returncode 0.
 Otherwise, the judge should exit returncode 1.
