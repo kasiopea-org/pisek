@@ -1,13 +1,13 @@
 # Generator
 The generator is used for generating inputs. Solutions are then run and judged on those.
 
-## Generator format
-There are currently 3 generator formats available:
+## Generator type
+There are currently 3 generator types available:
 - pisek-v1
 - cms-old
 - opendata-v1
 
-However we strongly recommend using the pisek-gen format
+However we strongly recommend using the pisek-gen type
 for better debugging and easy conversion between open data and closed data tasks.
 
 ## Terminology

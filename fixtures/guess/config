@@ -5,7 +5,7 @@
 name=guess
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
-use=interactive
+use=communication
 
 solutions_subdir=solutions/
 version=v3

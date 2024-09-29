@@ -91,12 +91,12 @@ tokens_float_abs_error=1e-30
 stub=src/stub
 # Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix)
-# Used commonly for interactive tasks
+# Used commonly for communication tasks
 
 headers=src/a-plus-b.h
 # Only for C/C++ CMS tasks
 # Allow each solution to include the given headers
-# Used commonly for interactive tasks
+# Used commonly for communication tasks
 
 in_mode = ??? (ignored)
 out_mode = ??? (ignored)
