@@ -81,7 +81,7 @@ Communication task should be used when part of the input should remain hidden
 from the contestant's solution. For example when it can ask questions about the input.
 
 #### Communication judge
-*__TODO__: Add details about the batch judge in [communication_judge.md](./communication_judge.md).*
+*More details about the communication judges in [communication_judge.md](./communication_judge.md).*
 
 The judge in a communication task gets the task input and is run together with the solution.
 The solution can make requests to the judge about the input. Finally, the judge says
