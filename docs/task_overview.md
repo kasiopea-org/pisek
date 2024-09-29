@@ -62,7 +62,7 @@ graph TD;
 ```
 
 #### Batch judge
-*__TODO__: Add details about batch judge in [batch_judge.md](./batch_judge.md).*
+*More details about batch judge in [batch_judge.md](./batch_judge.md).*
 
 Batch judge gets solution output and should say whether it is correct.
 It can also get correct output (from the primary solution) as specified in config.
