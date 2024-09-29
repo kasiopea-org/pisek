@@ -77,6 +77,9 @@ graph TD;
     S ==>|Communication| J;
 ```
 
+Communication task should be used when part of the input should remain hidden
+from the contestant's solution. For example when it can ask questions about the input.
+
 #### Communication judge
 *__TODO__: Add details about batch judge in [communication_judge.md](./communication_judge.md).*
 
