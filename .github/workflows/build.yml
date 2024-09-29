@@ -36,3 +36,36 @@ jobs:
         pip install types-colorama
         pip install types-editdistance
         mypy pisek 
+    - name: Build dist/
+      run: |
+        pip install build
+        python3 -m build
+    - name: Upload dist/
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+
+  publish:
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pisek
+
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download dist/
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
