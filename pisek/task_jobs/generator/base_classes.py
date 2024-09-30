@@ -11,6 +11,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
+from typing import Optional
 
 from pisek.env.env import Env
 from pisek.jobs.jobs import PipelineItemFailure
@@ -43,7 +44,7 @@ class GenerateInput(ProgramsJob):
         env: Env,
         generator: TaskPath,
         input_info: InputInfo,
-        seed: int,
+        seed: Optional[int],
         *,
         name: str = "",
         **kwargs,
@@ -74,7 +75,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         env: Env,
         generator: TaskPath,
         input_info: InputInfo,
-        seed: int,
+        seed: Optional[int],
         *,
         name: str = "",
         **kwargs,

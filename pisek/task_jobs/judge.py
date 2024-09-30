@@ -40,6 +40,8 @@ from pisek.task_jobs.solution.solution_result import (
     AbsoluteSolutionResult,
 )
 
+OPENDATA_NO_SEED = "-"
+
 
 class JudgeManager(TaskJobManager):
     """Manager that prepares and test judge."""
@@ -71,7 +73,7 @@ class JudgeManager(TaskJobManager):
                     out,
                     out,
                     0,
-                    lambda: "0",
+                    None,
                     Verdict.ok,
                     self._env,
                 )
@@ -97,7 +99,7 @@ class JudgeManager(TaskJobManager):
                                 inv_out,
                                 out,
                                 0,
-                                lambda: "0",
+                                None,
                                 None,
                                 self._env,
                             ),
@@ -504,7 +506,7 @@ class RunOpendataJudge(RunBatchJudge):
         input_: TaskPath,
         output: TaskPath,
         correct_output: TaskPath,
-        seed: str,
+        seed: Optional[int],
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
@@ -533,7 +535,10 @@ class RunOpendataJudge(RunBatchJudge):
         result = self._run_program(
             ProgramType.judge,
             self.judge,
-            args=[str(self.subtask), self.seed],
+            args=[
+                str(self.subtask),
+                f"{self.seed:x}" if self.seed is not None else OPENDATA_NO_SEED,
+            ],
             stdin=self.output,
             stderr=self.judge_log_file,
             env=envs,
@@ -614,7 +619,7 @@ def judge_job(
     output: TaskPath,
     correct_output: TaskPath,
     subtask: int,
-    get_seed: Callable[[], str],
+    seed: Optional[int],
     expected_verdict: Optional[Verdict],
     env: Env,
 ) -> Union[RunDiffJudge, RunTokenJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
@@ -650,6 +655,6 @@ def judge_job(
             input_,
             output,
             correct_output,
-            get_seed(),
+            seed,
             expected_verdict,
         )

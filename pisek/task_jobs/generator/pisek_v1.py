@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Optional
 
 from pisek.utils.text import tab
 from pisek.env.env import Env
@@ -121,7 +121,7 @@ class PisekV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
     generator: TaskPath
-    seed: int
+    seed: Optional[int]
     input_info: InputInfo
     input_path: TaskPath
 
@@ -129,11 +129,12 @@ class PisekV1GeneratorJob(ProgramsJob):
         super().__init__(env=env, name=name, **kwargs)
 
     def _gen(self) -> None:
-        if self.seed < 0:
-            raise ValueError(f"seed {self.seed} is negative")
-
         args = [self.input_info.name]
+
         if self.input_info.seeded:
+            assert self.seed is not None
+            if self.seed < 0:
+                raise ValueError(f"seed {self.seed} is negative")
             args.append(f"{self.seed:x}")
 
         result = self._run_program(

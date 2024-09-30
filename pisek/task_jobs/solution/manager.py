@@ -69,14 +69,20 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
         return jobs
 
-    def _skip_input(self, input_info: InputInfo, seed: int, subtask: int) -> bool:
+    def _skip_input(
+        self, input_info: InputInfo, seed: Optional[int], subtask: int
+    ) -> bool:
         input_path = input_info.task_path(self._env, seed)
         if input_path in self._judges:
             self.subtasks[-1].previous_jobs.append(self._judges[input_path])
         return super()._skip_input(input_info, seed, subtask)
 
     def _generate_input_jobs(
-        self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
+        self,
+        input_info: InputInfo,
+        seed: Optional[int],
+        subtask: int,
+        test_determinism: bool,
     ) -> list[Job]:
         if not self._generate_inputs:
             return []
@@ -90,7 +96,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         return super()._respects_seed_jobs(input_info, seeds, subtask)
 
     def _solution_jobs(
-        self, input_info: InputInfo, seed: int, subtask: int
+        self, input_info: InputInfo, seed: Optional[int], subtask: int
     ) -> list[Job]:
         input_path = input_info.task_path(self._env, seed)
 
@@ -122,7 +128,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         return jobs
 
     def _create_batch_jobs(
-        self, input_info: InputInfo, seed: int, subtask: int
+        self, input_info: InputInfo, seed: Optional[int], subtask: int
     ) -> tuple[RunBatchSolution, RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
         input_path = input_info.task_path(self._env, seed)
@@ -140,7 +146,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
             out,
             self._get_reference_output(input_info, seed),
             subtask,
-            lambda: f"{seed:x}",
+            seed,
             None,
             self._env,
         )

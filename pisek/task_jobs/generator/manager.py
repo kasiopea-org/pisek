@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import random
-from typing import Any, Optional
+from typing import cast, Any, Optional
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -85,7 +85,7 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: TaskPath, input_info: InputInfo, seed: int
+    env: Env, generator: TaskPath, input_info: InputInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
@@ -97,7 +97,7 @@ def generate_input(
 
 
 def generator_test_determinism(
-    env: Env, generator: TaskPath, input_info: InputInfo, seed: int
+    env: Env, generator: TaskPath, input_info: InputInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,
@@ -114,17 +114,21 @@ def generator_test_determinism(
 class InputsInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
         self.inputs: set[TaskPath] = set()
-        self._gen_inputs_job: dict[int, GenerateInput] = {}
+        self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
     def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
-        repeat = input_info.repeat * (
-            self._env.repeat_inputs if input_info.seeded else 1
-        )
+        seeds: list[Optional[int]]
+        if input_info.seeded:
+            repeat = input_info.repeat * self._env.repeat_inputs
+            seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
+        else:
+            repeat = 1
+            seeds = [None]
 
         jobs: list[Job] = []
+        self._gen_inputs_job = {}
 
-        seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
         for i, seed in enumerate(seeds):
             if self._skip_input(input_info, seed, subtask):
                 continue
@@ -138,17 +142,29 @@ class InputsInfoMixin(JobManager):
 
             jobs += inp_jobs + out_jobs
 
-        if self._env.config.checks.generator_respects_seed:
-            jobs += self._respects_seed_jobs(input_info, seeds, subtask)
+        if (
+            self._env.config.checks.generator_respects_seed
+            and input_info.is_generated
+            and input_info.seeded
+        ):
+            jobs += self._respects_seed_jobs(
+                input_info, cast(list[int], seeds), subtask
+            )
         return jobs
 
-    def _skip_input(self, input_info: InputInfo, seed: int, subtask: int) -> bool:
+    def _skip_input(
+        self, input_info: InputInfo, seed: Optional[int], subtask: int
+    ) -> bool:
         return not self._env.config.subtasks[subtask].new_in_subtask(
             input_info.task_path(self._env, seed).name
         )
 
     def _generate_input_jobs(
-        self, input_info: InputInfo, seed: int, subtask: int, test_determinism: bool
+        self,
+        input_info: InputInfo,
+        seed: Optional[int],
+        subtask: int,
+        test_determinism: bool,
     ) -> list[Job]:
         jobs: list[Job] = []
         input_path = input_info.task_path(self._env, seed)
@@ -183,21 +199,22 @@ class InputsInfoMixin(JobManager):
 
         return jobs
 
-    def _generate_input_job(self, input_info: InputInfo, seed: int) -> GenerateInput:
+    def _generate_input_job(
+        self, input_info: InputInfo, seed: Optional[int]
+    ) -> GenerateInput:
         gen_inp = generate_input(self._env, self._env.config.in_gen, input_info, seed)
         self._gen_inputs_job[seed] = gen_inp
         return gen_inp
 
     def _solution_jobs(
-        self, input_info: InputInfo, seed: int, subtask: int
+        self, input_info: InputInfo, seed: Optional[int], subtask: int
     ) -> list[Job]:
         return []
 
     def _respects_seed_jobs(
         self, input_info: InputInfo, seeds: list[int], subtask: int
     ) -> list[Job]:
-        if not (input_info.is_generated and input_info.seeded):
-            return []
+        assert input_info.is_generated and input_info.seeded
 
         if not self._env.config.subtasks[subtask].new_in_subtask(
             input_info.task_path(self._env, seeds[0]).name
