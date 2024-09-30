@@ -52,7 +52,7 @@ jobs:
 
 
   publish:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && github.event.action == 'published'
     needs:
     - build
     runs-on: ubuntu-latest
