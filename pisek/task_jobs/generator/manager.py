@@ -142,11 +142,7 @@ class InputsInfoMixin(JobManager):
 
             jobs += inp_jobs + out_jobs
 
-        if (
-            self._env.config.checks.generator_respects_seed
-            and input_info.is_generated
-            and input_info.seeded
-        ):
+        if self._env.config.checks.generator_respects_seed and input_info.seeded:
             jobs += self._respects_seed_jobs(
                 input_info, cast(list[int], seeds), subtask
             )
