@@ -60,7 +60,7 @@ The opendata-v1 judge is run in this way:
 Where `subtask` is the inputs subtask and `seed` its generating seed.
 (The arguments are the same as were given to the `opendata-v1` generator
 this input has (probably) been generated with.)
-If the input was not generated with a seed, `seed` can be anything.
+If the input was not generated with a seed (static or unseeded), `seed` will be `-`.
 
 If `judge_needs_in` is set, the judge will get the input filename in the `TEST_INPUT`
 environment variable. Similarly, if `judge_needs_out` is set, the correct output

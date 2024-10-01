@@ -11,8 +11,12 @@ def main():
     diff = int(sys.argv[1])
     assert diff in [0, 1, 2]
 
-    # Check that the seed is a hex string
-    _seed = int(sys.argv[2], 16)
+    # Check seed conforms to specification
+    seed = sys.argv[2]
+    if seed == "-":
+        assert diff == 0
+    else:
+        _seed = int(seed, 16)
 
     test_input_file = os.getenv("TEST_INPUT")
     test_output_file = os.getenv("TEST_OUTPUT")
