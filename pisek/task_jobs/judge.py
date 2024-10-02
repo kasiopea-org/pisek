@@ -413,7 +413,55 @@ class RunDiffJudge(RunBatchJudge):
             )
 
 
-class RunTokenJudge(RunBatchJudge):
+class RunJudgeLibJudge(RunBatchJudge):
+    """Judges solution output and correct output using judgelib judge."""
+
+    @abstractmethod
+    def _get_flags(self) -> list[str]:
+        pass
+
+    def _judge(self) -> SolutionResult:
+        self._access_file(self.output)
+        self._access_file(self.correct_output)
+
+        executable = TaskPath.executable_path(self._env, self.judge_name)
+
+        judge = subprocess.run(
+            [
+                executable.path,
+                *self._get_flags(),
+                self.output.path,
+                self.correct_output.path,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        stderr = judge.stderr.decode("utf-8")
+
+        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
+        rr = RunResult(
+            RunResultKind.OK,
+            judge.returncode,
+            0,
+            0,
+            status=(stderr.strip() or "Files are equivalent")
+            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
+        )
+
+        if judge.returncode == 42:
+            return RelativeSolutionResult(
+                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
+            )
+        elif judge.returncode == 43:
+            return RelativeSolutionResult(
+                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
+            )
+        else:
+            raise PipelineItemFailure(f"{self.judge_name} failed:\n{tab(stderr)}")
+
+
+class RunTokenJudge(RunJudgeLibJudge):
     """Judges solution output and correct output using judge-token."""
 
     def __init__(
@@ -435,13 +483,8 @@ class RunTokenJudge(RunBatchJudge):
             expected_verdict=expected_verdict,
         )
 
-    def _judge(self) -> SolutionResult:
-        self._access_file(self.output)
-        self._access_file(self.correct_output)
-
-        executable = TaskPath.executable_path(self._env, "judge-token")
+    def _get_flags(self) -> list[str]:
         flags = ["-t"]
-
         if self._env.config.tokens_ignore_newlines:
             flags.append("-n")
         if self._env.config.tokens_ignore_case:
@@ -456,38 +499,10 @@ class RunTokenJudge(RunBatchJudge):
                     str(self._env.config.tokens_float_abs_error),
                 ]
             )
-
-        judge = subprocess.run(
-            [executable.path, *flags, self.output.path, self.correct_output.path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        stderr = judge.stderr.decode("utf-8")
-
-        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
-        rr = RunResult(
-            RunResultKind.OK,
-            judge.returncode,
-            0,
-            0,
-            status=(stderr.strip() or "Files are equivalent")
-            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
-        )
-
-        if judge.returncode == 42:
-            return RelativeSolutionResult(
-                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
-            )
-        elif judge.returncode == 43:
-            return RelativeSolutionResult(
-                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
-            )
-        else:
-            raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
+        return flags
 
 
-class RunShuffleJudge(RunBatchJudge):
+class RunShuffleJudge(RunJudgeLibJudge):
     """Judges solution output and correct output using judge-token."""
 
     def __init__(
@@ -509,51 +524,19 @@ class RunShuffleJudge(RunBatchJudge):
             expected_verdict=expected_verdict,
         )
 
-    def _judge(self) -> SolutionResult:
-        self._access_file(self.output)
-        self._access_file(self.correct_output)
-
+    def _get_flags(self) -> list[str]:
         SHUFFLE_MODE_FLAGS = {
             "lines": "-l",
             "words": "-w",
             "lines_words": "-lw",
             "tokens": "-nw",
         }
-        executable = TaskPath.executable_path(self._env, "judge-shuffle")
         assert self._env.config.shuffle_mode is not None
         flags = ["-e", SHUFFLE_MODE_FLAGS[self._env.config.shuffle_mode]]
-
         if self._env.config.shuffle_ignore_case:
             flags.append("-i")
 
-        judge = subprocess.run(
-            [executable.path, *flags, self.output.path, self.correct_output.path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        stderr = judge.stderr.decode("utf-8")
-
-        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
-        rr = RunResult(
-            RunResultKind.OK,
-            judge.returncode,
-            0,
-            0,
-            status=(stderr.strip() or "Files are equivalent")
-            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
-        )
-
-        if judge.returncode == 42:
-            return RelativeSolutionResult(
-                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
-            )
-        elif judge.returncode == 43:
-            return RelativeSolutionResult(
-                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
-            )
-        else:
-            raise PipelineItemFailure(f"Shuffle judge failed:\n{tab(stderr)}")
+        return flags
 
 
 class RunOpendataJudge(RunBatchJudge):
@@ -693,7 +676,9 @@ def judge_job(
     seed: Optional[int],
     expected_verdict: Optional[Verdict],
     env: Env,
-) -> Union[RunDiffJudge, RunTokenJudge, RunShuffleJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
+) -> Union[
+    RunDiffJudge, RunTokenJudge, RunShuffleJudge, RunOpendataV1Judge, RunCMSBatchJudge
+]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(
