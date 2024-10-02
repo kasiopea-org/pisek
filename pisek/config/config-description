@@ -37,6 +37,11 @@ tokens_float_rel_error=
 tokens_float_abs_error=
 #!if tests out_check=tokens
 
+shuffle_mode=
+#!if tests out_check=shuffle
+shuffle_ignore_case=
+#!if tests out_check=shuffle
+
 [test\d{2}]
 #!regex
 #!default all_tests

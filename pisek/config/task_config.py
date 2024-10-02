@@ -41,6 +41,7 @@ from pisek.config.config_types import (
     GenType,
     OutCheck,
     JudgeType,
+    ShuffleMode,
     DataFormat,
     Scoring,
     ProgramType,
@@ -66,6 +67,9 @@ ListTaskPathFromStr = Annotated[
     list[TaskPath], BeforeValidator(lambda s: [TaskPath(p) for p in s.split()])
 ]
 OptionalJudgeType = Annotated[Optional[JudgeType], BeforeValidator(lambda t: t or None)]
+OptionalShuffleMode = Annotated[
+    Optional[ShuffleMode], BeforeValidator(lambda t: t or None)
+]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -109,6 +113,8 @@ class TaskConfig(BaseEnv):
     tokens_ignore_case: Optional[bool]
     tokens_float_rel_error: OptionalFloat
     tokens_float_abs_error: OptionalFloat
+    shuffle_mode: OptionalShuffleMode
+    shuffle_ignore_case: Optional[bool]
 
     in_format: DataFormat
     out_format: DataFormat
@@ -189,6 +195,8 @@ class TaskConfig(BaseEnv):
             ((None, "tokens"), "tokens_ignore_case", "0"),
             ((None, "tokens"), "tokens_float_rel_error", ""),
             ((None, "tokens"), "tokens_float_abs_error", ""),
+            ((None, "shuffle"), "shuffle_mode", ""),
+            ((None, "shuffle"), "shuffle_ignore_case", "0"),
         ]
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
