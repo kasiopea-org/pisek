@@ -487,6 +487,75 @@ class RunTokenJudge(RunBatchJudge):
             raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
 
 
+class RunShuffleJudge(RunBatchJudge):
+    """Judges solution output and correct output using judge-token."""
+
+    def __init__(
+        self,
+        env: Env,
+        subtask: int,
+        input_: TaskPath,
+        output: TaskPath,
+        correct_output: TaskPath,
+        expected_verdict: Optional[Verdict],
+    ) -> None:
+        super().__init__(
+            env=env,
+            judge_name="judge-shuffle",
+            subtask=subtask,
+            input_=input_,
+            output=output,
+            correct_output=correct_output,
+            expected_verdict=expected_verdict,
+        )
+
+    def _judge(self) -> SolutionResult:
+        self._access_file(self.output)
+        self._access_file(self.correct_output)
+
+        SHUFFLE_MODE_FLAGS = {
+            "lines": "-l",
+            "words": "-w",
+            "lines_words": "-lw",
+            "tokens": "-nw",
+        }
+        executable = TaskPath.executable_path(self._env, "judge-shuffle")
+        assert self._env.config.shuffle_mode is not None
+        flags = ["-e", SHUFFLE_MODE_FLAGS[self._env.config.shuffle_mode]]
+
+        if self._env.config.shuffle_ignore_case:
+            flags.append("-i")
+
+        judge = subprocess.run(
+            [executable.path, *flags, self.output.path, self.correct_output.path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        stderr = judge.stderr.decode("utf-8")
+
+        # XXX: Okay, it didn't finish in no time, but this is not meant to be used
+        rr = RunResult(
+            RunResultKind.OK,
+            judge.returncode,
+            0,
+            0,
+            status=(stderr.strip() or "Files are equivalent")
+            + f": {self.output.col(self._env)} {self.correct_output.col(self._env)}",
+        )
+
+        if judge.returncode == 42:
+            return RelativeSolutionResult(
+                Verdict.ok, None, self._solution_run_res, rr, Decimal(1)
+            )
+        elif judge.returncode == 43:
+            return RelativeSolutionResult(
+                Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
+            )
+        else:
+            raise PipelineItemFailure(f"Shuffle judge failed:\n{tab(stderr)}")
+
+
 class RunOpendataJudge(RunBatchJudge):
     """Judges solution output using judge with the opendata interface. (Abstract class)"""
 
@@ -624,7 +693,7 @@ def judge_job(
     seed: Optional[int],
     expected_verdict: Optional[Verdict],
     env: Env,
-) -> Union[RunDiffJudge, RunTokenJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
+) -> Union[RunDiffJudge, RunTokenJudge, RunShuffleJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(
@@ -635,9 +704,13 @@ def judge_job(
         return RunTokenJudge(
             env, subtask, input_, output, correct_output, expected_verdict
         )
+    elif env.config.out_check == OutCheck.shuffle:
+        return RunShuffleJudge(
+            env, subtask, input_, output, correct_output, expected_verdict
+        )
 
     if env.config.out_judge is None:
-        raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
+        raise ValueError(f"Unset judge for out_check={env.config.out_check.name}")
 
     if env.config.judge_type == JudgeType.cms_batch:
         return RunCMSBatchJudge(
