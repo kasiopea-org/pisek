@@ -32,7 +32,7 @@ from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
+from pisek.task_jobs.tools import PrepareTokenJudge, PrepareShuffleJudge
 from pisek.task_jobs.solution.solution_result import (
     Verdict,
     SolutionResult,
@@ -61,6 +61,8 @@ class JudgeManager(TaskJobManager):
             jobs.append(comp := Compile(self._env, self._env.config.out_judge))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
+        elif self._env.config.out_check == OutCheck.shuffle:
+            jobs.append(comp := PrepareShuffleJudge(self._env))
 
         samples = self._get_static_samples()
         if self._env.config.task_type == TaskType.communication:
