@@ -18,7 +18,7 @@ A fast and versatile equality checker. Ignores whitespace, but not newlines.
 (Ignores newlines only at the end of file.)
 
 Tokens are separated by (possibly multiple) whitespace characters.
-For output to be correct, tokens need to be same as in the correct output file.
+For the output to be correct, the tokens need to be same as in the correct output file.
 
 You can customize the tokens judge with `tokens_ignore_newlines` or `tokens_ignore_case`.
 For comparing floats, set `tokens_float_rel_error` and `tokens_float_abs_error`.
@@ -26,7 +26,7 @@ Details can be found in [config-documentation](/config-v3-documentation).
 
 ## Shuffle judge
 
-Similarly to tokens judge compares output with correct output token-by-token.
+Similarly to the tokens judge, the shuffle judge compares the output with the correct output token-by-token.
 Allows permutations of tokens (permutations can be configured with `shuffle_mode`).
 Use `shuffle_ignore_case` for case insensitivity.
 

@@ -56,8 +56,8 @@ out_check=judge
 # Describes how to check outputs
 #   - diff: compare with correct output (discouraged, can be slow in some cases)
 #   - tokens: compare token-by-token with correct output (tokens are seperated by whitespace)
-#   - shuffle: similar to tokens, but allow permutation of tokens
-#   - judge: checks with program (called 'judge')
+#   - shuffle: like tokens, but allow permutation of tokens
+#   - judge: check with a custom program (called a 'judge')
 # In communication, only judge is allowed
 
 out_judge=judge
