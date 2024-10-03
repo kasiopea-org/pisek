@@ -137,7 +137,7 @@ class PrepareJudgeLibJudge(TaskJob):
 
 
 class PrepareTokenJudge(PrepareJudgeLibJudge):
-    """Compiles the generic token-based judge."""
+    """Compiles judge-token from judgelib."""
 
     def __init__(self, env: Env, **kwargs) -> None:
         super().__init__(
@@ -146,7 +146,7 @@ class PrepareTokenJudge(PrepareJudgeLibJudge):
 
 
 class PrepareShuffleJudge(PrepareJudgeLibJudge):
-    """Compiles the generic token-based judge."""
+    """Compiles judge-shuffle from judgelib."""
 
     def __init__(self, env: Env, **kwargs) -> None:
         super().__init__(

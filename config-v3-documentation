@@ -115,7 +115,7 @@ tokens_ignore_newlines=0
 
 tokens_ignore_case=0
 # Only for out_check=tokens
-# If set to 1, ASCII characters will be compared in a case-insensitive manner (ASCII only)
+# If set to 1, ASCII characters will be compared in a case-insensitive manner
 # Defaults to 0
 
 tokens_float_rel_error=0.00001
@@ -127,7 +127,7 @@ tokens_float_abs_error=1e-30
 # If used, both of these options must be specified
 # To explicitly disable float checking, set both options to the empty string
 
-shuffle_mode=not_set
+shuffle_mode=lines
 # Only for out_check=shuffle
 # Which permutations are allowed:
 #   lines       Permutation of lines
@@ -137,7 +137,7 @@ shuffle_mode=not_set
 
 shuffle_ignore_case=0
 # Only for out_check=shuffle
-# If set to 1, ASCII characters will be compared in a case-insensitive manner (ASCII only)
+# If set to 1, ASCII characters will be compared in a case-insensitive manner
 # Defaults to 0
 
 [test01]

@@ -503,7 +503,7 @@ class RunTokenJudge(RunJudgeLibJudge):
 
 
 class RunShuffleJudge(RunJudgeLibJudge):
-    """Judges solution output and correct output using judge-token."""
+    """Judges solution output and correct output using judge-shuffle."""
 
     def __init__(
         self,
