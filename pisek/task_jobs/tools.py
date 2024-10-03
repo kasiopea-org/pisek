@@ -100,18 +100,19 @@ class PrepareTextPreprocessor(TaskJob):
             raise PipelineItemFailure("Text preprocessor compilation failed.")
 
 
-class PrepareTokenJudge(TaskJob):
-    """Compiles the generic token-based judge."""
+class PrepareJudgeLibJudge(TaskJob):
+    """Compiles judge from judgelib."""
 
-    def __init__(self, env: Env, **kwargs) -> None:
-        super().__init__(env=env, name="Prepare token judge", **kwargs)
+    def __init__(self, env: Env, judge_name: str, judge: str, **kwargs) -> None:
+        self.judge = judge
+        super().__init__(env=env, name=f"Prepare {judge_name}", **kwargs)
 
     def _run(self):
-        source_files = ["util.cc", "io.cc", "token.cc", "random.cc", "judge-token.cc"]
+        source_files = ["util.cc", "io.cc", "token.cc", "random.cc", f"{self.judge}.cc"]
         source_dir = files("pisek").joinpath("tools/judgelib")
         sources = [source_dir.joinpath(file) for file in source_files]
 
-        executable = TaskPath.executable_path(self._env, "judge-token")
+        executable = TaskPath.executable_path(self._env, self.judge)
         self._access_file(executable)
 
         gpp = subprocess.run(
@@ -132,7 +133,25 @@ class PrepareTokenJudge(TaskJob):
         )
 
         if gpp.returncode != 0:
-            raise PipelineItemFailure("Token judge compilation failed.")
+            raise PipelineItemFailure(f"{self.judge_name} compilation failed.")
+
+
+class PrepareTokenJudge(PrepareJudgeLibJudge):
+    """Compiles judge-token from judgelib."""
+
+    def __init__(self, env: Env, **kwargs) -> None:
+        super().__init__(
+            env=env, judge_name="token judge", judge="judge-token", **kwargs
+        )
+
+
+class PrepareShuffleJudge(PrepareJudgeLibJudge):
+    """Compiles judge-shuffle from judgelib."""
+
+    def __init__(self, env: Env, **kwargs) -> None:
+        super().__init__(
+            env=env, judge_name="shuffle judge", judge="judge-shuffle", **kwargs
+        )
 
 
 class SanitizeAbstract(ProgramsJob):

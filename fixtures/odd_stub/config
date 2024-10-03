@@ -9,9 +9,10 @@ version=v2
 [tests]
 in_gen=gen
 gen_type=pisek-v1
-out_check=diff
+out_check=shuffle
 stub=stubs/grader
 headers=stubs/odd.h
+shuffle_mode=lines
 
 [test01]
 points=10
@@ -25,4 +26,7 @@ solve_time_limit=0.2
 source=solve
 primary=yes
 points=10
+subtasks=11
+
+[solution_solve_rev]
 subtasks=11

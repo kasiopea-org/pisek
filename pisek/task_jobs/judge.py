@@ -32,7 +32,7 @@ from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.task_jobs.tools import PrepareTokenJudge, Sanitize
+from pisek.task_jobs.tools import PrepareTokenJudge, PrepareShuffleJudge
 from pisek.task_jobs.solution.solution_result import (
     Verdict,
     SolutionResult,
@@ -61,6 +61,8 @@ class JudgeManager(TaskJobManager):
             jobs.append(comp := Compile(self._env, self._env.config.out_judge))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
+        elif self._env.config.out_check == OutCheck.shuffle:
+            jobs.append(comp := PrepareShuffleJudge(self._env))
 
         samples = self._get_static_samples()
         if self._env.config.task_type == TaskType.communication:
@@ -411,52 +413,26 @@ class RunDiffJudge(RunBatchJudge):
             )
 
 
-class RunTokenJudge(RunBatchJudge):
-    """Judges solution output and correct output using judge-token."""
+class RunJudgeLibJudge(RunBatchJudge):
+    """Judges solution output and correct output using judgelib judge."""
 
-    def __init__(
-        self,
-        env: Env,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
-        expected_verdict: Optional[Verdict],
-    ) -> None:
-        super().__init__(
-            env=env,
-            judge_name="judge-token",
-            subtask=subtask,
-            input_=input_,
-            output=output,
-            correct_output=correct_output,
-            expected_verdict=expected_verdict,
-        )
+    @abstractmethod
+    def _get_flags(self) -> list[str]:
+        pass
 
     def _judge(self) -> SolutionResult:
         self._access_file(self.output)
         self._access_file(self.correct_output)
 
-        executable = TaskPath.executable_path(self._env, "judge-token")
-        flags = ["-t"]
-
-        if self._env.config.tokens_ignore_newlines:
-            flags.append("-n")
-        if self._env.config.tokens_ignore_case:
-            flags.append("-i")
-        if self._env.config.tokens_float_rel_error != None:
-            flags.extend(
-                [
-                    "-r",
-                    "-e",
-                    str(self._env.config.tokens_float_rel_error),
-                    "-E",
-                    str(self._env.config.tokens_float_abs_error),
-                ]
-            )
+        executable = TaskPath.executable_path(self._env, self.judge_name)
 
         judge = subprocess.run(
-            [executable.path, *flags, self.output.path, self.correct_output.path],
+            [
+                executable.path,
+                *self._get_flags(),
+                self.output.path,
+                self.correct_output.path,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -482,7 +458,85 @@ class RunTokenJudge(RunBatchJudge):
                 Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
-            raise PipelineItemFailure(f"Token judge failed:\n{tab(stderr)}")
+            raise PipelineItemFailure(f"{self.judge_name} failed:\n{tab(stderr)}")
+
+
+class RunTokenJudge(RunJudgeLibJudge):
+    """Judges solution output and correct output using judge-token."""
+
+    def __init__(
+        self,
+        env: Env,
+        subtask: int,
+        input_: TaskPath,
+        output: TaskPath,
+        correct_output: TaskPath,
+        expected_verdict: Optional[Verdict],
+    ) -> None:
+        super().__init__(
+            env=env,
+            judge_name="judge-token",
+            subtask=subtask,
+            input_=input_,
+            output=output,
+            correct_output=correct_output,
+            expected_verdict=expected_verdict,
+        )
+
+    def _get_flags(self) -> list[str]:
+        flags = ["-t"]
+        if self._env.config.tokens_ignore_newlines:
+            flags.append("-n")
+        if self._env.config.tokens_ignore_case:
+            flags.append("-i")
+        if self._env.config.tokens_float_rel_error != None:
+            flags.extend(
+                [
+                    "-r",
+                    "-e",
+                    str(self._env.config.tokens_float_rel_error),
+                    "-E",
+                    str(self._env.config.tokens_float_abs_error),
+                ]
+            )
+        return flags
+
+
+class RunShuffleJudge(RunJudgeLibJudge):
+    """Judges solution output and correct output using judge-shuffle."""
+
+    def __init__(
+        self,
+        env: Env,
+        subtask: int,
+        input_: TaskPath,
+        output: TaskPath,
+        correct_output: TaskPath,
+        expected_verdict: Optional[Verdict],
+    ) -> None:
+        super().__init__(
+            env=env,
+            judge_name="judge-shuffle",
+            subtask=subtask,
+            input_=input_,
+            output=output,
+            correct_output=correct_output,
+            expected_verdict=expected_verdict,
+        )
+
+    def _get_flags(self) -> list[str]:
+        SHUFFLE_MODE_FLAGS = {
+            "lines": "-l",
+            "words": "-w",
+            "lines_words": "-lw",
+            "tokens": "-nw",
+        }
+        assert self._env.config.shuffle_mode is not None
+        flags = ["-e", SHUFFLE_MODE_FLAGS[self._env.config.shuffle_mode]]
+        if self._env.config.shuffle_ignore_case:
+            flags.append("-i")
+
+        return flags
 
 
 class RunOpendataJudge(RunBatchJudge):
@@ -622,7 +676,9 @@ def judge_job(
     seed: Optional[int],
     expected_verdict: Optional[Verdict],
     env: Env,
-) -> Union[RunDiffJudge, RunTokenJudge, RunOpendataV1Judge, RunCMSBatchJudge]:
+) -> Union[
+    RunDiffJudge, RunTokenJudge, RunShuffleJudge, RunOpendataV1Judge, RunCMSBatchJudge
+]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
         return RunDiffJudge(
@@ -633,9 +689,13 @@ def judge_job(
         return RunTokenJudge(
             env, subtask, input_, output, correct_output, expected_verdict
         )
+    elif env.config.out_check == OutCheck.shuffle:
+        return RunShuffleJudge(
+            env, subtask, input_, output, correct_output, expected_verdict
+        )
 
     if env.config.out_judge is None:
-        raise RuntimeError(f"Unset judge for out_check={env.config.out_check.name}")
+        raise ValueError(f"Unset judge for out_check={env.config.out_check.name}")
 
     if env.config.judge_type == JudgeType.cms_batch:
         return RunCMSBatchJudge(

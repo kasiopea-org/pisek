@@ -14,6 +14,7 @@ tokens_ignore_newlines=0
 tokens_ignore_case=0
 tokens_float_rel_error=
 tokens_float_abs_error=
+shuffle_ignore_case=0
 in_format=text
 out_format=text
 
