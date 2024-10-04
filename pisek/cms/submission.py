@@ -21,7 +21,7 @@ from cms.grading.languagemanager import get_language
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import Session
 from os import path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pisek.env.env import Env
 from pisek.config.task_config import SolutionConfig, TaskConfig
@@ -83,7 +83,7 @@ def submit(
         return submission
 
     submission = Submission(
-        timestamp=datetime.now(),
+        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
         language=language.name,
         participation=participation,
         task=task,
