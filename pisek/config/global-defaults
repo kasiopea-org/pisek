@@ -19,7 +19,7 @@ in_format=text
 out_format=text
 
 [all_tests]
-name=@auto 
+name=@auto
 in_globs=@ith
 predecessors=@previous
 
