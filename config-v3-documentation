@@ -13,15 +13,16 @@
 
 version=v3
 # Task version
-# - v1 - Old version, currently not supported. Use 'pisek update' to update to v2.
+# - v1 - Old version, currently not supported. Use 'pisek update' to update to v2. (default)
 # - v2 - Current stable version, Added solution sections and redone test sections.
-# - v3 - Current experimental version, generalized contest_type to use. More changes incoming
+# - v3 - Current experimental version, generalized contest_type to use. More changes incoming.
+# The version applies to this config file only and cannot be inherited with the use key.
 
 name=a-plus-b
-# Name of task (for automatic CMS import)
+# Name of task (for automatic CMS import) (required)
 
 use=organization-config
-# Config to use defaults from
+# Config to use defaults from (defaults to none)
 
 task_type=communication
 # Task type:
@@ -29,29 +30,26 @@ task_type=communication
 # - communication
 
 scoring=equal
-# Type of subtask scoring
+# Type of subtask scoring (required)
 # - equal - all inputs should result the same
 # - min   - worst input in subtask determines the result
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
 
 solutions_subdir=solutions/
-# Try to find solutions in this folder relative to config
-# Default: .
+# Try to find solutions in this folder relative to config (defaults to .)
 static_subdir=sample_tests/
-# Try to find static inputs and outputs in this folder relative to config
-# Default: .
+# Try to find static inputs and outputs in this folder relative to config (defaults to .)
 data_subdir=tests/
-# Directory for automatically generated files (inputs, outputs, ...)
-# Default: data/
+# Directory for automatically generated files (inputs, outputs, ...) (defaults to data/)
 
 [tests]
 
 in_gen=src/gen
-# Source code of generator (without suffix)
+# Source code of generator (without suffix) (required)
 
 gen_type=opendata-v1
-# Specifies the generator type. 
+# Specifies the generator type. (required)
 # - pisek-v1 (recommended)
 # - cms-old
 # - opendata-v1
@@ -59,35 +57,36 @@ gen_type=opendata-v1
 
 in_format=text
 # Format of input:
-#   text    ASCII plain text (LF newlines)
+#   text    ASCII plain text (LF newlines) (default)
 #   binary  can be anything
 
 out_format=text
 # Format of output:
-#   text    ASCII plain text (LF newlines)
+#   text    ASCII plain text (LF newlines) (default)
 #   binary  can be anything
 #
 # TODO: Mention auto normalization in Server mode when it's done (#137)
 
 checker=check
 # Program (without suffix) that validates inputs
-# No value means no checking
+# No value means no checking (default)
 
 out_check=judge
-# Describes how to check outputs
+# Describes how to check outputs (required)
 #   - diff: compare with correct output (discouraged, can be slow in some cases)
 #   - tokens: compare token-by-token with correct output (tokens are seperated by whitespace)
-#   - shuffle: similar to tokens, but allow permutation of tokens
-#   - judge: checks with program (called 'judge')
+#   - shuffle: like tokens, but allow permutation of tokens
+#   - judge: check with a custom program (called a 'judge')
 # In communication, only judge is allowed
+# For more see docs/batch_judge.md or docs/communication_judge.md
 
 out_judge=judge
-# Only for out_check=judge
+# Only for out_check=judge (required in that case)
 # Source code of judge (without suffix)
 
 judge_type=cms-batch
+# Only for out_check=judge (required in that case)
 # Specifies how to call judge and how judge reports result
-# Only if out_check=judge
 #
 # For task_type=batch:
 # - cms-batch
@@ -104,19 +103,17 @@ judge_type=cms-batch
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output
-# Defaults to 1
+# Set to 1 if judge needs input/output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
 # If set to 1, newline characters will be ignored when checking the output,
 # as if they were any other whitespace characters
-# By default, newline characters are only ignored at the end of the file
+# If set to 0, newline characters are only ignored at the end of the file (default)
 
 tokens_ignore_case=0
 # Only for out_check=tokens
-# If set to 1, ASCII characters will be compared in a case-insensitive manner
-# Defaults to 0
+# If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
 
 tokens_float_rel_error=0.00001
 tokens_float_abs_error=1e-30
@@ -125,10 +122,10 @@ tokens_float_abs_error=1e-30
 # will be parsed and compared with a given error margin
 # Any tokens that can't be parsed as a float will be compared character-by-character
 # If used, both of these options must be specified
-# To explicitly disable float checking, set both options to the empty string
+# To explicitly disable float checking, set both options to the empty string (default)
 
 shuffle_mode=lines
-# Only for out_check=shuffle
+# Only for out_check=shuffle (required in that case)
 # Which permutations are allowed:
 #   lines       Permutation of lines
 #   words       Permutation of words within each line
@@ -137,32 +134,32 @@ shuffle_mode=lines
 
 shuffle_ignore_case=0
 # Only for out_check=shuffle
-# If set to 1, ASCII characters will be compared in a case-insensitive manner
-# Defaults to 0
+# If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
 
 [test01]
 # Section for each subtask (indexed from one)
 # Keys default to [all_tests] keys if test is not set
 
 name=Subtask 1
-# Name of subtask (optional)
+# Name of the subtask
+# @auto expands to "Subtask [subtask number]" (default)
 
 points=3
-# Number of points (<int>)
+# Number of points (<int>) (required)
 
 in_globs=01*.in
 # Which new inputs are introduced in this subtask.
 # Supports expansion of * and ? as in shell
-# @ith expands to {subtask_number:02}*.in
+# @ith expands to {subtask_number:02}*.in (default)
 
 predecessors=
 # Space separated list of subtasks easier than this subtask
 # Inputs from these subtasks are included into this subtask as well
-# @previous expands to previous subtask (or nothing if subtask has number <= 1)
+# @previous expands to previous subtask (or nothing if subtask has number <= 1) (default)
 
 [test00]
 # Section for samples subtasks
-# Can be omitted and has the following defaults (doesn't use [all_tests] defaults)
+# Can be omitted and has the following defaults: (doesn't use [all_tests] defaults)
 name=Samples
 points=0
 in_globs=sample*.in
@@ -170,30 +167,30 @@ predecessors=
 
 [all_tests]
 # Defaults for all tests
-# If not specified the defaults are
+# If not specified the defaults are:
 name=@auto
 in_globs=@ith
 predecessors=@previous
 
 [solution_correct]
 # Section for each solution
-# Keys default to [all_solution] keys if test is not set
+# Keys default to [all_solution] keys
 
 source=solve
 # Filename of the program (without suffix)
-# @auto expands to name of the section without "solution_" (in this case to "correct")
+# @auto expands to name of the section without "solution_" (in this case to "correct") (default)
 
 primary=yes
-# Use this solution to generate correct outputs?
+# Use this solution to generate correct outputs? (defaults to no)
 # Exactly one solution has to be set to primary
 # (or zero if there are no solutions in config)
 
 points=10
-# Points that program should get or X for any number of points
+# Points that program should get or X for any number of points (defaults to X)
 
 points_above=5
 points_below=7
-# Upper and lower bounds on points
+# Upper and lower bounds on points (defaults to X)
 # Cannot be set simultaneously with points
 
 subtasks=X10
@@ -208,11 +205,11 @@ subtasks=X10
 #
 # @all - string of 11...
 # @any - string of XX...
-# @auto - @all if this is primary solution, @any otherwise
+# @auto - @all if this is primary solution, @any otherwise (default)
 
 [all_solutions]
 # Defaults for all tests
-# If not specified the defaults are
+# If not specified the defaults are:
 source=@auto
 primary=no
 points=X
@@ -225,12 +222,12 @@ subtasks=@auto
 
 stub=src/stub
 # Only for C/C++ CMS tasks
-# Link each solution with given program (without suffix)
+# Link each solution with given program (without suffix) (defaults to none)
 # Used commonly for communication tasks
 
 headers=src/a-plus-b.h
 # Only for C/C++ CMS tasks
-# Allow each solution to include the given headers
+# Allow each solution to include the given headers (defaults to none)
 # Used commonly for communication tasks
 
 [limits]
@@ -264,19 +261,17 @@ headers=src/a-plus-b.h
 #  | clock_mul     | 2         | 2         |
 #  | clock_min     | 1s        | 1s        |
 #  | mem_limit     | unlimited | unlimited |
-#  | process_limit | 1         | unlimited |
+#  | process_limit | unlimited | 1         |
 
 solve_time_limit=3
 
 input_max_size=20
 # Maximal input size [MB]
-# (0 for unlimited)
-# Defaults to 50
+# (0 for unlimited) (defaults to 50)
 
 output_max_size=5
 # Maximal input size [MB]
-# (0 for unlimited)
-# Defaults to 10
+# (0 for unlimited) (defaults to 10)
 
 [checks]
 # Sections for enabling/disabling checks that task must satisfy
@@ -284,26 +279,24 @@ output_max_size=5
 # Please be careful with this section as disabling checks can make
 # task making into a minefield
 
-# Values are on/off and keys defaults to these values: 
+# Values are on/off: 
 
 solution_for_each_subtask=off
-# checks that a dedicated solution exists for each subtask (aside from samples)
+# checks that a dedicated solution exists for each subtask (aside from samples) (defaults to off)
 # A dedicated solution for a subtask is one that:
 # - Gets full points on this subtask and its predecessors.
 # - Doesn't get full points on other subtasks.
 
 no_unused_inputs=on
-# checks that there are no unused inputs in the entire task:
+# checks that there are no unused inputs in the entire task: (defaults to on)
 # - In static_subdir
 # - Generated by generator
 
 all_inputs_in_last_subtask=off
-# checks that all inputs are included in the last subtask
+# checks that all inputs are included in the last subtask (defaults to off)
 
 generator_respects_seed=on
-# Checks that the generator generates two different inputs for two different seeds 
-
-# TODO: Implement keys in this section
+# Checks that the generator generates two different inputs for two different seeds (defaults to on)
 
 [cms]
 # Settings related to the CMS importer
@@ -311,23 +304,21 @@ generator_respects_seed=on
 
 title=A plus B
 # The name of the task shown on the task description page 
-# @name expands to the task name and is the default
+# @name expands to the task name (default)
 submission_format=adder.%%l
 # The name of the submitted file
 # .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
-# @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended
+# @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended (default)
 
 time_limit=1
-# Execution time limit [seconds]
+# Execution time limit [seconds] (defaults to 1)
 mem_limit=1024
-# Memory limit [MB]
+# Memory limit [MB] (defaults to 1024)
 
 max_submissions=50
-# The number of submissions one contestant allowed to make, or X for unlimited
-# Defaults to 50
+# The number of submissions one contestant allowed to make, or X for unlimited (defaults to 50)
 min_submission_interval=60
-# The number of seconds a contestant has to wait between consecutive submissions
-# Defaults to 0
+# The number of seconds a contestant has to wait between consecutive submissions (defaults to 0)
 
 score_mode=max_subtask
 # Describes how the final score is computed from the scores of individual submissions
