@@ -16,6 +16,7 @@ version=v3
 # - v1 - Old version, currently not supported. Use 'pisek update' to update to v2. (default)
 # - v2 - Current stable version, Added solution sections and redone test sections.
 # - v3 - Current experimental version, generalized contest_type to use. More changes incoming.
+# The version applies to this config file only and cannot be inherited with the use key.
 
 name=a-plus-b
 # Name of task (for automatic CMS import) (required)
@@ -140,7 +141,8 @@ shuffle_ignore_case=0
 # Keys default to [all_tests] keys if test is not set
 
 name=Subtask 1
-# Name of subtask (defaults to @auto)
+# Name of the subtask
+# @auto expands to "Subtask [subtask number]" (default)
 
 points=3
 # Number of points (<int>) (required)

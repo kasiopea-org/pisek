@@ -117,7 +117,8 @@ online_validity = ??? (ignored)
 # Section for each subtask (indexed from one)
 
 name=Subtask 1
-# Name of subtask (defaults to @auto)
+# Name of the subtask
+# @auto expands to "Subtask [subtask number]" (default)
 
 points=3
 # Number of points (<int>) (required)
