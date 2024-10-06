@@ -219,9 +219,9 @@ output_max_size=5
 title=A plus B
 # The name of the task shown on the task description page 
 # @name expands to the task name (default)
-submission_format=adder.%%l
+submission_format=adder.%l
 # The name of the submitted file
-# .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
+# .%l will be replaced with the language's file extension
 # @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended (default)
 
 time_limit=1

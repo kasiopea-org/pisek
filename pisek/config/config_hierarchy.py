@@ -84,7 +84,7 @@ class ConfigHierarchy:
 
     def _load_config(self, path: str, info: bool = True) -> None:
         self._config_paths.append(path)
-        self._configs.append(config := ConfigParser())
+        self._configs.append(config := ConfigParser(interpolation=None))
         if not self._read_config(config, path):
             raise TaskConfigError(f"Missing config {path}. Is this task folder?")
 

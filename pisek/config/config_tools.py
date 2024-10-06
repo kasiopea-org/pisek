@@ -17,7 +17,7 @@ def update_and_replace_config(
         return False  # Raise errors if config is invalid
 
     config_path = os.path.join(task_path, CONFIG_FILENAME)
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config.read(config_path)
     update_config(config, task_path=task_path, infos=False)
     with open(config_path, "w") as f:

@@ -160,7 +160,7 @@ def modify_config(task_dir: str, modification_fn):
         config["tests"]["out_judge"] = "judge"  # To specify the judge program file
     """
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config_path = os.path.join(task_dir, config_hierarchy.CONFIG_FILENAME)
     read_files = config.read(config_path)
     if not read_files:
