@@ -1,9 +1,6 @@
 # Example and explanation of a config file for task made in pisek
-# Parsed by configparser.RawConfigParser with checking of unused keys
-# See more here: https://docs.python.org/3.10/library/configparser.html
 
 # Move 'config' into a task folder 
-
 
 # Values beginning with ! or @ are reserved and have special meaning:
 # - Only ! value is !unset, which is always invalid
@@ -13,9 +10,11 @@
 
 version=v2
 # Task version
-# - v1 - Old version, currently not supported. Use 'pisek update' to update to v2. (default)
+# - v1 - Old version with a basic set of options. (default)
 # - v2 - Current stable version, Added solution sections and redone test sections.
 # - v3 - Current experimental version, generalized contest_type to use. More changes incoming.
+
+# You can use 'pisek update' to update the config to the highest version.
 
 name=a-plus-b
 # Name of task (for automatic CMS import) (required)
@@ -220,9 +219,9 @@ output_max_size=5
 title=A plus B
 # The name of the task shown on the task description page 
 # @name expands to the task name (default)
-submission_format=adder.%%l
+submission_format=adder.%l
 # The name of the submitted file
-# .%l will be replaced with the language's file extension ("%" must be escaped as "%%"")
+# .%l will be replaced with the language's file extension
 # @name expands to to the task name with non-alphanumeric characters replaced with _ and .%l appended (default)
 
 time_limit=1
