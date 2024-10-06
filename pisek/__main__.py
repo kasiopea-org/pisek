@@ -86,12 +86,20 @@ def main(argv):
         )
 
     def add_argument_dataset(parser):
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument(
             "--dataset",
             "-d",
             type=str,
             required=False,
             help="Use the dataset with the description DESCRIPTION.",
+        )
+
+        group.add_argument(
+            "--active-dataset",
+            "-a",
+            action="store_true",
+            help="Use the active dataset.",
         )
 
     # ------------------------------- pisek -------------------------------
