@@ -217,17 +217,20 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
         session.add(Manager(dataset=dataset, filename=name, digest=header))
 
 
-def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:
-    if description is None:
-        datasets = session.query(Dataset).filter(Dataset.task == task).all()
+def get_only_dataset(session: Session, task: Task) -> Dataset:
+    datasets = session.query(Dataset).filter(Dataset.task == task).all()
 
-        if len(datasets) >= 2:
-            raise RuntimeError(
-                f"The task has multiple datasets: {', '.join(d.description for d in datasets)}"
-            )
-        else:
-            return datasets[0]
+    if len(datasets) >= 2:
+        raise RuntimeError(
+            f"The task has multiple datasets: {', '.join(sorted(d.description for d in datasets))}"
+        )
+    else:
+        return datasets[0]
 
+
+def get_dataset_by_description(
+    session: Session, task: Task, description: str
+) -> Dataset:
     try:
         return (
             session.query(Dataset)
