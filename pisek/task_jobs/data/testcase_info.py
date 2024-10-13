@@ -11,15 +11,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from enum import Enum, IntEnum, auto
+from enum import StrEnum, auto
 from typing import Optional
 import yaml
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
+from pisek.utils.yaml_enum import yaml_enum
 
 
-class TestcaseGenerationMode(Enum):
+@yaml_enum
+class TestcaseGenerationMode(StrEnum):
     static = auto()
     mixed = auto()
     generated = auto()

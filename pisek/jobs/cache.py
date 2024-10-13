@@ -27,6 +27,11 @@ CACHE_FILENAME = ".pisek_cache"
 SAVED_LAST_SIGNATURES = 5
 
 
+class NoAliasDumper(yaml.Dumper):
+    def ignore_aliases(self, data):
+        return True
+
+
 class CacheInfo(yaml.YAMLObject):
     """Object for cache metadata."""
 
@@ -47,7 +52,9 @@ class CacheInfo(yaml.YAMLObject):
         return CacheInfo(version)
 
     def yaml_export(self) -> str:
-        return yaml.dump([self], allow_unicode=True, sort_keys=False)
+        return yaml.dump(
+            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
+        )
 
 
 class CacheEntry(yaml.YAMLObject):
@@ -81,7 +88,9 @@ class CacheEntry(yaml.YAMLObject):
         )
 
     def yaml_export(self) -> str:
-        return yaml.dump([self], allow_unicode=True, sort_keys=False)
+        return yaml.dump(
+            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
+        )
 
 
 class Cache:
