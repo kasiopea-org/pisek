@@ -47,7 +47,7 @@ class DataManager(TaskJobManager):
                     static_outputs.append(static_out)
                 elif static_inp in sample_inputs:
                     raise PipelineItemFailure(
-                        f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
+                        f"Missing matching output '{static_out:p}' for sample input '{static_inp:p}'."
                     )
 
         all_static_inputs = self.globs_to_files(
@@ -56,7 +56,8 @@ class DataManager(TaskJobManager):
         all_testcase_infos: list[TestcaseInfo] = [
             (
                 TestcaseInfo.static(inp.name.removesuffix(".in"))
-                if self._env.config.task_type == TaskType.communication or inp.replace_suffix(".out").exists()
+                if self._env.config.task_type == TaskType.communication
+                or inp.replace_suffix(".out").exists()
                 else TestcaseInfo.mixed(inp.name.removesuffix(".in"))
             )
             for inp in all_static_inputs
@@ -69,7 +70,16 @@ class DataManager(TaskJobManager):
         for num, sub in self._env.config.subtasks.items():
             self._testcase_infos[sub.num] = []
             for testcase_info in all_testcase_infos:
-                if sub.in_subtask(testcase_info.input_path(self._env, TEST_SEED).name):
+                inp_path = testcase_info.input_path(self._env, TEST_SEED).name
+                if sub.in_subtask(inp_path):
+                    if (
+                        num == 0
+                        and testcase_info.generation_mode
+                        != TestcaseGenerationMode.static
+                    ):
+                        raise PipelineItemFailure(
+                            f"Sample inputs must be static, but '{inp_path}' is {testcase_info.generation_mode}."
+                        )
                     self._testcase_infos[sub.num].append(testcase_info)
             if len(self._testcase_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
