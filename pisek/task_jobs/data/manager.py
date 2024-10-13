@@ -16,7 +16,7 @@ from pisek.utils.paths import TaskPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.config.config_types import TaskType
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
-from pisek.task_jobs.generator.input_info import InputInfo
+from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 from pisek.task_jobs.checker import CheckerJob
 
 from .data import LinkInput, LinkOutput
@@ -32,16 +32,20 @@ class DataManager(TaskJobManager):
         super().__init__("Processing data")
 
     def _get_jobs(self) -> list[Job]:
+        sample_inputs = self.globs_to_files(
+            self._env.config.subtasks[0].all_globs, TaskPath.static_path(self._env, ".")
+        )
         static_inputs = self.globs_to_files(
             self._env.config.input_globs, TaskPath.static_path(self._env, ".")
         )
 
-        if self._env.config.task_type == TaskType.communication:
-            static_outputs = []
-        else:
-            static_outputs = [path.replace_suffix(".out") for path in static_inputs]
-            for static_inp, static_out in zip(static_inputs, static_outputs):
-                if not static_out.exists():
+        static_outputs: list[TaskPath] = []
+        if self._env.config.task_type != TaskType.communication:
+            for static_inp in static_inputs:
+                static_out = static_inp.replace_suffix(".out")
+                if static_out.exists():
+                    static_outputs.append(static_out)
+                elif static_inp in sample_inputs:
                     raise PipelineItemFailure(
                         f"Missing matching output '{static_out:p}' for static input '{static_inp:p}'."
                     )
@@ -49,28 +53,34 @@ class DataManager(TaskJobManager):
         all_static_inputs = self.globs_to_files(
             ["*.in"], TaskPath.static_path(self._env, ".")
         )
-        all_input_infos: list[InputInfo] = [
-            InputInfo.static(inp.name.removesuffix(".in")) for inp in all_static_inputs
+        all_testcase_infos: list[TestcaseInfo] = [
+            (
+                TestcaseInfo.static(inp.name.removesuffix(".in"))
+                if self._env.config.task_type == TaskType.communication or inp.replace_suffix(".out").exists()
+                else TestcaseInfo.mixed(inp.name.removesuffix(".in"))
+            )
+            for inp in all_static_inputs
         ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
-        all_input_infos.sort(key=lambda info: info.name)
+
+        all_testcase_infos.sort(key=lambda info: info.name)
 
         # put inputs in subtasks
-        self._input_infos: dict[int, list[InputInfo]] = {}
+        self._testcase_infos: dict[int, list[TestcaseInfo]] = {}
         for num, sub in self._env.config.subtasks.items():
-            self._input_infos[sub.num] = []
-            for input_info in all_input_infos:
-                if sub.in_subtask(input_info.task_path(self._env, TEST_SEED).name):
-                    self._input_infos[sub.num].append(input_info)
-            if len(self._input_infos[sub.num]) == 0:
+            self._testcase_infos[sub.num] = []
+            for testcase_info in all_testcase_infos:
+                if sub.in_subtask(testcase_info.input_path(self._env, TEST_SEED).name):
+                    self._testcase_infos[sub.num].append(testcase_info)
+            if len(self._testcase_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
                     f"No inputs for subtask {num} with globs {sub.all_globs}."
                 )
 
-        used_inputs = set(sum(self._input_infos.values(), start=[]))
+        used_inputs = set(sum(self._testcase_infos.values(), start=[]))
         self._report_not_included_inputs(
-            used_inputs - set(self._input_infos[self._env.config.subtasks_count - 1])
+            used_inputs - set(self._testcase_infos[self._env.config.subtasks_count - 1])
         )
-        self._report_unused_inputs(set(all_input_infos) - used_inputs)
+        self._report_unused_inputs(set(all_testcase_infos) - used_inputs)
 
         jobs: list[Job] = []
         for path in static_inputs:
@@ -79,9 +89,9 @@ class DataManager(TaskJobManager):
         for path in static_outputs:
             jobs.append(LinkOutput(self._env, path))
 
-        for subtask, inputs in self._input_infos.items():
-            for inp in inputs:
-                if inp.is_generated:
+        for subtask, testcases in self._testcase_infos.items():
+            for testcase in testcases:
+                if testcase.generation_mode == TestcaseGenerationMode.generated:
                     continue
 
                 if subtask > 0 and self._env.config.checker is not None:
@@ -90,7 +100,7 @@ class DataManager(TaskJobManager):
                             self._env,
                             self._env.config.checker,
                             TaskPath.static_path(
-                                self._env, inp.task_path(self._env).name
+                                self._env, testcase.input_path(self._env).name
                             ),
                             subtask,
                         )
@@ -98,7 +108,7 @@ class DataManager(TaskJobManager):
 
         return jobs
 
-    def _report_unused_inputs(self, unused_inputs: Iterable[InputInfo]) -> None:
+    def _report_unused_inputs(self, unused_inputs: Iterable[TestcaseInfo]) -> None:
         inputs = list(sorted(unused_inputs, key=lambda inp: inp.name))
         if self._env.config.checks.no_unused_inputs and inputs:
             if self._env.verbosity <= 0:
@@ -109,11 +119,11 @@ class DataManager(TaskJobManager):
             else:
                 for inp in inputs:
                     self._warn(
-                        f"Unused {'generated' if inp.is_generated else 'static'} input: '{inp.name}.in'"
+                        f"Unused {'generated' if inp.generation_mode == TestcaseGenerationMode.generated else 'static'} input: '{inp.name}.in'"
                     )
 
     def _report_not_included_inputs(
-        self, not_included_inputs: Iterable[InputInfo]
+        self, not_included_inputs: Iterable[TestcaseInfo]
     ) -> None:
         inputs = list(sorted(not_included_inputs, key=lambda inp: inp.name))
         if self._env.config.checks.all_inputs_in_last_subtask and inputs:
@@ -127,11 +137,11 @@ class DataManager(TaskJobManager):
                 for inp in inputs:
                     self._warn(f"Input '{inp.name}.in' not included in last subtask.")
 
-    def _short_inputs_list(self, inputs: Iterable[InputInfo]) -> str:
+    def _short_inputs_list(self, inputs: Iterable[TestcaseInfo]) -> str:
         return self._short_list(
             list(map(lambda inp: f"{inp.name}.in", inputs)), SHORTEN_INPUTS_CUTOFF
         )
 
     def _compute_result(self) -> dict[str, Any]:
-        res = {"input_info": self._input_infos}
+        res = {"testcase_info": self._testcase_infos}
         return res

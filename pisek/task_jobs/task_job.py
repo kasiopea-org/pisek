@@ -26,11 +26,10 @@ import subprocess
 from pisek.env.env import Env
 from pisek.config.task_config import ProgramLimits
 from pisek.utils.paths import TaskPath
-from pisek.utils.colors import ColorSettings
 from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
-from pisek.task_jobs.generator.input_info import InputInfo
+from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
 
 class TaskHelper:
@@ -52,15 +51,17 @@ class TaskHelper:
             "process_limit": limits.process_limit,
         }
 
-    def _get_reference_output(self, input_info: InputInfo, seed: Optional[int] = None):
-        input_path = input_info.task_path(self._env, seed)
-        if input_info.is_generated:
+    def _get_reference_output(
+        self, testcase_info: TestcaseInfo, seed: Optional[int] = None
+    ):
+        input_path = testcase_info.input_path(self._env, seed)
+        if testcase_info.generation_mode == TestcaseGenerationMode.static:
+            return TaskPath.output_static_file(self._env, input_path.name)
+        else:
             primary_sol = self._env.config.solutions[
                 self._env.config.primary_solution
             ].raw_source
             return TaskPath.output_file(self._env, input_path.name, primary_sol)
-        else:
-            return TaskPath.output_static_file(self._env, input_path.name)
 
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
