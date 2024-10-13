@@ -14,7 +14,7 @@ from pisek.utils.paths import TaskPath
 from pisek.config.task_config import SubtaskConfig
 from pisek.jobs.status import StatusJobManager
 from pisek.task_jobs.task_job import TaskHelper
-from pisek.task_jobs.generator.input_info import InputInfo
+from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
 
 TOOLS_MAN_CODE = "tools"
@@ -32,18 +32,21 @@ class TaskJobManager(StatusJobManager, TaskHelper):
     def _get_static_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         ins = filter(
-            lambda inp: not inp.is_generated,
-            self._subtask_inputs(self._env.config.subtasks[0]),
+            lambda inp: not inp.generation_mode,
+            self._subtask_testcases(self._env.config.subtasks[0]),
         )
         return [
-            (inp.task_path(self._env), TaskPath.output_static_file(self._env, inp.name))
+            (
+                inp.input_path(self._env),
+                TaskPath.output_static_file(self._env, inp.name),
+            )
             for inp in ins
         ]
 
-    def _subtask_inputs(self, subtask: SubtaskConfig) -> list[InputInfo]:
+    def _subtask_testcases(self, subtask: SubtaskConfig) -> list[TestcaseInfo]:
         """Get all inputs of given subtask."""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"][subtask.num]
+        return self.prerequisites_results[INPUTS_MAN_CODE]["testcase_info"][subtask.num]
 
-    def _all_inputs(self) -> dict[int, list[InputInfo]]:
+    def _all_testcases(self) -> dict[int, list[TestcaseInfo]]:
         """Get all inputs grouped by subtask."""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["input_info"]
+        return self.prerequisites_results[INPUTS_MAN_CODE]["testcase_info"]

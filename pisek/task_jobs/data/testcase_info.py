@@ -11,6 +11,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from enum import Enum, IntEnum, auto
 from typing import Optional
 import yaml
 
@@ -18,24 +19,34 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 
 
+class TestcaseGenerationMode(Enum):
+    static = auto()
+    mixed = auto()
+    generated = auto()
+
+
 @dataclass(frozen=True)
-class InputInfo(yaml.YAMLObject):
-    yaml_tag = "!InputInfo"
+class TestcaseInfo(yaml.YAMLObject):
+    yaml_tag = "!TestcaseInfo"
 
     name: str
-    repeat: int = 1
-    is_generated: bool = True
-    seeded: bool = True
+    repeat: int
+    generation_mode: TestcaseGenerationMode
+    seeded: bool
 
     @staticmethod
-    def generated(name: str, repeat: int = 1, seeded: bool = True) -> "InputInfo":
-        return InputInfo(name, repeat, True, seeded)
+    def generated(name: str, repeat: int = 1, seeded: bool = True) -> "TestcaseInfo":
+        return TestcaseInfo(name, repeat, TestcaseGenerationMode.generated, seeded)
 
     @staticmethod
-    def static(name: str) -> "InputInfo":
-        return InputInfo(name, 1, False, False)
+    def mixed(name: str) -> "TestcaseInfo":
+        return TestcaseInfo(name, 1, TestcaseGenerationMode.mixed, False)
 
-    def task_path(self, env: Env, seed: Optional[int] = None) -> TaskPath:
+    @staticmethod
+    def static(name: str) -> "TestcaseInfo":
+        return TestcaseInfo(name, 1, TestcaseGenerationMode.static, False)
+
+    def input_path(self, env: Env, seed: Optional[int] = None) -> TaskPath:
         filename = self.name
         if self.seeded:
             assert seed is not None

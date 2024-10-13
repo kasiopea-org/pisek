@@ -16,7 +16,7 @@ shuffle_mode=lines
 
 [test01]
 points=10
-in_globs=random-uniform*.in
+in_globs=first-ten.in random-uniform*.in
 predecessors=0
 
 [limits]
