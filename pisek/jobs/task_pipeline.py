@@ -33,7 +33,7 @@ from pisek.task_jobs.data.manager import DataManager
 from pisek.task_jobs.generator.manager import (
     PrepareGenerator,
     RunGenerator,
-    InputsInfoMixin,
+    TestcaseInfoMixin,
 )
 from pisek.task_jobs.checker import CheckerManager
 from pisek.task_jobs.judge import JudgeManager
@@ -60,7 +60,7 @@ class TaskPipeline(JobPipeline):
         inputs[0].add_prerequisite(*checker)
 
         solutions = []
-        self.input_generator: InputsInfoMixin
+        self.input_generator: TestcaseInfoMixin
 
         if env.target == TestingTarget.generator:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))

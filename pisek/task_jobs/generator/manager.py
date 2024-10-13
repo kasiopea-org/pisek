@@ -28,8 +28,8 @@ from pisek.task_jobs.data.data import InputSmall, OutputSmall
 from pisek.task_jobs.tools import IsClean
 from pisek.task_jobs.checker import CheckerJob
 from pisek.task_jobs.solution.solution import RunBatchSolution
+from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
-from .input_info import InputInfo
 from .base_classes import (
     GeneratorListInputs,
     GenerateInput,
@@ -85,19 +85,19 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: TaskPath, input_info: InputInfo, seed: Optional[int]
+    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
         GenType.cms_old: CmsOldGenerate,
         GenType.pisek_v1: PisekV1Generate,
     }[env.config.gen_type](
-        env=env, generator=generator, input_info=input_info, seed=seed
+        env=env, generator=generator, testcase_info=testcase_info, seed=seed
     )
 
 
 def generator_test_determinism(
-    env: Env, generator: TaskPath, input_info: InputInfo, seed: Optional[int]
+    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,
@@ -107,20 +107,22 @@ def generator_test_determinism(
     if env.config.gen_type not in TEST_DETERMINISM:
         return None
     return TEST_DETERMINISM[env.config.gen_type](
-        env=env, generator=generator, input_info=input_info, seed=seed
+        env=env, generator=generator, testcase_info=testcase_info, seed=seed
     )
 
 
-class InputsInfoMixin(JobManager):
+class TestcaseInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
         self.inputs: set[TaskPath] = set()
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
-    def _input_info_jobs(self, input_info: InputInfo, subtask: int) -> list[Job]:
+    def _testcase_info_jobs(
+        self, testcase_info: TestcaseInfo, subtask: int
+    ) -> list[Job]:
         seeds: list[Optional[int]]
-        if input_info.seeded:
-            repeat = input_info.repeat * self._env.repeat_inputs
+        if testcase_info.seeded:
+            repeat = testcase_info.repeat * self._env.repeat_inputs
             seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
         else:
             repeat = 1
@@ -130,51 +132,54 @@ class InputsInfoMixin(JobManager):
         self._gen_inputs_job = {}
 
         for i, seed in enumerate(seeds):
-            if self._skip_input(input_info, seed, subtask):
+            if self._skip_testcase(testcase_info, seed, subtask):
                 continue
 
-            self.inputs.add(input_info.task_path(self._env, seed))
+            self.inputs.add(testcase_info.input_path(self._env, seed))
 
-            inp_jobs = self._generate_input_jobs(input_info, seed, subtask, i == 0)
-            out_jobs = self._solution_jobs(input_info, seed, subtask)
+            inp_jobs = self._generate_input_jobs(testcase_info, seed, subtask, i == 0)
+            out_jobs = self._solution_jobs(testcase_info, seed, subtask)
             if seed in self._gen_inputs_job and len(out_jobs) > 0:
                 out_jobs[0].add_prerequisite(self._gen_inputs_job[seed])
 
             jobs += inp_jobs + out_jobs
 
-        if self._env.config.checks.generator_respects_seed and input_info.seeded:
+        if self._env.config.checks.generator_respects_seed and testcase_info.seeded:
             jobs += self._respects_seed_jobs(
-                input_info, cast(list[int], seeds), subtask
+                testcase_info, cast(list[int], seeds), subtask
             )
         return jobs
 
-    def _skip_input(
-        self, input_info: InputInfo, seed: Optional[int], subtask: int
+    def _skip_testcase(
+        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> bool:
         return not self._env.config.subtasks[subtask].new_in_subtask(
-            input_info.task_path(self._env, seed).name
+            testcase_info.input_path(self._env, seed).name
         )
 
     def _generate_input_jobs(
         self,
-        input_info: InputInfo,
+        testcase_info: TestcaseInfo,
         seed: Optional[int],
         subtask: int,
         test_determinism: bool,
     ) -> list[Job]:
         jobs: list[Job] = []
-        input_path = input_info.task_path(self._env, seed)
+        input_path = testcase_info.input_path(self._env, seed)
 
         gen_inp: Optional[GenerateInput]
-        if input_info.is_generated:
-            jobs.append(gen_inp := self._generate_input_job(input_info, seed))
+        if testcase_info.generation_mode == TestcaseGenerationMode.generated:
+            jobs.append(gen_inp := self._generate_input_job(testcase_info, seed))
             self._gen_inputs_job[seed] = gen_inp
         else:
             gen_inp = None
 
-        if input_info.is_generated and test_determinism:
+        if (
+            testcase_info.generation_mode == TestcaseGenerationMode.generated
+            and test_determinism
+        ):
             test_det = generator_test_determinism(
-                self._env, self._env.config.in_gen, input_info, seed
+                self._env, self._env.config.in_gen, testcase_info, seed
             )
             if test_det is not None:
                 jobs.append(test_det)
@@ -196,24 +201,29 @@ class InputsInfoMixin(JobManager):
         return jobs
 
     def _generate_input_job(
-        self, input_info: InputInfo, seed: Optional[int]
+        self, testcase_info: TestcaseInfo, seed: Optional[int]
     ) -> GenerateInput:
-        gen_inp = generate_input(self._env, self._env.config.in_gen, input_info, seed)
+        gen_inp = generate_input(
+            self._env, self._env.config.in_gen, testcase_info, seed
+        )
         self._gen_inputs_job[seed] = gen_inp
         return gen_inp
 
     def _solution_jobs(
-        self, input_info: InputInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> list[Job]:
         return []
 
     def _respects_seed_jobs(
-        self, input_info: InputInfo, seeds: list[int], subtask: int
+        self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
     ) -> list[Job]:
-        assert input_info.is_generated and input_info.seeded
+        assert (
+            testcase_info.generation_mode == TestcaseGenerationMode.generated
+            and testcase_info.seeded
+        )
 
         if not self._env.config.subtasks[subtask].new_in_subtask(
-            input_info.task_path(self._env, seeds[0]).name
+            testcase_info.input_path(self._env, seeds[0]).name
         ):
             return []
 
@@ -224,10 +234,10 @@ class InputsInfoMixin(JobManager):
             while (seed := rand_gen.choice(SEED_RANGE)) == seeds[0]:
                 pass
             seeds.append(seed)
-            jobs += [self._generate_input_job(input_info, seed)]
+            jobs += [self._generate_input_job(testcase_info, seed)]
 
         jobs.append(
-            check_seeded := GeneratorRespectsSeed(self._env, input_info, *seeds[:2])
+            check_seeded := GeneratorRespectsSeed(self._env, testcase_info, *seeds[:2])
         )
         for i in range(2):
             check_seeded.add_prerequisite(self._gen_inputs_job[seeds[i]])
@@ -270,15 +280,15 @@ class InputsInfoMixin(JobManager):
         return {"inputs": list(sorted(self.inputs, key=lambda i: i.name))}
 
 
-class RunGenerator(TaskJobManager, InputsInfoMixin):
+class RunGenerator(TaskJobManager, TestcaseInfoMixin):
     def __init__(self) -> None:
         super().__init__("Run generator")
 
     def _get_jobs(self) -> list[Job]:
         jobs = []
 
-        for sub_num, inputs in self._all_inputs().items():
+        for sub_num, inputs in self._all_testcases().items():
             for inp in inputs:
-                jobs += self._input_info_jobs(inp, sub_num)
+                jobs += self._testcase_info_jobs(inp, sub_num)
 
         return jobs

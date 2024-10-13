@@ -24,8 +24,7 @@ import sys
 from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
 import yaml
 
-from pisek.utils.colors import ColorSettings
-from pisek.jobs.cache import Cache, CacheEntry
+from pisek.jobs.cache import NoAliasDumper, Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 
@@ -219,7 +218,7 @@ class Job(PipelineItem, CaptureInitParams):
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
-            sign.update(f"{name}={yaml.dump(result)}".encode())
+            sign.update(f"{name}={yaml.dump(result, Dumper=NoAliasDumper)}".encode())
 
         return (sign.hexdigest(), None)
 

@@ -17,8 +17,8 @@ from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
 from pisek.task_jobs.program import RunResultKind
+from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
-from .input_info import InputInfo
 from .base_classes import GeneratorListInputs, GenerateInput
 
 
@@ -28,7 +28,7 @@ class CmsOldListInputs(GeneratorListInputs):
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env, generator, name="Run generator", **kwargs)
 
-    def _run(self) -> list[InputInfo]:
+    def _run(self) -> list[TestcaseInfo]:
         """Generates all inputs."""
         gen_dir = TaskPath.generated_path(self._env, ".")
         try:
@@ -48,25 +48,30 @@ class CmsOldListInputs(GeneratorListInputs):
         if run_result.kind != RunResultKind.OK:
             raise self._create_program_failure("Generator failed:", run_result)
 
-        inputs = []
+        testcases = []
         for inp in os.listdir(TaskPath.generated_path(self._env, ".").path):
             if inp.endswith(".in"):
-                inputs.append(
-                    InputInfo.generated(inp.removesuffix(".in"), seeded=False)
+                testcases.append(
+                    TestcaseInfo.generated(inp.removesuffix(".in"), seeded=False)
                 )
-        return inputs
+        return testcases
 
 
 class CmsOldGenerate(GenerateInput):
     def __init__(
-        self, env: Env, generator: TaskPath, input_info: InputInfo, seed: int, **kwargs
+        self,
+        env: Env,
+        generator: TaskPath,
+        testcase_info: TestcaseInfo,
+        seed: int,
+        **kwargs,
     ) -> None:
         super().__init__(
             env,
             generator,
-            input_info,
+            testcase_info,
             seed,
-            name=f"Serve {input_info.task_path(env).name}",
+            name=f"Serve {testcase_info.input_path(env).name}",
             **kwargs,
         )
 

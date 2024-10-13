@@ -18,8 +18,7 @@ from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.paths import TaskPath
 from pisek.task_jobs.task_job import TaskJob
 from pisek.task_jobs.program import ProgramsJob
-
-from .input_info import InputInfo
+from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
 
 class GeneratorListInputs(ProgramsJob):
@@ -32,7 +31,7 @@ class GeneratorListInputs(ProgramsJob):
         super().__init__(env=env, name=name or "List generator inputs", **kwargs)
 
     @abstractmethod
-    def _run(self) -> list[InputInfo]:
+    def _run(self) -> list[TestcaseInfo]:
         pass
 
 
@@ -43,18 +42,18 @@ class GenerateInput(ProgramsJob):
         self,
         env: Env,
         generator: TaskPath,
-        input_info: InputInfo,
+        testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
         name: str = "",
         **kwargs,
     ) -> None:
-        assert input_info.is_generated
+        assert testcase_info.generation_mode == TestcaseGenerationMode.generated
 
         self.generator = generator
         self.seed = seed
-        self.input_info = input_info
-        self.input_path = input_info.task_path(env, seed)
+        self.testcase_info = testcase_info
+        self.input_path = testcase_info.input_path(env, seed)
         super().__init__(
             env=env, name=name or f"Generate {self.input_path.name}", **kwargs
         )
@@ -74,21 +73,21 @@ class GeneratorTestDeterminism(ProgramsJob):
         self,
         env: Env,
         generator: TaskPath,
-        input_info: InputInfo,
+        testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
         name: str = "",
         **kwargs,
     ) -> None:
-        assert input_info.is_generated
+        assert testcase_info.generation_mode == TestcaseGenerationMode.generated
 
         self.generator = generator
         self.seed = seed
-        self.input_info = input_info
-        self.input_path = input_info.task_path(env, seed)
+        self.testcase_info = testcase_info
+        self.input_path = testcase_info.input_path(env, seed)
         super().__init__(
             env=env,
-            name=name or f"Generator is deterministic ({self.input_info.name})",
+            name=name or f"Generator is deterministic ({self.testcase_info.name})",
             **kwargs,
         )
 
@@ -99,7 +98,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         if not self._files_equal(self.input_path, original):
             raise PipelineItemFailure(
                 f"Generator is not deterministic. Files {self.input_path:p} and {original:p} differ"
-                + (f" (seed {self.seed:x})" if self.input_info.seeded else "")
+                + (f" (seed {self.seed:x})" if self.testcase_info.seeded else "")
                 + "."
             )
         self._remove_file(original)
@@ -110,14 +109,19 @@ class GeneratorTestDeterminism(ProgramsJob):
 
 
 class GeneratorRespectsSeed(TaskJob):
-    def __init__(self, env: Env, input_info: InputInfo, seed1: int, seed2: int) -> None:
-        assert input_info.is_generated and input_info.seeded
+    def __init__(
+        self, env: Env, testcase_info: TestcaseInfo, seed1: int, seed2: int
+    ) -> None:
+        assert (
+            testcase_info.generation_mode == TestcaseGenerationMode.generated
+            and testcase_info.seeded
+        )
 
-        self.input_info = input_info
+        self.testcase_info = testcase_info
         self.seed1 = seed1
         self.seed2 = seed2
-        self.input1 = input_info.task_path(self._env, seed1)
-        self.input2 = input_info.task_path(self._env, seed2)
+        self.input1 = testcase_info.input_path(self._env, seed1)
+        self.input2 = testcase_info.input_path(self._env, seed2)
         super().__init__(
             env=env,
             name=f"Generator respects seed ({self.input1:n} and {self.input2:n})",

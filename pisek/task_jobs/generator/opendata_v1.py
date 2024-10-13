@@ -15,9 +15,9 @@ from typing import Optional
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
-from pisek.task_jobs.program import ProgramsJob, RunResult, RunResultKind
+from pisek.task_jobs.program import ProgramsJob, RunResultKind
+from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
-from .input_info import InputInfo
 from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeterminism
 
 
@@ -27,9 +27,9 @@ class OpendataV1ListInputs(GeneratorListInputs):
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
-    def _run(self) -> list[InputInfo]:
+    def _run(self) -> list[TestcaseInfo]:
         return [
-            InputInfo.generated(f"{subtask:02}")
+            TestcaseInfo.generated(f"{subtask:02}")
             for subtask in self._env.config.subtasks
             if subtask != 0
         ]
@@ -40,7 +40,7 @@ class OpendataV1GeneratorJob(ProgramsJob):
 
     generator: TaskPath
     seed: Optional[int]
-    input_info: InputInfo
+    testcase_info: TestcaseInfo
     input_path: TaskPath
 
     def __init__(self, env: Env, *, name: str = "", **kwargs) -> None:
@@ -51,7 +51,7 @@ class OpendataV1GeneratorJob(ProgramsJob):
         if self.seed < 0:
             raise ValueError(f"seed {self.seed} is negative")
 
-        subtask = int(self.input_info.name)
+        subtask = int(self.testcase_info.name)
 
         result = self._run_program(
             ProgramType.in_gen,

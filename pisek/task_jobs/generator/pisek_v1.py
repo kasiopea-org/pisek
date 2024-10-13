@@ -18,8 +18,8 @@ from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
 from pisek.utils.paths import TaskPath
 from pisek.task_jobs.program import ProgramsJob, RunResultKind
+from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
-from .input_info import InputInfo
 from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeterminism
 
 
@@ -29,19 +29,21 @@ class PisekV1ListInputs(GeneratorListInputs):
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
-    def _run(self) -> list[InputInfo]:
-        input_infos = []
+    def _run(self) -> list[TestcaseInfo]:
+        testcase_infos = []
         input_names: set[str] = set()
         self._create_inputs_list()
         for i, line in enumerate(self._get_input_lines()):
-            input_info = self._get_input_info_from_line(line, i)
-            if input_info.name in input_names:
-                self._line_invalid(i, line, f"Input '{input_info.name}' already listed")
-            input_names.add(input_info.name)
-            input_infos.append(input_info)
-        return input_infos
+            testcase_info = self._get_testcase_info_from_line(line, i)
+            if testcase_info.name in input_names:
+                self._line_invalid(
+                    i, line, f"Input '{testcase_info.name}' already listed"
+                )
+            input_names.add(testcase_info.name)
+            testcase_infos.append(testcase_info)
+        return testcase_infos
 
-    def _get_input_info_from_line(self, line: str, line_index: int) -> InputInfo:
+    def _get_testcase_info_from_line(self, line: str, line_index: int) -> TestcaseInfo:
         line = line.rstrip("\n")
         if not line:
             self._line_invalid(line_index, line, "Line empty")
@@ -83,7 +85,7 @@ class PisekV1ListInputs(GeneratorListInputs):
                 line_index, line, "For unseeded input 'repeat' must be '1'"
             )
 
-        return InputInfo.generated(input_name, **info_args)
+        return TestcaseInfo.generated(input_name, **info_args)
 
     def _line_invalid(self, line_index: int, contents: str, reason: str) -> NoReturn:
         contents = contents.rstrip("\n")
@@ -122,16 +124,16 @@ class PisekV1GeneratorJob(ProgramsJob):
 
     generator: TaskPath
     seed: Optional[int]
-    input_info: InputInfo
+    testcase_info: TestcaseInfo
     input_path: TaskPath
 
     def __init__(self, env: Env, *, name: str = "", **kwargs) -> None:
         super().__init__(env=env, name=name, **kwargs)
 
     def _gen(self) -> None:
-        args = [self.input_info.name]
+        args = [self.testcase_info.name]
 
-        if self.input_info.seeded:
+        if self.testcase_info.seeded:
             assert self.seed is not None
             if self.seed < 0:
                 raise ValueError(f"seed {self.seed} is negative")
@@ -148,7 +150,7 @@ class PisekV1GeneratorJob(ProgramsJob):
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.generator} failed on input {self.input_info.name}, seed {self.seed:x}:",
+                f"{self.generator} failed on input {self.testcase_info.name}, seed {self.seed:x}:",
                 result,
             )
 

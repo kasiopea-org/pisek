@@ -23,14 +23,13 @@ from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 from pisek.config.config_types import TaskType, Scoring
 from pisek.utils.text import pad, pad_left, tab
-from pisek.utils.colors import ColorSettings
 from pisek.utils.terminal import MSG_LEN, right_aligned_text
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
-from pisek.task_jobs.generator.input_info import InputInfo
-from pisek.task_jobs.generator.manager import InputsInfoMixin
+from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
+from pisek.task_jobs.generator.manager import TestcaseInfoMixin
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudge
 from pisek.task_jobs.solution.solution import (
@@ -40,7 +39,7 @@ from pisek.task_jobs.solution.solution import (
 )
 
 
-class SolutionManager(TaskJobManager, InputsInfoMixin):
+class SolutionManager(TaskJobManager, TestcaseInfoMixin):
     """Runs a solution and checks if it works as expected."""
 
     def __init__(self, solution_label: str, generate_inputs: bool) -> None:
@@ -62,56 +61,61 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
 
         self._judges: dict[TaskPath, RunJudge] = {}
 
-        for sub_num, inputs in self._all_inputs().items():
+        for sub_num, inputs in self._all_testcases().items():
             self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
             for inp in inputs:
-                jobs += self._input_info_jobs(inp, sub_num)
+                jobs += self._testcase_info_jobs(inp, sub_num)
 
         return jobs
 
-    def _skip_input(
-        self, input_info: InputInfo, seed: Optional[int], subtask: int
+    def _skip_testcase(
+        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> bool:
-        input_path = input_info.task_path(self._env, seed)
+        input_path = testcase_info.input_path(self._env, seed)
         if input_path in self._judges:
             self.subtasks[-1].previous_jobs.append(self._judges[input_path])
-        return super()._skip_input(input_info, seed, subtask)
+        return super()._skip_testcase(testcase_info, seed, subtask)
 
     def _generate_input_jobs(
         self,
-        input_info: InputInfo,
+        testcase_info: TestcaseInfo,
         seed: Optional[int],
         subtask: int,
         test_determinism: bool,
     ) -> list[Job]:
         if not self._generate_inputs:
             return []
-        return super()._generate_input_jobs(input_info, seed, subtask, test_determinism)
+        return super()._generate_input_jobs(
+            testcase_info, seed, subtask, test_determinism
+        )
 
     def _respects_seed_jobs(
-        self, input_info: InputInfo, seeds: list[int], subtask: int
+        self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
     ) -> list[Job]:
         if not self._generate_inputs:
             return []
-        return super()._respects_seed_jobs(input_info, seeds, subtask)
+        return super()._respects_seed_jobs(testcase_info, seeds, subtask)
 
     def _solution_jobs(
-        self, input_info: InputInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> list[Job]:
-        input_path = input_info.task_path(self._env, seed)
+        input_path = testcase_info.input_path(self._env, seed)
 
         jobs: list[Job] = []
 
         run_sol: RunSolution
         run_judge: RunJudge
         if self._env.config.task_type == TaskType.batch:
-            if not input_info.is_generated and self._generate_inputs:
+            if (
+                testcase_info.generation_mode == TestcaseGenerationMode.static
+                and self._generate_inputs
+            ):
                 jobs += self._check_output_jobs(
-                    self._get_reference_output(input_info, seed), None
+                    self._get_reference_output(testcase_info, seed), None
                 )
 
             run_batch_sol, run_judge = self._create_batch_jobs(
-                input_info, seed, subtask
+                testcase_info, seed, subtask
             )
             run_sol = run_batch_sol
             jobs += [run_batch_sol, run_judge]
@@ -128,10 +132,10 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         return jobs
 
     def _create_batch_jobs(
-        self, input_info: InputInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> tuple[RunBatchSolution, RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
-        input_path = input_info.task_path(self._env, seed)
+        input_path = testcase_info.input_path(self._env, seed)
         run_solution = RunBatchSolution(
             self._env,
             self._solution,
@@ -144,7 +148,7 @@ class SolutionManager(TaskJobManager, InputsInfoMixin):
         run_judge = judge_job(
             input_path,
             out,
-            self._get_reference_output(input_info, seed),
+            self._get_reference_output(testcase_info, seed),
             subtask,
             seed,
             None,
