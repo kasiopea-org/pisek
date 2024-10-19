@@ -32,58 +32,49 @@ class DataManager(TaskJobManager):
         super().__init__("Processing data")
 
     def _get_jobs(self) -> list[Job]:
-        sample_inputs = self.globs_to_files(
-            self._env.config.subtasks[0].all_globs, TaskPath.static_path(self._env, ".")
-        )
         static_inputs = self.globs_to_files(
-            self._env.config.input_globs, TaskPath.static_path(self._env, ".")
-        )
-
-        static_outputs: list[TaskPath] = []
-        if self._env.config.task_type != TaskType.communication:
-            for static_inp in static_inputs:
-                static_out = static_inp.replace_suffix(".out")
-                if static_out.exists():
-                    static_outputs.append(static_out)
-                elif static_inp in sample_inputs:
-                    raise PipelineItemFailure(
-                        f"Missing matching output '{static_out:p}' for sample input '{static_inp:p}'."
-                    )
-
-        all_static_inputs = self.globs_to_files(
             ["*.in"], TaskPath.static_path(self._env, ".")
         )
-        all_testcase_infos: list[TestcaseInfo] = [
-            (
-                TestcaseInfo.static(inp.name.removesuffix(".in"))
-                if self._env.config.task_type == TaskType.communication
-                or inp.replace_suffix(".out").exists()
-                else TestcaseInfo.mixed(inp.name.removesuffix(".in"))
-            )
-            for inp in all_static_inputs
-        ] + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
 
+        static_testcase_infos: list[TestcaseInfo] = []
+        for input_path in static_inputs:
+            name = input_path.name.removesuffix(".in")
+            output_path = input_path.replace_suffix(".out")
+
+            if (
+                self._env.config.task_type == TaskType.communication
+                or output_path.exists()
+            ):
+                static_testcase_infos.append(TestcaseInfo.static(name))
+            else:
+                static_testcase_infos.append(TestcaseInfo.mixed(name))
+
+        all_testcase_infos = (
+            static_testcase_infos
+            + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
+        )
         all_testcase_infos.sort(key=lambda info: info.name)
 
         # put inputs in subtasks
         self._testcase_infos: dict[int, list[TestcaseInfo]] = {}
-        for num, sub in self._env.config.subtasks.items():
+
+        for sub in self._env.config.subtasks.values():
             self._testcase_infos[sub.num] = []
+
             for testcase_info in all_testcase_infos:
                 inp_path = testcase_info.input_path(self._env, TEST_SEED).name
                 if sub.in_subtask(inp_path):
-                    if (
-                        num == 0
-                        and testcase_info.generation_mode
-                        != TestcaseGenerationMode.static
-                    ):
-                        raise PipelineItemFailure(
-                            f"Sample inputs must be static, but '{inp_path}' is {testcase_info.generation_mode}."
-                        )
                     self._testcase_infos[sub.num].append(testcase_info)
+
             if len(self._testcase_infos[sub.num]) == 0:
                 raise PipelineItemFailure(
-                    f"No inputs for subtask {num} with globs {sub.all_globs}."
+                    f"No inputs for subtask {sub.num} with globs {sub.all_globs}."
+                )
+
+        for testcase_info in self._testcase_infos[0]:
+            if testcase_info.generation_mode != TestcaseGenerationMode.static:
+                raise PipelineItemFailure(
+                    f"Sample inputs must be static, but '{inp_path}' is {testcase_info.generation_mode}."
                 )
 
         used_inputs = set(sum(self._testcase_infos.values(), start=[]))
@@ -93,11 +84,24 @@ class DataManager(TaskJobManager):
         self._report_unused_inputs(set(all_testcase_infos) - used_inputs)
 
         jobs: list[Job] = []
-        for path in static_inputs:
-            jobs.append(LinkInput(self._env, path))
 
-        for path in static_outputs:
-            jobs.append(LinkOutput(self._env, path))
+        for testcase in sorted(used_inputs, key=lambda i: i.name):
+            name = testcase.name
+            mode = testcase.generation_mode
+
+            if mode in (TestcaseGenerationMode.static, TestcaseGenerationMode.mixed):
+                jobs.append(
+                    LinkInput(self._env, TaskPath.static_path(self._env, f"{name}.in"))
+                )
+            if (
+                mode == TestcaseGenerationMode.static
+                and self._env.config.task_type != TaskType.communication
+            ):
+                jobs.append(
+                    LinkOutput(
+                        self._env, TaskPath.static_path(self._env, f"{name}.out")
+                    )
+                )
 
         for subtask, testcases in self._testcase_infos.items():
             for testcase in testcases:
