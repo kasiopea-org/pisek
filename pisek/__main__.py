@@ -222,7 +222,7 @@ def main(argv):
     # ------------------------------- pisek visualize -------------------------------
 
     parser_visualize = subparsers.add_parser(
-        "visualize", help="show solutions statistics and closeness to limit"
+        "visualize", help="show solution statistics and closeness to limit"
     )
     parser_visualize.add_argument(
         "--filter",
