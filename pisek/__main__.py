@@ -82,7 +82,7 @@ def main(argv):
             "--description",
             "-d",
             type=str,
-            help="create the dataset with a description DESCRIPTION",
+            help="create the dataset with the description DESCRIPTION",
         )
 
     def add_argument_dataset(parser):
