@@ -1,5 +1,5 @@
 # Pisek fixture
-# Source: $(pisek)/config-v3-documentation for more information
+# Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
 name=guess
