@@ -1,6 +1,7 @@
 # pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+# Copyright (c)   2024        Antonín Maloň <git@tonyl.eu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -275,8 +276,18 @@ def visualize(
     if config is None:
         return 2
 
-    with open(os.path.join(path, filename)) as log_file:
-        testing_log = json.load(log_file)
+    log_path = os.path.join(path, filename)
+    try:
+        with open(log_path) as log_file:
+            testing_log = json.load(log_file)
+    except FileNotFoundError:
+        eprint(
+            ColorSettings.colored(
+                f"File {log_path} not found. Test with --testing-log to create a log.",
+                "red",
+            )
+        )
+        return 2
 
     if testing_log["source"] == "cms":
         limit_default = config.cms.time_limit
