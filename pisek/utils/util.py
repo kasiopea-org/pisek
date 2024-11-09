@@ -22,8 +22,7 @@ from typing import Optional
 
 from pisek.jobs.cache import CACHE_FILENAME
 from pisek.config.task_config import TaskConfig, load_config
-
-BUILD_DIR = "build/"
+from pisek.utils.paths import BUILD_DIR, TESTS_DIR
 
 
 def rm_f(fn):
@@ -75,7 +74,7 @@ def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
     # directory
 
     rm_f(os.path.join(task_dir, CACHE_FILENAME))
-    _clean_subdirs(task_dir, [config.data_subdir.path, BUILD_DIR])
+    _clean_subdirs(task_dir, [BUILD_DIR, TESTS_DIR])
     return True
 
 

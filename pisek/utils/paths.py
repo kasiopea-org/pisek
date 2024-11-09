@@ -19,12 +19,11 @@ import os
 from typing import Optional, TYPE_CHECKING
 import yaml
 
-from pisek.utils.colors import ColorSettings
-
 if TYPE_CHECKING:
     from pisek.env.env import Env
 
 BUILD_DIR = "build/"
+TESTS_DIR = "tests/"
 
 GENERATED_SUBDIR = "generated/"
 INPUTS_SUBDIR = "inputs/"
@@ -101,7 +100,7 @@ class TaskPath:
 
     @staticmethod
     def data_path(env: "Env", *path: str) -> "TaskPath":
-        return env.config.data_subdir.join(*path)
+        return TaskPath(TESTS_DIR, *path)
 
     @staticmethod
     def generated_path(env: "Env", *path: str) -> "TaskPath":

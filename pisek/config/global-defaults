@@ -4,7 +4,6 @@ task_type=batch
 score_precision=0
 solutions_subdir=.
 static_subdir=.
-data_subdir=data/
 
 [tests]
 checker=
