@@ -11,11 +11,6 @@ from unittest import mock
 from util import TestFixture
 
 from pisek.__main__ import main
-from pisek.utils import util
-
-
-def quote_test_suite_output(l):
-    return util.quote_output("".join([x[1] for x in l]))
 
 
 class TestCLI(TestFixture):
