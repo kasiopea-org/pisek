@@ -40,7 +40,7 @@ score_precision=0
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config (defaults to .)
-static_subdir=sample_tests/
+static_subdir=static_tests/
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 data_subdir=tests/
 # Directory for automatically generated files (inputs, outputs, ...) (defaults to data/)
