@@ -29,18 +29,14 @@ DATA_MAN_CODE = "data"
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
 
-    def _get_static_samples(self) -> list[tuple[TaskPath, TaskPath]]:
+    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
-        ins = filter(
-            lambda inp: not inp.generation_mode,
-            self._subtask_testcases(self._env.config.subtasks[0]),
-        )
         return [
             (
                 inp.input_path(self._env),
                 TaskPath.output_static_file(self._env, inp.name),
             )
-            for inp in ins
+            for inp in self._subtask_testcases(self._env.config.subtasks[0])
         ]
 
     def _subtask_testcases(self, subtask: SubtaskConfig) -> list[TestcaseInfo]:
