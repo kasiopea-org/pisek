@@ -30,7 +30,7 @@ task_type=communication
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config (defaults to .)
-static_subdir=sample_tests/
+static_subdir=static_tests/
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 tests = ??? (ignored)

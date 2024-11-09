@@ -64,7 +64,8 @@ class JudgeManager(TaskJobManager):
         elif self._env.config.out_check == OutCheck.shuffle:
             jobs.append(comp := PrepareShuffleJudge(self._env))
 
-        samples = self._get_static_samples()
+        # All samples must be static, therefore they exist already
+        samples = self._get_samples()
         if self._env.config.task_type == TaskType.communication:
             return jobs
 
