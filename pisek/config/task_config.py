@@ -99,7 +99,6 @@ class TaskConfig(BaseEnv):
 
     solutions_subdir: TaskPathFromStr
     static_subdir: TaskPathFromStr
-    data_subdir: TaskPathFromStr
 
     in_gen: TaskPathFromStr
     gen_type: GenType
@@ -176,7 +175,6 @@ class TaskConfig(BaseEnv):
             ("task", "score_precision"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),
-            ("task", "data_subdir"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
             ("tests", "checker"),

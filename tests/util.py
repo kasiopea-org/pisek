@@ -78,7 +78,7 @@ class TestFixture(unittest.TestCase):
         Ignored:
             .pisek_cache data/* build/*
         """
-        directories = ["build", "data"]
+        directories = ["build", "tests"]
         files = [".pisek_cache"] + self.created_files()
 
         all_paths = set(self.original_files + directories + files)

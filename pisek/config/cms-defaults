@@ -7,7 +7,6 @@ scoring=min
 score_precision=0
 solutions_subdir=.
 static_subdir=.
-data_subdir=data/
 
 [tests]
 gen_type=cms-old

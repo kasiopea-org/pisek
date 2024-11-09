@@ -7,7 +7,6 @@ scoring=equal
 score_precision=0
 solutions_subdir=.
 static_subdir=.
-data_subdir=data/
 
 [tests]
 gen_type=opendata-v1

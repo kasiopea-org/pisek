@@ -7,7 +7,6 @@ scoring=
 score_precision=
 solutions_subdir=
 static_subdir=
-data_subdir=
 
 [tests]
 in_gen=
