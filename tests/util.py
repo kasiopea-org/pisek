@@ -9,7 +9,7 @@ from unittest import mock
 
 from pisek.config import config_hierarchy
 from pisek.__main__ import test_task_path
-from pisek.utils.util import quote_output, clean_task_dir
+from pisek.utils.util import clean_task_dir
 
 
 class TestFixture(unittest.TestCase):
