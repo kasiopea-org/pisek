@@ -11,9 +11,7 @@ solutions_subdir=solutions/
 version=v3
 
 [tests]
-# generator source file
-in_gen=src/gen
-
+in_gen=
 # checker=check
 
 out_check=judge
