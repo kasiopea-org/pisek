@@ -55,12 +55,12 @@ from pisek.cms.dataset import (
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task, set_task_settings
-from pisek.cms.testcase import get_testcases
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.paths import TaskPath
 from pisek.utils.pipeline_tools import with_env
+from pisek.config.config_types import TaskType
 
 
 def generate_testcases(env: Env) -> list[TaskPath]:
@@ -184,12 +184,22 @@ def check(env: Env, args: Namespace) -> int:
 
 @with_env
 def export(env: Env, args: Namespace) -> int:
-    prepare_files(env)
+    testcases = generate_testcases(env)
 
     directory = args.output
     makedirs(directory, exist_ok=True)
 
-    for name, input, output in get_testcases(env):
+    config = env.config
+    outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
+    solution = config.solutions[config.primary_solution].raw_source
+
+    for input in testcases:
+        name = input.name.removesuffix(".in")
+        output = None
+
+        if outputs_needed:
+            output = TaskPath.output_file(env, input.name, solution)
+
         copyfile(input.path, path.join(directory, f"{name}.in"))
 
         if output is not None:
