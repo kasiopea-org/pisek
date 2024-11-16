@@ -181,7 +181,14 @@ class TaskJob(Job, TaskHelper):
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
-        return os.link(filename.path, dst.path)
+
+        # os.link should follow symlinks, but doesn't:
+        # https://bugs.python.org/issue37612
+        source = filename.path
+        while os.path.islink(source):
+            source = os.readlink(source)
+
+        return os.link(source, dst.path)
 
     @_file_access(2)
     def _files_equal(self, file_a: TaskPath, file_b: TaskPath) -> bool:
