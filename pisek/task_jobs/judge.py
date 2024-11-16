@@ -119,7 +119,7 @@ class JudgeManager(TaskJobManager):
         result["judge_outs"] = set()
         for job in self.jobs:
             if isinstance(job, RunJudge):
-                if isinstance(job, RunCMSJudge):
+                if isinstance(job, RunCMSJudge) or isinstance(job, RunOpendataV2Judge):
                     result["judge_outs"].add(job.points_file)
                 result["judge_outs"].add(job.judge_log_file)
 
@@ -545,14 +545,8 @@ class RunShuffleJudge(RunJudgeLibJudge):
 class RunOpendataJudge(RunBatchJudge):
     """Judges solution output using judge with the opendata interface. (Abstract class)"""
 
-    @property
     @abstractmethod
-    def return_code_ok(self) -> int:
-        pass
-
-    @property
-    @abstractmethod
-    def return_code_wa(self) -> int:
+    def get_result(self, result: RunResult) -> SolutionResult:
         pass
 
     def __init__(
@@ -579,6 +573,7 @@ class RunOpendataJudge(RunBatchJudge):
         )
         self.judge = judge
         self.seed = seed
+        self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
 
     def _judge(self) -> SolutionResult:
         envs = {}
@@ -597,14 +592,23 @@ class RunOpendataJudge(RunBatchJudge):
                 f"{self.seed:x}" if self.seed is not None else OPENDATA_NO_SEED,
             ],
             stdin=self.output,
+            stdout=self.points_file,
             stderr=self.judge_log_file,
             env=envs,
         )
-        if result.returncode == self.return_code_ok:
+
+        return self.get_result(result)
+
+
+class RunOpendataV1Judge(RunOpendataJudge):
+    """Judges solution output using judge with the opendataV1 interface."""
+
+    def get_result(self, result: RunResult) -> SolutionResult:
+        if result.returncode == 0:
             return RelativeSolutionResult(
                 Verdict.ok, None, self._solution_run_res, result, Decimal(1)
             )
-        elif result.returncode == self.return_code_wa:
+        elif result.returncode == 1:
             return RelativeSolutionResult(
                 Verdict.wrong_answer, None, self._solution_run_res, result, Decimal(0)
             )
@@ -614,16 +618,85 @@ class RunOpendataJudge(RunBatchJudge):
             )
 
 
-class RunOpendataV1Judge(RunOpendataJudge):
-    """Judges solution output using judge with the opendataV1 interface."""
+class RunOpendataV2Judge(RunOpendataJudge):
+    """Judges solution output using judge with the opendataV2 interface."""
 
-    @property
-    def return_code_ok(self) -> int:
-        return 0
+    def get_result(self, result: RunResult) -> SolutionResult:
+        if result.returncode not in (42, 43):
+            raise self._create_program_failure(
+                f"Judge failed on output {self.output:n}:", result
+            )
 
-    @property
-    def return_code_wa(self) -> int:
-        return 1
+        assert isinstance(result.stdout_file, TaskPath)
+        with open(result.stdout_file.path) as file:
+            message = file.readline().removesuffix("\n") or None
+
+            if message is not None and len(message.encode()) > 255:
+                raise self._create_program_failure(
+                    f"The judge message for output {self.output:n} was too long", result
+                )
+
+            points: Decimal | None = None
+
+            for line in file:
+                line = line.removesuffix("\n")
+
+                if "=" not in line:
+                    raise self._create_program_failure(
+                        f'The judge wrote a line that wasn\'t a key-value pair: "{line}"',
+                        result,
+                    )
+
+                key, value = line.split("=", maxsplit=1)
+
+                if key == "POINTS":
+                    try:
+                        points = Decimal(value)
+                    except ValueError:
+                        raise self._create_program_failure(
+                            "The value of the POINTS key was not a valid decimal",
+                            result,
+                        )
+
+        if points is None:
+            if result.returncode == 42:
+                verdict = Verdict.ok
+                points = Decimal(1)
+            else:
+                verdict = Verdict.wrong_answer
+                points = Decimal(0)
+
+            return RelativeSolutionResult(
+                verdict,
+                message,
+                self._solution_run_res,
+                result,
+                points,
+            )
+        else:
+            max_points = self._env.config.subtasks[self.subtask].points
+            are_points_fake = max_points == 0
+
+            if are_points_fake:
+                max_points = 1
+
+            if points <= 0:
+                verdict = Verdict.wrong_answer
+            elif points < max_points:
+                verdict = Verdict.partial_ok
+            else:
+                verdict = Verdict.ok
+
+            if are_points_fake:
+                points = Decimal(0)
+
+            return AbsoluteSolutionResult(
+                verdict,
+                message,
+                self._solution_run_res,
+                result,
+                points,
+            )
 
 
 class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
@@ -695,7 +768,12 @@ def judge_job(
     expected_verdict: Optional[Verdict],
     env: Env,
 ) -> Union[
-    RunDiffJudge, RunTokenJudge, RunShuffleJudge, RunOpendataV1Judge, RunCMSBatchJudge
+    RunDiffJudge,
+    RunTokenJudge,
+    RunShuffleJudge,
+    RunOpendataV1Judge,
+    RunOpendataV2Judge,
+    RunCMSBatchJudge,
 ]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
@@ -725,7 +803,7 @@ def judge_job(
             correct_output,
             expected_verdict,
         )
-    else:
+    elif env.config.judge_type == JudgeType.opendata_v1:
         return RunOpendataV1Judge(
             env,
             env.config.out_judge,
@@ -736,3 +814,16 @@ def judge_job(
             seed,
             expected_verdict,
         )
+    elif env.config.judge_type == JudgeType.opendata_v2:
+        return RunOpendataV2Judge(
+            env,
+            env.config.out_judge,
+            subtask,
+            input_,
+            output,
+            correct_output,
+            seed,
+            expected_verdict,
+        )
+    else:
+        raise RuntimeError("the specified judge type was not found.")
