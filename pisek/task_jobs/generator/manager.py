@@ -59,6 +59,7 @@ class PrepareGenerator(TaskJobManager):
         super().__init__("Prepare generator")
 
     def _get_jobs(self) -> list[Job]:
+        assert self._env.config.in_gen is not None
         generator = self._env.config.in_gen
 
         jobs: list[Job] = [
@@ -178,6 +179,7 @@ class TestcaseInfoMixin(JobManager):
             testcase_info.generation_mode == TestcaseGenerationMode.generated
             and test_determinism
         ):
+            assert self._env.config.in_gen is not None
             test_det = generator_test_determinism(
                 self._env, self._env.config.in_gen, testcase_info, seed
             )
@@ -203,6 +205,7 @@ class TestcaseInfoMixin(JobManager):
     def _generate_input_job(
         self, testcase_info: TestcaseInfo, seed: Optional[int]
     ) -> GenerateInput:
+        assert self._env.config.in_gen is not None
         gen_inp = generate_input(
             self._env, self._env.config.in_gen, testcase_info, seed
         )

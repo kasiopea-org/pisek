@@ -49,10 +49,12 @@ class DataManager(TaskJobManager):
             else:
                 static_testcase_infos.append(TestcaseInfo.mixed(name))
 
-        all_testcase_infos = (
-            static_testcase_infos
-            + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
-        )
+        all_testcase_infos = list(static_testcase_infos)
+        if self._env.config.in_gen is not None:
+            all_testcase_infos += self.prerequisites_results[GENERATOR_MAN_CODE][
+                "inputs"
+            ]
+
         all_testcase_infos.sort(key=lambda info: info.name)
 
         # put inputs in subtasks

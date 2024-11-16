@@ -28,6 +28,7 @@ from pisek.task_jobs.task_manager import (
     SOLUTION_MAN_CODE,
 )
 
+from pisek.jobs.jobs import JobManager
 from pisek.task_jobs.tools import ToolsManager
 from pisek.task_jobs.data.manager import DataManager
 from pisek.task_jobs.generator.manager import (
@@ -48,15 +49,20 @@ class TaskPipeline(JobPipeline):
 
     def __init__(self, env: Env):
         super().__init__()
-        named_pipeline = [
-            tools := (ToolsManager(), TOOLS_MAN_CODE),
-            generator := (PrepareGenerator(), GENERATOR_MAN_CODE),
+        named_pipeline: list[tuple[JobManager, str]] = [
+            tools := (ToolsManager(), TOOLS_MAN_CODE)
+        ]
+        if env.config.in_gen is not None:
+            named_pipeline.append(generator := (PrepareGenerator(), GENERATOR_MAN_CODE))
+        named_pipeline += [
             checker := (CheckerManager(), CHECKER_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
         ]
-        generator[0].add_prerequisite(*tools)
+
+        if env.config.in_gen is not None:
+            generator[0].add_prerequisite(*tools)
+            inputs[0].add_prerequisite(*generator)
         checker[0].add_prerequisite(*tools)
-        inputs[0].add_prerequisite(*generator)
         inputs[0].add_prerequisite(*checker)
 
         solutions = []
