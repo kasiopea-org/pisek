@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import cache
 import os
 import random
@@ -652,7 +652,7 @@ class RunOpendataV2Judge(RunOpendataJudge):
                 if key == "POINTS":
                     try:
                         points = Decimal(value)
-                    except ValueError:
+                    except InvalidOperation:
                         raise self._create_program_failure(
                             "The value of the POINTS key was not a valid decimal",
                             result,
