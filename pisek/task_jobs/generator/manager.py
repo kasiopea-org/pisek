@@ -123,7 +123,9 @@ class TestcaseInfoMixin(JobManager):
         seeds: list[Optional[int]]
         if testcase_info.seeded:
             repeat = testcase_info.repeat * self._env.repeat_inputs
-            seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
+            seeds = random.Random(testcase_info.name).sample(
+                SEED_RANGE, repeat
+            )  # Reproducibility!
         else:
             repeat = 1
             seeds = [None]
