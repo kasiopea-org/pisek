@@ -156,12 +156,7 @@ class Compile(ProgramsJob):
             raise PipelineItemFailure(f"Missing tool: {tool}")
 
     def _compile_script(self, program: TaskPath) -> None:
-        if not self.valid_shebang(program):
-            raise PipelineItemFailure(
-                f"{program} has invalid shebang. "
-                "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
-                "Check also that you are using linux eol."
-            )
+        self.check_shebang(program)
 
         with open(program.path, "r", newline="\n") as f:
             interpreter = f.readline().strip().lstrip("#!")
@@ -170,27 +165,15 @@ class Compile(ProgramsJob):
         shutil.copyfile(program.path, self.target.path)
         self._chmod_exec(self.target)
 
-    @staticmethod
-    def valid_shebang(program: TaskPath) -> bool:
+    def check_shebang(self, program: TaskPath) -> None:
         """Check if file has shebang and if the shebang is valid"""
-
-        with open(program.path, "r", newline="\n") as f:
+        with self._open_file(program, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
-            return False
-
+            raise PipelineItemFailure(f"Missing shebang in {program:p}")
         if first_line.endswith("\r\n"):
-            return False
-
-        if os.path.splitext(program.path)[1] == ".py":
-            return any(
-                first_line == f"#!/usr/bin/env {interpreter}\n"
-                for interpreter in VALID_PYTHON_INTERPRETERS
-            )
-        else:
-            # No check performed for non-Python at the moment
-            return True
+            raise PipelineItemFailure(f"First line ends with '\\r\\n' in {program:p}")
 
     @staticmethod
     def _chmod_exec(filepath: TaskPath) -> None:
