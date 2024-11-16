@@ -46,7 +46,7 @@ static_subdir=static_tests/
 [tests]
 
 in_gen=src/gen
-# Source code of generator (without suffix) (required)
+# Source code of generator (without suffix) or `in_gen=` for no generator (required)
 
 gen_type=opendata-v1
 # Specifies the generator type. (required)
