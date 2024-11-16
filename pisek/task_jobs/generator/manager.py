@@ -16,6 +16,7 @@
 
 import random
 from typing import cast, Any, Optional
+from hashlib import blake2b
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -48,7 +49,8 @@ from .pisek_v1 import (
     PisekV1TestDeterminism,
 )
 
-SEED_RANGE = range(0, 16**8)
+SEED_BYTES = 4
+SEED_RANGE = range(0, 1 << (SEED_BYTES * 8))
 
 
 class PrepareGenerator(TaskJobManager):
@@ -123,9 +125,13 @@ class TestcaseInfoMixin(JobManager):
         seeds: list[Optional[int]]
         if testcase_info.seeded:
             repeat = testcase_info.repeat * self._env.repeat_inputs
-            seeds = random.Random(testcase_info.name).sample(
-                SEED_RANGE, repeat
-            )  # Reproducibility!
+            seeds = []
+
+            for i in range(repeat):
+                hash = blake2b(digest_size=SEED_BYTES)
+                hash.update(i.to_bytes(8))
+                hash.update(testcase_info.name.encode())
+                seeds.append(int.from_bytes(hash.digest()))
         else:
             repeat = 1
             seeds = [None]
