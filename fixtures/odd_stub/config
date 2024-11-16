@@ -1,5 +1,5 @@
 # Pisek fixture
-# Source: $(pisek)/config-v2-documentation for more information
+# Source: $(pisek)/docs/config-v2-documentation for more information
 
 [task]
 name=odd-stub
@@ -8,19 +8,25 @@ version=v2
 
 [tests]
 in_gen=gen
-out_check=diff
+gen_type=pisek-v1
+out_check=shuffle
 stub=stubs/grader
 headers=stubs/odd.h
+shuffle_mode=lines
 
 [test01]
 points=10
-in_globs=*.in
+in_globs=first-ten.in random-uniform*.in
+predecessors=0
 
 [limits]
-solve_time_limit=1
+solve_time_limit=0.2
 
 [solution_solve]
 source=solve
 primary=yes
 points=10
+subtasks=11
+
+[solution_solve_rev]
 subtasks=11

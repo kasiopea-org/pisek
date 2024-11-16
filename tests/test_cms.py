@@ -3,7 +3,7 @@ import shutil
 
 import unittest
 
-from pisek.utils.paths import GENERATED_SUBDIR
+from pisek.utils.paths import TESTS_DIR, GENERATED_SUBDIR
 from util import TestFixtureVariant, overwrite_file, modify_config
 from pisek.config.task_config import load_config
 
@@ -45,9 +45,7 @@ class TestOldInputsDeleted(TestSumCMS):
 
     def modify_task(self):
         task_config = load_config(self.task_dir)
-        self.inputs_dir = os.path.join(
-            self.task_dir, task_config.data_subdir, GENERATED_SUBDIR
-        )
+        self.inputs_dir = os.path.join(self.task_dir, TESTS_DIR, GENERATED_SUBDIR)
 
         # We only care about the generation part, so remove solve.py to stop the tests
         # right after the generator finishes.
@@ -89,16 +87,6 @@ class TestInvalidJudgeScore(TestSumCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestLooseChecker(TestSumCMS):
-    """A checker that cannot distinguish between subtasks."""
-
-    def expecting_success(self):
-        return False
-
-    def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_loose.py")
-
-
 class TestStrictChecker(TestSumCMS):
     """A checker whose bounds are stricter than what the generator creates."""
 
@@ -116,9 +104,8 @@ class TestDirtySample(TestSumCMS):
         return False
 
     def modify_task(self):
-        sample = ["3", "1 2", "-8 5", "0 0"]
-        with open(os.path.join(self.task_dir, "sample.in"), "w") as f:
-            f.write("\n".join(sample))
+        with open(os.path.join(self.task_dir, "sample_01.in"), "w") as f:
+            f.write("1 2")
 
 
 class TestNoLFInTextInput(TestSumCMS):

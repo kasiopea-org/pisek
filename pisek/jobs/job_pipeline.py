@@ -57,11 +57,11 @@ class JobPipeline(ABC):
 
             # we really need to call status_update to update messages
             # Also no logs into env for just writing to stdout
-            self.failed |= not self._status_update(env.fork())
+            self.failed |= not self._status_update(env)
             if self.failed and not env.full:
                 break
 
-        cache.seal(not self.failed)  # Remove duplicate cache entries and seal
+        cache.export()  # Remove unnecessary cache entries
         return self.failed
 
     def _status_update(self, env: Env) -> bool:

@@ -41,11 +41,17 @@
 
 from argparse import Namespace
 from cms.db.session import Session
+from cms.db.task import Dataset, Task
+from sqlalchemy.orm import Session as SessionType
 from sqlalchemy.exc import IntegrityError
 from os import path, makedirs
 from shutil import copyfile
 
-from pisek.cms.dataset import create_dataset, get_dataset
+from pisek.cms.dataset import (
+    create_dataset,
+    get_dataset_by_description,
+    get_only_dataset,
+)
 from pisek.cms.result import create_testing_log, check_results
 from pisek.cms.submission import get_participation, submit_all
 from pisek.cms.task import create_task, get_task, set_task_settings
@@ -53,32 +59,31 @@ from pisek.cms.testcase import get_testcases
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.utils.paths import TaskPath
 from pisek.utils.pipeline_tools import with_env
 
 
-def prepare_files(env: Env):
-    contest_type = env.config.contest_type
-
-    if contest_type != "cms":
-        raise RuntimeError(f"Cannot upload {contest_type}-type task to CMS")
-
+def generate_testcases(env: Env) -> list[TaskPath]:
     env = env.fork()
     env.solutions = [env.config.primary_solution]
     env.target = TestingTarget.solution
 
-    if TaskPipeline(env).run_jobs(Cache(env), env) != 0:
+    pipeline = TaskPipeline(env)
+
+    if pipeline.run_jobs(Cache(env), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
+
+    return pipeline.input_dataset()
 
 
 @with_env
 def create(env: Env, args: Namespace) -> int:
-    prepare_files(env)
-
+    testcases = generate_testcases(env)
     session = Session()
 
     description = args.description
 
-    task = create_task(session, env, description)
+    task = create_task(session, env, testcases, description)
     dataset = task.active_dataset
 
     try:
@@ -109,15 +114,14 @@ def update(env: Env, args: Namespace) -> int:
 
 @with_env
 def add(env: Env, args: Namespace) -> int:
-    prepare_files(env)
-
+    testcases = generate_testcases(env)
     session = Session()
 
     description = args.description
     autojudge = not args.no_autojudge
 
     task = get_task(session, env.config)
-    dataset = create_dataset(session, env, task, description, autojudge)
+    dataset = create_dataset(session, env, task, testcases, description, autojudge)
 
     try:
         session.commit()
@@ -147,14 +151,21 @@ def submit(env: Env, args: Namespace) -> int:
     return 0
 
 
+def get_dataset_from_args(session: SessionType, task: Task, args: Namespace) -> Dataset:
+    if args.active_dataset:
+        return task.active_dataset
+    elif args.dataset is not None:
+        return get_dataset_by_description(session, task, args.dataset)
+    else:
+        return get_only_dataset(session, task)
+
+
 @with_env
 def testing_log(env: Env, args: Namespace) -> int:
     session = Session()
 
-    description = args.dataset
-
     task = get_task(session, env.config)
-    dataset = get_dataset(session, task, description)
+    dataset = get_dataset_from_args(session, task, args)
     success = create_testing_log(session, env, dataset)
 
     return 0 if success else 1
@@ -164,10 +175,8 @@ def testing_log(env: Env, args: Namespace) -> int:
 def check(env: Env, args: Namespace) -> int:
     session = Session()
 
-    description = args.dataset
-
     task = get_task(session, env.config)
-    dataset = get_dataset(session, task, description)
+    dataset = get_dataset_from_args(session, task, args)
     success = check_results(session, env, dataset)
 
     return 0 if success else 1

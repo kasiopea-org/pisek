@@ -4,21 +4,21 @@ from random import Random
 import os
 import sys
 
-random = Random(275)
-directory = sys.argv[1]
+if len(sys.argv) == 1:
+    print("random-uniform repeat=10")
+    exit()
 
-for i in range(10):
-    nums = set()
+assert sys.argv[1] == "random-uniform"
+random = Random(int(sys.argv[2], base=16))
 
-    n = random.randint(300000, 400000)
-    for _ in range(n):
-        nums.add(random.randint(1, 1_000_000))
+nums = set()
 
-    nums = list(nums)
-    random.shuffle(nums)
+n = random.randint(300000, 400000)
+for _ in range(n):
+    nums.add(random.randint(1, 1_000_000))
 
-    filename = f"{i:02}.in"
+nums = list(nums)
+random.shuffle(nums)
 
-    with open(os.path.join(directory, filename), "w") as f:
-        for num in nums:
-            f.write(f"{num}\n")
+for num in nums:
+    print(num)

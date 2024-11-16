@@ -1,6 +1,7 @@
 # pisek  - Tool for developing tasks for programming competitions.
 #
 # Copyright (c)   2023        Daniel Skýpala <daniel@honza.info>
+# Copyright (c)   2024        Antonín Maloň <git@tonyl.eu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,19 +12,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from decimal import Decimal
 import json
 from math import ceil, inf
 import os
-from typing import Optional
+from typing import Any, Optional
 
-from pisek.utils.text import pad, tab, colored, eprint
+from pisek.utils.text import pad, tab, eprint
+from pisek.utils.colors import ColorSettings
 from pisek.utils.terminal import terminal_width
 from pisek.config.task_config import load_config
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import Scoring
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
-from pisek.jobs.parts.solution_result import Verdict
-from pisek.jobs.parts.verdicts_eval import evaluate_verdicts
+from pisek.task_jobs.solution.solution_result import Verdict
+from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 
 
 class MissingSolution(Exception):
@@ -34,10 +37,19 @@ class MissingSolution(Exception):
 @dataclass
 class LoggedResult:
     verdict: Verdict
-    points: float
+    relative_points: Optional[Decimal]
+    absolute_points: Optional[Decimal]
     time: float
     test: str
     original_verdict: Verdict
+
+    def points(self, subtask_points: int) -> Decimal:
+        if self.relative_points is not None:
+            return self.relative_points * subtask_points
+        elif self.absolute_points is not None:
+            return self.absolute_points
+        else:
+            raise ValueError("Relative and absolute points unset")
 
     def to_str(
         self,
@@ -63,10 +75,10 @@ class LoggedResult:
             else:
                 color = "green"
 
-            full_bar = colored("━", color)
+            full_bar = ColorSettings.colored("━", color)
 
             return (
-                f"[{full_bar*bounded}{'━'*(segments-bounded)}|"
+                f"[{full_bar*bounded}{('━' if ColorSettings.colors_on else ' ')*(segments-bounded)}|"
                 f"{full_bar*overflown}{' '*(overflown_max_length - overflown)}{'⋯⋯' if cut else '  '}"
             )
 
@@ -84,11 +96,21 @@ def limit_result(result: LoggedResult, limit: float) -> LoggedResult:
             new_verdict = Verdict.ok
 
         return LoggedResult(
-            new_verdict, 1.0, result.time, result.test, result.original_verdict
+            new_verdict,
+            Decimal(1),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     if result.time > limit:
         return LoggedResult(
-            Verdict.timeout, 0.0, result.time, result.test, result.original_verdict
+            Verdict.timeout,
+            Decimal(0),
+            None,
+            result.time,
+            result.test,
+            result.original_verdict,
         )
     return result
 
@@ -135,18 +157,23 @@ class SolutionResults:
     def from_log(
         name: str, config: TaskConfig, testing_log, limit: float
     ) -> "SolutionResults":
-        if name not in testing_log:
+        if name not in testing_log["solutions"]:
             raise MissingSolution(name)
 
         results = []
-        for result in testing_log[name]["results"]:
+        for test_name, result in testing_log["solutions"][name]["results"].items():
+
+            def load_decimal(result: dict[str, Any], key: str) -> Optional[Decimal]:
+                return Decimal(result[key]) if key in result else None
+
             results.append(
                 limit_result(
                     LoggedResult(
                         Verdict[result["result"]],
-                        result["points"],
+                        load_decimal(result, "relative_points"),
+                        load_decimal(result, "absolute_points"),
                         result["time"],
-                        result["test"],
+                        test_name,
                         Verdict[result["result"]],
                     ),
                     limit,
@@ -180,10 +207,10 @@ class SolutionResults:
         return None
 
     def check_points(self) -> Optional[str]:
-        achieved = 0.0
+        achieved = Decimal(0)
         results = self.get_by_subtask()
         for num, sub in self._config.subtasks.items():
-            achieved += min(results[num], key=lambda r: r.points).points * sub.points
+            achieved += min(map(lambda r: r.points(sub.points), results[num]))
 
         points = self._solution.points
         points_above = self._solution.points_above
@@ -249,8 +276,18 @@ def visualize(
     if config is None:
         return 2
 
-    with open(os.path.join(path, filename)) as log_file:
-        testing_log = json.load(log_file)
+    log_path = os.path.join(path, filename)
+    try:
+        with open(log_path) as log_file:
+            testing_log = json.load(log_file)
+    except FileNotFoundError:
+        eprint(
+            ColorSettings.colored(
+                f"File {log_path} not found. Test with --testing-log to create a log.",
+                "red",
+            )
+        )
+        return 2
 
     if testing_log["source"] == "cms":
         limit_default = config.cms.time_limit
@@ -265,7 +302,7 @@ def visualize(
     try:
         expanded_solutions = expand_solutions(config, solutions)
     except UnknownSolutions as err:
-        eprint(colored(str(err), "red"))
+        eprint(ColorSettings.colored(str(err), "red"))
         return 2
 
     results: dict[str, SolutionResults] = {}
@@ -279,7 +316,7 @@ def visualize(
                 max_test_length, max(map(lambda r: len(r.test), results[sol].get_all()))
             )
         except MissingSolution as err:
-            eprint(colored(str(err), "yellow"))
+            eprint(ColorSettings.colored(str(err), "yellow"))
 
     wrong_solutions = {}
     for sol, sol_res in results.items():
@@ -287,7 +324,7 @@ def visualize(
             sol_err = sol_res.check_points()
             err_msg = ""
             if sol_err is not None:
-                err_msg = colored(f" should get {sol_err}", "red")
+                err_msg = ColorSettings.colored(f" should get {sol_err}", "red")
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
@@ -295,7 +332,9 @@ def visualize(
                 subtask_err = sol_res.check_subtask(num)
                 err_msg = ""
                 if subtask_err is not None:
-                    err_msg = colored(f" should result {subtask_err}", "red")
+                    err_msg = ColorSettings.colored(
+                        f" should result {subtask_err}", "red"
+                    )
                     wrong_solutions[sol] = True
 
                 print(tab(f"{config.subtasks[num].name}{err_msg}"))
@@ -308,7 +347,7 @@ def visualize(
             sol_errs = sol_res.check_all()
             err_msg = ""
             if sol_errs:
-                err_msg = colored(f" should {', '.join(sol_errs)}", "red")
+                err_msg = ColorSettings.colored(f" should {', '.join(sol_errs)}", "red")
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
@@ -318,7 +357,7 @@ def visualize(
     print()
     if wrong_solutions:
         print(
-            colored(
+            ColorSettings.colored(
                 f"Solutions {', '.join(wrong_solutions.keys())} should result differently.",
                 "red",
             )
@@ -336,6 +375,6 @@ def visualize(
         limit_msg = f"Valid time limit between {min_possible:.2f}, {max_possible:.2f}."
     else:
         limit_msg = "No valid time limit found."
-    print(colored(limit_msg, "cyan"))
+    print(ColorSettings.colored(limit_msg, "cyan"))
 
     return 0

@@ -14,12 +14,12 @@ from typing import Iterator, Any, Optional
 from cms.db.task import Task, Dataset, Manager
 from cms.db.filecacher import FileCacher
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 from os import path, listdir
 import re
 import datetime
 
-from pisek.cms.testcase import create_testcase, get_testcases
+from pisek.cms.testcase import create_testcase
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import OutCheck, TaskType
@@ -30,6 +30,7 @@ def create_dataset(
     session: Session,
     env: Env,
     task: Task,
+    testcases: list[TaskPath],
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
@@ -72,8 +73,17 @@ def create_dataset(
 
     files = FileCacher()
 
-    for testcase in get_testcases(env):
-        create_testcase(session, files, dataset, *testcase)
+    outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
+    solution = config.solutions[config.primary_solution].raw_source
+
+    for input in testcases:
+        name = input.name.removesuffix(".in")
+        output = None
+
+        if outputs_needed:
+            output = TaskPath.output_file(env, input.name, solution)
+
+        create_testcase(session, files, dataset, name, input, output)
 
     add_judge(session, files, env, dataset)
     add_stubs(session, files, env, dataset)
@@ -132,7 +142,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        TaskPath.executable_path(env, path.basename(config.out_judge)).path,
+        TaskPath.executable_path(env, config.out_judge.name).path,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
@@ -163,7 +173,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     elif config.task_type == TaskType.communication:
         stub_basename = "stub"
 
-    directory, target_basename = path.split(config.stub)
+    directory, target_basename = path.split(config.stub.path)
     directory = path.normpath(directory)
 
     exts = set()
@@ -200,25 +210,27 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     config = env.config
 
     for header in config.headers:
-        basename = path.basename(header)
-
+        name = header.name
         header = files.put_file_from_path(
-            header, f"Header {basename} for {config.name}"
+            header.path, f"Header {name} for {config.name}"
         )
-        session.add(Manager(dataset=dataset, filename=basename, digest=header))
+        session.add(Manager(dataset=dataset, filename=name, digest=header))
 
 
-def get_dataset(session: Session, task: Task, description: Optional[str]) -> Dataset:
-    if description is None:
-        datasets = session.query(Dataset).filter(Dataset.task == task).all()
+def get_only_dataset(session: Session, task: Task) -> Dataset:
+    datasets = session.query(Dataset).filter(Dataset.task == task).all()
 
-        if len(datasets) >= 2:
-            raise RuntimeError(
-                f"The task has multiple datasets: {', '.join(d.description for d in datasets)}"
-            )
-        else:
-            return datasets[0]
+    if len(datasets) >= 2:
+        raise RuntimeError(
+            f"The task has multiple datasets: {', '.join(sorted(d.description for d in datasets))}"
+        )
+    else:
+        return datasets[0]
 
+
+def get_dataset_by_description(
+    session: Session, task: Task, description: str
+) -> Dataset:
     try:
         return (
             session.query(Dataset)

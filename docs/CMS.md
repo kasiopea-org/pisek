@@ -37,7 +37,6 @@ However, there are a couple of options that you'll probably want to change:
 title=Rabbit pathfinding # The display name of the task
 time_limit=1.5 # The time limit, in seconds
 mem_limit=512 # The memory limit, in mebibytes
-score_precision=2 # The number of decimal digits that scores get rounded to
 ```
 
 For details on other options, see the example config.

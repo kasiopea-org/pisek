@@ -22,8 +22,6 @@ int main() {
 
     find_odd(numbers);
 
-    std::sort(reported.begin(), reported.end());
-
     for (int num : reported)
         std::cout << num << "\n";
 }

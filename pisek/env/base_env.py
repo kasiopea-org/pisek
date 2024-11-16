@@ -14,16 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum, auto
-from pydantic import Field
-from typing import Any, TYPE_CHECKING, Callable, TypeVar
-
+from typing import Any, TYPE_CHECKING, Callable
 
 from pisek.env.context import ContextModel
-
-
-T = TypeVar("T")
-TFunc = Callable[..., T]
 
 
 class BaseEnv(ContextModel):
@@ -58,7 +51,7 @@ class BaseEnv(ContextModel):
             raise RuntimeError("Locked BaseEnv cannot be forked.")
 
         model = self.model_copy(deep=True)
-        model._clear_accesses()
+        model.clear_accesses()
         return model
 
     @staticmethod
@@ -82,7 +75,7 @@ class BaseEnv(ContextModel):
         return recursive
 
     @_recursive_call
-    def _clear_accesses(self) -> None:
+    def clear_accesses(self) -> None:
         """Remove all logged accesses."""
         self._accessed = set()
 
@@ -91,24 +84,24 @@ class BaseEnv(ContextModel):
         """Prevent this Env (and subenvs) from being forked."""
         self._locked = True
 
-    def get_accessed(self) -> list[str]:
+    def get_accessed(self) -> set[str]:
         """Get all accessed field names in this env (and all subenvs)."""
-        accessed = []
+        accessed = set()
         self._logging = False
         for key in self._accessed:
             item = getattr(self, key)
             if isinstance(item, BaseEnv):
-                accessed += [(f"{key}.{subkey}") for subkey in item.get_accessed()]
+                accessed |= {(f"{key}.{subkey}") for subkey in item.get_accessed()}
             elif isinstance(item, dict) and all(
                 isinstance(val, BaseEnv) for val in item.values()
             ):
-                accessed += [
+                accessed |= {
                     (f"{key}[{dict_key}].{subkey}")
                     for dict_key, subenv in item.items()
                     for subkey in subenv.get_accessed()
-                ]
+                }
             else:
-                accessed.append(key)
+                accessed.add(key)
         self._logging = True
 
         return accessed

@@ -21,14 +21,16 @@ from typing import Optional
 import sys
 import signal
 
-from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
-
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.license import license, license_gnu
 from pisek.visualize import visualize
+from pisek.config.config_tools import update_and_replace_config
 from pisek.version import print_version
+
+from pisek.jobs.task_pipeline import TaskPipeline
+from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
 
 
 def sigint_handler(sig, frame):
@@ -75,273 +77,246 @@ def main(argv):
         )
     )
 
-    def add_argument_verbosity(parser):
-        parser.add_argument(
-            "--verbosity",
-            "-v",
-            action="count",
-            default=0,
-            help="Be more verbose. (Enter multiple times for even more verbosity.)",
-        )
-
-    def add_argument_file_contents(parser):
-        parser.add_argument(
-            "--file-contents",
-            "-C",
-            action="store_true",
-            help="Show file contents on error",
-        )
-
-    def add_argument_timeout(parser):
-        parser.add_argument(
-            "--timeout",
-            "-t",
-            type=float,
-            help="Override time limit for solutions to TIMEOUT seconds.",
-        )
-
-    def add_argument_full(parser):
-        parser.add_argument(
-            "--full", "-f", action="store_true", help="Don't stop on first failure."
-        )
-
-    def add_argument_strict(parser):
-        parser.add_argument(
-            "--strict",
-            action="store_true",
-            help="Interpret warnings as failures (for final check).",
-        )
-
-    def add_argument_ninputs(parser):
-        parser.add_argument(
-            "--inputs",
-            "-n",
-            type=int,
-            default=5,
-            help="Test on INPUTS difference inputs (only for Kasiopea tasks).",
-        )
-
-    def add_argument_all_inputs(parser):
-        parser.add_argument(
-            "--all-inputs",
-            "-a",
-            action="store_true",
-            help="Test each solution on all inputs.",
-        )
-
-    def add_argument_skip_on_timeout(parser):
-        parser.add_argument(
-            "--skip-on-timeout",
-            action="store_true",
-            help="Skip all following inputs on first timeout.",
-        )
-
-    def add_argument_testing_log(parser):
-        parser.add_argument(
-            "--testing-log",
-            action="store_true",
-            help="Write test results to testing_log.json.",
-        )
-
-    def add_argument_clean(parser):
-        parser.add_argument(
-            "--clean",
-            "-c",
-            action="store_true",
-            help="Clean directory beforehand.",
-        )
-
-    def add_argument_plain(parser):
-        parser.add_argument(
-            "--plain",
-            action="store_true",
-            help="Do not use ANSI escape sequences.",
-        )
-
-    def add_argument_no_jumps(parser):
-        parser.add_argument(
-            "--no-jumps",
-            action="store_true",
-            help="Do not use ANSI control sequences.",
-        )
-
-    def add_argument_no_colors(parser):
-        parser.add_argument(
-            "--no-colors",
-            action="store_true",
-            help="Do not use ANSI color sequences.",
-        )
-
-    def add_argument_pisek_dir(parser):
-        parser.add_argument(
-            "--pisek-dir",
-            help="Pisek directory where to load configs from. (If not provided uses [git root]/pisek/)",
-            type=str,
-        )
-
-    def add_argument_filter(parser):
-        parser.add_argument(
-            "--filter",
-            "-f",
-            choices=("slowest", "all"),
-            default="slowest",
-            type=str,
-            help="Which inputs to show:\n slowest: Show slowest input only.\n all: Show all inputs.",
-        )
-
-    def add_argument_bundle(parser):
-        parser.add_argument(
-            "--bundle",
-            "-b",
-            action="store_true",
-            help="Don't group inputs by subtask.",
-        )
-
-    def add_argument_solutions(parser):
-        parser.add_argument(
-            "--solutions",
-            "-s",
-            default=None,
-            type=str,
-            nargs="*",
-            help="Visualize only solutions with a name or source in SOLUTIONS.",
-        )
-
-    def add_argument_filename(parser):
-        parser.add_argument(
-            "--filename",
-            default="testing_log.json",
-            type=str,
-            help="Read testing log from FILENAME.",
-        )
-
-    def add_argument_limit(parser):
-        parser.add_argument(
-            "--limit",
-            "-l",
-            default=None,
-            type=float,
-            help="Visualize as if the time limit was LIMIT seconds.",
-        )
-
-    def add_argument_segments(parser):
-        parser.add_argument(
-            "--segments",
-            "-S",
-            type=int,
-            help="Print bars SEGMENTS characters wide.",
-        )
-
     def add_argument_description(parser):
         parser.add_argument(
             "--description",
             "-d",
             type=str,
-            help="Created the dataset with a description of DESCRIPTION.",
+            help="create the dataset with the description DESCRIPTION",
         )
 
     def add_argument_dataset(parser):
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument(
             "--dataset",
             "-d",
             type=str,
             required=False,
-            help="Use the dataset with the description DESCRIPTION.",
+            help="use the dataset with the description DESCRIPTION",
         )
 
-    add_argument_verbosity(parser)
-    add_argument_file_contents(parser)
-    add_argument_timeout(parser)
-    add_argument_full(parser)
-    add_argument_strict(parser)
-    add_argument_ninputs(parser)
-    add_argument_all_inputs(parser)
-    add_argument_skip_on_timeout(parser)
-    add_argument_clean(parser)
-    add_argument_plain(parser)
-    add_argument_no_jumps(parser)
-    add_argument_no_colors(parser)
-    add_argument_testing_log(parser)
-    add_argument_pisek_dir(parser)
+        group.add_argument(
+            "--active-dataset",
+            "-a",
+            action="store_true",
+            help="use active dataset",
+        )
 
-    subparsers = parser.add_subparsers(help="Run this subcommand.", dest="subcommand")
+    # ------------------------------- pisek -------------------------------
 
-    parser_version = subparsers.add_parser("version", help="Print current version.")
+    parser.add_argument(
+        "--clean",
+        "-c",
+        action="store_true",
+        help="clean directory beforehand",
+    )
+    parser.add_argument(
+        "--plain",
+        "-p",
+        action="store_true",
+        help="do not use ANSI escape sequences",
+    )
+    parser.add_argument(
+        "--no-jumps",
+        action="store_true",
+        help="do not use ANSI cursor movement & clear sequences",
+    )
+    parser.add_argument(
+        "--no-colors",
+        action="store_true",
+        help="do not use ANSI color sequences",
+    )
+    parser.add_argument(
+        "--pisek-dir",
+        help="pisek directory for higher level settings",
+        type=str,
+    )
 
-    parser_test = subparsers.add_parser("test", help="test")
+    subparsers = parser.add_subparsers(
+        help="subcommand to run", dest="subcommand", required=True
+    )
+
+    # ------------------------------- pisek version -------------------------------
+
+    parser_version = subparsers.add_parser("version", help="print current version")
+
+    # ------------------------------- pisek test -------------------------------
+
+    parser_test = subparsers.add_parser("test", help="test task")
     parser_test.add_argument(
         "target",
-        choices=["solution", "generator"],
-        help="Test this program type ('solution' or 'generator').",
+        choices=["generator", "solution", "all"],
+        nargs="?",
+        default="all",
+        help="what to test?",
     )
     parser_test.add_argument(
-        "solution", type=str, help="Test the solution with this name.", nargs="?"
+        "solution", type=str, help="name of the solution to test", nargs="?"
     )
-    add_argument_timeout(parser_test)
-    add_argument_full(parser_test)
-    add_argument_strict(parser_test)
-    add_argument_ninputs(parser_test)
-    add_argument_clean(parser_test)
+    parser_test.add_argument(
+        "--verbosity",
+        "-v",
+        action="count",
+        default=0,
+        help="be more verbose (enter multiple times for even more verbosity)",
+    )
+    parser_test.add_argument(
+        "--file-contents",
+        "-C",
+        action="store_true",
+        help="show file contents on error",
+    )
+    parser_test.add_argument(
+        "--timeout",
+        "-t",
+        type=float,
+        help="override time limit for solutions to TIMEOUT seconds",
+    )
+    parser_test.add_argument(
+        "--full", "-f", action="store_true", help="don't stop on first failure"
+    )
+    parser_test.add_argument(
+        "--strict",
+        action="store_true",
+        help="interpret warnings as failures (for final check)",
+    )
+    parser_test.add_argument(
+        "--repeat-inputs",
+        "-n",
+        type=int,
+        default=1,
+        help="generate REPEAT_INPUTS times more inputs (seeded inputs only)",
+    )
+    parser_test.add_argument(
+        "--all-inputs",
+        "-a",
+        action="store_true",
+        help="test each solution on all inputs",
+    )
+    parser_test.add_argument(
+        "--skip-on-timeout",
+        action="store_true",
+        help="skip all following inputs on first timeout",
+    )
+    parser_test.add_argument(
+        "--testing-log",
+        "-T",
+        action="store_true",
+        help="write test results to testing_log.json",
+    )
 
-    _parser_clean = subparsers.add_parser("clean", help="Clean the directory.")
+    # ------------------------------- pisek clean -------------------------------
+
+    parser_clean = subparsers.add_parser("clean", help="clean task directory")
+
+    # ------------------------------- pisek config -------------------------------
+
+    parser_config = subparsers.add_parser("config", help="manage task config")
+    config_subparsers = parser_config.add_subparsers(
+        help="subcommand to run", dest="config_subcommand", required=True
+    )
+    config_subparsers.add_parser(
+        "update", help="update config to newest version (replaces the config)"
+    )
+
+    # ------------------------------- pisek visualize -------------------------------
 
     parser_visualize = subparsers.add_parser(
-        "visualize", help="Show solutions statistics and closeness to limit."
+        "visualize", help="show solution statistics and closeness to limit"
     )
-    add_argument_filter(parser_visualize)
-    add_argument_bundle(parser_visualize)
-    add_argument_solutions(parser_visualize)
-    add_argument_filename(parser_visualize)
-    add_argument_limit(parser_visualize)
-    add_argument_segments(parser_visualize)
+    parser_visualize.add_argument(
+        "--filter",
+        "-f",
+        choices=("slowest", "all"),
+        default="slowest",
+        type=str,
+        help="which inputs to show (slowest/all)",
+    )
+    parser_visualize.add_argument(
+        "--bundle",
+        "-b",
+        action="store_true",
+        help="don't group inputs by subtask",
+    )
+    parser_visualize.add_argument(
+        "--solutions",
+        "-s",
+        default=None,
+        type=str,
+        nargs="*",
+        help="visualize only solutions with a name or source in SOLUTIONS",
+    )
+    parser_visualize.add_argument(
+        "--filename",
+        default="testing_log.json",
+        type=str,
+        help="read testing log from FILENAME",
+    )
+    parser_visualize.add_argument(
+        "--limit",
+        "-l",
+        default=None,
+        type=float,
+        help="visualize as if the time limit was LIMIT seconds",
+    )
+    parser_visualize.add_argument(
+        "--segments",
+        "-S",
+        type=int,
+        help="print bars SEGMENTS characters wide",
+    )
 
-    parser_license = subparsers.add_parser("license", help="Print license")
+    # ------------------------------- pisek license -------------------------------
+
+    parser_license = subparsers.add_parser("license", help="print license")
     parser_license.add_argument(
-        "--print", action="store_true", help="Print entire license."
+        "--print", action="store_true", help="print entire license"
     )
 
-    parser_cms = subparsers.add_parser("cms", help="Import tasks into CMS.")
+    # ------------------------------- pisek cms -------------------------------
+
+    parser_cms = subparsers.add_parser("cms", help="import task into CMS")
     subparsers_cms = parser_cms.add_subparsers(
-        help="The subcommand to run.", dest="cms_subcommand"
+        help="subcommand to run", dest="cms_subcommand", required=True
     )
 
-    parser_cms_create = subparsers_cms.add_parser("create", help="Create a new task.")
+    parser_cms_create = subparsers_cms.add_parser("create", help="create a new task")
     add_argument_description(parser_cms_create)
 
     parser_cms_update = subparsers_cms.add_parser(
-        "update", help="Update the basic properties of an existing task."
+        "update", help="update the basic properties of an existing task"
     )
 
     parser_cms_add = subparsers_cms.add_parser(
-        "add", help="Add a dataset to an existing task."
+        "add", help="add a dataset to an existing task"
     )
     add_argument_description(parser_cms_add)
     parser_cms_add.add_argument(
         "--no-autojudge",
         action="store_true",
-        help="Disable background judging for the new dataset.",
+        help="disable background judging for the new dataset",
     )
 
     parser_cms_submit = subparsers_cms.add_parser(
-        "submit", help="Submit reference solutions for evaluation using CMS."
+        "submit", help="submit reference solutions for evaluation using CMS"
     )
     parser_cms_submit.add_argument(
         "--username",
         "-u",
         type=str,
         required=True,
-        help="Submit as the user with username USERNAME.",
+        help="submit as the user with username USERNAME",
     )
 
     parser_cms_testing_log = subparsers_cms.add_parser(
         "testing-log",
-        help="Generate a testing log for reference solutions submitted to CMS.",
+        help="generate a testing log for reference solutions submitted to CMS",
     )
     add_argument_dataset(parser_cms_testing_log)
 
     parser_cms_check = subparsers_cms.add_parser(
         "check",
-        help="Check if reference solutions scored as expected in CMS.",
+        help="check if reference solutions scored as expected in CMS",
     )
     add_argument_dataset(parser_cms_check)
 
@@ -358,6 +333,7 @@ def main(argv):
     )
 
     args = parser.parse_args(argv)
+    ColorSettings.set_state(not args.plain and not args.no_colors)
 
     result = None
 
@@ -368,15 +344,22 @@ def main(argv):
     if args.subcommand == "version":
         result = print_version()
     elif args.subcommand == "test":
-        if args.target == "solution":
-            result = test_solution(args)
-        elif args.target == "generator":
+        if args.target == "generator":
             result = test_generator(args)
+        elif args.target == "solution":
+            result = test_solution(args)
+        elif args.target == "all":
+            result = test_task(args, solutions=None)
         else:
             eprint(f"Unknown testing target: {args.target}")
             exit(1)
-    elif args.subcommand is None:
-        result = test_task(args, solutions=None, target="all")
+
+    elif args.subcommand == "config":
+        if args.config_subcommand == "update":
+            result = not update_and_replace_config(PATH, args.pisek_dir)
+        else:
+            raise RuntimeError(f"Unknown config command {args.config_subcommand}")
+
     elif args.subcommand == "cms":
         args, unknown_args = parser.parse_known_args()
 

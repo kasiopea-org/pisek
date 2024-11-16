@@ -30,14 +30,18 @@ from pydantic import (
 import re
 from typing import Optional, Any, Annotated, Union
 
+from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
-from pisek.utils.text import eprint, colored, warn
+from pisek.utils.text import eprint, warn
+from pisek.utils.colors import ColorSettings
 from pisek.env.base_env import BaseEnv
 from pisek.config.config_hierarchy import ConfigValue, TaskConfigError, ConfigHierarchy
 from pisek.config.config_types import (
     TaskType,
+    GenType,
     OutCheck,
     JudgeType,
+    ShuffleMode,
     DataFormat,
     Scoring,
     ProgramType,
@@ -45,7 +49,7 @@ from pisek.config.config_types import (
     CMSScoreMode,
 )
 from pisek.env.context import init_context
-from pisek.jobs.parts.solution_result import SUBTASK_SPEC
+from pisek.task_jobs.solution.solution_result import SUBTASK_SPEC
 
 
 MaybeInt = Annotated[
@@ -54,6 +58,18 @@ MaybeInt = Annotated[
 ListStr = Annotated[list[str], BeforeValidator(lambda s: s.split())]
 OptionalStr = Annotated[Optional[str], BeforeValidator(lambda s: s or None)]
 OptionalFloat = Annotated[Optional[float], BeforeValidator(lambda s: s or None)]
+
+TaskPathFromStr = Annotated[TaskPath, BeforeValidator(lambda s: TaskPath(s))]
+OptionalTaskPathFromStr = Annotated[
+    Optional[TaskPath], BeforeValidator(lambda s: TaskPath(s) if s else None)
+]
+ListTaskPathFromStr = Annotated[
+    list[TaskPath], BeforeValidator(lambda s: [TaskPath(p) for p in s.split()])
+]
+OptionalJudgeType = Annotated[Optional[JudgeType], BeforeValidator(lambda t: t or None)]
+OptionalShuffleMode = Annotated[
+    Optional[ShuffleMode], BeforeValidator(lambda t: t or None)
+]
 
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
@@ -77,31 +93,33 @@ class TaskConfig(BaseEnv):
     """Configuration of task loaded from config file."""
 
     name: str
-    contest_type: str
     task_type: TaskType
     scoring: Scoring
+    score_precision: int = Field(ge=0)
 
-    solutions_subdir: str
-    static_subdir: str
-    data_subdir: str
+    solutions_subdir: TaskPathFromStr
+    static_subdir: TaskPathFromStr
 
-    in_gen: str
-    checker: OptionalStr
+    in_gen: TaskPathFromStr
+    gen_type: GenType
+    checker: OptionalTaskPathFromStr
     out_check: OutCheck
-    out_judge: Optional[str]
-    judge_type: Optional[JudgeType]
-    judge_needs_in: bool
-    judge_needs_out: bool
-    tokens_ignore_newlines: bool
-    tokens_ignore_case: bool
+    out_judge: OptionalTaskPathFromStr
+    judge_type: OptionalJudgeType
+    judge_needs_in: Optional[bool]
+    judge_needs_out: Optional[bool]
+    tokens_ignore_newlines: Optional[bool]
+    tokens_ignore_case: Optional[bool]
     tokens_float_rel_error: OptionalFloat
     tokens_float_abs_error: OptionalFloat
+    shuffle_mode: OptionalShuffleMode
+    shuffle_ignore_case: Optional[bool]
 
     in_format: DataFormat
     out_format: DataFormat
 
-    stub: OptionalStr
-    headers: ListStr
+    stub: OptionalTaskPathFromStr
+    headers: ListTaskPathFromStr
 
     subtasks: dict[int, "SubtaskConfig"]
 
@@ -137,7 +155,9 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def get_solution_by_source(self, source: str) -> Optional[str]:
-        sources = (name for name, sol in self.solutions.items() if sol.source == source)
+        sources = (
+            name for name, sol in self.solutions.items() if sol.raw_source == source
+        )
         return next(sources, None)
 
     def __init__(self, **kwargs):
@@ -150,13 +170,13 @@ class TaskConfig(BaseEnv):
     def load_dict(configs: ConfigHierarchy) -> ConfigValuesDict:
         GLOBAL_KEYS = [
             ("task", "name"),
-            ("task", "contest_type"),
             ("task", "task_type"),
             ("task", "scoring"),
+            ("task", "score_precision"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),
-            ("task", "data_subdir"),
             ("tests", "in_gen"),
+            ("tests", "gen_type"),
             ("tests", "checker"),
             ("tests", "out_check"),
             ("tests", "in_format"),
@@ -165,22 +185,26 @@ class TaskConfig(BaseEnv):
             ("all_solutions", "headers"),
         ]
         OUT_CHECK_SPECIFIC_KEYS = [
-            ("judge", "out_judge", None),
-            ("judge", "judge_type", None),
-            ("judge", "judge_needs_in", "0"),
-            ("judge", "judge_needs_out", "1"),
-            ("tokens", "tokens_ignore_newlines", "0"),
-            ("tokens", "tokens_ignore_case", "0"),
-            ("tokens", "tokens_float_rel_error", None),
-            ("tokens", "tokens_float_abs_error", None),
+            ((None, "judge"), "out_judge", ""),
+            ((None, "judge"), "judge_type", ""),
+            ((TaskType.batch, "judge"), "judge_needs_in", "0"),
+            ((TaskType.batch, "judge"), "judge_needs_out", "1"),
+            ((None, "tokens"), "tokens_ignore_newlines", "0"),
+            ((None, "tokens"), "tokens_ignore_case", "0"),
+            ((None, "tokens"), "tokens_float_rel_error", ""),
+            ((None, "tokens"), "tokens_float_abs_error", ""),
+            ((None, "shuffle"), "shuffle_mode", ""),
+            ((None, "shuffle"), "shuffle_ignore_case", "0"),
         ]
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
 
         # Load judge specific keys
-        for out_check, key, default in OUT_CHECK_SPECIFIC_KEYS:
-            if args["out_check"].value == out_check:
+        for (task_type, out_check), key, default in OUT_CHECK_SPECIFIC_KEYS:
+            if (task_type is None or task_type == args["task_type"].value) and args[
+                "out_check"
+            ].value == out_check:
                 args[key] = configs.get("tests", key)
             else:
                 args[key] = ConfigValue(default, "_internal", "tests", key, True)
@@ -189,9 +213,10 @@ class TaskConfig(BaseEnv):
 
         # Load subtasks
         args["subtasks"] = subtasks = {}
+        # Sort so subtasks.keys() returns subtasks in sorted order
         for section in sorted(section_names, key=lambda cv: cv.value):
             section_name = section.value
-            if m := re.match(r"test(\d{2})", section_name):
+            if m := re.fullmatch(r"test(\d{2})", section_name):
                 num = m[1]
                 subtasks[int(num)] = SubtaskConfig.load_dict(
                     ConfigValue(str(int(num)), section.config, section.section, None),
@@ -200,7 +225,7 @@ class TaskConfig(BaseEnv):
 
         args["solutions"] = solutions = {}
         for section in section_names:
-            if m := re.match(r"solution_(.+)", section.value):
+            if m := re.fullmatch(r"solution_(.+)", section.value):
                 solutions[m[1]] = SolutionConfig.load_dict(
                     ConfigValue(m[1], section.config, section.section, None), configs
                 )
@@ -210,18 +235,6 @@ class TaskConfig(BaseEnv):
         args["checks"] = ChecksConfig.load_dict(configs)
 
         return args
-
-    @field_validator("contest_type", mode="after")
-    @classmethod
-    def validate_contest_type(cls, value: str) -> str:
-        # TODO: Redo to general task types
-        ALLOWED = ["kasiopea", "cms"]
-        if value not in ALLOWED:
-            raise PydanticCustomError(
-                "contest_type_invalid",
-                f"Must be one of ({', '.join(ALLOWED)})",
-            )
-        return value
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -235,6 +248,18 @@ class TaskConfig(BaseEnv):
                 {"task_type": self.task_type, "out_check": self.out_check},
             )
 
+        JUDGE_TYPES = {
+            TaskType.batch: [None, JudgeType.opendata_v1, JudgeType.cms_batch],
+            TaskType.communication: [JudgeType.cms_communication],
+        }
+
+        if self.judge_type not in JUDGE_TYPES[self.task_type]:
+            raise PydanticCustomError(
+                "task_judge_type_mismatch",
+                f"'{self.judge_type}' judge for '{self.task_type}' task is not allowed",
+                {"task_type": self.task_type, "judge_type": self.judge_type},
+            )
+
         if (self.tokens_float_abs_error is not None) != (
             self.tokens_float_rel_error is not None
         ):
@@ -246,6 +271,9 @@ class TaskConfig(BaseEnv):
                     "tokens_float_rel_error": self.tokens_float_rel_error,
                 },
             )
+
+        for sol_conf in self.solutions.values():
+            sol_conf.source = self.solutions_subdir.join(sol_conf.raw_source)
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
         if len(primary) > 1:
@@ -265,7 +293,7 @@ class TaskConfig(BaseEnv):
             if i not in self.subtasks:
                 raise PydanticCustomError(
                     "missing_subtask",
-                    f"Missing section for subtask {i}",
+                    f"Missing section [test{i:02}]",
                     {},
                 )
 
@@ -354,7 +382,7 @@ class SubtaskConfig(BaseEnv):
                 glob = f"{info.data['num']:02}*.in"
             if not glob.endswith(".in"):
                 raise PydanticCustomError(
-                    "in_globs_end_in", "In_globs must end with '.in'"
+                    "in_globs_end_in", "In_globs must end with '*.in'"
                 )
             globs.append(glob)
 
@@ -404,7 +432,8 @@ class SolutionConfig(BaseEnv):
     _section: str
     name: str
     primary: bool
-    source: str
+    raw_source: str
+    source: TaskPathFromStr
     points: MaybeInt
     points_above: MaybeInt
     points_below: MaybeInt
@@ -429,7 +458,12 @@ class SolutionConfig(BaseEnv):
             )
             for key in KEYS
         }
-        return {"_section": configs.get(name.section, None), "name": name, **args}
+        return {
+            "_section": configs.get(name.section, None),
+            "name": name,
+            "raw_source": args["source"],
+            **args,
+        }
 
     @field_validator("name", mode="after")
     @classmethod
@@ -454,7 +488,7 @@ class SolutionConfig(BaseEnv):
             "Must be one of (yes, no)",
         )
 
-    @field_validator("source", mode="before")
+    @field_validator("raw_source", mode="before")
     @classmethod
     def convert_auto(cls, value: str, info: ValidationInfo) -> str:
         if value == "@auto":
@@ -580,7 +614,6 @@ class CMSConfig(BaseEnv):
     max_submissions: MaybeInt = Field(gt=0)
     min_submission_interval: int = Field(ge=0)  # [seconds]
 
-    score_precision: int = Field(ge=0)
     score_mode: CMSScoreMode
     feedback_level: CMSFeedbackLevel
 
@@ -593,7 +626,6 @@ class CMSConfig(BaseEnv):
             "mem_limit",
             "max_submissions",
             "min_submission_interval",
-            "score_precision",
             "score_mode",
             "feedback_level",
         ]
@@ -637,8 +669,10 @@ class ChecksConfig(BaseEnv):
 
     _section: str = "checks"
 
-    checker_distinguishes_subtasks: bool
     solution_for_each_subtask: bool
+    no_unused_inputs: bool
+    all_inputs_in_last_subtask: bool
+    generator_respects_seed: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
@@ -666,9 +700,7 @@ def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list
 
         if not isinstance(value, ConfigValue):
             location = (
-                value["_section"].location()
-                if "_section" in value
-                else "Global config error:"
+                value["_section"].location() if "_section" in value else "global config"
             )
         else:
             location = value.location()
@@ -680,28 +712,26 @@ def _convert_errors(e: ValidationError, config_values: ConfigValuesDict) -> list
 def load_config(
     path: str,
     strict: bool = False,
-    no_colors: bool = False,
     suppress_warnings: bool = False,
     pisek_directory: Optional[str] = None,
 ) -> Optional[TaskConfig]:
     """Loads config from given path."""
     try:
-        config_hierarchy = ConfigHierarchy(path, no_colors, pisek_directory)
+        config_hierarchy = ConfigHierarchy(path, not suppress_warnings, pisek_directory)
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
         config_hierarchy.check_unused_keys()
         if config_hierarchy.check_todos() and not suppress_warnings:
-            warn("Unsolved TODOs in config.", TaskConfigError, strict, no_colors)
+            warn("Unsolved TODOs in config.", TaskConfigError, strict)
         return config
     except TaskConfigError as err:
-        eprint(colored(str(err), "red", no_colors))
+        eprint(ColorSettings.colored(str(err), "red"))
     except ValidationError as err:
         eprint(
-            colored(
+            ColorSettings.colored(
                 "Invalid config:\n\n"
                 + "\n\n".join(_convert_errors(err, config_values)),
                 "red",
-                no_colors,
             )
         )
     return None

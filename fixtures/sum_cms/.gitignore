@@ -1,5 +1,5 @@
 build/
 generated/
-data/
+tests/
 .pisek_cache
 .pisek_lock

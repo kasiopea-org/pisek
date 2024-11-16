@@ -21,7 +21,7 @@ from cms.grading.languagemanager import get_language
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import Session
 from os import path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pisek.env.env import Env
 from pisek.config.task_config import SolutionConfig, TaskConfig
@@ -83,10 +83,11 @@ def submit(
         return submission
 
     submission = Submission(
-        timestamp=datetime.now(),
+        timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
         language=language.name,
         participation=participation,
         task=task,
+        comment=solution.name,
     )
     session.add(submission)
 
@@ -132,7 +133,7 @@ def get_submission_of_digest(
 def resolve_solution(
     contest: Contest, env: Env, solution: SolutionConfig
 ) -> tuple[TaskPath, Language]:
-    source: str = solution.source
+    source: str = solution.raw_source
 
     for language_name in contest.languages:
         language: Language = get_language(language_name)

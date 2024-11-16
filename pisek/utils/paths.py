@@ -18,12 +18,12 @@ from dataclasses import dataclass
 import os
 from typing import Optional, TYPE_CHECKING
 import yaml
-from pisek.utils.terminal import colored_env
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
 
 BUILD_DIR = "build/"
+TESTS_DIR = "tests/"
 
 GENERATED_SUBDIR = "generated/"
 INPUTS_SUBDIR = "inputs/"
@@ -65,11 +65,17 @@ class TaskPath:
             return False
 
     def col(self, env: "Env") -> str:
-        return colored_env(self.path, "magenta", env)
+        return env.colored(self.path, "magenta")
 
     def replace_suffix(self, new_suffix: str) -> "TaskPath":
         path = os.path.splitext(self.path)[0] + new_suffix
         return TaskPath(path)
+
+    def join(self, *path: str) -> "TaskPath":
+        return TaskPath(os.path.join(self.path, *path))
+
+    def exists(self) -> bool:
+        return os.path.exists(self.path)
 
     @staticmethod
     def from_abspath(*path: str) -> "TaskPath":
@@ -77,11 +83,11 @@ class TaskPath:
 
     @staticmethod
     def static_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.static_subdir, *path)
+        return env.config.static_subdir.join(*path)
 
     @staticmethod
     def solution_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.solutions_subdir, *path)
+        return env.config.solutions_subdir.join(*path)
 
     @staticmethod
     def executable_path(env: "Env", *path: str) -> "TaskPath":
@@ -94,7 +100,7 @@ class TaskPath:
 
     @staticmethod
     def data_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath(env.config.data_subdir, *path)
+        return TaskPath(TESTS_DIR, *path)
 
     @staticmethod
     def generated_path(env: "Env", *path: str) -> "TaskPath":

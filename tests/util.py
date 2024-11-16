@@ -9,7 +9,7 @@ from unittest import mock
 
 from pisek.config import config_hierarchy
 from pisek.__main__ import test_task_path
-from pisek.utils.util import quote_output, clean_task_dir
+from pisek.utils.util import clean_task_dir
 
 
 class TestFixture(unittest.TestCase):
@@ -25,14 +25,21 @@ class TestFixture(unittest.TestCase):
         self.task_dir_orig = os.path.abspath(
             os.path.join(os.path.dirname(__file__), self.fixture_path())
         )
-        self.fixtures_dir = tempfile.mkdtemp()
+        self.fixtures_dir = tempfile.mkdtemp(prefix="pisek-test_")
         self.task_dir = os.path.join(
             self.fixtures_dir, os.path.relpath(self.fixture_path(), "../fixtures")
         )
 
         # shutil.copytree() requires that the destination directory does not exist,
         os.rmdir(self.fixtures_dir)
-        shutil.copytree(os.path.join(self.task_dir_orig, ".."), self.fixtures_dir)
+        shutil.copytree(
+            self.task_dir_orig,
+            os.path.join(self.fixtures_dir, os.path.basename(self.task_dir_orig)),
+        )
+        shutil.copytree(
+            os.path.join(self.task_dir_orig, "../pisek"),
+            os.path.join(self.fixtures_dir, "pisek"),
+        )
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
@@ -52,8 +59,10 @@ class TestFixture(unittest.TestCase):
 
         os.chdir(self.cwd_orig)
 
-        assert self.task_dir.startswith("/tmp") or self.task_dir.startswith("/var")
-        shutil.rmtree(self.task_dir)
+        assert self.fixtures_dir.startswith("/tmp") or self.fixtures_dir.startswith(
+            "/var"
+        )
+        shutil.rmtree(self.fixtures_dir)
 
     def log_files(self):
         """Log all files for checking whether new ones have been created."""
@@ -69,7 +78,7 @@ class TestFixture(unittest.TestCase):
         Ignored:
             .pisek_cache data/* build/*
         """
-        directories = ["build", "data"]
+        directories = ["build", "tests"]
         files = [".pisek_cache"] + self.created_files()
 
         all_paths = set(self.original_files + directories + files)
@@ -115,7 +124,7 @@ class TestFixtureVariant(TestFixture):
                 inputs=1,
                 strict=False,
                 full=False,
-                timeout=1,
+                timeout=0.2,
                 plain=False,
             )
 
@@ -151,7 +160,7 @@ def modify_config(task_dir: str, modification_fn):
         config["tests"]["out_judge"] = "judge"  # To specify the judge program file
     """
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config_path = os.path.join(task_dir, config_hierarchy.CONFIG_FILENAME)
     read_files = config.read(config_path)
     if not read_files:

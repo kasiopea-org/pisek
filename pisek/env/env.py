@@ -18,7 +18,8 @@ from enum import StrEnum, auto
 from pydantic import Field
 from typing import Optional
 
-from pisek.utils.text import eprint, colored
+from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.env.base_env import BaseEnv
 from pisek.config.task_config import load_config, TaskConfig
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
@@ -48,7 +49,7 @@ class Env(BaseEnv):
         timeout: Timeout for (overrides config)
         skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if scoring=equal)
         all_inputs: Finish testing all inputs of a solution
-        inputs: Number of inputs generated (Only for task_type=kasiopea)
+        repeat_inputs: Generate REPEAT_INPUTS times more inputs. (Seeded inputs only)
     """
 
     target: TestingTarget
@@ -64,7 +65,7 @@ class Env(BaseEnv):
     timeout: Optional[float] = Field(ge=0)
     skip_on_timeout: bool
     all_inputs: bool
-    inputs: int = Field(ge=1)
+    repeat_inputs: int = Field(ge=1)
 
     @staticmethod
     def load(
@@ -81,21 +82,21 @@ class Env(BaseEnv):
         testing_log: bool = False,
         solutions: Optional[list[str]] = None,
         timeout: Optional[float] = None,
-        inputs: int = 5,
+        repeat_inputs: int = 1,
         pisek_dir: Optional[str] = None,
         **_,
     ) -> Optional["Env"]:
         no_jumps |= plain
         no_colors |= plain
 
-        config = load_config(".", strict, no_colors, pisek_directory=pisek_dir)
+        config = load_config(".", strict, pisek_directory=pisek_dir)
         if config is None:
             return None
 
         try:
             expanded_solutions = expand_solutions(config, solutions)
         except UnknownSolutions as err:
-            eprint(colored(str(err), "red", no_colors))
+            eprint(ColorSettings.colored(str(err), "red"))
             return None
 
         return Env(
@@ -112,5 +113,9 @@ class Env(BaseEnv):
             timeout=timeout,
             skip_on_timeout=skip_on_timeout,
             all_inputs=all_inputs,
-            inputs=inputs,
+            repeat_inputs=repeat_inputs,
         )
+
+    def colored(self, msg: str, color: str) -> str:
+        self.no_colors  # Caching
+        return ColorSettings.colored(msg, color)

@@ -21,12 +21,27 @@ class TaskType(StrEnum):
 class OutCheck(StrEnum):
     diff = auto()
     tokens = auto()
+    shuffle = auto()
     judge = auto()
 
 
-class JudgeType(StrEnum):
-    cms = auto()
+class GenType(StrEnum):
     opendata_v1 = "opendata-v1"
+    cms_old = "cms-old"
+    pisek_v1 = "pisek-v1"
+
+
+class JudgeType(StrEnum):
+    cms_batch = "cms-batch"
+    cms_communication = "cms-communication"
+    opendata_v1 = "opendata-v1"
+
+
+class ShuffleMode(StrEnum):
+    lines = auto()
+    words = auto()
+    lines_words = auto()
+    tokens = auto()
 
 
 class DataFormat(StrEnum):

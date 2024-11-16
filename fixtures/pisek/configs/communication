@@ -1,0 +1,7 @@
+[task]
+scoring=min
+task_type=communication
+version=v3
+
+[tests]
+gen_type=cms-old

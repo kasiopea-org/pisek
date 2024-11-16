@@ -19,25 +19,28 @@ from collections import deque
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
 
-from pisek.jobs.parts.task_job import (
+from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,
     CHECKER_MAN_CODE,
     JUDGE_MAN_CODE,
     SOLUTION_MAN_CODE,
-    DATA_MAN_CODE,
 )
 
-from pisek.jobs.parts.tools import ToolsManager
-from pisek.jobs.parts.data import DataManager
-from pisek.jobs.parts.generator import GeneratorManager
-from pisek.jobs.parts.checker import CheckerManager
-from pisek.jobs.parts.judge import JudgeManager
-from pisek.jobs.parts.solution import SolutionManager
-from pisek.jobs.parts.data import DataCheckingManager
-from pisek.jobs.parts.testing_log import CreateTestingLog
-from pisek.jobs.parts.completeness_check import CompletenessCheck
+from pisek.task_jobs.tools import ToolsManager
+from pisek.task_jobs.data.manager import DataManager
+from pisek.task_jobs.generator.manager import (
+    PrepareGenerator,
+    RunGenerator,
+    TestcaseInfoMixin,
+)
+from pisek.task_jobs.checker import CheckerManager
+from pisek.task_jobs.judge import JudgeManager
+from pisek.task_jobs.solution.manager import SolutionManager
+from pisek.task_jobs.testing_log import CreateTestingLog
+from pisek.task_jobs.completeness_check import CompletenessCheck
+from pisek.utils.paths import TaskPath
 
 
 class TaskPipeline(JobPipeline):
@@ -47,62 +50,75 @@ class TaskPipeline(JobPipeline):
         super().__init__()
         named_pipeline = [
             tools := (ToolsManager(), TOOLS_MAN_CODE),
-            generator := (GeneratorManager(), GENERATOR_MAN_CODE),
+            generator := (PrepareGenerator(), GENERATOR_MAN_CODE),
+            checker := (CheckerManager(), CHECKER_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
         ]
         generator[0].add_prerequisite(*tools)
+        checker[0].add_prerequisite(*tools)
         inputs[0].add_prerequisite(*generator)
-
-        if env.target != "solution":
-            named_pipeline.append(checker := (CheckerManager(), CHECKER_MAN_CODE))
-            checker[0].add_prerequisite(*inputs)
+        inputs[0].add_prerequisite(*checker)
 
         solutions = []
-        if env.solutions:
+        self.input_generator: TestcaseInfoMixin
+
+        if env.target == TestingTarget.generator:
+            named_pipeline.append(gen_inputs := (RunGenerator(), ""))
+            gen_inputs[0].add_prerequisite(*inputs)
+            self.input_generator = gen_inputs[0]
+
+        else:
             named_pipeline.append(judge := (JudgeManager(), JUDGE_MAN_CODE))
             judge[0].add_prerequisite(*inputs)
 
-            if env.config.judge_needs_out or (
-                env.config.primary_solution in env.solutions
-            ):
-                named_pipeline.append(
-                    primary_solution := (
-                        SolutionManager(env.config.primary_solution),
-                        f"{SOLUTION_MAN_CODE}{env.config.primary_solution}",
-                    )
-                )
-                solutions.append(primary_solution)
+            # First solution generates inputs
+            first_solution_name = (
+                env.config.primary_solution
+                if env.config.judge_needs_out
+                or env.config.primary_solution in env.solutions
+                else env.solutions[0]
+            )
 
-        for sol_name in env.solutions:
-            if sol_name == env.config.primary_solution:
-                continue
             named_pipeline.append(
-                solution := (
-                    SolutionManager(sol_name),
-                    f"{SOLUTION_MAN_CODE}{sol_name}",
+                first_solution := (
+                    SolutionManager(first_solution_name, True),
+                    f"{SOLUTION_MAN_CODE}{first_solution_name}",
                 )
             )
-            if env.config.judge_needs_out:
-                solution[0].add_prerequisite(*primary_solution)
-            solutions.append(solution)
+            solutions.append(first_solution)
+            first_solution[0].add_prerequisite(*judge)
+            self.input_generator = first_solution[0]
 
-        for solution in solutions:
-            solution[0].add_prerequisite(*inputs)
-            solution[0].add_prerequisite(*judge)
+            for sol_name in env.solutions:
+                if sol_name == first_solution_name:
+                    continue
+                named_pipeline.append(
+                    solution := (
+                        SolutionManager(sol_name, False),
+                        f"{SOLUTION_MAN_CODE}{sol_name}",
+                    )
+                )
 
-        named_pipeline.append(data_check := (DataCheckingManager(), DATA_MAN_CODE))
-        data_check[0].add_prerequisite(*inputs)
-        for solution in solutions:
-            data_check[0].add_prerequisite(*solution)
+                solution[0].add_prerequisite(*first_solution)
+                solutions.append(solution)
+
+            for solution in solutions:
+                solution[0].add_prerequisite(*inputs)
 
         if env.testing_log:
             named_pipeline.append(testing_log := (CreateTestingLog(), ""))
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
 
-        if env.target == TestingTarget.all:
+        if env.target in (TestingTarget.solution, TestingTarget.all):
             named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
+            completeness_check[0].add_prerequisite(*judge)
             for solution in solutions:
                 completeness_check[0].add_prerequisite(*solution)
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
+
+    def input_dataset(self) -> list[TaskPath]:
+        if self.input_generator.result is None:
+            raise RuntimeError("Input dataset has not been computed yet.")
+        return self.input_generator.result["inputs"]

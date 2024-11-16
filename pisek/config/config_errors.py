@@ -13,3 +13,8 @@
 
 class TaskConfigError(Exception):
     pass
+
+
+class TaskConfigParsingError(TaskConfigError):
+    def __init__(self, path: str, msg: str) -> None:
+        super().__init__(f"Unable to parse '{path}': {msg}")

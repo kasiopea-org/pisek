@@ -14,20 +14,22 @@ from datetime import timedelta
 from cms.db.task import Task
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
-import re
 
 from pisek.cms.dataset import create_dataset
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
+from pisek.utils.paths import TaskPath
 
 
-def create_task(session: Session, env: Env, description: str) -> Task:
+def create_task(
+    session: Session, env: Env, testcases: list[TaskPath], description: str
+) -> Task:
     config = env.config
 
     task = Task(name=config.name, title=config.cms.title)
     set_task_settings(task, config)
 
-    dataset = create_dataset(session, env, task, description)
+    dataset = create_dataset(session, env, task, testcases, description)
 
     task.active_dataset = dataset
 
@@ -44,7 +46,7 @@ def set_task_settings(task: Task, config: TaskConfig):
         if config.cms.min_submission_interval > 0
         else None
     )
-    task.score_precision = config.cms.score_precision
+    task.score_precision = config.score_precision
     task.score_mode = config.cms.score_mode
     task.feedback_level = config.cms.feedback_level
 

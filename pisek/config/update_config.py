@@ -17,7 +17,8 @@ from itertools import product
 import os
 import re
 
-from pisek.utils.text import eprint, colored
+from pisek.utils.text import eprint
+from pisek.utils.colors import ColorSettings
 from pisek.config.config_errors import TaskConfigError
 from pisek.config.config_types import ProgramType
 
@@ -182,7 +183,17 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     if contest_type not in ["kasiopea", "cms"]:
         raise TaskConfigError(f"Invalid contest_type: '{contest_type}'")
     config["task"]["use"] = f"@{contest_type}"
-    # TODO: del config["task"]["contest_type"]
+    maybe_delete_key(config, "task", "contest_type")
+
+    maybe_delete_key(config, "task", "data_subdir")
+
+    task_type = config.get("task", "task_type", fallback="batch")
+    out_check = config.get("tests", "out_check")
+    if contest_type == "cms" and out_check == "judge":
+        if task_type == "batch":
+            config["tests"]["judge_type"] = "cms-batch"
+        elif task_type == "communication":
+            config["tests"]["judge_type"] = "cms-communication"
 
     if "limits" not in config:
         config.add_section("limits")
@@ -217,12 +228,10 @@ NEWEST_VERSION = "v3"
 NEWEST_IS_EXPERIMENTAL = True
 
 
-def update_config(
-    config: ConfigParser, task_path: str, infos: bool = True, no_colors: bool = False
-) -> None:
+def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> None:
     def inform(msg: str):
         if infos:
-            eprint(colored(msg, "yellow", no_colors))
+            eprint(ColorSettings.colored(msg, "yellow"))
 
     version = config.get("task", "version", fallback="v1")
     if version == NEWEST_VERSION:

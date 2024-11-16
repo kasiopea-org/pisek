@@ -21,6 +21,7 @@ authors = [
     { name="Jiri Kalvoda", email="jirikalvoda@kam.mff.cuni.cz" },
     { name="Daniel Skýpala", email="skipy@kam.mff.cuni.cz" },
     { name="Benjamin Swart", email="benjaminswart@email.cz" },
+    { name="Antonín Maloň", email="git@tonyl.eu" },
 ]
 maintainers = [
     { name="Daniel Skýpala", email="skipy@kam.mff.cuni.cz" },
@@ -55,7 +56,7 @@ exclude = ["fixtures"]
 pisek = [
     "tools/**",
     "config/*-defaults",
-    "config/config-v3-documentation",
+    "config/config-description",
 ]
 
 [tool.setuptools.dynamic]

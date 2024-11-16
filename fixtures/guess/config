@@ -1,12 +1,11 @@
 # Pisek fixture
-# Source: $(pisek)/config-v3-documentation for more information
+# Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
 name=guess
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
-contest_type=cms
-use=interactive
+use=communication
 
 solutions_subdir=solutions/
 version=v3
@@ -19,9 +18,7 @@ in_gen=src/gen
 
 out_check=judge
 out_judge=src/judge
-judge_type=cms
-judge_needs_in=1
-judge_needs_out=0
+judge_type=cms-communication
 
 [all_solutions]
 stub=src/stub
@@ -34,9 +31,7 @@ in_globs=*.in
 
 [limits]
 # Time limit (seconds) for the model solution (first listed)
-solve_time_limit=2
-# Time limit (seconds) for other solutions
-sec_solve_time_limit=2
+solve_time_limit=0.2
 
 [solution_solve]
 primary=yes

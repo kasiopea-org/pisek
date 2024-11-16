@@ -16,7 +16,7 @@
 import os
 from typing import TYPE_CHECKING
 
-from pisek.utils.text import pad, colored
+from pisek.utils.text import pad
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
@@ -33,8 +33,3 @@ TARGET_LINE_WIDTH = min(terminal_width, 100)
 
 def right_aligned_text(left: str, right: str, offset: int = 0):
     return pad(left, TARGET_LINE_WIDTH - len(right) + offset - 1) + " " + right
-
-
-def colored_env(msg: str, color: str, env: "Env") -> str:
-    """Recolors all white text to given color."""
-    return colored(msg, color, env.no_colors)
