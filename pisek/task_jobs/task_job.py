@@ -20,7 +20,16 @@ import glob
 from math import ceil
 import os
 import shutil
-from typing import Any, Callable, Iterable, Literal, Optional
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    Iterable,
+    Literal,
+    Optional,
+    ParamSpec,
+    TypeVar,
+)
 
 import subprocess
 from pisek.env.env import Env
@@ -30,6 +39,9 @@ from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class TaskHelper:
@@ -131,10 +143,14 @@ class TaskJob(Job, TaskHelper):
     def _file_access(files: int):
         """Adds first i args as accessed files."""
 
-        def dec(f: Callable[..., Any]) -> Callable[..., Any]:
-            def g(self, *args, **kwargs):
+        def dec(
+            f: Callable[Concatenate["TaskJob", P], T]
+        ) -> Callable[Concatenate["TaskJob", P], T]:
+            def g(self: "TaskJob", *args: P.args, **kwargs: P.kwargs) -> T:
                 for i in range(files):
-                    self._access_file(args[i])
+                    arg = args[i]
+                    assert isinstance(arg, TaskPath)
+                    self._access_file(arg)
                 return f(self, *args, **kwargs)
 
             return g
