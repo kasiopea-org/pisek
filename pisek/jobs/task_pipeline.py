@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import deque
+import os
 
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
-
+from pisek.utils.paths import TESTS_DIR, TaskPath
 from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
@@ -41,7 +42,6 @@ from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
-from pisek.utils.paths import TaskPath
 
 
 class TaskPipeline(JobPipeline):
@@ -128,3 +128,11 @@ class TaskPipeline(JobPipeline):
         if self.input_generator.result is None:
             raise RuntimeError("Input dataset has not been computed yet.")
         return self.input_generator.result["inputs"]
+
+    def _finish(self) -> None:
+        super()._finish()
+        for root, _, files in os.walk(TESTS_DIR):
+            for file in files:
+                path = os.path.join(root, file)
+                if path not in self._all_accessed_files:
+                    os.remove(path)
