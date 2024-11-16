@@ -20,7 +20,9 @@ from functools import cache
 import os
 import random
 import subprocess
-from typing import Any, Optional, Union, Callable
+from typing import Any, Optional, Union
+from tempfile import gettempdir
+from uuid import uuid4
 
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
@@ -649,16 +651,31 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
             **kwargs,
         )
 
+    @staticmethod
+    def _invalid_path(name: str):
+        return os.path.join(gettempdir(), f"the-{name}-is-not-available-{uuid4()}")
+
     def _judge(self) -> SolutionResult:
         self._access_file(self.input)
         self._access_file(self.output)
         self._access_file(self.correct_output)
+
+        config = self._env.config
+
         result = self._run_program(
             ProgramType.judge,
             self.judge,
             args=[
-                self.input.path,
-                self.correct_output.path,
+                (
+                    self.input.path
+                    if config.judge_needs_in
+                    else RunCMSBatchJudge._invalid_path("input")
+                ),
+                (
+                    self.correct_output.path
+                    if config.judge_needs_out
+                    else RunCMSBatchJudge._invalid_path("output")
+                ),
                 self.output.path,
             ],
             stdout=self.points_file,
