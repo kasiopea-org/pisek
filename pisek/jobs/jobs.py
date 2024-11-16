@@ -184,6 +184,10 @@ class Job(PipelineItem, CaptureInitParams):
         """Add file this job depends on."""
         self._accessed_files.add(filename.path)
 
+    @property
+    def accessed_files(self) -> set[str]:
+        return set(self._accessed_files)
+
     def _signature(
         self, envs: AbstractSet[str], paths: AbstractSet[str], results: dict[str, Any]
     ) -> tuple[Optional[str], Optional[str]]:
@@ -273,6 +277,7 @@ class Job(PipelineItem, CaptureInitParams):
             cache.move_to_top(entry)
             for msg, stderr in entry.output:
                 self._print(msg, end="", stderr=stderr)
+            self._accessed_files = set(entry.files)
             self.result = entry.result
         else:
             try:
