@@ -142,6 +142,9 @@ class Cache:
                 return self._new_cache_file()
 
             entries = yaml.full_load(f)
+            if entries is None:
+                return
+
             for entry in entries:
                 if entry.name not in self.cache:
                     self.cache[entry.name] = []
