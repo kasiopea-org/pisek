@@ -100,7 +100,7 @@ class TaskConfig(BaseEnv):
     solutions_subdir: TaskPathFromStr
     static_subdir: TaskPathFromStr
 
-    in_gen: TaskPathFromStr
+    in_gen: OptionalTaskPathFromStr
     gen_type: GenType
     checker: OptionalTaskPathFromStr
     out_check: OutCheck
