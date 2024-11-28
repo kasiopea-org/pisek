@@ -121,7 +121,7 @@ def abs_sol_result_representer(dumper, sol_result: AbsoluteSolutionResult):
 
 
 def abs_sol_result_constructor(loader, value) -> AbsoluteSolutionResult:
-    verdict, message, points, sol_rr, judge_rr = loader.construct_sequence(value)
+    verdict, message, sol_rr, judge_rr, points = loader.construct_sequence(value)
     return AbsoluteSolutionResult(
         Verdict[verdict], message, sol_rr, judge_rr, Decimal(points)
     )
