@@ -826,4 +826,4 @@ def judge_job(
             expected_verdict,
         )
     else:
-        raise RuntimeError("the specified judge type was not found.")
+        raise RuntimeError("the specified judge type was not found")
