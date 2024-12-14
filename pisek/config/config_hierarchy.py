@@ -157,9 +157,9 @@ class ConfigHierarchy:
                 self._used_keys[section].add(key)
 
         unset: bool = False
-        for config_path, config in zip(self._config_paths, self._configs):
-            config_path = os.path.basename(config_path)
-            for section, key in candidates:
+        for section, key in candidates:
+            for config_path, config in zip(self._config_paths, self._configs):
+                config_path = os.path.basename(config_path)
                 if key is None:
                     value = section if section in config else None
                 else:
