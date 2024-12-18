@@ -209,14 +209,15 @@ class Job(PipelineItem, CaptureInitParams):
         for path in sorted(paths):
             if os.path.isfile(path):
                 expanded_files.append(path)
-            else:
+            elif os.path.isdir(path):
                 for dir_, _, dir_files in os.walk(path):
                     for path in dir_files:
                         expanded_files.append(os.path.join(dir_, path))
+            else:
+                assert not os.path.exists(path)
+                return (None, "File nonexistent")
 
         for file in sorted(expanded_files):
-            if not os.path.exists(file):
-                return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
