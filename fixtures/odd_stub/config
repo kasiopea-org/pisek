@@ -21,6 +21,7 @@ predecessors=0
 
 [limits]
 solve_time_limit=0.2
+sec_solve_time_limit=0.2
 
 [solution_solve]
 source=solve

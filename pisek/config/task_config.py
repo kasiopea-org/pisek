@@ -559,17 +559,10 @@ class ProgramLimits(BaseEnv):
 
     @classmethod
     def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> ConfigValuesDict:
-        def get_limit(limit: str) -> ConfigValue:
-            if part == ProgramType.sec_solve:
-                return configs.get_from_candidates(
-                    [("limits", f"{part.name}_{limit}"), ("limits", f"solve_{limit}")]
-                )
-            else:
-                return configs.get("limits", f"{part.name}_{limit}")
-
-        args: dict[str, Any] = {limit: get_limit(limit) for limit in cls.model_fields}
-
-        return args
+        return {
+            limit: configs.get("limits", f"{part.name}_{limit}")
+            for limit in cls.model_fields
+        }
 
 
 class LimitsConfig(BaseEnv):
