@@ -16,7 +16,7 @@ from typing import Optional
 import yaml
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TESTS_DIR, InputPath, OutputPath
 from pisek.utils.yaml_enum import yaml_enum
 
 
@@ -48,11 +48,29 @@ class TestcaseInfo(yaml.YAMLObject):
     def static(name: str) -> "TestcaseInfo":
         return TestcaseInfo(name, 1, TestcaseGenerationMode.static, False)
 
-    def input_path(self, env: Env, seed: Optional[int] = None) -> TaskPath:
+    def input_path(
+        self, env: Env, seed: Optional[int] = None, solution: Optional[str] = None
+    ) -> InputPath:
         filename = self.name
         if self.seeded:
             assert seed is not None
             filename += f"_{seed:x}"
         filename += ".in"
 
-        return TaskPath.input_path(env, filename)
+        return InputPath(env, filename, solution=solution)
+
+    def reference_output(
+        self, env: Env, seed: Optional[int] = None, solution: Optional[str] = None
+    ) -> OutputPath:
+        input_path = self.input_path(env, seed, solution=env.config.primary_solution)
+        if self.generation_mode == TestcaseGenerationMode.static:
+            path = OutputPath.static(input_path.replace_suffix(".out").name)
+        else:
+            path = input_path.to_output(env.config.primary_solution_file)
+
+        if solution is not None:
+            path = OutputPath(
+                TESTS_DIR, env.config.solutions[solution].raw_source, path.name
+            )
+
+        return path

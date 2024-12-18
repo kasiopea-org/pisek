@@ -17,7 +17,7 @@ import time
 from typing import Optional
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath
 from pisek.config.config_types import ProgramType
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
@@ -49,8 +49,7 @@ class RunBatchSolution(RunSolution):
         env: Env,
         solution: TaskPath,
         is_primary: bool,
-        input_: TaskPath,
-        output: Optional[TaskPath] = None,
+        input_: InputPath,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -61,12 +60,8 @@ class RunBatchSolution(RunSolution):
             **kwargs,
         )
         self.input = input_
-        self.output = (
-            output
-            if output
-            else TaskPath.output_file(self._env, self.input.name, solution.name)
-        )
-        self.log_file = TaskPath.log_file(self._env, input_.name, self.solution.name)
+        self.output = input_.to_output(solution.name)
+        self.log_file = input_.to_log(solution.name)
 
     def _run(self) -> RunResult:
         return self._run_program(
@@ -86,10 +81,11 @@ class RunCommunication(RunCMSJudge, RunSolution):
         is_primary: bool,
         judge: TaskPath,
         subtask: int,
-        input_: TaskPath,
+        input_: InputPath,
         expected_verdict: Optional[Verdict] = None,
         **kwargs,
     ):
+        self.sol_log_file = input_.to_log(solution.name)
         super().__init__(
             env=env,
             name=f"Run {solution:n} on input {input_:n}",
@@ -97,16 +93,10 @@ class RunCommunication(RunCMSJudge, RunSolution):
             subtask=subtask,
             input_=input_,
             expected_verdict=expected_verdict,
-            judge_log_file=TaskPath.log_file(
-                self._env, input_.name, f"{solution.name}.{judge.name}"
-            ),
+            judge_log_file=self.sol_log_file.to_judge_log(judge.name),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
-        )
-        self.solution = solution
-        self.sol_log_file = TaskPath.log_file(
-            self._env, self.input.name, self.solution.name
         )
 
     def _get_solution_run_res(self) -> RunResult:

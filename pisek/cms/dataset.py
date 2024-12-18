@@ -23,14 +23,14 @@ from pisek.cms.testcase import create_testcase
 from pisek.env.env import Env
 from pisek.config.task_config import TaskConfig
 from pisek.config.config_types import OutCheck, TaskType
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 
 
 def create_dataset(
     session: Session,
     env: Env,
     task: Task,
-    testcases: list[TaskPath],
+    testcases: list[InputPath],
     description: Optional[str],
     autojudge: bool = True,
 ) -> Dataset:
@@ -76,14 +76,14 @@ def create_dataset(
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
     solution = config.solutions[config.primary_solution].raw_source
 
-    for input in testcases:
-        name = input.name.removesuffix(".in")
+    for input_ in testcases:
+        name = input_.name.removesuffix(".in")
         output = None
 
         if outputs_needed:
-            output = TaskPath.output_file(env, input.name, solution)
+            output = input_.to_output(solution)
 
-        create_testcase(session, files, dataset, name, input, output)
+        create_testcase(session, files, dataset, name, input_, output)
 
     add_judge(session, files, env, dataset)
     add_stubs(session, files, env, dataset)

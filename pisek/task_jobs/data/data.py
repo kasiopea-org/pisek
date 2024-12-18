@@ -16,7 +16,7 @@
 
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.task_jobs.task_job import TaskJob
 
 
@@ -43,31 +43,13 @@ class LinkData(DataJob):
         self._link_file(self.data, self.dest, overwrite=True)
 
 
-class LinkInput(LinkData):
-    """Copy input to its place."""
-
-    def __init__(self, env: Env, input_: TaskPath, **kwargs) -> None:
-        super().__init__(
-            env=env, data=input_, dest=TaskPath.input_path(self._env, "."), **kwargs
-        )
-
-
-class LinkOutput(LinkData):
-    """Copy output to its place."""
-
-    def __init__(self, env: Env, output: TaskPath, **kwargs) -> None:
-        super().__init__(
-            env=env, data=output, dest=TaskPath.output_path(self._env, "."), **kwargs
-        )
-
-
 MB = 1024 * 1024
 
 
 class InputSmall(DataJob):
     """Checks that input is small enough to download."""
 
-    def __init__(self, env: Env, input_: TaskPath, **kwargs) -> None:
+    def __init__(self, env: Env, input_: InputPath, **kwargs) -> None:
         super().__init__(
             env=env,
             name=f"Input {input_:n} is smaller than {env.config.limits.input_max_size}MB",
@@ -86,7 +68,7 @@ class InputSmall(DataJob):
 class OutputSmall(DataJob):
     """Checks that output is small enough to upload."""
 
-    def __init__(self, env: Env, output: TaskPath, **kwargs) -> None:
+    def __init__(self, env: Env, output: OutputPath, **kwargs) -> None:
         super().__init__(
             env=env,
             name=f"Output {output:n} is smaller than {env.config.limits.output_max_size}MB",
