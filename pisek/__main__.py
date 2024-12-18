@@ -181,11 +181,11 @@ def main(argv):
         help="interpret warnings as failures (for final check)",
     )
     parser_test.add_argument(
-        "--repeat-inputs",
+        "--repeat",
         "-n",
         type=int,
         default=1,
-        help="generate REPEAT_INPUTS times more inputs (seeded inputs only)",
+        help="test task REPEAT times giving generator different seeds. (Changes seeded inputs only.)",
     )
     parser_test.add_argument(
         "--all-inputs",

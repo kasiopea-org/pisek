@@ -128,11 +128,3 @@ class TaskPipeline(JobPipeline):
         if self.input_generator.result is None:
             raise RuntimeError("Input dataset has not been computed yet.")
         return self.input_generator.result["inputs"]
-
-    def _finish(self) -> None:
-        super()._finish()
-        for root, _, files in os.walk(TESTS_DIR):
-            for file in files:
-                path = os.path.join(root, file)
-                if path not in self._all_accessed_files:
-                    os.remove(path)

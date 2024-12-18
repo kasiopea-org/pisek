@@ -51,3 +51,11 @@ def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
     rm_f(os.path.join(task_dir, CACHE_FILENAME))
     _clean_subdirs(task_dir, [BUILD_DIR, TESTS_DIR])
     return True
+
+
+def clean_non_relevant_files(accessed_files: set[str]) -> None:
+    for root, _, files in os.walk(TESTS_DIR):
+        for file in files:
+            path = os.path.join(root, file)
+            if path not in accessed_files:
+                os.remove(path)

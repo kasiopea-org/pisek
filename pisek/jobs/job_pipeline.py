@@ -32,10 +32,10 @@ class JobPipeline(ABC):
     """Runs given Jobs and JobManagers according to their prerequisites."""
 
     @abstractmethod
-    def __init__(self):
-        self.failed = False
-        self._tmp_lines = 0
-        self._all_accessed_files = set()
+    def __init__(self) -> None:
+        self.failed: bool = False
+        self._tmp_lines: int = 0
+        self.all_accessed_files: set[str] = set()
 
     def run_jobs(self, cache: Cache, env: Env) -> bool:
         self.job_managers: deque[JobManager] = deque()
@@ -48,7 +48,7 @@ class JobPipeline(ABC):
             elif isinstance(p_item, Job):
                 p_item.run_job(cache)
                 p_item.finish()
-                self._all_accessed_files |= p_item.accessed_files
+                self.all_accessed_files |= p_item.accessed_files
             else:
                 raise TypeError(
                     f"Objects in {self.__class__.__name__} should be either Job or JobManager."
@@ -64,8 +64,6 @@ class JobPipeline(ABC):
                 break
 
         cache.export()  # Remove unnecessary cache entries
-        if not self.failed:
-            self._finish()
         return self.failed
 
     def _status_update(self, env: Env) -> bool:
@@ -127,6 +125,3 @@ class JobPipeline(ABC):
         """Prints a text."""
         self._clear_print_tmp()
         print(str(msg), *args, **kwargs)
-
-    def _finish(self) -> None:
-        pass

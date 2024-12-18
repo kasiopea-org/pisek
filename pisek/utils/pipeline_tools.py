@@ -22,7 +22,10 @@ import sys
 from typing import Callable
 
 from pisek.jobs.job_pipeline import JobPipeline
+from pisek.utils.util import clean_non_relevant_files
 from pisek.utils.text import eprint
+from pisek.utils.terminal import TARGET_LINE_WIDTH
+from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
@@ -35,9 +38,25 @@ def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_
     with ChangedCWD(path):
         env = Env.load(**env_args)
         if env is None:
-            return 1
-        pipeline = pipeline_class(env.fork())
-        return pipeline.run_jobs(Cache(env), env)
+            return True
+        cache = Cache(env)
+
+        all_accessed_files: set[str] = set()
+        for i in range(env.repeat):
+            env.iteration = i  # XXX: Dirty trick
+            if i != 0:
+                print()
+                print(ColorSettings.colored(TARGET_LINE_WIDTH * "-", "cyan"))
+                print()
+
+            pipeline = pipeline_class(env.fork())
+            result = pipeline.run_jobs(cache, env)
+            if result:
+                return result
+            all_accessed_files |= pipeline.all_accessed_files
+
+        clean_non_relevant_files(all_accessed_files)
+        return False
 
 
 class ChangedCWD:

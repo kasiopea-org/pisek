@@ -58,6 +58,7 @@ from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.paths import TaskPath
 from pisek.utils.pipeline_tools import with_env
+from pisek.utils.util import clean_non_relevant_files
 
 
 def generate_testcases(env: Env) -> list[TaskPath]:
@@ -69,6 +70,7 @@ def generate_testcases(env: Env) -> list[TaskPath]:
 
     if pipeline.run_jobs(Cache(env), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
+    clean_non_relevant_files(pipeline.all_accessed_files)
 
     return pipeline.input_dataset()
 

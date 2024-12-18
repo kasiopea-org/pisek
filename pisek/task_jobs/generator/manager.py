@@ -125,16 +125,13 @@ class TestcaseInfoMixin(JobManager):
     ) -> list[Job]:
         seeds: list[Optional[int]]
         if testcase_info.seeded:
-            repeat = testcase_info.repeat * self._env.repeat_inputs
             seeds = []
-
-            for i in range(repeat):
-                hash = blake2b(digest_size=SEED_BYTES)
-                hash.update(i.to_bytes(8))
-                hash.update(testcase_info.name.encode())
-                seeds.append(int.from_bytes(hash.digest()))
+            for i in range(testcase_info.repeat):
+                name_hash = blake2b(digest_size=SEED_BYTES)
+                name_hash.update(f"{self._env.iteration} {i}".encode())
+                name_hash.update(testcase_info.name.encode())
+                seeds.append(int.from_bytes(name_hash.digest()))
         else:
-            repeat = 1
             seeds = [None]
 
         jobs: list[Job] = []
@@ -241,7 +238,7 @@ class TestcaseInfoMixin(JobManager):
         jobs: list[Job] = []
 
         if len(seeds) == 1:
-            rand_gen = random.Random(5)  # Reproducibility!
+            rand_gen = random.Random(self._env.iteration)  # Reproducibility!
             while (seed := rand_gen.choice(SEED_RANGE)) == seeds[0]:
                 pass
             seeds.append(seed)
