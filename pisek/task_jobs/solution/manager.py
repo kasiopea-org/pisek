@@ -21,7 +21,7 @@ from typing import Any, Optional
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
-from pisek.config.config_types import TaskType, Scoring
+from pisek.config.config_types import TaskType
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN, right_aligned_text
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
@@ -430,11 +430,6 @@ class SubtaskJobGroup(TaskHelper):
         if self._env.all_inputs:
             return False
 
-        if self._env.skip_on_timeout and Verdict.timeout in self._verdicts(
-            self.new_jobs
-        ):
-            return True
-
         if expected_str == "X" and not self.verdict.is_zero_point():
             return False  # Cause X is very very special
 
@@ -457,9 +452,7 @@ class SubtaskJobGroup(TaskHelper):
             - a job that makes the result different than expected (if there is one particular)
         """
 
-        jobs = self.new_jobs + (
-            [] if self._env.config.scoring == Scoring.equal else self.previous_jobs
-        )
+        jobs = self.new_jobs + self.previous_jobs
 
         finished_jobs = self._finished_jobs(jobs)
         verdicts = self._results(jobs)

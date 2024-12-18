@@ -31,10 +31,6 @@ task_type=communication
 # - batch (default)
 # - communication
 
-scoring=equal
-# Type of subtask scoring (required)
-# - equal - all inputs should result the same
-# - min   - worst input in subtask determines the result
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
 

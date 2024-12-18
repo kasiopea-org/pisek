@@ -47,7 +47,6 @@ class Env(BaseEnv):
         testing_log: Whether to produce testing_log.json after running
         solutions: List of all solutions to be tested
         timeout: Timeout for (overrides config)
-        skip_on_timeout: If to skip testing after solutions fails on one output (Useful only if scoring=equal)
         all_inputs: Finish testing all inputs of a solution
         repeat: Test task REPEAT times giving generator different seeds. (Changes seeded inputs only.)
         iteration: Current iteration of task testing. (0 <= iteration < repeat)
@@ -64,7 +63,6 @@ class Env(BaseEnv):
     testing_log: bool
     solutions: list[str]
     timeout: Optional[float] = Field(ge=0)
-    skip_on_timeout: bool
     all_inputs: bool
     repeat: int = Field(ge=1)
     iteration: int = Field(ge=0)
@@ -76,7 +74,6 @@ class Env(BaseEnv):
         file_contents: bool = False,
         full: bool = False,
         all_inputs: bool = False,
-        skip_on_timeout: bool = False,
         plain: bool = False,
         no_jumps: bool = False,
         no_colors: bool = False,
@@ -114,7 +111,6 @@ class Env(BaseEnv):
             testing_log=testing_log,
             solutions=expanded_solutions,
             timeout=timeout,
-            skip_on_timeout=skip_on_timeout,
             all_inputs=all_inputs,
             repeat=repeat,
             iteration=iteration,

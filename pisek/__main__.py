@@ -194,11 +194,6 @@ def main(argv):
         help="test each solution on all inputs",
     )
     parser_test.add_argument(
-        "--skip-on-timeout",
-        action="store_true",
-        help="skip all following inputs on first timeout",
-    )
-    parser_test.add_argument(
         "--testing-log",
         "-T",
         action="store_true",

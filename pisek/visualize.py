@@ -23,7 +23,6 @@ from pisek.utils.colors import ColorSettings
 from pisek.utils.terminal import terminal_width
 from pisek.config.task_config import load_config
 from pisek.config.task_config import TaskConfig
-from pisek.config.config_types import Scoring
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
 from pisek.task_jobs.solution.solution_result import Verdict
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
@@ -138,14 +137,6 @@ class SolutionResults:
     def _evaluate_results(
         self, results: list[LoggedResult], subtask_num: int
     ) -> tuple[bool, bool, Optional[LoggedResult]]:
-        if self._config.scoring == Scoring.equal:
-            results = list(
-                filter(
-                    lambda r: self._config.subtasks[subtask_num].new_in_subtask(r.test),
-                    results,
-                )
-            )
-
         ok, definitive, breaker = evaluate_verdicts(
             self._config,
             list(map(lambda r: r.verdict, results)),

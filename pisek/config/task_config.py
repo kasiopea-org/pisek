@@ -43,7 +43,6 @@ from pisek.config.config_types import (
     JudgeType,
     ShuffleMode,
     DataFormat,
-    Scoring,
     ProgramType,
     CMSFeedbackLevel,
     CMSScoreMode,
@@ -94,7 +93,6 @@ class TaskConfig(BaseEnv):
 
     name: str
     task_type: TaskType
-    scoring: Scoring
     score_precision: int = Field(ge=0)
 
     solutions_subdir: TaskPathFromStr
@@ -171,7 +169,6 @@ class TaskConfig(BaseEnv):
         GLOBAL_KEYS = [
             ("task", "name"),
             ("task", "task_type"),
-            ("task", "scoring"),
             ("task", "score_precision"),
             ("task", "solutions_subdir"),
             ("task", "static_subdir"),

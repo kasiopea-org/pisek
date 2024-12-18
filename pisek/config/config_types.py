@@ -49,11 +49,6 @@ class DataFormat(StrEnum):
     binary = auto()
 
 
-class Scoring(StrEnum):
-    equal = auto()
-    min = auto()
-
-
 class ProgramType(StrEnum):
     tool = auto()
     in_gen = auto()

@@ -3,7 +3,6 @@ version=
 name=
 use=
 task_type=
-scoring=
 score_precision=
 solutions_subdir=
 static_subdir=

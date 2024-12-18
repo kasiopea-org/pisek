@@ -3,7 +3,6 @@
 [task]
 version=v3
 task_type=batch
-scoring=equal
 score_precision=0
 solutions_subdir=.
 static_subdir=.
