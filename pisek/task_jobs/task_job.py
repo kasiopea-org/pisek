@@ -195,6 +195,16 @@ class TaskJob(Job, TaskHelper):
         return os.link(source, dst.path)
 
     @_file_access(2)
+    def _symlink_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):
+        self.make_filedirs(dst)
+        if overwrite and os.path.exists(dst.path):
+            os.remove(dst.path)
+
+        return os.symlink(
+            os.path.relpath(filename.path, os.path.dirname(dst.path)), dst.path
+        )
+
+    @_file_access(2)
     def _files_equal(self, file_a: TaskPath, file_b: TaskPath) -> bool:
         return filecmp.cmp(file_a.path, file_b.path)
 

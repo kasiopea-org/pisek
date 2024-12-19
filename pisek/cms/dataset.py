@@ -81,7 +81,7 @@ def create_dataset(
         output = None
 
         if outputs_needed:
-            output = input_.to_output(solution)
+            output = input_.to_output()
 
         create_testcase(session, files, dataset, name, input_, output)
 

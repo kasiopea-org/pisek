@@ -207,6 +207,11 @@ class Job(PipelineItem, CaptureInitParams):
 
         expanded_files = []
         for path in sorted(paths):
+            while os.path.islink(path):
+                path = os.path.normpath(
+                    os.path.join(os.path.dirname(path), os.readlink(path))
+                )
+
             if os.path.isfile(path):
                 expanded_files.append(path)
             elif os.path.isdir(path):

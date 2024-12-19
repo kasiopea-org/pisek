@@ -119,14 +119,18 @@ class JudgeablePath(TaskPath):
     yaml_tag = f"!JudgeablePath"
 
     def to_judge_log(self, judge: str) -> "LogPath":
-        return LogPath(os.path.splitext(self.path)[0] + f".{judge}.log")
+        return LogPath(self.replace_suffix(f".{judge}.log").path)
 
 
 class SanitizeablePath(TaskPath):
     yaml_tag = f"!SanitizeablePath"
 
     def to_sanitized(self) -> "SanitizedPath":
-        return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, self.name + ".clean")
+        name = self.name + ".clean"
+        dirname = os.path.basename(os.path.dirname(self.path))
+        if dirname != INPUTS_SUBDIR:
+            name = name.replace(".", f".{dirname}.", 1)
+        return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, name)
 
 
 class InputPath(SanitizeablePath):
@@ -140,11 +144,11 @@ class InputPath(SanitizeablePath):
                 TESTS_DIR, env.config.solutions[solution].raw_source, *path
             )
 
-    def to_output(self, solution: str) -> "OutputPath":
-        return OutputPath(os.path.splitext(self.path)[0] + f".{solution}.out")
+    def to_output(self) -> "OutputPath":
+        return OutputPath(self.replace_suffix(f".out").path)
 
     def to_log(self, program: str) -> "LogPath":
-        return LogPath(os.path.splitext(self.path)[0] + f".{program}.log")
+        return LogPath(self.replace_suffix(f".{program}.log").path)
 
 
 class OutputPath(JudgeablePath, SanitizeablePath):
@@ -154,11 +158,14 @@ class OutputPath(JudgeablePath, SanitizeablePath):
     def static(*path) -> "OutputPath":
         return OutputPath(TESTS_DIR, INPUTS_SUBDIR, *path)
 
+    def to_reference_output(self) -> "OutputPath":
+        return OutputPath(self.replace_suffix(f".ok").path)
+
     def to_invalid(self, seed: int) -> "OutputPath":
         return OutputPath(
             TESTS_DIR,
             INVALID_OUTPUTS_SUBDIR,
-            os.path.splitext(self.name)[0] + f".{seed:x}.invalid",
+            self.replace_suffix(f".{seed:x}.invalid").name,
         )
 
 

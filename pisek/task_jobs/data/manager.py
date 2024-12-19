@@ -96,7 +96,7 @@ class DataManager(TaskJobManager):
                     LinkData(
                         self._env,
                         TaskPath.static_path(self._env, f"{name}.in"),
-                        InputPath(self._env, "."),
+                        InputPath(self._env, f"{name}.in"),
                     )
                 )
             if (
@@ -107,7 +107,7 @@ class DataManager(TaskJobManager):
                     LinkData(
                         self._env,
                         TaskPath.static_path(self._env, f"{name}.out"),
-                        OutputPath.static("."),
+                        OutputPath.static(f"{name}.out"),
                     )
                 )
 

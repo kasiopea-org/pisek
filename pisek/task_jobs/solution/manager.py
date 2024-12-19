@@ -24,7 +24,7 @@ from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.config.config_types import TaskType
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN, right_aligned_text
-from pisek.task_jobs.data.data import LinkData
+from pisek.task_jobs.data.data import SymlinkData
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -94,10 +94,10 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             jobs = []
 
         jobs.append(
-            LinkData(
+            SymlinkData(
                 self._env,
                 testcase_info.input_path(self._env, seed),
-                InputPath(self._env, ".", solution=self.solution_label),
+                testcase_info.input_path(self._env, seed, solution=self.solution_label),
             )
         )
         return jobs
@@ -123,28 +123,25 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         if self._env.config.task_type == TaskType.batch:
             if (
                 testcase_info.generation_mode == TestcaseGenerationMode.static
-                or not self._generate_inputs
+                and self._generate_inputs
             ):
-                jobs.append(
-                    LinkData(
-                        self._env,
-                        testcase_info.reference_output(self._env, seed),
-                        InputPath(self._env, ".", solution=self.solution_label),
-                    )
+                jobs += self._check_output_jobs(
+                    testcase_info.reference_output(self._env, seed),
+                    None,
                 )
-                if self._generate_inputs:
-                    jobs += self._check_output_jobs(
-                        testcase_info.reference_output(
-                            self._env, seed, solution=self.solution_label
-                        ),
-                        None,
-                    )
 
             run_batch_sol, run_judge = self._create_batch_jobs(
                 testcase_info, seed, subtask
             )
             run_sol = run_batch_sol
-            jobs += [run_batch_sol, run_judge]
+            link = SymlinkData(
+                self._env,
+                testcase_info.reference_output(self._env, seed),
+                testcase_info.reference_output(
+                    self._env, seed, solution=self.solution_label
+                ),
+            )
+            jobs += [run_batch_sol, link, run_judge]
             jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
 
         elif self._env.config.task_type == TaskType.communication:
@@ -172,7 +169,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        out = input_path.to_output(self._solution.name)
+        out = input_path.to_output()
         run_judge = judge_job(
             input_path,
             out,

@@ -62,15 +62,17 @@ class TestcaseInfo(yaml.YAMLObject):
     def reference_output(
         self, env: Env, seed: Optional[int] = None, solution: Optional[str] = None
     ) -> OutputPath:
+        is_static = self.generation_mode == TestcaseGenerationMode.static
+
         input_path = self.input_path(env, seed, solution=env.config.primary_solution)
-        if self.generation_mode == TestcaseGenerationMode.static:
+        if is_static:
             path = OutputPath.static(input_path.replace_suffix(".out").name)
         else:
-            path = input_path.to_output(env.config.primary_solution_file)
+            path = input_path.to_output()
 
         if solution is not None:
             path = OutputPath(
                 TESTS_DIR, env.config.solutions[solution].raw_source, path.name
-            )
+            ).to_reference_output()
 
         return path

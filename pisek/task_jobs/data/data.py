@@ -35,12 +35,25 @@ class LinkData(DataJob):
 
     def __init__(self, env: Env, data: TaskPath, dest: TaskPath, **kwargs) -> None:
         super().__init__(
-            env=env, name=f"Link {data:p} to {dest:p}/", data=data, **kwargs
+            env=env, name=f"Link {data:p} -> {dest:p}", data=data, **kwargs
         )
-        self.dest = TaskPath(dest.path, self.data.name)
+        self.dest = dest
 
     def _run(self):
         self._link_file(self.data, self.dest, overwrite=True)
+
+
+class SymlinkData(DataJob):
+    """Link data to into dest folder."""
+
+    def __init__(self, env: Env, data: TaskPath, dest: TaskPath, **kwargs) -> None:
+        super().__init__(
+            env=env, name=f"Symlink {data:p} -> {dest:p}", data=data, **kwargs
+        )
+        self.dest = dest
+
+    def _run(self):
+        self._symlink_file(self.data, self.dest, overwrite=True)
 
 
 MB = 1024 * 1024

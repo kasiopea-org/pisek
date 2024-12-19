@@ -60,8 +60,8 @@ class RunBatchSolution(RunSolution):
             **kwargs,
         )
         self.input = input_
-        self.output = input_.to_output(solution.name)
-        self.log_file = input_.to_log(solution.name)
+        self.output = input_.to_output()
+        self.log_file = input_.to_log("solution")
 
     def _run(self) -> RunResult:
         return self._run_program(
@@ -85,7 +85,7 @@ class RunCommunication(RunCMSJudge, RunSolution):
         expected_verdict: Optional[Verdict] = None,
         **kwargs,
     ):
-        self.sol_log_file = input_.to_log(solution.name)
+        self.sol_log_file = input_.to_log("solution")
         super().__init__(
             env=env,
             name=f"Run {solution:n} on input {input_:n}",
