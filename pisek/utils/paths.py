@@ -33,16 +33,25 @@ LOG_SUBDIR = "log/"
 
 
 @dataclass(frozen=True)
-class TaskPath:
+class TaskPath(yaml.YAMLObject):
     """Class representing a path to task file."""
 
+    yaml_tag = f"!TaskPath"
     path: str
-    name: str
 
     def __init__(self, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
         object.__setattr__(self, "path", joined_path)
-        object.__setattr__(self, "name", os.path.basename(joined_path))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(path={self.path})"
+
+    def __init_subclass__(cls):
+        return super().__init_subclass__()
+
+    @property
+    def name(self) -> str:
+        return os.path.basename(self.path)
 
     def __format__(self, __format_spec: str) -> str:
         match __format_spec:
@@ -107,16 +116,22 @@ class TaskPath:
 
 
 class JudgeablePath(TaskPath):
+    yaml_tag = f"!JudgeablePath"
+
     def to_judge_log(self, judge: str) -> "LogPath":
         return LogPath(os.path.splitext(self.path)[0] + f".{judge}.log")
 
 
 class SanitizeablePath(TaskPath):
+    yaml_tag = f"!SanitizeablePath"
+
     def to_sanitized(self) -> "SanitizedPath":
         return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, self.name + ".clean")
 
 
 class InputPath(SanitizeablePath):
+    yaml_tag = f"!InputPath"
+
     def __init__(self, env: "Env", *path, solution: Optional[str] = None) -> None:
         if solution is None:
             super().__init__(TESTS_DIR, INPUTS_SUBDIR, *path)
@@ -133,6 +148,8 @@ class InputPath(SanitizeablePath):
 
 
 class OutputPath(JudgeablePath, SanitizeablePath):
+    yaml_tag = f"!OutputPath"
+
     @staticmethod
     def static(*path) -> "OutputPath":
         return OutputPath(TESTS_DIR, INPUTS_SUBDIR, *path)
@@ -146,23 +163,13 @@ class OutputPath(JudgeablePath, SanitizeablePath):
 
 
 class LogPath(JudgeablePath):
+    yaml_tag = f"!LogPath"
+
     @staticmethod
     def generator_log(generator: str) -> "LogPath":
         return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
 
 
 class SanitizedPath(TaskPath):
+    yaml_tag = f"!SanitizedPath"
     pass
-
-
-def task_path_representer(dumper, task_path: TaskPath):
-    return dumper.represent_sequence("!TaskPath", [task_path.path])
-
-
-def task_path_constructor(loader, value):
-    [path] = loader.construct_sequence(value)
-    return TaskPath(path)
-
-
-yaml.add_representer(TaskPath, task_path_representer)
-yaml.add_constructor("!TaskPath", task_path_constructor)
