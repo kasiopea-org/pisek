@@ -25,11 +25,10 @@ if TYPE_CHECKING:
 BUILD_DIR = "build/"
 TESTS_DIR = "tests/"
 
-GENERATED_SUBDIR = "generated/"
-INPUTS_SUBDIR = "inputs/"
-INVALID_OUTPUTS_SUBDIR = "invalid/"
-SANITIZED_SUBDIR = "sanitized/"
-LOG_SUBDIR = "log/"
+GENERATED_SUBDIR = "_generated/"
+INPUTS_SUBDIR = "_inputs/"
+INVALID_OUTPUTS_SUBDIR = "_fuzzing/"
+SANITIZED_SUBDIR = "_sanitized/"
 
 
 @dataclass(frozen=True)
