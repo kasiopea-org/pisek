@@ -27,7 +27,7 @@ TESTS_DIR = "tests/"
 
 GENERATED_SUBDIR = "_generated/"
 INPUTS_SUBDIR = "_inputs/"
-INVALID_OUTPUTS_SUBDIR = "_fuzzing/"
+FUZZING_OUTPUTS_SUBDIR = "_fuzzing/"
 SANITIZED_SUBDIR = "_sanitized/"
 
 
@@ -160,11 +160,11 @@ class OutputPath(JudgeablePath, SanitizeablePath):
     def to_reference_output(self) -> "OutputPath":
         return OutputPath(self.replace_suffix(f".ok").path)
 
-    def to_invalid(self, seed: int) -> "OutputPath":
+    def to_fuzzing(self, seed: int) -> "OutputPath":
         return OutputPath(
             TESTS_DIR,
-            INVALID_OUTPUTS_SUBDIR,
-            self.replace_suffix(f".{seed:x}.invalid").name,
+            FUZZING_OUTPUTS_SUBDIR,
+            self.replace_suffix(f".{seed:x}.out").name,
         )
 
 

@@ -96,7 +96,7 @@ class JudgeManager(TaskJobManager):
                 for job, times in JOBS:
                     for _ in range(times):
                         seed = seeds.pop()
-                        inv_out = out.to_invalid(seed)
+                        inv_out = out.to_fuzzing(seed)
                         jobs += [
                             invalidate := job(self._env, out, inv_out, seed),
                             run_judge := judge_job(
