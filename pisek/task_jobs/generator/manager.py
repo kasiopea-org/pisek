@@ -19,7 +19,7 @@ from typing import cast, Any, Optional
 from hashlib import blake2b
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.config.config_types import GenType, DataFormat
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -116,7 +116,7 @@ def generator_test_determinism(
 
 class TestcaseInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
-        self.inputs: set[TaskPath] = set()
+        self.inputs: set[InputPath] = set()
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
@@ -253,7 +253,7 @@ class TestcaseInfoMixin(JobManager):
         return jobs
 
     def _check_input_jobs(
-        self, input_path: TaskPath, prerequisite: Optional[Job] = None
+        self, input_path: InputPath, prerequisite: Optional[Job] = None
     ) -> list[Job]:
         jobs: list[Job] = []
         if self._env.config.in_format == DataFormat.text:
@@ -267,7 +267,7 @@ class TestcaseInfoMixin(JobManager):
         return jobs
 
     def _check_output_jobs(
-        self, output_path: TaskPath, prerequisite: Optional[RunBatchSolution]
+        self, output_path: OutputPath, prerequisite: Optional[RunBatchSolution]
     ) -> list[Job]:
         jobs: list[Job] = []
         if self._env.config.out_format == DataFormat.text:

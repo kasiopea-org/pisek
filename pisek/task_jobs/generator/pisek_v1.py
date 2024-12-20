@@ -16,7 +16,7 @@ from typing import Any, NoReturn, Optional
 from pisek.utils.text import tab
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, LogPath
 from pisek.task_jobs.program import ProgramsJob, RunResultKind
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
@@ -103,7 +103,7 @@ class PisekV1ListInputs(GeneratorListInputs):
             ProgramType.in_gen,
             self.generator,
             stdout=self._get_inputs_list_path(),
-            stderr=TaskPath.log_file(self._env, "inputs_list", self.generator.name),
+            stderr=LogPath.generator_log(self.generator.name),
         )
         if self._run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -125,7 +125,7 @@ class PisekV1GeneratorJob(ProgramsJob):
     generator: TaskPath
     seed: Optional[int]
     testcase_info: TestcaseInfo
-    input_path: TaskPath
+    input_path: InputPath
 
     def __init__(self, env: Env, *, name: str = "", **kwargs) -> None:
         super().__init__(env=env, name=name, **kwargs)
@@ -144,9 +144,7 @@ class PisekV1GeneratorJob(ProgramsJob):
             self.generator,
             args=args,
             stdout=self.input_path,
-            stderr=TaskPath.log_file(
-                self._env, self.input_path.name, self.generator.name
-            ),
+            stderr=self.input_path.to_log(self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(

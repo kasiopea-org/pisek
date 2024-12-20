@@ -12,14 +12,14 @@
 
 from typing import Any, Iterable
 
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.config.config_types import TaskType
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 from pisek.task_jobs.checker import CheckerJob
 
-from .data import LinkInput, LinkOutput
+from .data import LinkData
 
 TEST_SEED = 25265
 SHORTEN_INPUTS_CUTOFF = 3
@@ -93,15 +93,21 @@ class DataManager(TaskJobManager):
 
             if mode in (TestcaseGenerationMode.static, TestcaseGenerationMode.mixed):
                 jobs.append(
-                    LinkInput(self._env, TaskPath.static_path(self._env, f"{name}.in"))
+                    LinkData(
+                        self._env,
+                        TaskPath.static_path(self._env, f"{name}.in"),
+                        InputPath(self._env, f"{name}.in"),
+                    )
                 )
             if (
                 mode == TestcaseGenerationMode.static
                 and self._env.config.task_type != TaskType.communication
             ):
                 jobs.append(
-                    LinkOutput(
-                        self._env, TaskPath.static_path(self._env, f"{name}.out")
+                    LinkData(
+                        self._env,
+                        TaskPath.static_path(self._env, f"{name}.out"),
+                        OutputPath.static(f"{name}.out"),
                     )
                 )
 
@@ -115,9 +121,7 @@ class DataManager(TaskJobManager):
                         CheckerJob(
                             self._env,
                             self._env.config.checker,
-                            TaskPath.static_path(
-                                self._env, testcase.input_path(self._env).name
-                            ),
+                            testcase.input_path(self._env, None),
                             subtask,
                         )
                     )

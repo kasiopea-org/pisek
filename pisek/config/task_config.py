@@ -152,6 +152,11 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def primary_solution_file(self) -> str:
+        return self.solutions[self.primary_solution].raw_source
+
     def get_solution_by_source(self, source: str) -> Optional[str]:
         sources = (
             name for name, sol in self.solutions.items() if sol.raw_source == source

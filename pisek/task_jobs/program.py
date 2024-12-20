@@ -23,7 +23,7 @@ import subprocess
 
 from pisek.config.task_config import ProgramType
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, LogPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.task_jobs.run_result import RunResultKind, RunResult
@@ -102,7 +102,7 @@ class ProgramsJob(TaskJob):
         args: list[str] = [],
         stdin: Optional[Union[TaskPath, int]] = None,
         stdout: Optional[Union[TaskPath, int]] = None,
-        stderr: Optional[TaskPath] = None,
+        stderr: Optional[LogPath] = None,
         env={},
     ) -> None:
         """Adds program to execution pool."""

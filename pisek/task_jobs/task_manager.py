@@ -10,7 +10,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.config.task_config import SubtaskConfig
 from pisek.jobs.status import StatusJobManager
 from pisek.task_jobs.task_job import TaskHelper
@@ -29,12 +29,12 @@ DATA_MAN_CODE = "data"
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
 
-    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
+    def _get_samples(self) -> list[tuple[InputPath, OutputPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         return [
             (
                 inp.input_path(self._env),
-                TaskPath.output_static_file(self._env, inp.name),
+                inp.reference_output(self._env),
             )
             for inp in self._subtask_testcases(self._env.config.subtasks[0])
         ]
