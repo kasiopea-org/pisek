@@ -115,7 +115,7 @@ class TaskPipeline(JobPipeline):
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
 
-        if len(solutions):
+        if solutions:
             named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
             completeness_check[0].add_prerequisite(*judge)
             for solution in solutions:

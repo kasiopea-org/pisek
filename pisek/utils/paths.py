@@ -121,7 +121,7 @@ class JudgeablePath(TaskPath):
         return LogPath(self.replace_suffix(f".{judge}.log").path)
 
 
-class SanitizeablePath(TaskPath):
+class SanitizablePath(TaskPath):
     yaml_tag = f"!SanitizeablePath"
 
     def to_sanitized(self) -> "SanitizedPath":
@@ -132,7 +132,7 @@ class SanitizeablePath(TaskPath):
         return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, name)
 
 
-class InputPath(SanitizeablePath):
+class InputPath(SanitizablePath):
     yaml_tag = f"!InputPath"
 
     def __init__(self, env: "Env", *path, solution: Optional[str] = None) -> None:
@@ -150,7 +150,7 @@ class InputPath(SanitizeablePath):
         return LogPath(self.replace_suffix(f".{program}.log").path)
 
 
-class OutputPath(JudgeablePath, SanitizeablePath):
+class OutputPath(JudgeablePath, SanitizablePath):
     yaml_tag = f"!OutputPath"
 
     @staticmethod

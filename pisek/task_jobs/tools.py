@@ -20,7 +20,7 @@ from typing import Optional
 import subprocess
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, SanitizeablePath
+from pisek.utils.paths import TaskPath, SanitizablePath
 from pisek.config.task_config import ProgramType
 from pisek.task_jobs.task_job import TaskJob
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -173,7 +173,7 @@ class SanitizeAbstract(ProgramsJob):
 class Sanitize(SanitizeAbstract):
     """Sanitize text file using Text Preprocessor."""
 
-    def __init__(self, env: Env, input_: SanitizeablePath, **kwargs) -> None:
+    def __init__(self, env: Env, input_: SanitizablePath, **kwargs) -> None:
         self.input = input_
         self.output = input_.to_sanitized()
         super().__init__(
@@ -187,7 +187,7 @@ class Sanitize(SanitizeAbstract):
 class IsClean(SanitizeAbstract):
     """Check that file is same after sanitizing with Text Preprocessor."""
 
-    def __init__(self, env: Env, input_: SanitizeablePath, **kwargs) -> None:
+    def __init__(self, env: Env, input_: SanitizablePath, **kwargs) -> None:
         self.input = input_
         self.output = input_.to_sanitized()
         super().__init__(env=env, name=f"{self.input:n} is clean", **kwargs)

@@ -476,6 +476,11 @@ class SolutionConfig(BaseEnv):
                     "invalid_solution_name",
                     f"Solution name must not contain '{banned_char}'",
                 )
+        if value.startswith("_"):
+            raise PydanticCustomError(
+                "invalid_solution_name",
+                f"Solution name must not start with '_'",
+            )
         return value
 
     @field_validator("primary", mode="before")
@@ -494,7 +499,13 @@ class SolutionConfig(BaseEnv):
     @classmethod
     def convert_auto(cls, value: str, info: ValidationInfo) -> str:
         if value == "@auto":
-            return info.data.get("name", "")
+            value = info.data.get("name", "")
+
+        if value.startswith("_"):
+            raise PydanticCustomError(
+                "invalid_solution_source",
+                f"Solution source must not start with '_'",
+            )
         return value
 
     @field_validator("subtasks", mode="after")
