@@ -139,9 +139,7 @@ class InputPath(SanitizablePath):
         if solution is None:
             super().__init__(TESTS_DIR, INPUTS_SUBDIR, *path)
         else:
-            super().__init__(
-                TESTS_DIR, env.config.solutions[solution].raw_source, *path
-            )
+            super().__init__(TESTS_DIR, solution, *path)
 
     def to_output(self) -> "OutputPath":
         return OutputPath(self.replace_suffix(f".out").path)

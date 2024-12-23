@@ -71,8 +71,6 @@ class TestcaseInfo(yaml.YAMLObject):
             path = input_path.to_output()
 
         if solution is not None:
-            path = OutputPath(
-                TESTS_DIR, env.config.solutions[solution].raw_source, path.name
-            ).to_reference_output()
+            path = OutputPath(TESTS_DIR, solution, path.name).to_reference_output()
 
         return path
