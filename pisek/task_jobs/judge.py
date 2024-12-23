@@ -25,7 +25,7 @@ from tempfile import gettempdir
 from uuid import uuid4
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath, LogPath
 from pisek.config.config_types import TaskType, ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
@@ -96,7 +96,7 @@ class JudgeManager(TaskJobManager):
                 for job, times in JOBS:
                     for _ in range(times):
                         seed = seeds.pop()
-                        inv_out = TaskPath.invalid_file(self._env, out.name, seed)
+                        inv_out = out.to_fuzzing(seed)
                         jobs += [
                             invalidate := job(self._env, out, inv_out, seed),
                             run_judge := judge_job(
@@ -135,8 +135,8 @@ class RunJudge(ProgramsJob):
         name: str,
         subtask: int,
         judge_name: str,
-        input_: TaskPath,
-        judge_log_file: TaskPath,
+        input_: InputPath,
+        judge_log_file: LogPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
@@ -282,7 +282,7 @@ class RunCMSJudge(RunJudge):
     ) -> None:
         super().__init__(env=env, judge_name=judge.name, **kwargs)
         self.judge = judge
-        self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
+        self.points_file = self.judge_log_file.replace_suffix(".points")
 
     def _load_points(self, result: RunResult) -> Decimal:
         with self._open_file(result.stdout_file) as f:
@@ -331,9 +331,9 @@ class RunBatchJudge(RunJudge):
         env: Env,
         judge_name: str,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
@@ -343,7 +343,7 @@ class RunBatchJudge(RunJudge):
             judge_name=judge_name,
             subtask=subtask,
             input_=input_,
-            judge_log_file=TaskPath.log_file(self._env, output.name, judge_name),
+            judge_log_file=output.to_judge_log(judge_name),
             expected_verdict=expected_verdict,
             **kwargs,
         )
@@ -370,9 +370,9 @@ class RunDiffJudge(RunBatchJudge):
         self,
         env: Env,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
@@ -471,9 +471,9 @@ class RunTokenJudge(RunJudgeLibJudge):
         self,
         env: Env,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
@@ -512,9 +512,9 @@ class RunShuffleJudge(RunJudgeLibJudge):
         self,
         env: Env,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
@@ -560,9 +560,9 @@ class RunOpendataJudge(RunBatchJudge):
         env: Env,
         judge: TaskPath,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         seed: Optional[int],
         expected_verdict: Optional[Verdict],
         **kwargs,
@@ -634,9 +634,9 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
         env: Env,
         judge: TaskPath,
         subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
@@ -687,9 +687,9 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
 
 
 def judge_job(
-    input_: TaskPath,
-    output: TaskPath,
-    correct_output: TaskPath,
+    input_: InputPath,
+    output: OutputPath,
+    correct_output: OutputPath,
     subtask: int,
     seed: Optional[int],
     expected_verdict: Optional[Verdict],

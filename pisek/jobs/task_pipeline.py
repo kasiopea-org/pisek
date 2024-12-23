@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import deque
-import os
 
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
-from pisek.utils.paths import TESTS_DIR, TaskPath
+from pisek.utils.paths import InputPath
 from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
@@ -68,7 +67,7 @@ class TaskPipeline(JobPipeline):
         solutions = []
         self.input_generator: TestcaseInfoMixin
 
-        if env.target == TestingTarget.generator:
+        if env.target == TestingTarget.generator or not env.config.solutions:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))
             gen_inputs[0].add_prerequisite(*inputs)
             self.input_generator = gen_inputs[0]
@@ -116,7 +115,7 @@ class TaskPipeline(JobPipeline):
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
 
-        if env.target in (TestingTarget.solution, TestingTarget.all):
+        if solutions:
             named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
             completeness_check[0].add_prerequisite(*judge)
             for solution in solutions:
@@ -124,7 +123,7 @@ class TaskPipeline(JobPipeline):
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
 
-    def input_dataset(self) -> list[TaskPath]:
+    def input_dataset(self) -> list[InputPath]:
         if self.input_generator.result is None:
             raise RuntimeError("Input dataset has not been computed yet.")
         return self.input_generator.result["inputs"]

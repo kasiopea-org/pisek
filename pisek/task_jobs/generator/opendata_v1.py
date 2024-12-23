@@ -14,7 +14,7 @@ from typing import Optional
 
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.task_jobs.program import ProgramsJob, RunResultKind
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
@@ -41,7 +41,7 @@ class OpendataV1GeneratorJob(ProgramsJob):
     generator: TaskPath
     seed: Optional[int]
     testcase_info: TestcaseInfo
-    input_path: TaskPath
+    input_path: InputPath
 
     def __init__(self, env: Env, *, name: str = "", **kwargs) -> None:
         super().__init__(env=env, name=name, **kwargs)
@@ -58,9 +58,7 @@ class OpendataV1GeneratorJob(ProgramsJob):
             self.generator,
             args=[str(subtask), f"{self.seed:x}"],
             stdout=self.input_path,
-            stderr=TaskPath.log_file(
-                self._env, self.input_path.name, self.generator.name
-            ),
+            stderr=self.input_path.to_log(self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(

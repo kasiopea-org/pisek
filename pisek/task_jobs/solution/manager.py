@@ -20,10 +20,11 @@ from typing import Any, Optional
 
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.config.config_types import TaskType
 from pisek.utils.text import pad, pad_left, tab
 from pisek.utils.terminal import MSG_LEN, right_aligned_text
+from pisek.task_jobs.data.data import SymlinkData
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
@@ -71,7 +72,9 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
     def _skip_testcase(
         self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> bool:
-        input_path = testcase_info.input_path(self._env, seed)
+        input_path = testcase_info.input_path(
+            self._env, seed, solution=self.solution_label
+        )
         if input_path in self._judges:
             self.subtasks[-1].previous_jobs.append(self._judges[input_path])
         return super()._skip_testcase(testcase_info, seed, subtask)
@@ -83,11 +86,21 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         subtask: int,
         test_determinism: bool,
     ) -> list[Job]:
-        if not self._generate_inputs:
-            return []
-        return super()._generate_input_jobs(
-            testcase_info, seed, subtask, test_determinism
+        if self._generate_inputs:
+            jobs = super()._generate_input_jobs(
+                testcase_info, seed, subtask, test_determinism
+            )
+        else:
+            jobs = []
+
+        jobs.append(
+            SymlinkData(
+                self._env,
+                testcase_info.input_path(self._env, seed),
+                testcase_info.input_path(self._env, seed, solution=self.solution_label),
+            )
         )
+        return jobs
 
     def _respects_seed_jobs(
         self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
@@ -99,7 +112,9 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
     def _solution_jobs(
         self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> list[Job]:
-        input_path = testcase_info.input_path(self._env, seed)
+        input_path = testcase_info.input_path(
+            self._env, seed, solution=self.solution_label
+        )
 
         jobs: list[Job] = []
 
@@ -111,14 +126,22 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 and self._generate_inputs
             ):
                 jobs += self._check_output_jobs(
-                    self._get_reference_output(testcase_info, seed), None
+                    testcase_info.reference_output(self._env, seed),
+                    None,
                 )
 
             run_batch_sol, run_judge = self._create_batch_jobs(
                 testcase_info, seed, subtask
             )
             run_sol = run_batch_sol
-            jobs += [run_batch_sol, run_judge]
+            link = SymlinkData(
+                self._env,
+                testcase_info.reference_output(self._env, seed),
+                testcase_info.reference_output(
+                    self._env, seed, solution=self.solution_label
+                ),
+            )
+            jobs += [run_batch_sol, link, run_judge]
             jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
 
         elif self._env.config.task_type == TaskType.communication:
@@ -135,7 +158,9 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
     ) -> tuple[RunBatchSolution, RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
-        input_path = testcase_info.input_path(self._env, seed)
+        input_path = testcase_info.input_path(
+            self._env, seed, solution=self.solution_label
+        )
         run_solution = RunBatchSolution(
             self._env,
             self._solution,
@@ -144,11 +169,13 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         )
         run_solution.add_prerequisite(self._compile_job)
 
-        out = TaskPath.output_file(self._env, input_path.name, self._solution.name)
+        out = input_path.to_output()
         run_judge = judge_job(
             input_path,
             out,
-            self._get_reference_output(testcase_info, seed),
+            testcase_info.reference_output(
+                self._env, seed, solution=self.solution_label
+            ),
             subtask,
             seed,
             None,
@@ -159,7 +186,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         return (run_solution, run_judge)
 
     def _create_communication_jobs(
-        self, inp: TaskPath, subtask: int
+        self, inp: InputPath, subtask: int
     ) -> RunCommunication:
         """Create RunCommunication job for communication task type."""
         if self._env.config.out_judge is None:

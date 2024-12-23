@@ -152,6 +152,11 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def primary_solution_file(self) -> str:
+        return self.solutions[self.primary_solution].raw_source
+
     def get_solution_by_source(self, source: str) -> Optional[str]:
         sources = (
             name for name, sol in self.solutions.items() if sol.raw_source == source
@@ -471,6 +476,11 @@ class SolutionConfig(BaseEnv):
                     "invalid_solution_name",
                     f"Solution name must not contain '{banned_char}'",
                 )
+        if value.startswith("_"):
+            raise PydanticCustomError(
+                "invalid_solution_name",
+                f"Solution name must not start with '_'",
+            )
         return value
 
     @field_validator("primary", mode="before")
@@ -489,7 +499,7 @@ class SolutionConfig(BaseEnv):
     @classmethod
     def convert_auto(cls, value: str, info: ValidationInfo) -> str:
         if value == "@auto":
-            return info.data.get("name", "")
+            value = info.data.get("name", "")
         return value
 
     @field_validator("subtasks", mode="after")

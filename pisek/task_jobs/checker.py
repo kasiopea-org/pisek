@@ -14,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Optional
-
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath
 from pisek.config.task_config import ProgramType
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
@@ -64,7 +62,7 @@ class CheckerJob(ProgramsJob):
         self,
         env: Env,
         checker: TaskPath,
-        input_: TaskPath,
+        input_: InputPath,
         subtask: int,
         **kwargs,
     ):
@@ -74,9 +72,7 @@ class CheckerJob(ProgramsJob):
         self.checker = checker
         self.subtask = subtask
         self.input = input_
-        self.log_file = TaskPath.log_file(
-            self._env, input_.name, f"{self.checker.name}{subtask}"
-        )
+        self.log_file = input_.to_log(f"{checker.name}{subtask}")
 
     def _check(self) -> RunResult:
         return self._run_program(

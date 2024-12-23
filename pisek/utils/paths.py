@@ -25,25 +25,32 @@ if TYPE_CHECKING:
 BUILD_DIR = "build/"
 TESTS_DIR = "tests/"
 
-GENERATED_SUBDIR = "generated/"
-INPUTS_SUBDIR = "inputs/"
-INVALID_OUTPUTS_SUBDIR = "invalid/"
-OUTPUTS_SUBDIR = "outputs/"
-SANITIZED_SUBDIR = "sanitized/"
-LOG_SUBDIR = "log/"
+GENERATED_SUBDIR = "_generated/"
+INPUTS_SUBDIR = "_inputs/"
+FUZZING_OUTPUTS_SUBDIR = "_fuzzing/"
+SANITIZED_SUBDIR = "_sanitized/"
 
 
 @dataclass(frozen=True)
-class TaskPath:
+class TaskPath(yaml.YAMLObject):
     """Class representing a path to task file."""
 
+    yaml_tag = f"!TaskPath"
     path: str
-    name: str
 
     def __init__(self, *path: str):
         joined_path = os.path.normpath(os.path.join(*path))
         object.__setattr__(self, "path", joined_path)
-        object.__setattr__(self, "name", os.path.basename(joined_path))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(path={self.path})"
+
+    def __init_subclass__(cls):
+        return super().__init_subclass__()
+
+    @property
+    def name(self) -> str:
+        return os.path.basename(self.path)
 
     def __format__(self, __format_spec: str) -> str:
         match __format_spec:
@@ -106,74 +113,67 @@ class TaskPath:
     def generated_path(env: "Env", *path: str) -> "TaskPath":
         return TaskPath.data_path(env, GENERATED_SUBDIR, *path)
 
-    @staticmethod
-    def generated_input_file(env: "Env", subtask: int, seed: int) -> "TaskPath":
-        return TaskPath.generated_path(env, f"{subtask:02}_{seed:x}.in")
+
+class JudgeablePath(TaskPath):
+    yaml_tag = f"!JudgeablePath"
+
+    def to_judge_log(self, judge: str) -> "LogPath":
+        return LogPath(self.replace_suffix(f".{judge}.log").path)
+
+
+class SanitizablePath(TaskPath):
+    yaml_tag = f"!SanitizeablePath"
+
+    def to_sanitized(self) -> "SanitizedPath":
+        name = self.name + ".clean"
+        dirname = os.path.basename(os.path.dirname(self.path))
+        if dirname != INPUTS_SUBDIR:
+            name = name.replace(".", f".{dirname}.", 1)
+        return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, name)
+
+
+class InputPath(SanitizablePath):
+    yaml_tag = f"!InputPath"
+
+    def __init__(self, env: "Env", *path, solution: Optional[str] = None) -> None:
+        if solution is None:
+            super().__init__(TESTS_DIR, INPUTS_SUBDIR, *path)
+        else:
+            super().__init__(TESTS_DIR, solution, *path)
+
+    def to_output(self) -> "OutputPath":
+        return OutputPath(self.replace_suffix(f".out").path)
+
+    def to_log(self, program: str) -> "LogPath":
+        return LogPath(self.replace_suffix(f".{program}.log").path)
+
+
+class OutputPath(JudgeablePath, SanitizablePath):
+    yaml_tag = f"!OutputPath"
 
     @staticmethod
-    def input_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath.data_path(env, INPUTS_SUBDIR, *path)
+    def static(*path) -> "OutputPath":
+        return OutputPath(TESTS_DIR, INPUTS_SUBDIR, *path)
+
+    def to_reference_output(self) -> "OutputPath":
+        return OutputPath(self.replace_suffix(f".ok").path)
+
+    def to_fuzzing(self, seed: int) -> "OutputPath":
+        return OutputPath(
+            TESTS_DIR,
+            FUZZING_OUTPUTS_SUBDIR,
+            self.replace_suffix(f".{seed:x}.out").name,
+        )
+
+
+class LogPath(JudgeablePath):
+    yaml_tag = f"!LogPath"
 
     @staticmethod
-    def invalid_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath.data_path(env, INVALID_OUTPUTS_SUBDIR, *path)
-
-    @staticmethod
-    def invalid_file(env: "Env", name: str, seed: int) -> "TaskPath":
-        name = os.path.splitext(name)[0]
-        return TaskPath.invalid_path(env, f"{name}.{seed:x}.invalid")
-
-    @staticmethod
-    def output_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath.data_path(env, OUTPUTS_SUBDIR, *path)
-
-    @staticmethod
-    def output_file(env: "Env", input_name: str, solution: str) -> "TaskPath":
-        input_name = os.path.splitext(os.path.basename(input_name))[0]
-        solution = os.path.basename(solution)
-        return TaskPath.output_path(env, f"{input_name}.{solution}.out")
-
-    @staticmethod
-    def output_static_file(env: "Env", name: str) -> "TaskPath":
-        name = os.path.splitext(name)[0]
-        return TaskPath.output_path(env, f"{name}.out")
-
-    @staticmethod
-    def sanitized_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath.data_path(env, SANITIZED_SUBDIR, *path)
-
-    @staticmethod
-    def sanitized_file(env: "Env", name: str) -> "TaskPath":
-        name = os.path.basename(name)
-        return TaskPath.sanitized_path(env, f"{name}.clean")
-
-    @staticmethod
-    def log_path(env: "Env", *path: str) -> "TaskPath":
-        return TaskPath.data_path(env, LOG_SUBDIR, *path)
-
-    @staticmethod
-    def points_file(env: "Env", name: str) -> "TaskPath":
-        name = os.path.splitext(name)[0]
-        return TaskPath.log_path(env, f"{name}.points")
-
-    @staticmethod
-    def log_file(env: "Env", name: Optional[str], program: str) -> "TaskPath":
-        program = os.path.basename(program)
-        if name is None:
-            return TaskPath.log_path(env, f"{program}.log")
-
-        name = os.path.splitext(os.path.basename(name))[0]
-        return TaskPath.log_path(env, f"{name}.{program}.log")
+    def generator_log(generator: str) -> "LogPath":
+        return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
 
 
-def task_path_representer(dumper, task_path: TaskPath):
-    return dumper.represent_sequence("!TaskPath", [task_path.path])
-
-
-def task_path_constructor(loader, value):
-    [path] = loader.construct_sequence(value)
-    return TaskPath(path)
-
-
-yaml.add_representer(TaskPath, task_path_representer)
-yaml.add_constructor("!TaskPath", task_path_constructor)
+class SanitizedPath(TaskPath):
+    yaml_tag = f"!SanitizedPath"
+    pass
