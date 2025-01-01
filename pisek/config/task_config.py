@@ -460,6 +460,17 @@ class SolutionConfig(BaseEnv):
             )
             for key in KEYS
         }
+
+        # XXX: Backwards compatibility hack for v3
+        # Delete this when finalizing config-v3
+        # This way we get some time to migrate
+        try:
+            args["tests"] = configs.get_from_candidates(
+                [(name.section, "subtasks"), ("all_solutions", "subtasks")]
+            )
+        except TaskConfigError:
+            pass
+
         return {
             "_section": configs.get(name.section, None),
             "name": name,
