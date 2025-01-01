@@ -120,9 +120,7 @@ class TestcaseInfoMixin(JobManager):
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
-    def _testcase_info_jobs(
-        self, testcase_info: TestcaseInfo, test: int
-    ) -> list[Job]:
+    def _testcase_info_jobs(self, testcase_info: TestcaseInfo, test: int) -> list[Job]:
         seeds: list[Optional[int]]
         if testcase_info.seeded:
             seeds = []

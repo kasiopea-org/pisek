@@ -66,9 +66,7 @@ class CheckerJob(ProgramsJob):
         test: int,
         **kwargs,
     ):
-        super().__init__(
-            env=env, name=f"Check {input_:n} on test {test}", **kwargs
-        )
+        super().__init__(env=env, name=f"Check {input_:n} on test {test}", **kwargs)
         self.checker = checker
         self.test = test
         self.input = input_

@@ -185,9 +185,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(
-        self, inp: InputPath, test: int
-    ) -> RunCommunication:
+    def _create_communication_jobs(self, inp: InputPath, test: int) -> RunCommunication:
         """Create RunCommunication job for communication task type."""
         if self._env.config.out_judge is None:
             raise RuntimeError("Unset judge for communication.")
@@ -231,8 +229,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             header = self._colored(header, "cyan")
             tests_text = tab(
                 "\n".join(
-                    sub.status(self.tests, self._env.verbosity)
-                    for sub in self.tests
+                    sub.status(self.tests, self._env.verbosity) for sub in self.tests
                 )
             )
             if self._env.verbosity == 1:

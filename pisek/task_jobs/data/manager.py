@@ -111,18 +111,18 @@ class DataManager(TaskJobManager):
                     )
                 )
 
-        for test, testcases in self._testcase_infos.items():
+        for test_num, testcases in self._testcase_infos.items():
             for testcase in testcases:
                 if testcase.generation_mode == TestcaseGenerationMode.generated:
                     continue
 
-                if test > 0 and self._env.config.checker is not None:
+                if test_num > 0 and self._env.config.checker is not None:
                     jobs.append(
                         CheckerJob(
                             self._env,
                             self._env.config.checker,
                             testcase.input_path(self._env, None),
-                            test,
+                            test_num,
                         )
                     )
 

@@ -699,9 +699,7 @@ def judge_job(
 ]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
-        return RunDiffJudge(
-            env, test, input_, output, correct_output, expected_verdict
-        )
+        return RunDiffJudge(env, test, input_, output, correct_output, expected_verdict)
 
     if env.config.out_check == OutCheck.tokens:
         return RunTokenJudge(

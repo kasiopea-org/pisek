@@ -23,8 +23,10 @@ from pisek.config.config_errors import TaskConfigError
 from pisek.config.config_types import ProgramType
 
 
-def maybe_rename_key(config: ConfigParser, section_from: str, section_to: str, key_from: str, key_to: str):
-    if key_from in config[section_from]:
+def maybe_rename_key(
+    config: ConfigParser, section_from: str, section_to: str, key_from: str, key_to: str
+):
+    if section_from in config and key_from in config[section_from]:
         if section_to not in config:
             config.add_section(section_to)
 
@@ -34,7 +36,6 @@ def maybe_rename_key(config: ConfigParser, section_from: str, section_to: str, k
 
 def maybe_move_key(config: ConfigParser, key: str, section_from: str, section_to: str):
     maybe_rename_key(config, section_from, section_to, key, key)
-
 
 
 def maybe_delete_key(config: ConfigParser, section: str, key: str):
@@ -215,8 +216,20 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     for section, key in IGNORED_KEYS:
         maybe_delete_key(config, section, key)
 
-    maybe_rename_key(config, "checks", "checks", "solution_for_each_subtask", "solution_for_each_test")
-    maybe_rename_key(config, "checks", "checks", "all_inputs_in_last_subtask", "all_inputs_in_last_test")
+    maybe_rename_key(
+        config,
+        "checks",
+        "checks",
+        "solution_for_each_subtask",
+        "solution_for_each_test",
+    )
+    maybe_rename_key(
+        config,
+        "checks",
+        "checks",
+        "all_inputs_in_last_subtask",
+        "all_inputs_in_last_test",
+    )
 
     for section in config.sections():
         if re.match(r"test\d{2}", section):

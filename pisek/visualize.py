@@ -129,9 +129,7 @@ class SolutionResults:
 
     def _get_test(self, result: LoggedResult) -> int:
         return min(
-            i
-            for i, sub in self._config.tests.items()
-            if sub.new_in_test(result.test)
+            i for i, sub in self._config.tests.items() if sub.new_in_test(result.test)
         )
 
     def _evaluate_results(
@@ -323,9 +321,7 @@ def visualize(
                 test_err = sol_res.check_test(num)
                 err_msg = ""
                 if test_err is not None:
-                    err_msg = ColorSettings.colored(
-                        f" should result {test_err}", "red"
-                    )
+                    err_msg = ColorSettings.colored(f" should result {test_err}", "red")
                     wrong_solutions[sol] = True
 
                 print(tab(f"{config.tests[num].name}{err_msg}"))

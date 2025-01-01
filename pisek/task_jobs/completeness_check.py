@@ -39,9 +39,7 @@ class CompletenessCheck(TaskJobManager):
             ]
         return judge_outs
 
-    def _check_solution_succeeds_only_on(
-        self, sol_name: str, tests: list[int]
-    ) -> bool:
+    def _check_solution_succeeds_only_on(self, sol_name: str, tests: list[int]) -> bool:
         tests_res = self.prerequisites_results[f"{SOLUTION_MAN_CODE}{sol_name}"][
             "tests"
         ]
