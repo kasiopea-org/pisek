@@ -233,7 +233,7 @@ class TestExtraConfigKeys(TestSumKasiopea):
         modify_config(self.task_dir, modification_fn)
 
 
-class TestExtraConfigKeysInSubtask(TestSumKasiopea):
+class TestExtraConfigKeysInTest(TestSumKasiopea):
     def expecting_success(self):
         return False
 

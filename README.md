@@ -46,7 +46,7 @@ What pisek verifies:
     - It doesn't crash on malicious output
  - The solutions finish as expected
     - They get the expected number of points
-    - They succeed/fail on each subtask as expected
+    - They succeed/fail on each test (group of testcases) as expected
  - Data files (inputs and outputs) are valid
     - They are in the correct encoding
     - They don't contain unprintable characters
@@ -54,7 +54,7 @@ What pisek verifies:
     - The files are reasonably small
  - The task is complete
     - A CMS judge has no redundant lines in its stdout/stderr
-    - If `solution_for_each_subtask=on`, there exists a dedicated solution for each subtask
+    - If `solution_for_each_test=on`, there exists a dedicated solution for each test
  
 
 ### Testing given programs

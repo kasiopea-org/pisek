@@ -57,20 +57,20 @@ class DataManager(TaskJobManager):
 
         all_testcase_infos.sort(key=lambda info: info.name)
 
-        # put inputs in subtasks
+        # put inputs in tests
         self._testcase_infos: dict[int, list[TestcaseInfo]] = {}
 
-        for sub in self._env.config.subtasks.values():
-            self._testcase_infos[sub.num] = []
+        for test in self._env.config.tests.values():
+            self._testcase_infos[test.num] = []
 
             for testcase_info in all_testcase_infos:
                 inp_path = testcase_info.input_path(self._env, TEST_SEED).name
-                if sub.in_subtask(inp_path):
-                    self._testcase_infos[sub.num].append(testcase_info)
+                if test.in_test(inp_path):
+                    self._testcase_infos[test.num].append(testcase_info)
 
-            if len(self._testcase_infos[sub.num]) == 0:
+            if len(self._testcase_infos[test.num]) == 0:
                 raise PipelineItemFailure(
-                    f"No inputs for subtask {sub.num} with globs {sub.all_globs}."
+                    f"No inputs for test {test.num} with globs {test.all_globs}."
                 )
 
         for testcase_info in self._testcase_infos[0]:
@@ -81,7 +81,7 @@ class DataManager(TaskJobManager):
 
         used_inputs = set(sum(self._testcase_infos.values(), start=[]))
         self._report_not_included_inputs(
-            used_inputs - set(self._testcase_infos[self._env.config.subtasks_count - 1])
+            used_inputs - set(self._testcase_infos[self._env.config.tests_count - 1])
         )
         self._report_unused_inputs(set(all_testcase_infos) - used_inputs)
 
@@ -111,18 +111,18 @@ class DataManager(TaskJobManager):
                     )
                 )
 
-        for subtask, testcases in self._testcase_infos.items():
+        for test, testcases in self._testcase_infos.items():
             for testcase in testcases:
                 if testcase.generation_mode == TestcaseGenerationMode.generated:
                     continue
 
-                if subtask > 0 and self._env.config.checker is not None:
+                if test > 0 and self._env.config.checker is not None:
                     jobs.append(
                         CheckerJob(
                             self._env,
                             self._env.config.checker,
                             testcase.input_path(self._env, None),
-                            subtask,
+                            test,
                         )
                     )
 
@@ -146,16 +146,16 @@ class DataManager(TaskJobManager):
         self, not_included_inputs: Iterable[TestcaseInfo]
     ) -> None:
         inputs = list(sorted(not_included_inputs, key=lambda inp: inp.name))
-        if self._env.config.checks.all_inputs_in_last_subtask and inputs:
+        if self._env.config.checks.all_inputs_in_last_test and inputs:
             if self._env.verbosity <= 0:
                 self._warn(
                     f"{len(inputs)} input{'s' if len(inputs) >= 2 else ''} "
-                    "not included in last subtask. "
+                    "not included in last test. "
                     f"({self._short_inputs_list(inputs)})"
                 )
             else:
                 for inp in inputs:
-                    self._warn(f"Input '{inp.name}.in' not included in last subtask.")
+                    self._warn(f"Input '{inp.name}.in' not included in last test.")
 
     def _short_inputs_list(self, inputs: Iterable[TestcaseInfo]) -> str:
         return self._short_list(

@@ -16,7 +16,7 @@ from typing import Optional
 from pisek.config.task_config import TaskConfig
 from pisek.task_jobs.solution.solution_result import (
     Verdict,
-    SUBTASK_SPEC,
+    TEST_SPEC,
     verdict_always,
 )
 
@@ -29,12 +29,12 @@ def evaluate_verdicts(
     breaker = None
 
     for i, mode in enumerate((all, any)):
-        oks = list(map(SUBTASK_SPEC[expected][i], verdicts))
+        oks = list(map(TEST_SPEC[expected][i], verdicts))
         ok = mode(oks)
         result &= ok
 
         if mode == all:
-            definitive &= not ok or SUBTASK_SPEC[expected][i] == verdict_always
+            definitive &= not ok or TEST_SPEC[expected][i] == verdict_always
             if not ok:
                 breaker = oks.index(False)
                 break

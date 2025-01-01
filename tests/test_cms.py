@@ -29,7 +29,7 @@ class TestGeneratorDoesNotCreateTests(TestSumCMS):
         overwrite_file(self.task_dir, "gen.py", "gen_dummy.py")
 
 
-class TestMissingInputFilesForSubtask(TestSumCMS):
+class TestMissingInputFilesForTest(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -54,7 +54,7 @@ class TestOldInputsDeleted(TestSumCMS):
         os.makedirs(os.path.join(self.inputs_dir), exist_ok=True)
 
         with open(os.path.join(self.inputs_dir, "01_outdated.in"), "w") as f:
-            # This old input does not conform to the subtask! Get rid of it.
+            # This old input does not conform to the test! Get rid of it.
             f.write("-3 -2\n")
 
     def check_end_state(self):

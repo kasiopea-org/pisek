@@ -48,7 +48,7 @@ from pisek.config.config_types import (
     CMSScoreMode,
 )
 from pisek.env.context import init_context
-from pisek.task_jobs.solution.solution_result import SUBTASK_SPEC
+from pisek.task_jobs.solution.solution_result import TEST_SPEC
 
 
 MaybeInt = Annotated[
@@ -119,7 +119,7 @@ class TaskConfig(BaseEnv):
     stub: OptionalTaskPathFromStr
     headers: ListTaskPathFromStr
 
-    subtasks: dict[int, "SubtaskConfig"]
+    tests: dict[int, "TestConfig"]
 
     solutions: dict[str, "SolutionConfig"]
 
@@ -132,17 +132,17 @@ class TaskConfig(BaseEnv):
     @computed_field  # type: ignore[misc]
     @cached_property
     def total_points(self) -> int:
-        return sum(sub.points for sub in self.subtasks.values())
+        return sum(sub.points for sub in self.tests.values())
 
     @computed_field  # type: ignore[misc]
     @property
-    def subtasks_count(self) -> int:
-        return len(self.subtasks)
+    def tests_count(self) -> int:
+        return len(self.tests)
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def input_globs(self) -> list[str]:
-        return sum((sub.all_globs for sub in self.subtasks.values()), start=[])
+        return sum((sub.all_globs for sub in self.tests.values()), start=[])
 
     @computed_field  # type: ignore[misc]
     @property
@@ -164,7 +164,7 @@ class TaskConfig(BaseEnv):
         return next(sources, None)
 
     def __init__(self, **kwargs):
-        value = {"subtask_count": max(kwargs["subtasks"]) + 1, "name": kwargs["name"]}
+        value = {"test_count": max(kwargs["tests"]) + 1, "name": kwargs["name"]}
 
         with init_context(value):
             super().__init__(**kwargs)
@@ -213,14 +213,14 @@ class TaskConfig(BaseEnv):
 
         section_names = configs.sections()
 
-        # Load subtasks
-        args["subtasks"] = subtasks = {}
-        # Sort so subtasks.keys() returns subtasks in sorted order
+        # Load tests
+        args["tests"] = tests = {}
+        # Sort so tests.keys() returns tests in sorted order
         for section in sorted(section_names, key=lambda cv: cv.value):
             section_name = section.value
             if m := re.fullmatch(r"test(\d{2})", section_name):
                 num = m[1]
-                subtasks[int(num)] = SubtaskConfig.load_dict(
+                tests[int(num)] = TestConfig.load_dict(
                     ConfigValue(str(int(num)), section.config, section.section, None),
                     configs,
                 )
@@ -291,10 +291,10 @@ class TaskConfig(BaseEnv):
                 {},
             )
 
-        for i in range(len(self.subtasks)):
-            if i not in self.subtasks:
+        for i in range(len(self.tests)):
+            if i not in self.tests:
                 raise PydanticCustomError(
-                    "missing_subtask",
+                    "missing_test",
                     f"Missing section [test{i:02}]",
                     {},
                 )
@@ -306,41 +306,41 @@ class TaskConfig(BaseEnv):
         visited = set()
         computed = set()
 
-        def compute_subtask(num: int) -> list[int]:
-            subtask = self.subtasks[num]
+        def compute_test(num: int) -> list[int]:
+            test = self.tests[num]
             if num in computed:
-                return subtask.all_predecessors
+                return test.all_predecessors
             elif num in visited:
                 raise PydanticCustomError(
-                    "cyclic_predecessor_subtasks", "Cyclic predecessor subtasks", {}
+                    "cyclic_predecessor_tests", "Cyclic predecessor tests", {}
                 )
 
             visited.add(num)
             all_predecessors = sum(
-                (compute_subtask(p) for p in subtask.direct_predecessors),
-                start=subtask.direct_predecessors,
+                (compute_test(p) for p in test.direct_predecessors),
+                start=test.direct_predecessors,
             )
 
             def normalize_list(l):
                 return list(sorted(set(l)))
 
-            subtask.all_predecessors = normalize_list(all_predecessors)
-            subtask.all_globs = normalize_list(
+            test.all_predecessors = normalize_list(all_predecessors)
+            test.all_globs = normalize_list(
                 sum(
-                    (self.subtasks[p].in_globs for p in subtask.all_predecessors),
-                    start=subtask.in_globs,
+                    (self.tests[p].in_globs for p in test.all_predecessors),
+                    start=test.in_globs,
                 )
             )
             computed.add(num)
 
-            return subtask.all_predecessors
+            return test.all_predecessors
 
-        for i in range(self.subtasks_count):
-            compute_subtask(i)
+        for i in range(self.tests_count):
+            compute_test(i)
 
 
-class SubtaskConfig(BaseEnv):
-    """Configuration of one subtask."""
+class TestConfig(BaseEnv):
+    """Configuration of one test (group of testcases)."""
 
     _section: str
     num: int
@@ -351,10 +351,10 @@ class SubtaskConfig(BaseEnv):
     direct_predecessors: list[int]
     all_predecessors: list[int] = []
 
-    def in_subtask(self, filename: str) -> bool:
+    def in_test(self, filename: str) -> bool:
         return any(fnmatch.fnmatch(filename, g) for g in self.all_globs)
 
-    def new_in_subtask(self, filename: str) -> bool:
+    def new_in_test(self, filename: str) -> bool:
         return any(fnmatch.fnmatch(filename, g) for g in self.in_globs)
 
     @staticmethod
@@ -395,7 +395,7 @@ class SubtaskConfig(BaseEnv):
     def expand_predecessors(cls, value: str, info: ValidationInfo) -> list[str]:
         if info.context is None:
             raise RuntimeError(MISSING_VALIDATION_CONTEXT)
-        subtask_cnt = info.context.get("subtask_count")
+        test_cnt = info.context.get("test_count")
         number = info.data["num"]
 
         predecessors = []
@@ -411,10 +411,10 @@ class SubtaskConfig(BaseEnv):
                     raise PydanticCustomError(
                         "predecessors_must_be_int", "Predecessors must be int"
                     )
-                if not 0 <= num < subtask_cnt:
+                if not 0 <= num < test_cnt:
                     raise PydanticCustomError(
                         "predecessors_must_be_in_range",
-                        f"Predecessors must be in range 0, {subtask_cnt-1}",
+                        f"Predecessors must be in range 0, {test_cnt-1}",
                     )
                 predecessors.append(num)
 
@@ -423,7 +423,7 @@ class SubtaskConfig(BaseEnv):
     @model_validator(mode="after")
     def validate_model(self):
         if self.name == "@auto":
-            self.name = f"Subtask {self.num}"
+            self.name = f"Test {self.num}"
 
         return self
 
@@ -439,7 +439,7 @@ class SolutionConfig(BaseEnv):
     points: MaybeInt
     points_above: MaybeInt
     points_below: MaybeInt
-    subtasks: str
+    tests: str
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -452,7 +452,7 @@ class SolutionConfig(BaseEnv):
             "points",
             "points_above",
             "points_below",
-            "subtasks",
+            "tests",
         ]
         args = {
             key: configs.get_from_candidates(
@@ -502,36 +502,36 @@ class SolutionConfig(BaseEnv):
             value = info.data.get("name", "")
         return value
 
-    @field_validator("subtasks", mode="after")
-    def validate_subtasks(cls, value, info: ValidationInfo):
+    @field_validator("tests", mode="after")
+    def validate_tests(cls, value, info: ValidationInfo):
         if info.context is None:
             raise RuntimeError(MISSING_VALIDATION_CONTEXT)
-        subtask_cnt = info.context.get("subtask_count")
+        test_cnt = info.context.get("test_count")
         primary = info.data.get("primary")
         if value == "@auto":
-            value = ("1" if primary else "X") * subtask_cnt
+            value = ("1" if primary else "X") * test_cnt
         elif value == "@all":
-            value = "1" * subtask_cnt
+            value = "1" * test_cnt
         elif value == "@any":
-            value = "X" * subtask_cnt
+            value = "X" * test_cnt
 
-        if len(value) != subtask_cnt:
+        if len(value) != test_cnt:
             raise PydanticCustomError(
-                "subtasks_str_invalid_len",
-                f"There are {subtask_cnt} subtasks but subtask string has {len(value)} characters",
+                "tests_str_invalid_len",
+                f"There are {test_cnt} tests but test string has {len(value)} characters",
             )
 
         for char in value:
-            if char not in SUBTASK_SPEC:
+            if char not in TEST_SPEC:
                 raise PydanticCustomError(
-                    "subtasks_str_invalid_char",
-                    f"Not allowed char in subtask string: {char}. Recognized are {''.join(SUBTASK_SPEC.keys())}",
+                    "tests_str_invalid_char",
+                    f"Not allowed char in test string: {char}. Recognized are {''.join(TEST_SPEC.keys())}",
                 )
 
-        if primary and value != "1" * subtask_cnt:
+        if primary and value != "1" * test_cnt:
             raise PydanticCustomError(
                 "primary_sol_must_succeed",
-                f"Primary solution must have: subtasks={'1'*subtask_cnt}",
+                f"Primary solution must have: tests={'1'*test_cnt}",
             )
 
         return value
@@ -669,9 +669,9 @@ class ChecksConfig(BaseEnv):
 
     _section: str = "checks"
 
-    solution_for_each_subtask: bool
+    solution_for_each_test: bool
     no_unused_inputs: bool
-    all_inputs_in_last_subtask: bool
+    all_inputs_in_last_test: bool
     generator_respects_seed: bool
 
     @classmethod

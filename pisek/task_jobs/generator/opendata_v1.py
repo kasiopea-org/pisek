@@ -22,16 +22,16 @@ from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeter
 
 
 class OpendataV1ListInputs(GeneratorListInputs):
-    """Lists all inputs for opendata-v1 generator - one for each subtask."""
+    """Lists all inputs for opendata-v1 generator - one for each test."""
 
     def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
         return [
-            TestcaseInfo.generated(f"{subtask:02}")
-            for subtask in self._env.config.subtasks
-            if subtask != 0
+            TestcaseInfo.generated(f"{test:02}")
+            for test in self._env.config.tests
+            if test != 0
         ]
 
 
@@ -51,18 +51,18 @@ class OpendataV1GeneratorJob(ProgramsJob):
         if self.seed < 0:
             raise ValueError(f"seed {self.seed} is negative")
 
-        subtask = int(self.testcase_info.name)
+        test = int(self.testcase_info.name)
 
         result = self._run_program(
             ProgramType.in_gen,
             self.generator,
-            args=[str(subtask), f"{self.seed:x}"],
+            args=[str(test), f"{self.seed:x}"],
             stdout=self.input_path,
             stderr=self.input_path.to_log(self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.generator} failed on subtask {subtask}, seed {self.seed:x}:",
+                f"{self.generator} failed on test {test}, seed {self.seed:x}:",
                 result,
             )
 

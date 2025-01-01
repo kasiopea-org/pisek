@@ -47,8 +47,8 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         self.solution_label: str = solution_label
         self._generate_inputs = generate_inputs
         self.solution_points: Optional[Decimal] = None
-        self.subtasks: list[SubtaskJobGroup] = []
-        self._subtasks_results: dict[int, Verdict] = {}
+        self.tests: list[TestJobGroup] = []
+        self._tests_results: dict[int, Verdict] = {}
         super().__init__(f"Run {solution_label}")
 
     def _get_jobs(self) -> list[Job]:
@@ -63,32 +63,32 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         self._judges: dict[TaskPath, RunJudge] = {}
 
         for sub_num, inputs in self._all_testcases().items():
-            self.subtasks.append(SubtaskJobGroup(self._env, sub_num))
+            self.tests.append(TestJobGroup(self._env, sub_num))
             for inp in inputs:
                 jobs += self._testcase_info_jobs(inp, sub_num)
 
         return jobs
 
     def _skip_testcase(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
         input_path = testcase_info.input_path(
             self._env, seed, solution=self.solution_label
         )
         if input_path in self._judges:
-            self.subtasks[-1].previous_jobs.append(self._judges[input_path])
-        return super()._skip_testcase(testcase_info, seed, subtask)
+            self.tests[-1].previous_jobs.append(self._judges[input_path])
+        return super()._skip_testcase(testcase_info, seed, test)
 
     def _generate_input_jobs(
         self,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
-        subtask: int,
+        test: int,
         test_determinism: bool,
     ) -> list[Job]:
         if self._generate_inputs:
             jobs = super()._generate_input_jobs(
-                testcase_info, seed, subtask, test_determinism
+                testcase_info, seed, test, test_determinism
             )
         else:
             jobs = []
@@ -103,14 +103,14 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         return jobs
 
     def _respects_seed_jobs(
-        self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
+        self, testcase_info: TestcaseInfo, seeds: list[int], test: int
     ) -> list[Job]:
         if not self._generate_inputs:
             return []
-        return super()._respects_seed_jobs(testcase_info, seeds, subtask)
+        return super()._respects_seed_jobs(testcase_info, seeds, test)
 
     def _solution_jobs(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> list[Job]:
         input_path = testcase_info.input_path(
             self._env, seed, solution=self.solution_label
@@ -131,7 +131,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 )
 
             run_batch_sol, run_judge = self._create_batch_jobs(
-                testcase_info, seed, subtask
+                testcase_info, seed, test
             )
             run_sol = run_batch_sol
             link = SymlinkData(
@@ -145,17 +145,17 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
 
         elif self._env.config.task_type == TaskType.communication:
-            run_sol = run_judge = self._create_communication_jobs(input_path, subtask)
+            run_sol = run_judge = self._create_communication_jobs(input_path, test)
             jobs.append(run_sol)
 
         self._judges[input_path] = run_judge
-        self.subtasks[-1].new_jobs.append(run_judge)
-        self.subtasks[-1].new_run_jobs.append(run_sol)
+        self.tests[-1].new_jobs.append(run_judge)
+        self.tests[-1].new_run_jobs.append(run_sol)
 
         return jobs
 
     def _create_batch_jobs(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> tuple[RunBatchSolution, RunBatchJudge]:
         """Create RunSolution and RunBatchJudge jobs for batch task type."""
         input_path = testcase_info.input_path(
@@ -176,7 +176,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             testcase_info.reference_output(
                 self._env, seed, solution=self.solution_label
             ),
-            subtask,
+            test,
             seed,
             None,
             self._env,
@@ -186,7 +186,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         return (run_solution, run_judge)
 
     def _create_communication_jobs(
-        self, inp: InputPath, subtask: int
+        self, inp: InputPath, test: int
     ) -> RunCommunication:
         """Create RunCommunication job for communication task type."""
         if self._env.config.out_judge is None:
@@ -197,17 +197,17 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             self._solution,
             self.is_primary,
             self._env.config.out_judge,
-            subtask,
+            test,
             inp,
         )
 
     def _update(self):
         """Cancel running on inputs that can't change anything."""
-        expected = self._env.config.solutions[self.solution_label].subtasks
+        expected = self._env.config.solutions[self.solution_label].tests
 
-        for subtask in self.subtasks:
-            if subtask.definitive(expected[subtask.num]):
-                subtask.cancel()
+        for test in self.tests:
+            if test.definitive(expected[test.num]):
+                test.cancel()
 
     def _get_status(self) -> str:
         msg = f"Testing {self.solution_label}"
@@ -217,39 +217,39 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         points_places = len(self._format_points(self._env.config.total_points))
         points = self._format_points(self.solution_points)
 
-        max_time = max((s.slowest_time for s in self.subtasks), default=0)
+        max_time = max((s.slowest_time for s in self.tests), default=0)
 
         if not self.state.finished() or self._env.verbosity == 0:
             points = pad_left(points, points_places)
             header = f"{pad(msg, MSG_LEN-1)} {points}  {max_time:.2f}s  "
-            subtasks_text = "|".join(sub.status_verbosity0() for sub in self.subtasks)
+            tests_text = "|".join(sub.status_verbosity0() for sub in self.tests)
         else:
             header = (
                 right_aligned_text(f"{msg}: {points}", f"slowest {max_time:.2f}s")
                 + "\n"
             )
             header = self._colored(header, "cyan")
-            subtasks_text = tab(
+            tests_text = tab(
                 "\n".join(
-                    sub.status(self.subtasks, self._env.verbosity)
-                    for sub in self.subtasks
+                    sub.status(self.tests, self._env.verbosity)
+                    for sub in self.tests
                 )
             )
             if self._env.verbosity == 1:
-                subtasks_text += "\n"
+                tests_text += "\n"
 
-        return header + subtasks_text
+        return header + tests_text
 
     def _evaluate(self) -> None:
         """Evaluates whether solution preformed as expected."""
         self.solution_points = Decimal(0)
-        for sub_job in self.subtasks:
+        for sub_job in self.tests:
             self.solution_points += sub_job.points
-            self._subtasks_results[sub_job.num] = sub_job.verdict
+            self._tests_results[sub_job.num] = sub_job.verdict
 
         solution_conf = self._env.config.solutions[self.solution_label]
-        for sub_job in self.subtasks:
-            sub_job.as_expected(solution_conf.subtasks[sub_job.num])
+        for sub_job in self.tests:
+            sub_job.as_expected(solution_conf.tests[sub_job.num])
 
         points = solution_conf.points
         above = solution_conf.points_above
@@ -287,18 +287,18 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 result["judge_outs"].add(judge_job.points_file)
             result["judge_outs"].add(judge_job.judge_log_file)
 
-        result["subtasks"] = self._subtasks_results
+        result["tests"] = self._tests_results
 
         return result
 
 
-class SubtaskJobGroup(TaskHelper):
-    """Groups jobs of a single subtask."""
+class TestJobGroup(TaskHelper):
+    """Groups jobs of a single test."""
 
     def __init__(self, env: Env, num: int) -> None:
         self._env = env
         self.num = num
-        self.subtask = env.config.subtasks[num]
+        self.test = env.config.tests[num]
         self.new_run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
@@ -310,8 +310,8 @@ class SubtaskJobGroup(TaskHelper):
     @property
     def points(self) -> Decimal:
         results = self._results(self.all_jobs)
-        points = map(lambda r: r.points(self._env, self.subtask.points), results)
-        return min(points, default=Decimal(self.subtask.points))
+        points = map(lambda r: r.points(self._env, self.test.points), results)
+        return min(points, default=Decimal(self.test.points))
 
     @property
     def verdict(self) -> Verdict:
@@ -344,13 +344,13 @@ class SubtaskJobGroup(TaskHelper):
     def _jobs_points(self) -> list[Decimal]:
         return list(
             map(
-                lambda r: r.points(self._env, self.subtask.points),
+                lambda r: r.points(self._env, self.test.points),
                 self._results(self.new_jobs + self.previous_jobs),
             )
         )
 
     def status(
-        self, all_subtasks: list["SubtaskJobGroup"], verbosity: Optional[int] = None
+        self, all_tests: list["TestJobGroup"], verbosity: Optional[int] = None
     ) -> str:
         verbosity = self._env.verbosity if verbosity is None else verbosity
 
@@ -359,7 +359,7 @@ class SubtaskJobGroup(TaskHelper):
         elif verbosity == 1:
             return self.status_verbosity1()
         elif verbosity >= 2:
-            return self.status_verbosity2(all_subtasks)
+            return self.status_verbosity2(all_tests)
 
         raise RuntimeError(f"Unknown verbosity {verbosity}")
 
@@ -386,46 +386,46 @@ class SubtaskJobGroup(TaskHelper):
 
     def status_verbosity1(self) -> str:
         max_sub_name_len = max(
-            len(subtask.name) for subtask in self._env.config.subtasks.values()
+            len(test.name) for test in self._env.config.tests.values()
         )
         max_sub_points_len = max(
             len(self._format_points(sub.points))
-            for sub in self._env.config.subtasks.values()
+            for sub in self._env.config.tests.values()
         )
 
         return right_aligned_text(
-            f"{self.subtask.name:<{max_sub_name_len}}  "
+            f"{self.test.name:<{max_sub_name_len}}  "
             f"{self._format_points(self.points):<{max_sub_points_len}}  "
             f"{self._predecessor_summary()}{self._verdict_marks(self.new_jobs)}",
             f"slowest {self.slowest_time:.2f}s",
             offset=-2,
         )
 
-    def status_verbosity2(self, all_subtasks: list["SubtaskJobGroup"]):
-        def subtask_name(num: int) -> str:
-            return self._env.config.subtasks[num].name
+    def status_verbosity2(self, all_tests: list["TestJobGroup"]):
+        def test_name(num: int) -> str:
+            return self._env.config.tests[num].name
 
         text = ""
         max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
-        subtask_info = (
+        test_info = (
             right_aligned_text(
-                f"{self.subtask.name}: {self._format_points(self.points)}/{self._format_points(self.subtask.points)}",
+                f"{self.test.name}: {self._format_points(self.points)}/{self._format_points(self.test.points)}",
                 f"slowest {self.slowest_time:.2f}s",
                 offset=-2,
             )
             + "\n"
         )
-        text += self._env.colored(subtask_info, "magenta")
+        text += self._env.colored(test_info, "magenta")
 
         max_pred_name_len = max(
-            (len(subtask_name(pred)) for pred in self.subtask.all_predecessors),
+            (len(test_name(pred)) for pred in self.test.all_predecessors),
             default=0,
         )
-        for pred in self.subtask.all_predecessors:
-            pred_group = all_subtasks[pred]
+        for pred in self.test.all_predecessors:
+            pred_group = all_tests[pred]
             text += right_aligned_text(
                 tab(
-                    f"Predecessor {pad(subtask_name(pred) + ':', max_pred_name_len + 1)}  "
+                    f"Predecessor {pad(test_name(pred) + ':', max_pred_name_len + 1)}  "
                     f"{pred_group.status_verbosity0()}"
                 ),
                 f"slowest {pred_group.slowest_time:.2f}s",
@@ -433,7 +433,7 @@ class SubtaskJobGroup(TaskHelper):
             )
             text += "\n"
 
-        if len(self.subtask.all_predecessors) and any(
+        if len(self.test.all_predecessors) and any(
             map(lambda j: j.result, self.new_jobs)
         ):
             text += "\n"
@@ -442,7 +442,7 @@ class SubtaskJobGroup(TaskHelper):
             if job.result is not None:
                 input_verdict = tab(
                     f"{job.input.name:<{max_inp_name_len}} "
-                    f"({self._format_points(job.result.points(self._env, self.subtask.points))}): "
+                    f"({self._format_points(job.result.points(self._env, self.test.points))}): "
                     f"{job.verdict_text()}"
                 )
                 text += right_aligned_text(
@@ -453,7 +453,7 @@ class SubtaskJobGroup(TaskHelper):
         return text
 
     def definitive(self, expected_str: str) -> bool:
-        """Checks whether subtask jobs have resulted in outcome that cannot be changed."""
+        """Checks whether test jobs have resulted in outcome that cannot be changed."""
         if self._env.all_inputs:
             return False
 
@@ -463,10 +463,10 @@ class SubtaskJobGroup(TaskHelper):
         return self._as_expected(expected_str)[1]
 
     def as_expected(self, expected_str: str) -> None:
-        """Checks this subtask resulted as expected. Raises PipelineItemFailure otherwise."""
+        """Checks this test resulted as expected. Raises PipelineItemFailure otherwise."""
         ok, _, breaker = self._as_expected(expected_str)
         if not ok:
-            msg = f"{self.subtask.name} did not result as expected: '{expected_str}'"
+            msg = f"{self.test.name} did not result as expected: '{expected_str}'"
             if breaker is not None:
                 msg += f"\n{tab(breaker.message())}"
             raise PipelineItemFailure(msg)
@@ -474,7 +474,7 @@ class SubtaskJobGroup(TaskHelper):
     def _as_expected(self, expected_str: str) -> tuple[bool, bool, Optional[RunJudge]]:
         """
         Returns tuple:
-            - whether subtask jobs have resulted as expected
+            - whether test jobs have resulted as expected
             - whether the result is definitive (cannot be changed)
             - a job that makes the result different than expected (if there is one particular)
         """
