@@ -55,7 +55,7 @@ class ConfigSectionDescription:
 
     def similarity(self, section: str) -> int:
         if self.similarity_function is None:
-            return 5 * (self.section != section)
+            return 5 if self.section != section else 0
         else:
             return self.similarity_function(self.section, section)
 
