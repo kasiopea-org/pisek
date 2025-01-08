@@ -30,7 +30,7 @@ from pisek.utils.text import tab
 
 from .config_errors import TaskConfigError, TaskConfigParsingError
 from .update_config import update_config
-from .did_you_mean import ConfigKeysHelper
+from .config_description import ConfigKeysHelper
 
 GLOBAL_DEFAULTS = str(files("pisek").joinpath("config/global-defaults"))
 V2_DEFAULTS = {
@@ -79,8 +79,6 @@ class ConfigHierarchy:
 
         self._load_config(os.path.join(task_path, CONFIG_FILENAME), info)
         self._load_config(GLOBAL_DEFAULTS, False)
-
-        self._used_keys: dict[str, set[str]] = defaultdict(set)
 
     def _load_config(self, path: str, info: bool = True) -> None:
         self._config_paths.append(path)
@@ -149,13 +147,6 @@ class ConfigHierarchy:
     def get_from_candidates(
         self, candidates: Iterable[tuple[str, str | None]]
     ) -> ConfigValue:
-        for section, key in candidates:
-            if key is None:
-                # Defaultdict, so we are creating the section set
-                self._used_keys[section]
-            else:
-                self._used_keys[section].add(key)
-
         unset: bool = False
         for section, key in candidates:
             for config_path, config in zip(self._config_paths, self._configs):
@@ -200,22 +191,24 @@ class ConfigHierarchy:
         TaskConfigError
             If unused sections or keys are present.
         """
-        IGNORED_KEYS = defaultdict(set, {"task": {"version", "use"}})
         self._config_helper = ConfigKeysHelper()
         for section in self._configs[0].sections():
-            if section not in self._used_keys:
+            dist, r_section = self._config_helper.find_section(section)
+            if dist != 0:
                 raise TaskConfigError(
                     f"Unexpected section [{section}] in config. "
-                    f"(Did you mean [{self._config_helper.find_section(section)}]?)"
+                    f"(Did you mean [{r_section}]?)"
                 )
             for key in self._configs[0][section].keys():
-                if key in IGNORED_KEYS[section]:
-                    continue
-                if key not in self._used_keys[section]:
-                    help_msg = self._help_invalid_key(section, key)
+                dist, r_section, r_key = self._config_helper.find_key(
+                    section, key, self
+                )
+                if dist != 0:
                     raise TaskConfigError(
-                        f"Unexpected key '{key}' in section [{section}] of config."
-                        + (f" {help_msg}" if help_msg else "")
+                        f"Unexpected key '{key}' in section [{section}] of config. "
+                        f"(Did you mean '{r_key}'"
+                        + (f" in section [{r_section}]" if section != r_section else "")
+                        + "?)"
                     )
 
     def check_todos(self) -> bool:
@@ -226,14 +219,3 @@ class ConfigHierarchy:
                     return True
 
         return False
-
-    def _help_invalid_key(self, section: str, key: str) -> str:
-        guess = self._config_helper.find_key(section, key, self)
-        if guess is None:
-            return ""
-
-        return (
-            f"(Did you mean '{guess[1]}'"
-            + (f" in section [{guess[0]}]" if section != guess[0] else "")
-            + "?)"
-        )
