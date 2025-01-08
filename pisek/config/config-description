@@ -69,6 +69,7 @@ points_below=
 #!if solution_(.*) points=X
 
 tests=
+subtasks=
 
 [all_solutions]
 source=
@@ -77,6 +78,7 @@ points=
 points_above=
 points_below=
 tests=
+subtasks=
 stub=
 headers=
 
