@@ -68,7 +68,7 @@ points_above=
 points_below=
 #!if solution_(.*) points=X
 
-subtasks=
+tests=
 
 [all_solutions]
 source=
@@ -76,7 +76,7 @@ primary=
 points=
 points_above=
 points_below=
-subtasks=
+tests=
 stub=
 headers=
 
@@ -126,9 +126,9 @@ input_max_size=
 output_max_size=
 
 [checks]
-solution_for_each_subtask=
+solution_for_each_test=
 no_unused_inputs=
-all_inputs_in_last_subtask=
+all_inputs_in_last_test=
 generator_respects_seed=
 
 [cms]

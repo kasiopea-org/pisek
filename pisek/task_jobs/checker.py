@@ -63,22 +63,20 @@ class CheckerJob(ProgramsJob):
         env: Env,
         checker: TaskPath,
         input_: InputPath,
-        subtask: int,
+        test: int,
         **kwargs,
     ):
-        super().__init__(
-            env=env, name=f"Check {input_:n} on subtask {subtask}", **kwargs
-        )
+        super().__init__(env=env, name=f"Check {input_:n} on test {test}", **kwargs)
         self.checker = checker
-        self.subtask = subtask
+        self.test = test
         self.input = input_
-        self.log_file = input_.to_log(f"{checker.name}{subtask}")
+        self.log_file = input_.to_log(f"{checker.name}{test}")
 
     def _check(self) -> RunResult:
         return self._run_program(
             ProgramType.checker,
             self.checker,
-            args=[str(self.subtask)],
+            args=[str(self.test)],
             stdin=self.input,
             stderr=self.log_file,
         )
@@ -87,7 +85,7 @@ class CheckerJob(ProgramsJob):
         result = self._check()
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"Checker failed on {self.input:p} (subtask {self.subtask}):",
+                f"Checker failed on {self.input:p} (test {self.test}):",
                 result,
             )
         return result

@@ -64,7 +64,7 @@ class SolutionResult(ABC):
     judge_rr: Optional[RunResult]
 
     @abstractmethod
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
+    def points(self, env: "Env", test_points: int) -> Decimal:
         pass
 
     def mark(self) -> str:
@@ -79,8 +79,8 @@ class RelativeSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     relative_points: Decimal
 
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
-        return (self.relative_points * subtask_points).quantize(
+    def points(self, env: "Env", test_points: int) -> Decimal:
+        return (self.relative_points * test_points).quantize(
             Decimal("0.1") ** env.config.score_precision
         )
 
@@ -98,7 +98,7 @@ class AbsoluteSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     absolute_points: Decimal
 
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
+    def points(self, env: "Env", test_points: int) -> Decimal:
         return self.absolute_points
 
     def mark(self) -> str:
@@ -174,7 +174,7 @@ def specific_verdict(res: Verdict, verdict: Verdict) -> bool:
 # Specifies how expected str should be interpreted
 # First function must be true for all
 # Second function must be true for any
-SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
+TEST_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
     "1": (verdict_1point, verdict_always),
     "0": (verdict_always, verdict_0points),
     "X": (verdict_always, verdict_always),

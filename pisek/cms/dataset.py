@@ -95,7 +95,7 @@ def create_dataset(
 def get_group_score_parameters(config: TaskConfig) -> list[tuple[int, str]]:
     params = []
 
-    for subtask in config.subtasks.values():
+    for subtask in config.tests.values():
         globs = map(strip_input_extention, subtask.all_globs)
         params.append((subtask.points, globs_to_regex(globs)))
 

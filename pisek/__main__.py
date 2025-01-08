@@ -231,7 +231,7 @@ def main(argv):
         "--bundle",
         "-b",
         action="store_true",
-        help="don't group inputs by subtask",
+        help="don't group inputs by test",
     )
     parser_visualize.add_argument(
         "--solutions",

@@ -120,9 +120,7 @@ class TestcaseInfoMixin(JobManager):
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
-    def _testcase_info_jobs(
-        self, testcase_info: TestcaseInfo, subtask: int
-    ) -> list[Job]:
+    def _testcase_info_jobs(self, testcase_info: TestcaseInfo, test: int) -> list[Job]:
         seeds: list[Optional[int]]
         if testcase_info.seeded:
             seeds = []
@@ -138,13 +136,13 @@ class TestcaseInfoMixin(JobManager):
         self._gen_inputs_job = {}
 
         for i, seed in enumerate(seeds):
-            if self._skip_testcase(testcase_info, seed, subtask):
+            if self._skip_testcase(testcase_info, seed, test):
                 continue
 
             self.inputs.add(testcase_info.input_path(self._env, seed))
 
-            inp_jobs = self._generate_input_jobs(testcase_info, seed, subtask, i == 0)
-            out_jobs = self._solution_jobs(testcase_info, seed, subtask)
+            inp_jobs = self._generate_input_jobs(testcase_info, seed, test, i == 0)
+            out_jobs = self._solution_jobs(testcase_info, seed, test)
             if seed in self._gen_inputs_job and len(out_jobs) > 0:
                 out_jobs[0].add_prerequisite(self._gen_inputs_job[seed])
 
@@ -152,14 +150,14 @@ class TestcaseInfoMixin(JobManager):
 
         if self._env.config.checks.generator_respects_seed and testcase_info.seeded:
             jobs += self._respects_seed_jobs(
-                testcase_info, cast(list[int], seeds), subtask
+                testcase_info, cast(list[int], seeds), test
             )
         return jobs
 
     def _skip_testcase(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
-        return not self._env.config.subtasks[subtask].new_in_subtask(
+        return not self._env.config.tests[test].new_in_test(
             testcase_info.input_path(self._env, seed).name
         )
 
@@ -167,7 +165,7 @@ class TestcaseInfoMixin(JobManager):
         self,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
-        subtask: int,
+        test: int,
         test_determinism: bool,
     ) -> list[Job]:
         jobs: list[Job] = []
@@ -194,13 +192,13 @@ class TestcaseInfoMixin(JobManager):
 
         jobs += self._check_input_jobs(input_path)
 
-        if self._env.config.checker is not None and subtask > 0:
+        if self._env.config.checker is not None and test > 0:
             jobs.append(
                 check_input := CheckerJob(
                     self._env,
                     self._env.config.checker,
                     input_path,
-                    subtask,
+                    test,
                 )
             )
             check_input.add_prerequisite(gen_inp)
@@ -218,19 +216,19 @@ class TestcaseInfoMixin(JobManager):
         return gen_inp
 
     def _solution_jobs(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> list[Job]:
         return []
 
     def _respects_seed_jobs(
-        self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
+        self, testcase_info: TestcaseInfo, seeds: list[int], test: int
     ) -> list[Job]:
         assert (
             testcase_info.generation_mode == TestcaseGenerationMode.generated
             and testcase_info.seeded
         )
 
-        if not self._env.config.subtasks[subtask].new_in_subtask(
+        if not self._env.config.tests[test].new_in_test(
             testcase_info.input_path(self._env, seeds[0]).name
         ):
             return []

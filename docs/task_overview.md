@@ -11,14 +11,14 @@ There are several task components the author needs to write.
 The task statement is there for contestant to read.
 Pisek doesn't handle task statements, so you are free to write them however you want.
 
-### Subtasks
+### Tests
 
-Pisek however does need to know about subtasks. Those usually are some additional restrictions
-on the task statements to allow weaker solutions to get some points. These can be lower limits
-for slower solutions, or special cases of the original task statement.
+Pisek however does need to know about tests (groups of testcases). Those usually are
+some additional restrictions on the task statements to allow weaker solutions to get some points.
+These can be lower limits for slower solutions, or special cases of the original task statement.
 
-Some tasks have only one subtask (ICPC tasks) while others have many (IOI tasks).
-Subtasks need to be entered in the config.
+Some tasks have only one test (i.e. ICPC tasks) while others have many (IOI tasks).
+Tests need to be entered in the config.
 
 ### Solution
 

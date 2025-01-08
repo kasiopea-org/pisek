@@ -71,10 +71,10 @@ The generator should generate all input files to this directory. The generator m
 ## Opendata-v1
 The generator is run:
 ```
-./gen [subtask] [seed]
+./gen [test] [seed]
 ```
 
-The generator should generate the input for this subtask to its stdout. The generator must be deterministic
+The generator should generate the input for this test to its stdout. The generator must be deterministic
 and respect the given seed.
 
-(Please note that the generator can generate only one input for each subtask.)
+(Please note that the generator can generate only one input for each test.)

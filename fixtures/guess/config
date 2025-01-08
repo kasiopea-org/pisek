@@ -23,7 +23,7 @@ stub=src/stub
 headers=src/guess.h
 
 [test01]
-name=Subtask A
+name=Test A
 points=10
 in_globs=*.in
 
@@ -35,12 +35,12 @@ sec_solve_time_limit=0.2
 [solution_solve]
 primary=yes
 points=10
-subtasks=11
+tests=11
 
 [solution_solve_subopt]
 points_above=5
-subtasks=1P
+tests=1P
 
 [solution_solve_0b]
 points=0
-subtasks=1W
+tests=1W

@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Nacte ze stdin vstupy ulohy a zkontroluje jejich spravnost"
     )
-    parser.add_argument("subtask", type=int, help="subtask (indexovany od 1)")
+    parser.add_argument("test", type=int, help="test (indexovany od 1)")
     args = parser.parse_args()
-    main(args.subtask - 1)
+    main(args.test - 1)
     expect_eof()

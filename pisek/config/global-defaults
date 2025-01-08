@@ -34,7 +34,7 @@ primary=no
 points=X
 points_above=X
 points_below=X
-subtasks=@auto
+tests=@auto
 stub=
 headers=
 
@@ -79,9 +79,9 @@ input_max_size=50
 output_max_size=10
 
 [checks]
-solution_for_each_subtask=off
+solution_for_each_test=off
 no_unused_inputs=on
-all_inputs_in_last_subtask=off
+all_inputs_in_last_test=off
 generator_respects_seed=on
 
 [cms]
