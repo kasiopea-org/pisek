@@ -57,7 +57,7 @@ predecessors=
 #!regex
 #!default all_solutions
 
-source=
+run=
 primary=
 
 points=
@@ -82,48 +82,107 @@ subtasks=
 stub=
 headers=
 
+[run_gen]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_gen_(.*)]
+#!regex
+#!default run_gen
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_checker]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_checker_(.*)]
+#!regex
+#!default checker
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_solution]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_primary_solution]
+#!default run_solution
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_secondary_solution]
+#!default run_solution
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_solution_(.*)]
+#!regex
+#!dynamic_default
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_judge]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
+[run_judge_(.*)]
+#!regex
+#!default checker
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
 [limits]
-tool_time_limit=
-tool_clock_mul=
-tool_clock_min=
-tool_mem_limit=
-tool_process_limit=
-
-in_gen_time_limit=
-in_gen_clock_mul=
-in_gen_clock_min=
-in_gen_mem_limit=
-in_gen_process_limit=
-
-checker_time_limit=
-checker_clock_mul=
-checker_clock_min=
-checker_mem_limit=
-checker_process_limit=
-
-judge_time_limit=
-judge_clock_mul=
-judge_clock_min=
-judge_mem_limit=
-judge_process_limit=
-
-solve_time_limit=
-solve_clock_mul=
-solve_clock_min=
-solve_mem_limit=
-solve_process_limit=
-
-sec_solve_time_limit=
-#!default limits solve_time_limit
-sec_solve_clock_mul=
-#!default limits solve_clock_mul
-sec_solve_clock_min=
-#!default limits solve_clock_min
-sec_solve_mem_limit=
-#!default limits solve_mem_limit
-sec_solve_process_limit=
-#!default limits solve_process_limit
-
 input_max_size=
 output_max_size=
 
