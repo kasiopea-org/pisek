@@ -33,12 +33,11 @@ from typing import (
 
 import subprocess
 from pisek.env.env import Env
-from pisek.config.task_config import ProgramLimits
-from pisek.utils.paths import TaskPath, OutputPath
+from pisek.config.task_config import RunConfig
+from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
-from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -46,22 +45,6 @@ P = ParamSpec("P")
 
 class TaskHelper:
     _env: Env
-
-    def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
-        """Get execution limits for given program type."""
-        limits: ProgramLimits = getattr(self._env.config.limits, program_type.name)
-        time_limit = limits.time_limit
-
-        if program_type in (ProgramType.solve, ProgramType.sec_solve):
-            if self._env.timeout is not None:
-                time_limit = self._env.timeout
-
-        return {
-            "time_limit": time_limit,
-            "clock_limit": limits.clock_limit(time_limit),
-            "mem_limit": limits.mem_limit,
-            "process_limit": limits.process_limit,
-        }
 
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath

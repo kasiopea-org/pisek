@@ -74,7 +74,6 @@ def create_dataset(
     files = FileCacher()
 
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
-    solution = config.solutions[config.primary_solution].raw_source
 
     for input_ in testcases:
         name = input_.name.removesuffix(".in")

@@ -61,7 +61,7 @@ class CheckerJob(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        checker: TaskPath,
+        checker: str,
         input_: InputPath,
         test: int,
         **kwargs,
@@ -70,7 +70,7 @@ class CheckerJob(ProgramsJob):
         self.checker = checker
         self.test = test
         self.input = input_
-        self.log_file = input_.to_log(f"{checker.name}{test}")
+        self.log_file = input_.to_log(f"{checker}{test}")
 
     def _check(self) -> RunResult:
         return self._run_program(

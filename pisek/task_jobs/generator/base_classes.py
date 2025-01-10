@@ -24,9 +24,7 @@ from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationM
 class GeneratorListInputs(ProgramsJob):
     """Lists all inputs generator can generate."""
 
-    def __init__(
-        self, env: Env, generator: TaskPath, *, name: str = "", **kwargs
-    ) -> None:
+    def __init__(self, env: Env, generator: str, *, name: str = "", **kwargs) -> None:
         self.generator = generator
         super().__init__(env=env, name=name or "List generator inputs", **kwargs)
 
@@ -41,7 +39,7 @@ class GenerateInput(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: TaskPath,
+        generator: str,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
@@ -72,7 +70,7 @@ class GeneratorTestDeterminism(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: TaskPath,
+        generator: str,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,

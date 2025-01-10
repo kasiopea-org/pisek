@@ -53,7 +53,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
 
     def _get_jobs(self) -> list[Job]:
         self.is_primary: bool = self._env.config.solutions[self.solution_label].primary
-        self._solution = self._env.config.solutions[self.solution_label].source
+        self._solution = self._env.config.solutions[self.solution_label].run
 
         jobs: list[Job] = []
 

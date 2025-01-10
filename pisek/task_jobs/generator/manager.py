@@ -77,7 +77,7 @@ class PrepareGenerator(TaskJobManager):
         return {"inputs": self._list_inputs.result}
 
 
-def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
+def list_inputs_job(env: Env, generator: str) -> GeneratorListInputs:
     LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
@@ -88,7 +88,7 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
@@ -100,7 +100,7 @@ def generate_input(
 
 
 def generator_test_determinism(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,

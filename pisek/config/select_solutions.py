@@ -23,10 +23,10 @@ class UnknownSolutions(TaskConfigError):
         self, unknown: list[str], solutions: dict[str, "SolutionConfig"]
     ) -> None:
         def format_solution(s: SolutionConfig) -> str:
-            if s.name == s.raw_source:
+            if s.name == s.run:
                 return s.name
             else:
-                return f"{s.name} (source: {s.raw_source})"
+                return f"{s.name} (run: {s.run})"
 
         unknown_text = "', '".join(unknown)
         sols_text = "\n".join(map(format_solution, solutions.values()))
@@ -37,14 +37,14 @@ class UnknownSolutions(TaskConfigError):
 
 
 def select_solution(config: TaskConfig, solution: str) -> Optional[str]:
-    """Tries to find solution by its name/source."""
+    """Tries to find solution by its name/run."""
     if solution in config.solutions:
         return solution
 
-    if (name := config.get_solution_by_source(solution)) is not None:
+    if (name := config.get_solution_by_run(solution)) is not None:
         return name
 
-    return config.get_solution_by_source(os.path.splitext(solution)[0])
+    return config.get_solution_by_run(os.path.splitext(solution)[0])
 
 
 def expand_solutions(config: TaskConfig, solutions: Optional[list[str]]) -> list[str]:

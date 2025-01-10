@@ -26,7 +26,7 @@ from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeter
 class PisekV1ListInputs(GeneratorListInputs):
     """Lists all inputs for pisek-v1 generator."""
 
-    def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
+    def __init__(self, env: Env, generator: str, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
@@ -100,10 +100,10 @@ class PisekV1ListInputs(GeneratorListInputs):
 
     def _create_inputs_list(self) -> None:
         self._run_result = self._run_program(
-            ProgramType.in_gen,
+            ProgramType.gen,
             self.generator,
             stdout=self._get_inputs_list_path(),
-            stderr=LogPath.generator_log(self.generator.name),
+            stderr=LogPath.generator_log(self.generator),
         )
         if self._run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(
@@ -122,7 +122,7 @@ class PisekV1ListInputs(GeneratorListInputs):
 class PisekV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
-    generator: TaskPath
+    generator: str
     seed: Optional[int]
     testcase_info: TestcaseInfo
     input_path: InputPath
@@ -140,11 +140,11 @@ class PisekV1GeneratorJob(ProgramsJob):
             args.append(f"{self.seed:x}")
 
         result = self._run_program(
-            ProgramType.in_gen,
+            ProgramType.gen,
             self.generator,
             args=args,
             stdout=self.input_path,
-            stderr=self.input_path.to_log(self.generator.name),
+            stderr=self.input_path.to_log(self.generator),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
