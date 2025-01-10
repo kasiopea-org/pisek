@@ -27,10 +27,9 @@ name=Test A
 points=10
 in_globs=*.in
 
-[limits]
+[run_solution]
 # Time limit (seconds) for the solutions
-solve_time_limit=0.2
-sec_solve_time_limit=0.2
+time_limit=0.2
 
 [solution_solve]
 primary=yes
