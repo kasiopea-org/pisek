@@ -613,11 +613,13 @@ class RunConfig(BaseEnv):
                 f"run_solution_{name.value}",
                 f"run_{program_type}",
                 "run_solution",
+                "run",
             ]
         else:
             default_sections = [
                 f"run_{program_type}_{name.value}",
                 f"run_{program_type}",
+                "run",
             ]
 
         section_name = configs.get_from_candidates(

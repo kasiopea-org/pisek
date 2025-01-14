@@ -82,7 +82,17 @@ subtasks=
 stub=
 headers=
 
+[run]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+
 [run_gen]
+#!default run
 exec=
 time_limit=
 clock_mul=
@@ -103,6 +113,7 @@ process_limit=
 args=
 
 [run_checker]
+#!default run
 exec=
 time_limit=
 clock_mul=
@@ -123,6 +134,7 @@ process_limit=
 args=
 
 [run_solution]
+#!default run
 exec=
 time_limit=
 clock_mul=
@@ -163,6 +175,7 @@ process_limit=
 args=
 
 [run_judge]
+#!default run
 exec=
 time_limit=
 clock_mul=
