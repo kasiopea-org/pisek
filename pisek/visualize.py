@@ -281,7 +281,7 @@ def visualize(
     if testing_log["source"] == "cms":
         limit_default = config.cms.time_limit
     else:
-        limit_default = config.limits.solve.time_limit
+        limit_default = config.solution_time_limit
     time_limit = limit_default if limit is None else limit
 
     filter_fn = show_all if filter == "all" else show_slowest

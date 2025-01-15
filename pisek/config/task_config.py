@@ -123,6 +123,7 @@ class TaskConfig(BaseEnv):
     solutions: dict[str, "SolutionConfig"]
 
     runs: dict[str, "RunConfig"]
+    solution_time_limit: float = Field(ge=0)  # Needed for visualization
 
     limits: "LimitsConfig"
 
@@ -287,6 +288,10 @@ class TaskConfig(BaseEnv):
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
         args["checks"] = ChecksConfig.load_dict(configs)
+
+        args["solution_time_limit"] = configs.get_from_candidates(
+            [("run_solution", "time_limit"), ("run", "time_limit")]
+        )
 
         return args
 

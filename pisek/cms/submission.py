@@ -133,17 +133,16 @@ def get_submission_of_digest(
 def resolve_solution(
     contest: Contest, env: Env, solution: SolutionConfig
 ) -> tuple[TaskPath, Language]:
-    source: str = solution.raw_source
+    source: TaskPath = env.config.solution_path(solution.name)
 
     for language_name in contest.languages:
         language: Language = get_language(language_name)
 
         for ext in language.source_extensions:
-            if source.endswith(ext):
-                file_path = TaskPath.solution_path(env, source)
-                return file_path, language
+            if source.name.endswith(ext):
+                return source, language
 
-            file_path = TaskPath.solution_path(env, source + ext)
+            file_path = source.replace_suffix(ext)
 
             if path.isfile(file_path.path):
                 return file_path, language

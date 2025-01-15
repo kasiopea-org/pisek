@@ -141,7 +141,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        TaskPath.executable_path(env, config.out_judge.name).path,
+        TaskPath.executable_path(env, config.out_judge).path,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))

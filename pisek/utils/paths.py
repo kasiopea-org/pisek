@@ -93,10 +93,6 @@ class TaskPath(yaml.YAMLObject):
         return env.config.static_subdir.join(*path)
 
     @staticmethod
-    def solution_path(env: "Env", *path: str) -> "TaskPath":
-        return env.config.solutions_subdir.join(*path)
-
-    @staticmethod
     def executable_path(env: "Env", *path: str) -> "TaskPath":
         return TaskPath(BUILD_DIR, *path)
 
