@@ -62,11 +62,9 @@ class PrepareGenerator(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         assert self._env.config.in_gen is not None
-        generator = self._env.config.in_gen
-
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, generator),
-            list_inputs := list_inputs_job(self._env, generator),
+            compile_gen := Compile(self._env, self._env.config.in_gen_path),
+            list_inputs := list_inputs_job(self._env, self._env.config.in_gen),
         ]
         list_inputs.add_prerequisite(compile_gen)
         self._list_inputs = list_inputs

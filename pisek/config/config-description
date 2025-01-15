@@ -4,7 +4,6 @@ name=
 use=
 task_type=
 score_precision=
-solutions_subdir=
 static_subdir=
 
 [tests]
@@ -90,6 +89,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_gen]
 #!default run
@@ -100,6 +100,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_gen_(.*)]
 #!regex
@@ -111,6 +112,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_checker]
 #!default run
@@ -121,6 +123,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_checker_(.*)]
 #!regex
@@ -132,6 +135,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_solution]
 #!default run
@@ -142,6 +146,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_primary_solution]
 #!default run_solution
@@ -152,6 +157,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_secondary_solution]
 #!default run_solution
@@ -162,6 +168,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_solution_(.*)]
 #!regex
@@ -173,6 +180,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_judge]
 #!default run
@@ -183,6 +191,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [run_judge_(.*)]
 #!regex
@@ -194,6 +203,7 @@ clock_min=
 mem_limit=
 process_limit=
 args=
+subdir=
 
 [limits]
 input_max_size=

@@ -95,7 +95,6 @@ class TaskConfig(BaseEnv):
     task_type: TaskType
     score_precision: int = Field(ge=0)
 
-    solutions_subdir: TaskPathFromStr
     static_subdir: TaskPathFromStr
 
     in_gen: OptionalStr
@@ -146,6 +145,37 @@ class TaskConfig(BaseEnv):
     def input_globs(self) -> list[str]:
         return sum((sub.all_globs for sub in self.tests.values()), start=[])
 
+    def _full_path(self, program_type: ProgramType, program: str) -> TaskPath:
+        return TaskPath(self.runs[f"{program_type}_{program}"].subdir, program)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def in_gen_path(self) -> TaskPath:
+        assert self.in_gen is not None
+        return self._full_path(ProgramType.gen, self.in_gen)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def checker_path(self) -> TaskPath:
+        assert self.checker is not None
+        return self._full_path(ProgramType.checker, self.checker)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def out_judge_path(self) -> TaskPath:
+        assert self.out_judge is not None
+        return self._full_path(ProgramType.judge, self.out_judge)
+
+    def solution_path(self, solution_label: str) -> TaskPath:
+        if solution_label == self.primary_solution:
+            return self._full_path(
+                ProgramType.primary_solution, self.solutions[solution_label].run
+            )
+        else:
+            return self._full_path(
+                ProgramType.secondary_solution, self.solutions[solution_label].run
+            )
+
     @computed_field  # type: ignore[misc]
     @property
     def primary_solution(self) -> str:
@@ -176,7 +206,6 @@ class TaskConfig(BaseEnv):
             ("task", "name"),
             ("task", "task_type"),
             ("task", "score_precision"),
-            ("task", "solutions_subdir"),
             ("task", "static_subdir"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
@@ -597,6 +626,7 @@ class RunConfig(BaseEnv):
     process_limit: int = Field(ge=0)  # [1]
     # limit=0 means unlimited
     args: ListStr
+    subdir: str
 
     def clock_limit(self, override_time_limit: Optional[float] = None) -> float:
         tl = override_time_limit if override_time_limit is not None else self.time_limit

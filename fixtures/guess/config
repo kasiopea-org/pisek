@@ -7,7 +7,6 @@ name=guess
 # (generator doesn't require seed)
 use=communication
 
-solutions_subdir=solutions/
 version=v3
 
 [tests]
@@ -30,6 +29,7 @@ in_globs=*.in
 [run_solution]
 # Time limit (seconds) for the solutions
 time_limit=0.2
+subdir=solutions/
 
 [solution_solve]
 primary=yes

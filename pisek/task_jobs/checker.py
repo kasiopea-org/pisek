@@ -43,7 +43,7 @@ class CheckerManager(TaskJobManager):
                 )
             return []
 
-        return [Compile(self._env, self._env.config.checker)]
+        return [Compile(self._env, self._env.config.checker_path)]
 
     def _get_status(self) -> str:
         if self.skipped_checker:

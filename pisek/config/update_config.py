@@ -44,8 +44,6 @@ def maybe_delete_key(config: ConfigParser, section: str, key: str):
 
 
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
-    config["task"]["version"] = "v2"
-
     maybe_rename_key(config, "task", "samples_subdir", "static_subdir", "static_subdir")
     maybe_rename_key(config, "tests", "solution_manager", "stub", "stub")
 
@@ -260,6 +258,8 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
             maybe_rename_key(config, section, section, "subtasks", "tests")
             maybe_rename_key(config, section, section, "source", "run")
 
+    maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
+
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
 CURRENT_VERSIONS = {"v2": ("v3", update_to_v3)}
@@ -294,3 +294,5 @@ def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> N
 
     if version != NEWEST_VERSION:
         raise RuntimeError("Config updating failed.")
+
+    config["task"]["version"] = NEWEST_VERSION

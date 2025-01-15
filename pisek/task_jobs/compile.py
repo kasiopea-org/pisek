@@ -32,14 +32,14 @@ class Compile(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        program: str,
+        program: TaskPath,
         use_stub: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Compile {program}", **kwargs)
+        super().__init__(env=env, name=f"Compile {program:p}", **kwargs)
         self.program = program
         self.use_stub = use_stub
-        self.target = TaskPath.executable_file(self._env, program)
+        self.target = TaskPath.executable_file(self._env, program.path)
 
         self.stub = None
         self.headers = []
@@ -76,7 +76,7 @@ class Compile(ProgramsJob):
 
     def _run(self):
         """Compiles program."""
-        program = self._resolve_extension(TaskPath(self.program))
+        program = self._resolve_extension(self.program)
         self.makedirs(TaskPath.executable_path(self._env, "."))
 
         _, ext = os.path.splitext(program.path)
@@ -87,7 +87,7 @@ class Compile(ProgramsJob):
             raise PipelineItemFailure(f"No rule for compiling {program:p}.")
 
         self._access_file(program)
-        self._access_file(self._load_compiled(TaskPath(self.program)))
+        self._access_file(self._load_compiled(self.program))
 
     def _compile_cpp(self, program: TaskPath):
         cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]

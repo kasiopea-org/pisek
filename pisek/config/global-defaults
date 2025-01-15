@@ -2,7 +2,6 @@
 version=v3
 task_type=batch
 score_precision=0
-solutions_subdir=.
 static_subdir=.
 
 [tests]
@@ -46,6 +45,7 @@ clock_min=1
 mem_limit=0
 process_limit=1
 args=
+subdir=
 
 [limits]
 input_max_size=50

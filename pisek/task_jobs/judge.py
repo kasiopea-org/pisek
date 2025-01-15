@@ -60,7 +60,7 @@ class JudgeManager(TaskJobManager):
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
                 )
-            jobs.append(comp := Compile(self._env, self._env.config.out_judge))
+            jobs.append(comp := Compile(self._env, self._env.config.out_judge_path))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
         elif self._env.config.out_check == OutCheck.shuffle:
