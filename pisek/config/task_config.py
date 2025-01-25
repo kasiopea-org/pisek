@@ -191,8 +191,8 @@ class TaskConfig(BaseEnv):
         # TODO
         return self.solutions[self.primary_solution].run
 
-    def get_solution_by_run(self, source: str) -> Optional[str]:
-        sources = (name for name, sol in self.solutions.items() if sol.run == source)
+    def get_solution_by_run(self, run: str) -> Optional[str]:
+        sources = (name for name, sol in self.solutions.items() if sol.run == run)
         return next(sources, None)
 
     def __init__(self, **kwargs):
