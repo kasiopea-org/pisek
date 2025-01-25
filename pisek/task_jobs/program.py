@@ -153,7 +153,7 @@ class ProgramsJob(TaskJob):
 
         self._load_executable(
             executable=executable,
-            args=args + run.args,
+            args=run.args + args,
             time_limit=run.time_limit if timeout is None else timeout,
             clock_limit=run.clock_limit(timeout),
             mem_limit=run.mem_limit,

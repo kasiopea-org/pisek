@@ -248,8 +248,8 @@ headers=src/a-plus-b.h
 exec=@auto
 # Filename of the program to execute (without suffix)
 # @auto expands to {program} (default)
-args=
-# Additional arguments for the program. Appended at the end of the normally given arguments.
+args=--slow
+# Additional arguments for the program. (Given before any other arguments.)
 # (defaults to empty)
 subdir=
 # Subdirectory from where to look for the program (relative to the task directory)
