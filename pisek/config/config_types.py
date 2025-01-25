@@ -50,12 +50,14 @@ class DataFormat(StrEnum):
 
 
 class ProgramType(StrEnum):
-    tool = auto()
-    in_gen = auto()
+    gen = auto()
     checker = auto()
-    solve = auto()
-    sec_solve = auto()
+    primary_solution = auto()
+    secondary_solution = auto()
     judge = auto()
+
+    def is_solution(self) -> bool:
+        return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
 
 class CMSFeedbackLevel(StrEnum):

@@ -158,9 +158,8 @@ class SanitizeAbstract(ProgramsJob):
     """Abstract job that has method for file sanitization."""
 
     def _sanitize(self, input_: TaskPath, output: TaskPath) -> None:
-        result = self._run_program(
-            ProgramType.tool,
-            TaskPath.executable_path(self._env, "text-preproc"),
+        result = self._run_tool(
+            "text-preproc",
             stdin=input_,
             stdout=output,
         )

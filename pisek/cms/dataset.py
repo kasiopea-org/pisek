@@ -74,7 +74,6 @@ def create_dataset(
     files = FileCacher()
 
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
-    solution = config.solutions[config.primary_solution].raw_source
 
     for input_ in testcases:
         name = input_.name.removesuffix(".in")
@@ -142,7 +141,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        TaskPath.executable_path(env, config.out_judge.name).path,
+        TaskPath.executable_path(env, config.out_judge).path,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))

@@ -53,11 +53,15 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
 
     def _get_jobs(self) -> list[Job]:
         self.is_primary: bool = self._env.config.solutions[self.solution_label].primary
-        self._solution = self._env.config.solutions[self.solution_label].source
+        self._solution = self._env.config.solutions[self.solution_label].run
 
         jobs: list[Job] = []
 
-        jobs.append(compile_ := Compile(self._env, self._solution, True))
+        jobs.append(
+            compile_ := Compile(
+                self._env, self._env.config.solution_path(self.solution_label), True
+            )
+        )
         self._compile_job = compile_
 
         self._judges: dict[TaskPath, RunJudge] = {}

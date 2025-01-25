@@ -36,10 +36,10 @@ class Compile(ProgramsJob):
         use_stub: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Compile {program:n}", **kwargs)
+        super().__init__(env=env, name=f"Compile {program:p}", **kwargs)
         self.program = program
         self.use_stub = use_stub
-        self.target = TaskPath.executable_file(self._env, program.name)
+        self.target = TaskPath.executable_file(self._env, program.path)
 
         self.stub = None
         self.headers = []

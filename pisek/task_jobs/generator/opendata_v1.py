@@ -24,7 +24,7 @@ from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeter
 class OpendataV1ListInputs(GeneratorListInputs):
     """Lists all inputs for opendata-v1 generator - one for each test."""
 
-    def __init__(self, env: Env, generator: TaskPath, **kwargs) -> None:
+    def __init__(self, env: Env, generator: str, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
@@ -38,7 +38,7 @@ class OpendataV1ListInputs(GeneratorListInputs):
 class OpendataV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
-    generator: TaskPath
+    generator: str
     seed: Optional[int]
     testcase_info: TestcaseInfo
     input_path: InputPath
@@ -54,11 +54,11 @@ class OpendataV1GeneratorJob(ProgramsJob):
         test = int(self.testcase_info.name)
 
         result = self._run_program(
-            ProgramType.in_gen,
+            ProgramType.gen,
             self.generator,
             args=[str(test), f"{self.seed:x}"],
             stdout=self.input_path,
-            stderr=self.input_path.to_log(self.generator.name),
+            stderr=self.input_path.to_log(self.generator),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(

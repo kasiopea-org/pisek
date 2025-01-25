@@ -28,7 +28,7 @@ from pydantic import (
     model_validator,
 )
 import re
-from typing import Optional, Any, Annotated, Union
+from typing import Optional, Any, Annotated, Union, Mapping
 
 from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
@@ -73,13 +73,13 @@ OptionalShuffleMode = Annotated[
 MISSING_VALIDATION_CONTEXT = "Missing validation context."
 
 ValuesDict = dict[str, Union[str, "ValuesDict", dict[Any, "ValuesDict"]]]
-ConfigValuesDict = dict[
+ConfigValuesDict = Mapping[
     str, Union[ConfigValue, "ConfigValuesDict", dict[Any, "ConfigValuesDict"]]
 ]
 
 
 def _to_values(config_values_dict: ConfigValuesDict) -> ValuesDict:
-    def convert(what: ConfigValue | dict) -> str | dict:
+    def convert(what: ConfigValue | Mapping) -> str | dict:
         if isinstance(what, ConfigValue):
             return what.value
         else:
@@ -95,14 +95,13 @@ class TaskConfig(BaseEnv):
     task_type: TaskType
     score_precision: int = Field(ge=0)
 
-    solutions_subdir: TaskPathFromStr
     static_subdir: TaskPathFromStr
 
-    in_gen: OptionalTaskPathFromStr
+    in_gen: OptionalStr
     gen_type: GenType
-    checker: OptionalTaskPathFromStr
+    checker: OptionalStr
     out_check: OutCheck
-    out_judge: OptionalTaskPathFromStr
+    out_judge: OptionalStr
     judge_type: OptionalJudgeType
     judge_needs_in: Optional[bool]
     judge_needs_out: Optional[bool]
@@ -122,6 +121,9 @@ class TaskConfig(BaseEnv):
     tests: dict[int, "TestConfig"]
 
     solutions: dict[str, "SolutionConfig"]
+
+    runs: dict[str, "RunConfig"]
+    solution_time_limit: float = Field(ge=0)  # Needed for visualization
 
     limits: "LimitsConfig"
 
@@ -144,6 +146,37 @@ class TaskConfig(BaseEnv):
     def input_globs(self) -> list[str]:
         return sum((sub.all_globs for sub in self.tests.values()), start=[])
 
+    def _full_path(self, program_type: ProgramType, program: str) -> TaskPath:
+        return TaskPath(self.runs[f"{program_type}_{program}"].subdir, program)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def in_gen_path(self) -> TaskPath:
+        assert self.in_gen is not None
+        return self._full_path(ProgramType.gen, self.in_gen)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def checker_path(self) -> TaskPath:
+        assert self.checker is not None
+        return self._full_path(ProgramType.checker, self.checker)
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def out_judge_path(self) -> TaskPath:
+        assert self.out_judge is not None
+        return self._full_path(ProgramType.judge, self.out_judge)
+
+    def solution_path(self, solution_label: str) -> TaskPath:
+        if solution_label == self.primary_solution:
+            return self._full_path(
+                ProgramType.primary_solution, self.solutions[solution_label].run
+            )
+        else:
+            return self._full_path(
+                ProgramType.secondary_solution, self.solutions[solution_label].run
+            )
+
     @computed_field  # type: ignore[misc]
     @property
     def primary_solution(self) -> str:
@@ -152,15 +185,8 @@ class TaskConfig(BaseEnv):
         else:
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def primary_solution_file(self) -> str:
-        return self.solutions[self.primary_solution].raw_source
-
-    def get_solution_by_source(self, source: str) -> Optional[str]:
-        sources = (
-            name for name, sol in self.solutions.items() if sol.raw_source == source
-        )
+    def get_solution_by_run(self, run: str) -> Optional[str]:
+        sources = (name for name, sol in self.solutions.items() if sol.run == run)
         return next(sources, None)
 
     def __init__(self, **kwargs):
@@ -175,7 +201,6 @@ class TaskConfig(BaseEnv):
             ("task", "name"),
             ("task", "task_type"),
             ("task", "score_precision"),
-            ("task", "solutions_subdir"),
             ("task", "static_subdir"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
@@ -201,6 +226,8 @@ class TaskConfig(BaseEnv):
         args: dict[str, Any] = {
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
+        runs: dict[str, Any] = {}
+        args["runs"] = runs
 
         # Load judge specific keys
         for (task_type, out_check), key, default in OUT_CHECK_SPECIFIC_KEYS:
@@ -212,6 +239,15 @@ class TaskConfig(BaseEnv):
                 args[key] = ConfigValue(default, "_internal", "tests", key, True)
 
         section_names = configs.sections()
+
+        PROGRAMS = [
+            (ProgramType.gen, args["in_gen"]),
+            (ProgramType.checker, args["checker"]),
+            (ProgramType.judge, args["out_judge"]),
+        ]
+        for t, program in PROGRAMS:
+            if program:
+                runs |= TaskConfig.load_run(t, program, configs)
 
         # Load tests
         args["tests"] = tests = {}
@@ -228,15 +264,40 @@ class TaskConfig(BaseEnv):
         args["solutions"] = solutions = {}
         for section in section_names:
             if m := re.fullmatch(r"solution_(.+)", section.value):
-                solutions[m[1]] = SolutionConfig.load_dict(
+                sol = solutions[m[1]] = SolutionConfig.load_dict(
                     ConfigValue(m[1], section.config, section.section, None), configs
+                )
+                assert isinstance(sol["primary"], ConfigValue)
+                assert isinstance(sol["run"], ConfigValue)
+                runs |= TaskConfig.load_run(
+                    (
+                        ProgramType.primary_solution
+                        if sol["primary"].value == "yes"
+                        else ProgramType.secondary_solution
+                    ),
+                    sol["run"],
+                    configs,
                 )
 
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
         args["checks"] = ChecksConfig.load_dict(configs)
 
+        args["solution_time_limit"] = configs.get_from_candidates(
+            [("run_solution", "time_limit"), ("run", "time_limit")]
+        )
+
         return args
+
+    @staticmethod
+    def load_run(
+        program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
+    ) -> dict[str, ConfigValuesDict]:
+        return {
+            f"{program_type}_{name.value}": RunConfig.load_dict(
+                program_type, name, configs
+            )
+        }
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -273,9 +334,6 @@ class TaskConfig(BaseEnv):
                     "tokens_float_rel_error": self.tokens_float_rel_error,
                 },
             )
-
-        for sol_conf in self.solutions.values():
-            sol_conf.source = self.solutions_subdir.join(sol_conf.raw_source)
 
         primary = [name for name, sol in self.solutions.items() if sol.primary]
         if len(primary) > 1:
@@ -434,8 +492,7 @@ class SolutionConfig(BaseEnv):
     _section: str
     name: str
     primary: bool
-    raw_source: str
-    source: TaskPathFromStr
+    run: str
     points: MaybeInt
     points_above: MaybeInt
     points_below: MaybeInt
@@ -448,7 +505,7 @@ class SolutionConfig(BaseEnv):
     def load_dict(cls, name: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:
         KEYS = [
             "primary",
-            "source",
+            "run",
             "points",
             "points_above",
             "points_below",
@@ -460,6 +517,9 @@ class SolutionConfig(BaseEnv):
             )
             for key in KEYS
         }
+
+        if args["run"].value == "@auto":
+            args["run"].value = name.value
 
         # XXX: Backwards compatibility hack for v3
         # Delete this when finalizing config-v3
@@ -474,7 +534,6 @@ class SolutionConfig(BaseEnv):
         return {
             "_section": configs.get(name.section, None),
             "name": name,
-            "raw_source": args["source"],
             **args,
         }
 
@@ -496,7 +555,7 @@ class SolutionConfig(BaseEnv):
 
     @field_validator("primary", mode="before")
     @classmethod
-    def convert_yesno(cls, value: str, info: ValidationInfo) -> bool:
+    def convert_yesno(cls, value: str) -> bool:
         if value == "yes":
             return True
         elif value == "no":
@@ -505,13 +564,6 @@ class SolutionConfig(BaseEnv):
             "primary_invalid",
             "Must be one of (yes, no)",
         )
-
-    @field_validator("raw_source", mode="before")
-    @classmethod
-    def convert_auto(cls, value: str, info: ValidationInfo) -> str:
-        if value == "@auto":
-            value = info.data.get("name", "")
-        return value
 
     @field_validator("tests", mode="after")
     def validate_tests(cls, value, info: ValidationInfo):
@@ -560,17 +612,20 @@ class SolutionConfig(BaseEnv):
         return self
 
 
-class ProgramLimits(BaseEnv):
-    """Configuration of limits of one program type."""
+class RunConfig(BaseEnv):
+    """Configuration of running an program"""
 
-    _section: str = "limits"
+    _section: str
 
+    exec: TaskPathFromStr
     time_limit: float = Field(ge=0)  # [seconds]
     clock_mul: float = Field(ge=0)  # [1]
     clock_min: float = Field(ge=0)  # [seconds]
     mem_limit: int = Field(ge=0)  # [KB]
-    process_limit: int = Field(ge=0)
+    process_limit: int = Field(ge=0)  # [1]
     # limit=0 means unlimited
+    args: ListStr
+    subdir: str
 
     def clock_limit(self, override_time_limit: Optional[float] = None) -> float:
         tl = override_time_limit if override_time_limit is not None else self.time_limit
@@ -579,38 +634,55 @@ class ProgramLimits(BaseEnv):
         return max(tl * self.clock_mul, self.clock_min)
 
     @classmethod
-    def load_dict(cls, part: ProgramType, configs: ConfigHierarchy) -> ConfigValuesDict:
-        return {
-            limit: configs.get("limits", f"{part.name}_{limit}")
-            for limit in cls.model_fields
+    def load_dict(
+        cls, program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
+    ) -> ConfigValuesDict:
+        if program_type.is_solution():
+            default_sections = [
+                f"run_solution_{name.value}",
+                f"run_{program_type}",
+                "run_solution",
+                "run",
+            ]
+        else:
+            default_sections = [
+                f"run_{program_type}_{name.value}",
+                f"run_{program_type}",
+                "run",
+            ]
+
+        section_name = configs.get_from_candidates(
+            [(section, None) for section in default_sections]
+        )
+        args = {
+            key: configs.get_from_candidates(
+                [(section, key) for section in default_sections]
+            )
+            for key in cls.model_fields
         }
+        if args["exec"].value == "@auto":
+            args["exec"].value = name.value
+        return {"_section": section_name} | args
+
+    @field_validator("exec", mode="before")
+    @classmethod
+    def convert_auto(cls, value: str, info: ValidationInfo) -> str:
+        if value == "@auto":
+            value = info.data.get("name", "")
+        return value
 
 
 class LimitsConfig(BaseEnv):
-    """Configuration of limits for all program types."""
+    """Configuration of input and output size limits."""
 
     _section: str = "limits"
 
-    tool: ProgramLimits
-    in_gen: ProgramLimits
-    checker: ProgramLimits
-    solve: ProgramLimits
-    sec_solve: ProgramLimits
-    judge: ProgramLimits
     input_max_size: int
     output_max_size: int
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
-        args: dict[str, Any] = {}
-        for part in ProgramType:
-            args[part.name] = ProgramLimits.load_dict(part, configs)
-
-        for file_type in ("input", "output"):
-            key = f"{file_type}_max_size"
-            args[key] = configs.get("limits", key)
-
-        return args
+        return {key: configs.get("limits", key) for key in cls.model_fields}
 
 
 class CMSConfig(BaseEnv):

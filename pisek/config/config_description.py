@@ -51,6 +51,7 @@ class ConfigSectionDescription:
     def __init__(self, section: str) -> None:
         self.section = section
         self.defaults_to: list[str] = []
+        self.dynamic_default: bool = False
         self.similarity_function: Optional[Callable[[str, str], int]] = None
 
     def similarity(self, section: str) -> int:
@@ -68,6 +69,7 @@ class ConfigKeyDescription:
         self.section = section
         self.key = key
         self.defaults_to: list[tuple[str, str]] = []
+        self.dynamic_default: bool = False
         self.applicability_conditions: list[ApplicabilityCondition] = []
 
     def get(self, config: "ConfigHierarchy", section: str) -> str:
@@ -76,6 +78,8 @@ class ConfigKeyDescription:
         ).value
 
     def defaults(self) -> list[tuple[str, str]]:
+        if self.dynamic_default:
+            raise NotImplementedError("Dynamic defaulting not implemented")
         return self.defaults_to + [(d, self.key) for d in self.section.defaults_to]
 
     def similarity(self, key: str) -> int:
@@ -132,6 +136,15 @@ class ConfigKeysHelper:
                             if len(args) != 2:
                                 self._invalid_function_args(fun, args)
                             last_key.defaults_to.append((args[0], args[1]))
+                    elif fun == "dynamic_default":
+                        if last_key is None:
+                            if len(args) != 0:
+                                self._invalid_function_args(fun, args)
+                            section.dynamic_default = True
+                        else:
+                            if len(args) != 0:
+                                self._invalid_function_args(fun, args)
+                            last_key.dynamic_default = True
                     else:
                         raise ValueError(
                             f"invalid config-description function: '{fun}'"

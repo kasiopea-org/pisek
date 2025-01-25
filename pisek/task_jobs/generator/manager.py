@@ -62,11 +62,9 @@ class PrepareGenerator(TaskJobManager):
 
     def _get_jobs(self) -> list[Job]:
         assert self._env.config.in_gen is not None
-        generator = self._env.config.in_gen
-
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, generator),
-            list_inputs := list_inputs_job(self._env, generator),
+            compile_gen := Compile(self._env, self._env.config.in_gen_path),
+            list_inputs := list_inputs_job(self._env, self._env.config.in_gen),
         ]
         list_inputs.add_prerequisite(compile_gen)
         self._list_inputs = list_inputs
@@ -77,7 +75,7 @@ class PrepareGenerator(TaskJobManager):
         return {"inputs": self._list_inputs.result}
 
 
-def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
+def list_inputs_job(env: Env, generator: str) -> GeneratorListInputs:
     LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
@@ -88,7 +86,7 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
@@ -100,7 +98,7 @@ def generate_input(
 
 
 def generator_test_determinism(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,

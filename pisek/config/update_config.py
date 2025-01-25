@@ -44,8 +44,6 @@ def maybe_delete_key(config: ConfigParser, section: str, key: str):
 
 
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
-    config["task"]["version"] = "v2"
-
     maybe_rename_key(config, "task", "samples_subdir", "static_subdir", "static_subdir")
     maybe_rename_key(config, "tests", "solution_manager", "stub", "stub")
 
@@ -195,14 +193,36 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         elif task_type == "communication":
             config["tests"]["judge_type"] = "cms-communication"
 
-    if "limits" not in config:
-        config.add_section("limits")
-    for program_type in ProgramType:
-        config["limits"][f"{program_type}_clock_mul"] = "0"
-        config["limits"][f"{program_type}_clock_min"] = config.get(
-            "limits", f"{program_type}_clock_limit", fallback="360"
+    OLD_NAME = {
+        ProgramType.gen: "in_gen",
+        ProgramType.checker: "checker",
+        ProgramType.primary_solution: "solve",
+        ProgramType.secondary_solution: "sec_solve",
+        ProgramType.judge: "judge",
+    }
+
+    for new_program_type in ProgramType:
+        old_program_type = OLD_NAME[new_program_type]
+        if new_program_type == ProgramType.primary_solution:
+            section = "run_solution"
+        else:
+            section = f"run_{new_program_type}"
+
+        config.add_section(section)
+        config[section]["clock_mul"] = "0"
+        config[section]["clock_min"] = config.get(
+            "limits", f"{old_program_type}_clock_limit", fallback="360"
         )
-        maybe_delete_key(config, "limits", f"{program_type}_clock_limit")
+        maybe_delete_key(config, "limits", f"{old_program_type}_clock_limit")
+
+        for limit in ("time", "mem", "process"):
+            maybe_rename_key(
+                config,
+                "limits",
+                section,
+                f"{old_program_type}_{limit}_limit",
+                f"{limit}_limit",
+            )
 
     maybe_move_key(config, "stub", "tests", "all_solutions")
     maybe_move_key(config, "headers", "tests", "all_solutions")
@@ -236,6 +256,9 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
             maybe_delete_key(config, section, "file_name")
         if re.match(r"solution_(.+)", section):
             maybe_rename_key(config, section, section, "subtasks", "tests")
+            maybe_rename_key(config, section, section, "source", "run")
+
+    maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
@@ -271,3 +294,5 @@ def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> N
 
     if version != NEWEST_VERSION:
         raise RuntimeError("Config updating failed.")
+
+    config["task"]["version"] = NEWEST_VERSION
