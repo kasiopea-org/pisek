@@ -44,9 +44,16 @@ def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_
         all_accessed_files: set[str] = set()
         for i in range(env.repeat):
             env.iteration = i  # XXX: Dirty trick
-            if i != 0:
-                print()
-                print(ColorSettings.colored(TARGET_LINE_WIDTH * "-", "cyan"))
+            if env.repeat > 1:
+                if i != 0:
+                    print()
+                text = f" Run {i+1}/{env.repeat} "
+                text = (
+                    ((TARGET_LINE_WIDTH - len(text)) // 2) * "-"
+                    + text
+                    + ((TARGET_LINE_WIDTH - len(text) + 1) // 2) * "-"
+                )
+                print(ColorSettings.colored(text, "cyan"))
                 print()
 
             pipeline = pipeline_class(env.fork())
