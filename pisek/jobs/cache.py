@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
 from typing import Any, Iterable
 import os
 import pickle
@@ -27,6 +28,7 @@ from pisek.utils.paths import BUILD_DIR
 CACHE_VERSION_FILE = os.path.join(BUILD_DIR, "_pisek_cache_version")
 CACHE_CONTENT_FILE = os.path.join(BUILD_DIR, "_pisek_cache")
 SAVED_LAST_SIGNATURES = 5
+CACHE_SAVE_INTERVAL = 1  # seconds
 
 
 class CacheEntry:
@@ -66,6 +68,7 @@ class Cache:
         with open(CACHE_VERSION_FILE, "w") as f:
             f.write(f"{__version__}\n")
         self.cache: dict[str, list[CacheEntry]] = {}
+        self.last_save = time.time()
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
@@ -77,7 +80,11 @@ class Cache:
         self.cache[cache_entry.name] = self.cache[cache_entry.name][
             -SAVED_LAST_SIGNATURES:
         ]
-        self.export()
+
+        # Throttling saving saves time massively
+        if time.time() - self.last_save > CACHE_SAVE_INTERVAL:
+            self.export()
+            self.last_save = time.time()
 
     def __contains__(self, name: str) -> bool:
         return name in self.cache
