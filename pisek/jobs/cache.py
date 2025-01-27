@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Iterable, TextIO
+from typing import Any, Iterable
 import os
 import pickle
-import yaml
 
 from pisek.version import __version__
 from pisek.utils.text import eprint
@@ -30,40 +29,8 @@ CACHE_CONTENT_FILE = os.path.join(BUILD_DIR, "_pisek_cache")
 SAVED_LAST_SIGNATURES = 5
 
 
-class NoAliasDumper(yaml.Dumper):
-    def ignore_aliases(self, data):
-        return True
-
-
-class CacheInfo(yaml.YAMLObject):
-    """Object for cache metadata."""
-
-    yaml_tag = "!Info"
-
-    def __init__(self, version: str = __version__) -> None:
-        self.version = version
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(version={self.version})"
-
-    @staticmethod
-    def read(f: TextIO) -> "CacheInfo":
-        tag = f.readline().removeprefix("- ").strip()
-        if tag != CacheInfo.yaml_tag:
-            return CacheInfo("?.?.?")
-        version = f.readline().removeprefix("  version:").strip()
-        return CacheInfo(version)
-
-    def yaml_export(self) -> str:
-        return yaml.dump(
-            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
-        )
-
-
-class CacheEntry(yaml.YAMLObject):
+class CacheEntry:
     """Object representing single cached job."""
-
-    yaml_tag = "!Entry"
 
     def __init__(
         self,
@@ -90,24 +57,15 @@ class CacheEntry(yaml.YAMLObject):
             f"envs={self.envs}, files={self.files}, output={self.output})"
         )
 
-    def yaml_export(self) -> str:
-        return yaml.dump(
-            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
-        )
-
 
 class Cache:
     """Object representing all cached jobs."""
 
     def __init__(self) -> None:
+        os.makedirs(BUILD_DIR, exist_ok=True)
         with open(CACHE_VERSION_FILE, "w") as f:
             f.write(f"{__version__}\n")
         self.cache: dict[str, list[CacheEntry]] = {}
-
-    def _new_cache_file(self) -> None:
-        """Create new cache file with metadata."""
-        with open(CACHE_CONTENT_FILE, "w", encoding="utf-8") as f:
-            f.write(CacheInfo().yaml_export())
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""

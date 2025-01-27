@@ -17,15 +17,15 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum, auto
+import dataclasses
 from functools import wraps
 import hashlib
 import logging
 import os.path
 import sys
 from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
-import yaml
 
-from pisek.jobs.cache import NoAliasDumper, Cache, CacheEntry
+from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
 
@@ -231,7 +231,13 @@ class Job(PipelineItem, CaptureInitParams):
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
-            sign.update(f"{name}={yaml.dump(result, Dumper=NoAliasDumper)}".encode())
+            # Trying to prevent hashing object.__str__ which is non-deterministic
+            assert (
+                result is None
+                or isinstance(result, (str, int, float))
+                or dataclasses.is_dataclass(result)
+            )
+            sign.update(f"{name}={result}".encode())
 
         return (sign.hexdigest(), None)
 
