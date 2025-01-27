@@ -16,14 +16,17 @@
 
 from typing import Any, Iterable, TextIO
 import os
+import pickle
 import yaml
 
 from pisek.version import __version__
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
-from pisek.env.env import Env
+from pisek.utils.paths import BUILD_DIR
 
-CACHE_FILENAME = ".pisek_cache"
+
+CACHE_VERSION_FILE = os.path.join(BUILD_DIR, "_pisek_cache_version")
+CACHE_CONTENT_FILE = os.path.join(BUILD_DIR, "_pisek_cache")
 SAVED_LAST_SIGNATURES = 5
 
 
@@ -96,12 +99,14 @@ class CacheEntry(yaml.YAMLObject):
 class Cache:
     """Object representing all cached jobs."""
 
-    def __init__(self, env: Env) -> None:
-        self._load(env)
+    def __init__(self) -> None:
+        with open(CACHE_VERSION_FILE, "w") as f:
+            f.write(f"{__version__}\n")
+        self.cache: dict[str, list[CacheEntry]] = {}
 
     def _new_cache_file(self) -> None:
         """Create new cache file with metadata."""
-        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
+        with open(CACHE_CONTENT_FILE, "w", encoding="utf-8") as f:
             f.write(CacheInfo().yaml_export())
 
     def add(self, cache_entry: CacheEntry):
@@ -110,8 +115,11 @@ class Cache:
             self.cache[cache_entry.name] = []
         self.cache[cache_entry.name].append(cache_entry)
 
-        with open(CACHE_FILENAME, "a", encoding="utf-8") as f:
-            f.write(cache_entry.yaml_export())
+        # trim number of entries per cache name in order to limit cache size
+        self.cache[cache_entry.name] = self.cache[cache_entry.name][
+            -SAVED_LAST_SIGNATURES:
+        ]
+        self.export()
 
     def __contains__(self, name: str) -> bool:
         return name in self.cache
@@ -125,31 +133,6 @@ class Cache:
     def last_entry(self, name: str) -> CacheEntry:
         return self[name][-1]
 
-    def _load(self, env: Env) -> None:
-        """Load cache file."""
-        self.cache: dict[str, list[CacheEntry]] = {}
-        if not os.path.exists(CACHE_FILENAME):
-            return self._new_cache_file()
-
-        with open(CACHE_FILENAME, encoding="utf-8") as f:
-            if CacheInfo.read(f).version != __version__:
-                eprint(
-                    ColorSettings.colored(
-                        "Different version of .pisek_cache file found. Starting from scratch...",
-                        "yellow",
-                    )
-                )
-                return self._new_cache_file()
-
-            entries = yaml.full_load(f)
-            if entries is None:
-                return
-
-            for entry in entries:
-                if entry.name not in self.cache:
-                    self.cache[entry.name] = []
-                self.cache[entry.name].append(entry)
-
     def move_to_top(self, entry: CacheEntry):
         """Move given entry to most recent position."""
         if entry in self.cache[entry.name]:
@@ -162,8 +145,28 @@ class Cache:
 
     def export(self) -> None:
         """Export cache into a file. (Removes unnecessary entries.)"""
-        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
-            f.write(CacheInfo().yaml_export())
-            for job, entries in self.cache.items():
-                for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
-                    f.write(cache_entry.yaml_export())
+        with open(CACHE_CONTENT_FILE, "wb") as f:
+            pickle.dump(self, f)
+
+
+def load_cache() -> Cache:
+    """Load cache file."""
+    if not os.path.exists(CACHE_VERSION_FILE) or not os.path.exists(CACHE_CONTENT_FILE):
+        return Cache()
+
+    with open(CACHE_VERSION_FILE) as f:
+        version = f.read().strip()
+
+    if version != __version__:
+        eprint(
+            ColorSettings.colored(
+                "Different version of .pisek_cache file found. Starting from scratch...",
+                "yellow",
+            )
+        )
+        return Cache()
+
+    with open(CACHE_CONTENT_FILE, "rb") as f:
+        cache: Cache = pickle.load(f)
+
+    return cache

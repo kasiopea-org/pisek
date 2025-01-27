@@ -27,7 +27,7 @@ from pisek.utils.text import eprint
 from pisek.utils.terminal import TARGET_LINE_WIDTH
 from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
-from pisek.jobs.cache import Cache
+from pisek.jobs.cache import load_cache
 
 PATH = "."
 
@@ -39,7 +39,7 @@ def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_
         env = Env.load(**env_args)
         if env is None:
             return True
-        cache = Cache(env)
+        cache = load_cache()
 
         all_accessed_files: set[str] = set()
         for i in range(env.repeat):

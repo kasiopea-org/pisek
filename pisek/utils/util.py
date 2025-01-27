@@ -18,7 +18,7 @@ import os
 import shutil
 from typing import Optional
 
-from pisek.jobs.cache import CACHE_FILENAME
+from pisek.jobs.cache import CACHE_CONTENT_FILE
 from pisek.config.task_config import load_config
 from pisek.utils.paths import BUILD_DIR, TESTS_DIR, INTERNALS_DIR
 
@@ -49,7 +49,7 @@ def is_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
 
 
 def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
-    rm_f(os.path.join(task_dir, CACHE_FILENAME))
+    rm_f(os.path.join(task_dir, CACHE_CONTENT_FILE))
     _clean_subdirs(task_dir, [BUILD_DIR, TESTS_DIR, INTERNALS_DIR])
     return True
 
