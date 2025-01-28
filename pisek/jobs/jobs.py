@@ -19,6 +19,7 @@ from copy import deepcopy
 from enum import Enum, auto
 from functools import wraps
 import hashlib
+import logging
 import os.path
 import sys
 from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
@@ -27,6 +28,8 @@ import yaml
 from pisek.jobs.cache import NoAliasDumper, Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
+
+logger = logging.getLogger(__name__)
 
 
 class State(Enum):
@@ -279,6 +282,7 @@ class Job(PipelineItem, CaptureInitParams):
 
         cached = False
         if self.name in cache and (entry := self._find_entry(cache[self.name])):
+            logger.info(f"Loading cached '{self.name}'")
             cached = True
             cache.move_to_top(entry)
             for msg, stderr in entry.output:
@@ -286,6 +290,7 @@ class Job(PipelineItem, CaptureInitParams):
             self._accessed_files = set(entry.files)
             self.result = entry.result
         else:
+            logger.info(f"Running '{self.name}'")
             try:
                 self._env.clear_accesses()
                 self.result = self._run()

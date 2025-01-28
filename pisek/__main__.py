@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
+import logging
 import os
-from typing import Optional
-import sys
 import signal
+import sys
+from typing import Optional
 
 from pisek.utils.util import clean_task_dir
 from pisek.utils.text import eprint
@@ -31,6 +32,9 @@ from pisek.version import print_version
 
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
+from pisek.utils.paths import BUILD_DIR
+
+LOG_FILE = os.path.join(BUILD_DIR, "_pisek_log")
 
 
 def sigint_handler(sig, frame):
@@ -323,6 +327,15 @@ def main(argv):
     if args.clean:
         if not clean_directory(args):
             return 1
+
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    open(LOG_FILE, "w").close()
+    logging.basicConfig(
+        filename=LOG_FILE,
+        encoding="utf-8",
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
 
     if args.subcommand == "version":
         result = print_version()
