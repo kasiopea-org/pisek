@@ -9,7 +9,7 @@ from unittest import mock
 
 from pisek.config import config_hierarchy
 from pisek.__main__ import test_task_path
-from pisek.utils.util import clean_task_dir
+from pisek.utils.util import is_task_dir, clean_task_dir
 
 
 class TestFixture(unittest.TestCase):
@@ -43,8 +43,9 @@ class TestFixture(unittest.TestCase):
         # print(os.listdir(self.task_dir))
         # print(os.listdir(self.task_dir + "/src"))
 
-        if not clean_task_dir(self.task_dir, None):
+        if not is_task_dir(self.task_dir, None):
             exit(1)
+        clean_task_dir(self.task_dir, None)
 
         self.cwd_orig = os.getcwd()
         os.chdir(self.task_dir)
@@ -78,7 +79,7 @@ class TestFixture(unittest.TestCase):
         Ignored:
             .pisek_cache data/* build/*
         """
-        directories = ["build", "tests"]
+        directories = ["build", "tests", ".pisek"]
         files = [".pisek_cache"] + self.created_files()
 
         all_paths = set(self.original_files + directories + files)

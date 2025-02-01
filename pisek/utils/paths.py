@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 BUILD_DIR = "build/"
 TESTS_DIR = "tests/"
+INTERNALS_DIR = ".pisek/"
 
 GENERATED_SUBDIR = "_generated/"
 INPUTS_SUBDIR = "_inputs/"

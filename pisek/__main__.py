@@ -22,7 +22,7 @@ import signal
 import sys
 from typing import Optional
 
-from pisek.utils.util import clean_task_dir
+from pisek.utils.util import is_task_dir, clean_task_dir
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
 from pisek.license import license, license_gnu
@@ -32,9 +32,9 @@ from pisek.version import print_version
 
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
-from pisek.utils.paths import BUILD_DIR
+from pisek.utils.paths import INTERNALS_DIR
 
-LOG_FILE = os.path.join(BUILD_DIR, "_pisek_log")
+LOG_FILE = os.path.join(INTERNALS_DIR, "log")
 
 
 def sigint_handler(sig, frame):
@@ -324,9 +324,12 @@ def main(argv):
 
     result = None
 
+    if not is_task_dir(PATH, args.pisek_dir):
+        # !!! Ensure this is always run before clean_directory !!!
+        return 1
+
     if args.clean:
-        if not clean_directory(args):
-            return 1
+        clean_directory(args)
 
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     open(LOG_FILE, "w").close()
