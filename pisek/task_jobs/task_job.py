@@ -115,7 +115,7 @@ class TaskJob(Job, TaskHelper):
         """Adds first i args as accessed files."""
 
         def dec(
-            f: Callable[Concatenate["TaskJob", P], T]
+            f: Callable[Concatenate["TaskJob", P], T],
         ) -> Callable[Concatenate["TaskJob", P], T]:
             def g(self: "TaskJob", *args: P.args, **kwargs: P.kwargs) -> T:
                 for i in range(files):

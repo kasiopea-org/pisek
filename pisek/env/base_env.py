@@ -56,7 +56,7 @@ class BaseEnv(ContextModel):
 
     @staticmethod
     def _recursive_call(
-        function: Callable[["BaseEnv"], None]
+        function: Callable[["BaseEnv"], None],
     ) -> Callable[["BaseEnv"], None]:
         def recursive(self: "BaseEnv") -> None:
             self._logging = False
