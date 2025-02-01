@@ -183,7 +183,7 @@ class ProgramsJob(TaskJob):
             meta_files.append(meta_file)
 
             popen = pool_item.to_popen(minibox, meta_file)
-            logger.debug("./" + " ".join(popen["args"]))
+            logger.debug("Executing './" + " ".join(popen["args"]) + "'")
             running_pool.append(subprocess.Popen(**popen))
 
         callback_exec = False
