@@ -22,11 +22,11 @@ import pickle
 from pisek.version import __version__
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
-from pisek.utils.paths import BUILD_DIR
+from pisek.utils.paths import INTERNALS_DIR
 
 
-CACHE_VERSION_FILE = os.path.join(BUILD_DIR, "_pisek_cache_version")
-CACHE_CONTENT_FILE = os.path.join(BUILD_DIR, "_pisek_cache")
+CACHE_VERSION_FILE = os.path.join(INTERNALS_DIR, "_pisek_cache_version")
+CACHE_CONTENT_FILE = os.path.join(INTERNALS_DIR, "_pisek_cache")
 SAVED_LAST_SIGNATURES = 5
 CACHE_SAVE_INTERVAL = 1  # seconds
 
@@ -64,7 +64,7 @@ class Cache:
     """Object representing all cached jobs."""
 
     def __init__(self) -> None:
-        os.makedirs(BUILD_DIR, exist_ok=True)
+        os.makedirs(INTERNALS_DIR, exist_ok=True)
         with open(CACHE_VERSION_FILE, "w") as f:
             f.write(f"{__version__}\n")
         self.cache: dict[str, list[CacheEntry]] = {}
