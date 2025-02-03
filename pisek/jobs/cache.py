@@ -25,8 +25,8 @@ from pisek.utils.colors import ColorSettings
 from pisek.utils.paths import INTERNALS_DIR
 
 
-CACHE_VERSION_FILE = os.path.join(INTERNALS_DIR, "_pisek_cache_version")
-CACHE_CONTENT_FILE = os.path.join(INTERNALS_DIR, "_pisek_cache")
+CACHE_VERSION_FILE = os.path.join(INTERNALS_DIR, "cache_version")
+CACHE_CONTENT_FILE = os.path.join(INTERNALS_DIR, "cache")
 SAVED_LAST_SIGNATURES = 5
 CACHE_SAVE_INTERVAL = 1  # seconds
 
@@ -70,6 +70,31 @@ class Cache:
         self.cache: dict[str, list[CacheEntry]] = {}
         self.last_save = time.time()
 
+    @classmethod
+    def load(cls) -> "Cache":
+        """Load cache file."""
+        if not os.path.exists(CACHE_VERSION_FILE) or not os.path.exists(
+            CACHE_CONTENT_FILE
+        ):
+            return Cache()
+
+        with open(CACHE_VERSION_FILE) as f:
+            version = f.read().strip()
+
+        if version != __version__:
+            eprint(
+                ColorSettings.colored(
+                    "Different version of .pisek_cache file found. Starting from scratch...",
+                    "yellow",
+                )
+            )
+            return Cache()
+
+        cache = Cache()
+        with open(CACHE_CONTENT_FILE, "rb") as f:
+            cache.cache = pickle.load(f)
+        return cache
+
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
         if cache_entry.name not in self.cache:
@@ -84,7 +109,6 @@ class Cache:
         # Throttling saving saves time massively
         if time.time() - self.last_save > CACHE_SAVE_INTERVAL:
             self.export()
-            self.last_save = time.time()
 
     def __contains__(self, name: str) -> bool:
         return name in self.cache
@@ -109,29 +133,7 @@ class Cache:
             )
 
     def export(self) -> None:
-        """Export cache into a file. (Removes unnecessary entries.)"""
+        """Export cache into a file."""
         with open(CACHE_CONTENT_FILE, "wb") as f:
             pickle.dump(self, f)
-
-
-def load_cache() -> Cache:
-    """Load cache file."""
-    if not os.path.exists(CACHE_VERSION_FILE) or not os.path.exists(CACHE_CONTENT_FILE):
-        return Cache()
-
-    with open(CACHE_VERSION_FILE) as f:
-        version = f.read().strip()
-
-    if version != __version__:
-        eprint(
-            ColorSettings.colored(
-                "Different version of .pisek_cache file found. Starting from scratch...",
-                "yellow",
-            )
-        )
-        return Cache()
-
-    with open(CACHE_CONTENT_FILE, "rb") as f:
-        cache: Cache = pickle.load(f)
-
-    return cache
+        self.last_save = time.time()

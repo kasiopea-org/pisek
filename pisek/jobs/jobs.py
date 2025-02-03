@@ -237,7 +237,7 @@ class Job(PipelineItem, CaptureInitParams):
                 or isinstance(result, (str, int, float))
                 or dataclasses.is_dataclass(result)
             )
-            sign.update(f"{name}={result}".encode())
+            sign.update(f"{name}={result}\00".encode())
 
         return (sign.hexdigest(), None)
 

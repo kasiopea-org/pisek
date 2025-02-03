@@ -28,7 +28,7 @@ from pisek.utils.terminal import TARGET_LINE_WIDTH
 from pisek.utils.paths import INTERNALS_DIR
 from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
-from pisek.jobs.cache import load_cache
+from pisek.jobs.cache import Cache
 
 PATH = "."
 
@@ -40,7 +40,7 @@ def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_
         env = Env.load(**env_args)
         if env is None:
             return True
-        cache = load_cache()
+        cache = Cache.load()
 
         all_accessed_files: set[str] = set()
         for i in range(env.repeat):
