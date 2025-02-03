@@ -17,7 +17,6 @@
 from dataclasses import dataclass
 import os
 from typing import Optional, TYPE_CHECKING
-import yaml
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
@@ -33,10 +32,9 @@ SANITIZED_SUBDIR = "_sanitized/"
 
 
 @dataclass(frozen=True)
-class TaskPath(yaml.YAMLObject):
+class TaskPath:
     """Class representing a path to task file."""
 
-    yaml_tag = f"!TaskPath"
     path: str
 
     def __init__(self, *path: str):
@@ -112,15 +110,11 @@ class TaskPath(yaml.YAMLObject):
 
 
 class JudgeablePath(TaskPath):
-    yaml_tag = f"!JudgeablePath"
-
     def to_judge_log(self, judge: str) -> "LogPath":
         return LogPath(self.replace_suffix(f".{judge}.log").path)
 
 
 class SanitizablePath(TaskPath):
-    yaml_tag = f"!SanitizeablePath"
-
     def to_sanitized(self) -> "SanitizedPath":
         name = self.name + ".clean"
         dirname = os.path.basename(os.path.dirname(self.path))
@@ -130,8 +124,6 @@ class SanitizablePath(TaskPath):
 
 
 class InputPath(SanitizablePath):
-    yaml_tag = f"!InputPath"
-
     def __init__(self, env: "Env", *path, solution: Optional[str] = None) -> None:
         if solution is None:
             super().__init__(TESTS_DIR, INPUTS_SUBDIR, *path)
@@ -146,8 +138,6 @@ class InputPath(SanitizablePath):
 
 
 class OutputPath(JudgeablePath, SanitizablePath):
-    yaml_tag = f"!OutputPath"
-
     @staticmethod
     def static(*path) -> "OutputPath":
         return OutputPath(TESTS_DIR, INPUTS_SUBDIR, *path)
@@ -164,13 +154,10 @@ class OutputPath(JudgeablePath, SanitizablePath):
 
 
 class LogPath(JudgeablePath):
-    yaml_tag = f"!LogPath"
-
     @staticmethod
     def generator_log(generator: str) -> "LogPath":
         return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
 
 
 class SanitizedPath(TaskPath):
-    yaml_tag = f"!SanitizedPath"
     pass

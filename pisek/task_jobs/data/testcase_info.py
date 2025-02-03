@@ -13,14 +13,11 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Optional
-import yaml
 
 from pisek.env.env import Env
 from pisek.utils.paths import TESTS_DIR, InputPath, OutputPath
-from pisek.utils.yaml_enum import yaml_enum
 
 
-@yaml_enum
 class TestcaseGenerationMode(StrEnum):
     static = auto()
     mixed = auto()
@@ -28,9 +25,7 @@ class TestcaseGenerationMode(StrEnum):
 
 
 @dataclass(frozen=True)
-class TestcaseInfo(yaml.YAMLObject):
-    yaml_tag = "!TestcaseInfo"
-
+class TestcaseInfo:
     name: str
     repeat: int
     generation_mode: TestcaseGenerationMode

@@ -1,5 +1,4 @@
 build/
 generated/
 tests/
-.pisek_cache
-.pisek_lock
+.pisek/

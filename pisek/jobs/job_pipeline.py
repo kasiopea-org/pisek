@@ -63,7 +63,7 @@ class JobPipeline(ABC):
             if self.failed and not env.full:
                 break
 
-        cache.export()  # Remove unnecessary cache entries
+        cache.export()  # Save last version of cache
         return self.failed
 
     def _status_update(self, env: Env) -> bool:

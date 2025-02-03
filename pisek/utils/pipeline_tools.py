@@ -25,13 +25,14 @@ from pisek.jobs.job_pipeline import JobPipeline
 from pisek.utils.util import clean_non_relevant_files
 from pisek.utils.text import eprint
 from pisek.utils.terminal import TARGET_LINE_WIDTH
+from pisek.utils.paths import INTERNALS_DIR
 from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 PATH = "."
 
-LOCK_FILE = ".pisek_lock"
+LOCK_FILE = os.path.join(INTERNALS_DIR, "lock")
 
 
 def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_args):
@@ -39,7 +40,7 @@ def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_
         env = Env.load(**env_args)
         if env is None:
             return True
-        cache = Cache(env)
+        cache = Cache.load()
 
         all_accessed_files: set[str] = set()
         for i in range(env.repeat):
@@ -88,7 +89,9 @@ class Lock:
             with open(self._lock_file, "x") as f:
                 f.write(f"Locked by pisek at {datetime.now()}")
         except FileExistsError:
-            eprint("Another pisek instance running in same directory.")
+            eprint(
+                f"Another pisek instance running in same directory. (Lockfile '{LOCK_FILE}')"
+            )
             sys.exit(2)
 
         self._locked = True
