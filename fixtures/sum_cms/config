@@ -67,6 +67,11 @@ source=solve_0b
 points=0
 subtasks=WWWW
 
+[solution_solve_cargo_10b]
+source=solve_cargo
+points=10
+subtasks=1111
+
 [cms]
 title=Sum
 time_limit=2
