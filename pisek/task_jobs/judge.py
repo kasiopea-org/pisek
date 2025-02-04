@@ -339,7 +339,7 @@ class RunBatchJudge(RunJudge):
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Judge {output:n}",
+            name=f"Judge {output:p}",
             judge=judge,
             test=test,
             input_=input_,
