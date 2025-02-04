@@ -38,7 +38,7 @@ tests = ??? (ignored)
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Source code of generator (without suffix) (required)
 
 checker=check

@@ -39,7 +39,7 @@ static_subdir=static_tests/
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Reference to the run section specifying how to run the generator (if empty, only static inputs are used)
 # See [run] for more
 
