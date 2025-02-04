@@ -223,7 +223,7 @@ class Job(PipelineItem, CaptureInitParams):
                         expanded_files.append(os.path.join(dir_, path))
             else:
                 assert not os.path.exists(path)
-                return (None, "File nonexistent")
+                return (None, f"File nonexistent: {path}")
 
         for file in sorted(expanded_files):
             with open(file, "rb") as f:

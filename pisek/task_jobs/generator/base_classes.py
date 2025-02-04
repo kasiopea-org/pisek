@@ -85,7 +85,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         self.input_path = testcase_info.input_path(env, seed)
         super().__init__(
             env=env,
-            name=name or f"Generator is deterministic ({self.testcase_info.name})",
+            name=name or f"Generator is deterministic (on {self.input_path:p})",
             **kwargs,
         )
 

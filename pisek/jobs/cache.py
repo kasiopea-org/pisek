@@ -135,5 +135,5 @@ class Cache:
     def export(self) -> None:
         """Export cache into a file."""
         with open(CACHE_CONTENT_FILE, "wb") as f:
-            pickle.dump(self, f)
+            pickle.dump(self.cache, f)
         self.last_save = time.time()
