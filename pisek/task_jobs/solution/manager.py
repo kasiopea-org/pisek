@@ -146,7 +146,11 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 ),
             )
             jobs += [run_batch_sol, link, run_judge]
-            jobs += self._check_output_jobs(run_batch_sol.output, run_batch_sol)
+            link.add_prerequisite(run_batch_sol)
+            run_judge.add_prerequisite(link)
+            for add_job in self._check_output_jobs(run_batch_sol.output, run_batch_sol):
+                add_job.add_prerequisite(run_batch_sol)
+                jobs.append(add_job)
 
         elif self._env.config.task_type == TaskType.communication:
             run_sol = run_judge = self._create_communication_jobs(input_path, test)
