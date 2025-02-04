@@ -26,6 +26,24 @@ name=a-plus-b
 use=organization-config
 # Config to use defaults from (defaults to none)
 
+# Values of keys are loaded in the following way:
+# 1. We try to find given (section,key) in the topmost config
+# 2. If not found, we go defaults-config up.
+# 3. If we are in the topmost config, we try searching
+#    for defaulting section and key of this key from topmost config.
+# 4. If there is no defaulting key, we either return default value, or fail if there is none.
+#
+# For example, consider:
+#   use=organization-config
+#   ([section],key) defaults to ([default_section],key)
+#   ([default_section],key) defaults to 42 if not present
+# Then we search in this order:
+# 1. this config,         [section], key
+# 2. organization-config, [section], key
+# 3. this config,         [default_section], key
+# 4. organization-config, [default_section], key
+# 5. If still not found, return 42
+
 task_type=communication
 # Task type:
 # - batch (default)
