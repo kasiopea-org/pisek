@@ -103,7 +103,7 @@ judge_type=cms-batch
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output (default)
+# Set to 1 if judge needs input/correct output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
