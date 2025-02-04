@@ -48,7 +48,7 @@ class Compile(ProgramsJob):
             self.stub = self._env.config.stub
             self.headers = self._env.config.headers
 
-    def _resolve_extension(self, name: TaskPath) -> TaskPath:
+    def _resolve_extension(self, name: TaskPath) -> tuple[TaskPath, str]:
         """
         Given `name`, finds a file named `name`.[ext],
         where [ext] is a file extension for one of the supported languages.
@@ -60,31 +60,63 @@ class Compile(ProgramsJob):
         path = name.path
         for ext in extensions:
             if os.path.isfile(path + ext):
-                candidates.append(path + ext)
+                candidates.append((path + ext, ext))
             if path.endswith(ext) and os.path.isfile(path):
                 # Extension already present in `name`
-                candidates.append(path)
+                candidates.append((path, ext))
 
         if len(candidates) == 0:
             raise PipelineItemFailure(f"No program with given name exists: {path}")
         if len(candidates) > 1:
             raise PipelineItemFailure(
-                f"Multiple programs with same name exist: {', '.join(candidates)}"
+                f"Multiple programs with same name exist: {', '.join(c[0] for c in candidates)}"
             )
 
-        return TaskPath.from_abspath(candidates[0])
+        return TaskPath.from_abspath(candidates[0][0]), candidates[0][1]
+
+    def _resolve_manifest(self, dir: TaskPath) -> str:
+        """
+        Searches the specified directory for a manifest file of one of the supported build systems.
+        """
+        candidates = []
+
+        for manifest in supported_manifests():
+            if os.path.isfile(os.path.join(dir.path, manifest)):
+                candidates.append(manifest)
+
+        if len(candidates) == 0:
+            raise PipelineItemFailure(
+                f"There is no manifest in the given directory: {dir:p}"
+            )
+        if len(candidates) > 1:
+            raise PipelineItemFailure(
+                f"There are multiple manifests in {dir:p}: {', '.join(candidates)}"
+            )
+
+        return candidates[0]
 
     def _run(self):
         """Compiles program."""
-        program = self._resolve_extension(self.program)
         self.makedirs(TaskPath.executable_path(self._env, "."))
+        compile = None
 
-        _, ext = os.path.splitext(program.path)
+        if os.path.isdir(self.program.path):
+            manifest = self._resolve_manifest(self.program)
+            program = self.program
 
-        if ext in COMPILE_RULES:
-            COMPILE_RULES[ext](self, program)
-        else:
+            if manifest in COMPILE_RULES_BY_MANIFEST_FILE:
+                compile = COMPILE_RULES_BY_MANIFEST_FILE[manifest]
+
+        if compile is None:
+            program, ext = self._resolve_extension(self.program)
+
+            if ext in COMPILE_RULES_BY_EXTENSION:
+                compile = COMPILE_RULES_BY_EXTENSION[ext]
+
+        if compile is None:
             raise PipelineItemFailure(f"No rule for compiling {program:p}.")
+
+        compile(self, program)
 
         self._access_file(program)
         self._access_file(self._load_compiled(self.program))
@@ -126,9 +158,35 @@ class Compile(ProgramsJob):
         return self._run_compilation(["fpc"] + pas_flags + [program.path], program)
 
     def _compile_rust(self, program: TaskPath):
-        return self._run_compilation(
+        self._run_compilation(
             ["rustc", "-O", "-o", self.target.path, program.path], program
         )
+
+    def _compile_cargo(self, dir: TaskPath):
+        target_dir = TaskPath.executable_path(
+            self._env, f"{self.target:n}.target/"
+        ).path
+
+        self._run_compilation(
+            [
+                "cargo",
+                "build",
+                "--quiet",
+                "--release",
+                "--manifest-path",
+                os.path.join(dir.path, "Cargo.toml"),
+                "--target-dir",
+                target_dir,
+            ],
+            dir,
+        )
+
+        shutil.copyfile(
+            os.path.join(target_dir, "release", self.target.name),
+            self.target.path,
+        )
+
+        self._chmod_exec(self.target)
 
     def _run_compilation(self, args: list[str], program: TaskPath, **kwargs) -> None:
         self._check_tool(args[0])
@@ -200,7 +258,7 @@ class Compile(ProgramsJob):
 # Used for checking the shebang.
 VALID_PYTHON_INTERPRETERS = ["python3", "pypy3"]
 
-COMPILE_RULES = {
+COMPILE_RULES_BY_EXTENSION = {
     ".py": Compile._compile_script,
     ".sh": Compile._compile_script,
     ".c": Compile._compile_c,
@@ -210,6 +268,14 @@ COMPILE_RULES = {
     ".rs": Compile._compile_rust,
 }
 
+COMPILE_RULES_BY_MANIFEST_FILE = {
+    "Cargo.toml": Compile._compile_cargo,
+}
+
 
 def supported_extensions() -> list[str]:
-    return list(COMPILE_RULES)
+    return list(COMPILE_RULES_BY_EXTENSION)
+
+
+def supported_manifests() -> list[str]:
+    return list(COMPILE_RULES_BY_MANIFEST_FILE)
