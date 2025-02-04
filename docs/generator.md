@@ -47,14 +47,14 @@ the inputs list.
 
 If `input_name` is seeded the generator is run with:
 ```
-./gen [input_name] [seed]
+./gen <input_name> <seed>
 ```
 Where `seed` is a hexadecimal number. The generator must be deterministic and
 respect the seed.
 
 If `input_name` is unseeded the generator is called with  
 ```
-./gen [input_name]
+./gen <input_name>
 ```
 The generator must be deterministic.
 
@@ -63,7 +63,7 @@ In either case, the generator should print the input to its stdout.
 ## Cms-old
 The generator is run with:
 ```
-./gen [directory]
+./gen <directory>
 ```
 
 The generator should generate all input files to this directory. The generator must be deterministic.
@@ -71,7 +71,7 @@ The generator should generate all input files to this directory. The generator m
 ## Opendata-v1
 The generator is run:
 ```
-./gen [test] [seed]
+./gen <test> <seed>
 ```
 
 The generator should generate the input for this test to its stdout. The generator must be deterministic

@@ -90,7 +90,7 @@ judge_type=cms-batch
 # - cms-batch
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#checker
 # - opendata-v1
-#       ./judge [test] [seed] < output
+#       ./judge <test> <seed> < output
 #       $TEST_INPUT=[input] $TEST_OUTPUT=[correct_output]
 #       return code 0 means correct, 1 wrong
 #

@@ -90,12 +90,11 @@ def main(argv):
         )
 
     def add_argument_dataset(parser):
-        group = parser.add_mutually_exclusive_group()
+        group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
             "--dataset",
             "-d",
             type=str,
-            required=False,
             help="use the dataset with the description DESCRIPTION",
         )
 
