@@ -52,7 +52,7 @@ task_type=communication
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
 
-static_subdir=static_tests/
+static_subdir=static_tests
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 [tests]
