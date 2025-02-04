@@ -260,12 +260,7 @@ class Job(PipelineItem, CaptureInitParams):
             self._accessed_files,
             self.prerequisites_results,
         )
-        if err == "File nonexistent":
-            raise RuntimeError(
-                f"Cannot compute signature of job {self.name}. "
-                f"Check if something else is changing files in task directory."
-            )
-        elif sign is None:
+        if sign is None:
             raise RuntimeError(
                 f"Computing signature of job {self.name} failed:\n  {err}."
             )
