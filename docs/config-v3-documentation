@@ -59,6 +59,7 @@ out_format=text
 # Format of output:
 #   text    ASCII plain text (LF newlines) (default)
 #   binary  can be anything
+# When set to text, pisek will check that the file ends with a line feed.
 #
 # TODO: Mention auto normalization in Server mode when it's done (#137)
 
@@ -174,6 +175,7 @@ predecessors=@previous
 
 [solution_correct]
 # Section for each solution
+# This solution is named "correct"
 # Keys default to [all_solution] keys
 
 run=solve
