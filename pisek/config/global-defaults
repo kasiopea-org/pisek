@@ -2,7 +2,6 @@
 version=v3
 task_type=batch
 score_precision=0
-static_subdir=.
 
 [tests]
 checker=
@@ -15,6 +14,7 @@ tokens_float_abs_error=
 shuffle_ignore_case=0
 in_format=text
 out_format=text
+static_subdir=.
 
 [all_tests]
 name=@auto
@@ -58,6 +58,7 @@ all_inputs_in_last_test=off
 generator_respects_seed=on
 
 [cms]
+name=
 title=@name
 submission_format=@name
 

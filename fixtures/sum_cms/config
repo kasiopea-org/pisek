@@ -2,7 +2,6 @@
 # Source: $(pisek)/docs/config-v2-documentation for more information
 
 [task]
-name=sum-cms
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
@@ -68,6 +67,7 @@ points=0
 subtasks=WWWW
 
 [cms]
+name=sum
 title=Sum
 time_limit=2
 min_submission_interval=30

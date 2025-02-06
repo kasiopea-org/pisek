@@ -2,7 +2,6 @@
 # Source: $(pisek)/docs/config-v2-documentation for more information
 
 [task]
-name=odd-stub
 contest_type=cms
 version=v2
 
@@ -30,3 +29,6 @@ subtasks=11
 
 [solution_solve_rev]
 subtasks=11
+
+[cms]
+name=odd-stub

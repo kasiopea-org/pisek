@@ -1,10 +1,8 @@
 [task]
 version=
-name=
 use=
 task_type=
 score_precision=
-static_subdir=
 
 [tests]
 in_gen=
@@ -38,6 +36,8 @@ shuffle_mode=
 #!if tests out_check=shuffle
 shuffle_ignore_case=
 #!if tests out_check=shuffle
+
+static_subdir=
 
 [test\d{2}]
 #!regex
@@ -216,6 +216,7 @@ all_inputs_in_last_test=
 generator_respects_seed=
 
 [cms]
+name=
 title=
 submission_format=
 time_limit=

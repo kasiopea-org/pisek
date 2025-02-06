@@ -4,7 +4,6 @@
 version=v3
 task_type=batch
 score_precision=0
-static_subdir=.
 
 [tests]
 gen_type=opendata-v1
@@ -12,6 +11,7 @@ checker=
 judge_type=opendata-v1
 judge_needs_in=1
 judge_needs_out=1
+static_subdir=.
 
 [all_tests]
 name=@auto 
@@ -55,6 +55,7 @@ all_inputs_in_last_test=off
 generator_respects_seed=on
 
 [cms]
+name=
 title=@name
 submission_format=@name
 

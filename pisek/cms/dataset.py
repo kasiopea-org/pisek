@@ -142,7 +142,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 
     judge = files.put_file_from_path(
         TaskPath.executable_path(env, config.out_judge).path,
-        f"{judge_name} for {config.name}",
+        f"{judge_name} for {config.cms.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
 
@@ -185,7 +185,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 
         stub = files.put_file_from_path(
             path.join(directory, filename),
-            f"{stub_basename}{ext} for {config.name}",
+            f"{stub_basename}{ext} for {config.cms.name}",
         )
         session.add(
             Manager(dataset=dataset, filename=f"{stub_basename}{ext}", digest=stub)
@@ -198,7 +198,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
             continue
 
         stub = files.put_file_content(
-            content.encode(), f"{stub_basename}{ext} for {config.name}"
+            content.encode(), f"{stub_basename}{ext} for {config.cms.name}"
         )
         session.add(
             Manager(dataset=dataset, filename=f"{stub_basename}{ext}", digest=stub)
@@ -211,7 +211,7 @@ def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset)
     for header in config.headers:
         name = header.name
         header = files.put_file_from_path(
-            header.path, f"Header {name} for {config.name}"
+            header.path, f"Header {name} for {config.cms.name}"
         )
         session.add(Manager(dataset=dataset, filename=name, digest=header))
 

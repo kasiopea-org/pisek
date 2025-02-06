@@ -2,7 +2,6 @@
 # Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
-name=sum-kasiopea
 tests=2
 
 version=v2

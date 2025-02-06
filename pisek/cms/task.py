@@ -26,7 +26,7 @@ def create_task(
 ) -> Task:
     config = env.config
 
-    task = Task(name=config.name, title=config.cms.title)
+    task = Task(name=config.cms.name, title=config.cms.title)
     set_task_settings(task, config)
 
     dataset = create_dataset(session, env, task, testcases, description)
@@ -53,6 +53,6 @@ def set_task_settings(task: Task, config: TaskConfig):
 
 def get_task(session: Session, config: TaskConfig):
     try:
-        return session.query(Task).filter(Task.name == config.name).one()
+        return session.query(Task).filter(Task.name == config.cms.name).one()
     except NoResultFound as e:
         raise RuntimeError("This task has not been imported into CMS yet") from e

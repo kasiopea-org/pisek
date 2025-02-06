@@ -91,7 +91,6 @@ def _to_values(config_values_dict: ConfigValuesDict) -> ValuesDict:
 class TaskConfig(BaseEnv):
     """Configuration of task loaded from config file."""
 
-    name: str
     task_type: TaskType
     score_precision: int = Field(ge=0)
 
@@ -190,7 +189,7 @@ class TaskConfig(BaseEnv):
         return next(sources, None)
 
     def __init__(self, **kwargs):
-        value = {"test_count": max(kwargs["tests"]) + 1, "name": kwargs["name"]}
+        value = {"test_count": max(kwargs["tests"]) + 1}
 
         with init_context(value):
             super().__init__(**kwargs)
@@ -198,16 +197,15 @@ class TaskConfig(BaseEnv):
     @staticmethod
     def load_dict(configs: ConfigHierarchy) -> ConfigValuesDict:
         GLOBAL_KEYS = [
-            ("task", "name"),
             ("task", "task_type"),
             ("task", "score_precision"),
-            ("task", "static_subdir"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
             ("tests", "checker"),
             ("tests", "out_check"),
             ("tests", "in_format"),
             ("tests", "out_format"),
+            ("tests", "static_subdir"),
             ("all_solutions", "stub"),
             ("all_solutions", "headers"),
         ]
@@ -688,6 +686,7 @@ class LimitsConfig(BaseEnv):
 class CMSConfig(BaseEnv):
     _section: str = "cms"
 
+    name: OptionalStr
     title: str
     submission_format: ListStr
 
@@ -703,6 +702,7 @@ class CMSConfig(BaseEnv):
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
         KEYS = [
+            "name",
             "title",
             "submission_format",
             "time_limit",
@@ -722,7 +722,7 @@ class CMSConfig(BaseEnv):
             if info.context is None:
                 raise RuntimeError(MISSING_VALIDATION_CONTEXT)
 
-            return info.context.get("name")
+            return info.context.get("name", "unnamed-task")
         else:
             return value
 
@@ -734,7 +734,9 @@ class CMSConfig(BaseEnv):
 
         return [
             (
-                CMSConfig.get_default_file_name(info.context.get("name"))
+                CMSConfig.get_default_file_name(
+                    info.context.get("name", "unnamed-task")
+                )
                 if n == "@name"
                 else n
             )
