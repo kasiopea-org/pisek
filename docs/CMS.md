@@ -168,7 +168,7 @@ pisek cms check (-d DATASET | -a)
 ```
 
 Set the `-d`/`--dataset` argument to the description of the dataset you're interested in.
-(Or `-a/--active-dataset` for active dataset.)
+(Or `-a/--active-dataset` for the active dataset.)
 
 This will print out how many points each solution received, as well as how well it did on each subtask:
 
@@ -198,7 +198,7 @@ pisek cms testing-log (-d DATASET | -a)
 ```
 
 Again, set the `-d`/`--dataset` argument to the description of the target dataset.
-(Or `-a/--active-dataset` for active dataset.)
+(Or `-a/--active-dataset` for the active dataset.)
 
 The format is compatible with the file generated when running Pisek with the `--testing-log` argument.
 Note that if the submission failed for any reason, the `result` key will be set to `wrong_answer`,
