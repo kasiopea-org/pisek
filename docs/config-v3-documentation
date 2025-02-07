@@ -27,10 +27,10 @@ use=organization-config
 # Config to use defaults from (defaults to none)
 
 # Values of keys are loaded in the following way:
-# 1. We try to find a given (section,key) in the topmost config
-# 2. If not found, we go defaults-config up.
-# 3. If we are in the topmost config, we try searching
-#    for the defaulting section and key of this key from the topmost config.
+# 1. We try to find a given (section,key) in the this config
+# 2. If not found, we go to the config specified by use key.
+# 3. If we are in the topmost config, we try searching for the defaulting
+#    section and key of this key and we reset to the task config.
 # 4. If there is no defaulting key, we either return the default value, or fail if there is none.
 #
 # For example, consider:
