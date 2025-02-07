@@ -12,7 +12,7 @@ The solution and the judge run simultaneously. They communicate via FIFO (named 
 
 The judge is run:
 ```
-./judge [FIFO from solution] [FIFO to solution] < input
+./judge <FIFO from solution> <FIFO to solution> < input
 ```
 FIFOs point to the solutions stdout and stdin respectively.
 

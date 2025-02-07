@@ -26,6 +26,24 @@ name=a-plus-b
 use=organization-config
 # Config to use defaults from (defaults to none)
 
+# Values of keys are loaded in the following way:
+# 1. We try to find a given (section,key) in the task config
+# 2. If not found, we go to the config specified by the use key.
+# 3. If we are in the topmost config, we reset to the task config and
+#    try searching for the defaulting section and key of this key.
+# 4. If there is no defaulting key, we either return the default value, or fail if there is none.
+#
+# For example, consider:
+#   use=organization-config
+#   ([section],key) defaults to ([default_section],key)
+#   ([default_section],key) defaults to 42 if not present
+# Then we search in this order:
+# 1. this config,         [section], key
+# 2. organization-config, [section], key
+# 3. this config,         [default_section], key
+# 4. organization-config, [default_section], key
+# 5. If still not found, return 42
+
 task_type=communication
 # Task type:
 # - batch (default)
@@ -34,12 +52,12 @@ task_type=communication
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
 
-static_subdir=static_tests/
+static_subdir=static_tests
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Reference to the run section specifying how to run the generator (if empty, only static inputs are used)
 # See [run] for more
 
@@ -91,7 +109,7 @@ judge_type=cms-batch
 # - cms-batch
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#checker
 # - opendata-v1
-#       ./judge [test] [seed] < output
+#       ./judge <test> <seed> < output
 #       $TEST_INPUT=[input] $TEST_OUTPUT=[correct_output]
 #       return code 0 means correct, 1 wrong
 #
@@ -104,7 +122,7 @@ judge_type=cms-batch
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output (default)
+# Set to 1 if judge needs input/correct output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens

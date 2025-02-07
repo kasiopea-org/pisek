@@ -30,7 +30,7 @@ task_type=communication
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config (defaults to .)
-static_subdir=static_tests/
+static_subdir=static_tests
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 tests = ??? (ignored)
@@ -38,7 +38,7 @@ tests = ??? (ignored)
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Source code of generator (without suffix) (required)
 
 checker=check
@@ -61,7 +61,7 @@ out_judge=judge
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output (default)
+# Set to 1 if judge needs input/correct output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
