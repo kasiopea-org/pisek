@@ -232,7 +232,7 @@ tests=X10
 [all_solutions]
 # Defaults for all solutions
 # If not specified the defaults are:
-source=@auto
+run=@auto
 primary=no
 points=X
 points_above=X

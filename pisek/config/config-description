@@ -71,7 +71,7 @@ tests=
 subtasks=
 
 [all_solutions]
-source=
+run=
 primary=
 points=
 points_above=
