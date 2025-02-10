@@ -77,7 +77,7 @@ def create_dataset(
 
     for input_ in testcases:
         name = input_.name.removesuffix(".in")
-        output = None
+        output: TaskPath | None = None
 
         if outputs_needed:
             output = input_.to_output()
