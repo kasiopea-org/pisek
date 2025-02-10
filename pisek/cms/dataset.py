@@ -82,6 +82,9 @@ def create_dataset(
         if outputs_needed:
             output = input_.to_output()
 
+            if not path.exists(output.path):
+                output = TaskPath.data_path(env, config.primary_solution, output.name)
+
         create_testcase(session, files, dataset, name, input_, output)
 
     add_judge(session, files, env, dataset)
@@ -141,7 +144,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
         judge_name = "manager"
 
     judge = files.put_file_from_path(
-        TaskPath.executable_path(env, config.out_judge).path,
+        TaskPath.executable_path(env, path.basename(config.out_judge)).path,
         f"{judge_name} for {config.name}",
     )
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
