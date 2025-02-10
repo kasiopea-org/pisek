@@ -25,7 +25,7 @@ in_globs=sample*.in
 predecessors=
 
 [all_solutions]
-source=@auto
+run=@auto
 primary=no
 points=X
 points_above=X
