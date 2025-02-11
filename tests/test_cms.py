@@ -87,14 +87,14 @@ class TestInvalidJudgeScore(TestSumCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestStrictChecker(TestSumCMS):
-    """A checker whose bounds are stricter than what the generator creates."""
+class TestStrictValidator(TestSumCMS):
+    """A validator whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
         return False
 
     def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_strict.py")
+        overwrite_file(self.task_dir, "validate.py", "validate_strict.py")
 
 
 class TestDirtySample(TestSumCMS):
@@ -117,7 +117,7 @@ class TestNoLFInTextInput(TestSumCMS):
     def modify_task(self):
         def modification_fn(raw_config):
             raw_config["tests"]["in_gen"] = "gen_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -132,7 +132,7 @@ class TestNoLFInBinaryInput(TestSumCMS):
         def modification_fn(raw_config):
             raw_config["tests"]["in_format"] = "binary"
             raw_config["tests"]["in_gen"] = "gen_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -146,7 +146,7 @@ class TestNoLFInTextOutput(TestSumCMS):
     def modify_task(self):
         def modification_fn(raw_config):
             raw_config["solution_solve"]["source"] = "solve_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -161,7 +161,7 @@ class TestNoLFInBinaryOutput(TestSumCMS):
         def modification_fn(raw_config):
             raw_config["tests"]["out_format"] = "binary"
             raw_config["solution_solve"]["source"] = "solve_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 

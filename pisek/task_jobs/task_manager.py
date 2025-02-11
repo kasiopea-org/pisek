@@ -20,7 +20,7 @@ from pisek.task_jobs.data.testcase_info import TestcaseInfo
 TOOLS_MAN_CODE = "tools"
 GENERATOR_MAN_CODE = "generator"
 INPUTS_MAN_CODE = "inputs"
-CHECKER_MAN_CODE = "checker"
+VALIDATOR_MAN_CODE = "validator"
 JUDGE_MAN_CODE = "judge"
 SOLUTION_MAN_CODE = "solution_"
 DATA_MAN_CODE = "data"

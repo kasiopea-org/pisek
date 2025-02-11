@@ -196,9 +196,11 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     if task_type == "communication":
         config["task"]["task_type"] = "interactive"
 
+    maybe_rename_key(config, "tests", "tests", "checker", "validator")
+
     OLD_NAME = {
         ProgramType.gen: "in_gen",
-        ProgramType.checker: "checker",
+        ProgramType.validator: "checker",
         ProgramType.primary_solution: "solve",
         ProgramType.secondary_solution: "sec_solve",
         ProgramType.judge: "judge",

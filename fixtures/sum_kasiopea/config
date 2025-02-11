@@ -10,7 +10,7 @@ version=v2
 [tests]
 in_mode=online
 in_gen=gen
-checker=check
+checker=validate
 out_mode=solve
 online_validity=360
 out_check=tokens

@@ -5,7 +5,7 @@ score_precision=0
 static_subdir=.
 
 [tests]
-checker=
+validator=
 judge_needs_in=1
 judge_needs_out=1
 tokens_ignore_newlines=0

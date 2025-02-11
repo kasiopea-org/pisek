@@ -23,7 +23,7 @@ from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,
-    CHECKER_MAN_CODE,
+    VALIDATOR_MAN_CODE,
     JUDGE_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
@@ -36,7 +36,7 @@ from pisek.task_jobs.generator.manager import (
     RunGenerator,
     TestcaseInfoMixin,
 )
-from pisek.task_jobs.checker import CheckerManager
+from pisek.task_jobs.validator import ValidatorManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
@@ -54,15 +54,15 @@ class TaskPipeline(JobPipeline):
         if env.config.in_gen is not None:
             named_pipeline.append(generator := (PrepareGenerator(), GENERATOR_MAN_CODE))
         named_pipeline += [
-            checker := (CheckerManager(), CHECKER_MAN_CODE),
+            validator := (ValidatorManager(), VALIDATOR_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
         ]
 
         if env.config.in_gen is not None:
             generator[0].add_prerequisite(*tools)
             inputs[0].add_prerequisite(*generator)
-        checker[0].add_prerequisite(*tools)
-        inputs[0].add_prerequisite(*checker)
+        validator[0].add_prerequisite(*tools)
+        inputs[0].add_prerequisite(*validator)
 
         solutions = []
         self.input_generator: TestcaseInfoMixin

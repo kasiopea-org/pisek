@@ -51,7 +51,7 @@ class DataFormat(StrEnum):
 
 class ProgramType(StrEnum):
     gen = auto()
-    checker = auto()
+    validator = auto()
     primary_solution = auto()
     secondary_solution = auto()
     judge = auto()

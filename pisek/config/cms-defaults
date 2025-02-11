@@ -8,7 +8,7 @@ static_subdir=.
 
 [tests]
 gen_type=cms-old
-checker=
+validator=
 judge_needs_in=1
 judge_needs_out=1
 

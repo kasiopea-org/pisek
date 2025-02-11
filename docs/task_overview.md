@@ -39,9 +39,9 @@ Ideally the generator should generate diverse enough inputs to break any wrong s
 The judge is used for determining whether a given solution is correct.
 It greatly differs between task types, so you can read more there.
 
-### Checker
+### Validator
 
-The checker is used for checking whether inputs produced by generator
+The validator is used for validating inputs produced by generator
 conform to the task statement. It adds an additional degree of safety.
 
 ## Task types
@@ -54,7 +54,7 @@ There are few types of tasks pisek supports:
 
 ```mermaid
 graph TD;
-    G[Generator] -->|Input| C[Checker];
+    G[Generator] -->|Input| C[Validator];
     G -->|Input| S[Solution];
     G -->|Input| CS[Correct solution];
     S -->|Output| J[Judge];
@@ -71,7 +71,7 @@ It can also get the correct output (from the primary solution) if specified in t
 
 ```mermaid
 graph TD;
-    G[Generator] -->|Input| C[Checker];
+    G[Generator] -->|Input| C[Validator];
     G -->|Input| J[Judge];
     J ==>|Communication| S[Solution];
     S ==>|Communication| J;
