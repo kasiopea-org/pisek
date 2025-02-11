@@ -226,6 +226,12 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
 
     maybe_move_key(config, "stub", "tests", "all_solutions")
     maybe_move_key(config, "headers", "tests", "all_solutions")
+    maybe_move_key(config, "static_subdir", "task", "tests")
+
+    if contest_type == "cms":
+        maybe_move_key(config, "name", "task", "cms")
+    elif contest_type == "kasiopea":
+        maybe_delete_key(config, "task", "name")
 
     IGNORED_KEYS = [
         ("task", "tests"),

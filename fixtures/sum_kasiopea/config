@@ -2,6 +2,7 @@
 # Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
+name=sum
 tests=2
 
 version=v2

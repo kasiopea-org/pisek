@@ -2,8 +2,11 @@
 # Source: $(pisek)/docs/config-v2-documentation for more information
 
 [task]
+name=odd-stub
 contest_type=cms
 version=v2
+
+static_subdir=.
 
 [tests]
 in_gen=gen
