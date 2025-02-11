@@ -1,6 +1,6 @@
 # Task overview
 *The Task overview is for those who are familiar with competitive programming but haven't made tasks yet.*
-*If you already made some tasks, look at the task type diagrams [here](#batch-task) and [here](#communication-task), to brush up on potential differences in terminology.*
+*If you already made some tasks, look at the task type diagrams [here](#batch-task) and [here](#interactive-task), to brush up on potential differences in terminology.*
 
 ## Task components
 
@@ -48,7 +48,7 @@ conform to the task statement. It adds an additional degree of safety.
 
 There are few types of tasks pisek supports:
 1. [Batch tasks](#batch-task)
-2. [Communication tasks](#communication-task)
+2. [Interactive tasks](#interactive-task)
 
 ### Batch task
 
@@ -67,7 +67,7 @@ graph TD;
 A batch judge gets the solution output and should say whether it is correct.
 It can also get the correct output (from the primary solution) if specified in the config.
 
-### Communication task
+### Interactive task
 
 ```mermaid
 graph TD;
@@ -77,13 +77,13 @@ graph TD;
     S ==>|Communication| J;
 ```
 
-Communication task should be used when part of the input should remain hidden
+Interactive task should be used when part of the input should remain hidden
 from the contestant's solution. For example when it can ask questions about the input.
 
-#### Communication judge
-*More details about the communication judges are in [communication_judge.md](./communication_judge.md).*
+#### Interactive judge
+*More details about the interactive judges are in [interactive_judge.md](./interactive_judge.md).*
 
-The judge in a communication task gets the task input and is run together with the solution.
+The judge in a interactive task gets the task input and is run together with the solution.
 The solution can make requests to the judge about the input. Finally, the judge says
 whether the solution is correct.
 

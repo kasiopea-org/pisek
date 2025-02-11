@@ -36,7 +36,7 @@ from pisek.task_jobs.judge import judge_job, RunJudge, RunCMSJudge, RunBatchJudg
 from pisek.task_jobs.solution.solution import (
     RunSolution,
     RunBatchSolution,
-    RunCommunication,
+    RunInteractive,
 )
 
 
@@ -152,8 +152,8 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 add_job.add_prerequisite(run_batch_sol)
                 jobs.append(add_job)
 
-        elif self._env.config.task_type == TaskType.communication:
-            run_sol = run_judge = self._create_communication_jobs(input_path, test)
+        elif self._env.config.task_type == TaskType.interactive:
+            run_sol = run_judge = self._create_interactive_jobs(input_path, test)
             jobs.append(run_sol)
 
         self._judges[input_path] = run_judge
@@ -193,12 +193,12 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
 
         return (run_solution, run_judge)
 
-    def _create_communication_jobs(self, inp: InputPath, test: int) -> RunCommunication:
-        """Create RunCommunication job for communication task type."""
+    def _create_interactive_jobs(self, inp: InputPath, test: int) -> RunInteractive:
+        """Create RunInteractive job for interactive task type."""
         if self._env.config.out_judge is None:
-            raise RuntimeError("Unset judge for communication.")
+            raise RuntimeError("Unset judge for interactive.")
 
-        return RunCommunication(
+        return RunInteractive(
             self._env,
             self._solution,
             self.is_primary,

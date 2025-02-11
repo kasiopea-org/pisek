@@ -193,6 +193,9 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         elif task_type == "communication":
             config["tests"]["judge_type"] = "cms-communication"
 
+    if task_type == "communication":
+        config["task"]["task_type"] = "interactive"
+
     OLD_NAME = {
         ProgramType.gen: "in_gen",
         ProgramType.checker: "checker",

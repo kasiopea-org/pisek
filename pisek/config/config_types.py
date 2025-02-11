@@ -15,7 +15,7 @@ from enum import StrEnum, auto
 
 class TaskType(StrEnum):
     batch = auto()
-    communication = auto()
+    interactive = auto()
 
 
 class OutCheck(StrEnum):

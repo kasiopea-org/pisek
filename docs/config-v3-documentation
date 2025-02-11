@@ -44,10 +44,10 @@ use=organization-config
 # 4. organization-config, [default_section], key
 # 5. If still not found, return 42
 
-task_type=communication
+task_type=interactive
 # Task type:
 # - batch (default)
-# - communication
+# - interactive
 
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
@@ -93,8 +93,8 @@ out_check=judge
 #   - tokens: compare token-by-token with correct output (tokens are seperated by whitespace)
 #   - shuffle: like tokens, but allow permutation of tokens
 #   - judge: check with a custom program (called a 'judge')
-# In communication, only judge is allowed
-# For more see docs/batch_judge.md or docs/communication_judge.md
+# In interactive, only judge is allowed
+# For more see docs/batch_judge.md or docs/interactive_judge.md
 
 out_judge=judge
 # Only for out_check=judge (required in that case)
@@ -113,11 +113,11 @@ judge_type=cms-batch
 #       $TEST_INPUT=[input] $TEST_OUTPUT=[correct_output]
 #       return code 0 means correct, 1 wrong
 #
-# For task_type=communication:
+# For task_type=interactive:
 # - cms-communication
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#communication
 #
-# See docs/batch_judge.md or docs/communication_judge.md for details
+# See docs/batch_judge.md or docs/interactive_judge.md for details
 
 judge_needs_in=0
 judge_needs_out=0
@@ -245,12 +245,12 @@ tests=@auto
 stub=src/stub
 # Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix) (defaults to none)
-# Used commonly for communication tasks
+# Used commonly for interactive tasks
 
 headers=src/a-plus-b.h
 # Only for C/C++ CMS tasks
 # Allow each solution to include the given headers (defaults to none)
-# Used commonly for communication tasks
+# Used commonly for interactive tasks
 
 
 [run]
