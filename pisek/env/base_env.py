@@ -84,37 +84,36 @@ class BaseEnv(ContextModel):
         """Prevent this Env (and subenvs) from being forked."""
         self._locked = True
 
-    def get_accessed(self) -> set[str]:
+    def get_accessed(self) -> set[tuple[str, ...]]:
         """Get all accessed field names in this env (and all subenvs)."""
         accessed = set()
         self._logging = False
         for key in self._accessed:
             item = getattr(self, key)
             if isinstance(item, BaseEnv):
-                accessed |= {(f"{key}.{subkey}") for subkey in item.get_accessed()}
+                accessed |= {(key, *subkey) for subkey in item.get_accessed()}
             elif isinstance(item, dict) and all(
                 isinstance(val, BaseEnv) for val in item.values()
             ):
                 accessed |= {
-                    (f"{key}[{dict_key}].{subkey}")
+                    (key, dict_key, *subkey)
                     for dict_key, subenv in item.items()
                     for subkey in subenv.get_accessed()
                 }
             else:
-                accessed.add(key)
+                accessed.add((key,))
         self._logging = True
 
         return accessed
 
-    def get_compound(self, key: str) -> Any:
+    def get_compound(self, key: tuple[str, ...]) -> Any:
         """Get attribute that may be nested deeper and indexed."""
         obj = self
-        for key_part in key.split("."):
-            if "[" in key_part:
-                assert key_part[-1] == "]"
-                var, index = key_part[:-1].split("[")
-                dict_ = getattr(obj, var)
-                obj = dict_[type(list(dict_.keys())[0])(index)]
-            else:
+        for key_part in key:
+            if isinstance(obj, BaseEnv):
                 obj = getattr(obj, key_part)
+            elif isinstance(obj, dict):
+                obj = obj[type(list(obj.keys())[0])(key_part)]
+            else:
+                raise ValueError(f"Can't get compound key on type '{type(obj)}'.")
         return obj

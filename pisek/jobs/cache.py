@@ -39,7 +39,7 @@ class CacheEntry:
         name: str,
         signature: str,
         result: Any,
-        envs: Iterable[str],
+        envs: Iterable[tuple[str, ...]],
         files: Iterable[str],
         prerequisites_results: Iterable[str],
         output: list[tuple[str, bool]],
