@@ -99,7 +99,7 @@ class TaskConfig(BaseEnv):
 
     in_gen: OptionalStr
     gen_type: GenType
-    checker: OptionalStr
+    validator: OptionalStr
     out_check: OutCheck
     out_judge: OptionalStr
     judge_type: OptionalJudgeType
@@ -157,9 +157,9 @@ class TaskConfig(BaseEnv):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def checker_path(self) -> TaskPath:
-        assert self.checker is not None
-        return self._full_path(ProgramType.checker, self.checker)
+    def validator_path(self) -> TaskPath:
+        assert self.validator is not None
+        return self._full_path(ProgramType.validator, self.validator)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -204,7 +204,7 @@ class TaskConfig(BaseEnv):
             ("task", "static_subdir"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
-            ("tests", "checker"),
+            ("tests", "validator"),
             ("tests", "out_check"),
             ("tests", "in_format"),
             ("tests", "out_format"),
@@ -242,7 +242,7 @@ class TaskConfig(BaseEnv):
 
         PROGRAMS = [
             (ProgramType.gen, args["in_gen"]),
-            (ProgramType.checker, args["checker"]),
+            (ProgramType.validator, args["validator"]),
             (ProgramType.judge, args["out_judge"]),
         ]
         for t, program in PROGRAMS:

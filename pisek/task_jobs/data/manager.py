@@ -17,7 +17,7 @@ from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.config.config_types import TaskType
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
-from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.validator import ValidatorJob
 
 from .data import LinkData
 
@@ -116,11 +116,11 @@ class DataManager(TaskJobManager):
                 if testcase.generation_mode == TestcaseGenerationMode.generated:
                     continue
 
-                if test_num > 0 and self._env.config.checker is not None:
+                if test_num > 0 and self._env.config.validator is not None:
                     jobs.append(
-                        CheckerJob(
+                        ValidatorJob(
                             self._env,
-                            self._env.config.checker,
+                            self._env.config.validator,
                             testcase.input_path(self._env, None),
                             test_num,
                         )

@@ -11,7 +11,7 @@ version=v3
 
 [tests]
 in_gen=
-# checker=check
+# validator=validate
 
 out_check=judge
 out_judge=src/judge

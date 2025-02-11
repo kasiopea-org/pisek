@@ -31,7 +31,7 @@ pisek test
 ```
 
 This command tests the task in the current directory.
-It tests all task parts (generator, checker, solutions and judge).
+It tests all task parts (generator, validator, solutions and judge).
 
 ### Task testing overview
 
@@ -40,7 +40,7 @@ What pisek verifies:
  - The generator generates inputs
     - Generator is deterministic
     - Generator respects seed on seeded inputs
- - The checker accepts all inputs
+ - The validator accepts all inputs
  - The judge works
     - It accepts the samples
     - It doesn't crash on malicious output

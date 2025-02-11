@@ -27,7 +27,7 @@ from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.data import InputSmall, OutputSmall
 from pisek.task_jobs.tools import IsClean
-from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.validator import ValidatorJob
 from pisek.task_jobs.solution.solution import RunBatchSolution
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
@@ -190,11 +190,11 @@ class TestcaseInfoMixin(JobManager):
 
         jobs += self._check_input_jobs(input_path)
 
-        if self._env.config.checker is not None and test > 0:
+        if self._env.config.validator is not None and test > 0:
             jobs.append(
-                check_input := CheckerJob(
+                check_input := ValidatorJob(
                     self._env,
-                    self._env.config.checker,
+                    self._env.config.validator,
                     input_path,
                     test,
                 )

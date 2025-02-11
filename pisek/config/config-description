@@ -11,7 +11,7 @@ in_gen=
 gen_type=
 in_format=
 out_format=
-checker=
+validator=
 
 out_check=
 out_judge=
@@ -114,7 +114,7 @@ process_limit=
 args=
 subdir=
 
-[run_checker]
+[run_validator]
 #!default run
 exec=
 time_limit=
@@ -125,9 +125,9 @@ process_limit=
 args=
 subdir=
 
-[run_checker_(.*)]
+[run_validator_(.*)]
 #!regex
-#!default checker
+#!default run_validator
 exec=
 time_limit=
 clock_mul=
@@ -195,7 +195,7 @@ subdir=
 
 [run_judge_(.*)]
 #!regex
-#!default checker
+#!default run_judge
 exec=
 time_limit=
 clock_mul=
