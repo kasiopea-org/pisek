@@ -131,22 +131,22 @@ def globs_to_regex(globs: Iterator[str]) -> str:
 
 
 def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
-    config = env.config
+    config: TaskConfig = env.config
 
     if config.out_check != OutCheck.judge:
         return
 
     assert config.out_judge is not None
 
+    run_section = config.runs[f"judge_{config.out_judge}"]
+    judge_path = TaskPath.executable_path(env, path.splitext(run_section.exec.name)[0]).path
+
     if config.task_type == TaskType.batch:
         judge_name = "checker"
     elif config.task_type == TaskType.interactive:
         judge_name = "manager"
 
-    judge = files.put_file_from_path(
-        TaskPath.executable_path(env, path.basename(config.out_judge)).path,
-        f"{judge_name} for {config.name}",
-    )
+    judge = files.put_file_from_path(judge_path, f"{judge_name} for {config.name}")
     session.add(Manager(dataset=dataset, filename=judge_name, digest=judge))
 
 
