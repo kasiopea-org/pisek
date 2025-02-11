@@ -422,7 +422,7 @@ class TestConfig(BaseEnv):
         else:
             args = {
                 key: configs.get_from_candidates(
-                    [(number.section, key), ("all_tests", key)]
+                    [(number.section, key), ("tests", key)]
                 )
                 for key in KEYS
             }

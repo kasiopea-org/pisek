@@ -265,6 +265,10 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
 
     maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
 
+    maybe_move_key(config, "name", "all_tests", "tests")
+    maybe_move_key(config, "in_globs", "all_tests", "tests")
+    maybe_move_key(config, "predecessors", "all_tests", "tests")
+
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
 CURRENT_VERSIONS = {"v2": ("v3", update_to_v3)}
