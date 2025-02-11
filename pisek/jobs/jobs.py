@@ -54,7 +54,7 @@ class CaptureInitParams:
     """
 
     _initialized = False
-    _accessed_envs: MutableSet[str]
+    _accessed_envs: MutableSet[tuple[str, ...]]
 
     def __init_subclass__(cls):
         real_init = cls.__init__
@@ -172,7 +172,7 @@ class Job(PipelineItem, CaptureInitParams):
 
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
-        self._accessed_envs: MutableSet[str] = set()
+        self._accessed_envs: MutableSet[tuple[str, ...]] = set()
         self._accessed_files: MutableSet[str] = set()
         self._terminal_output: list[tuple[str, bool]] = []
         self.name = name
@@ -192,7 +192,10 @@ class Job(PipelineItem, CaptureInitParams):
         return set(self._accessed_files)
 
     def _signature(
-        self, envs: AbstractSet[str], paths: AbstractSet[str], results: dict[str, Any]
+        self,
+        envs: AbstractSet[tuple[str, ...]],
+        paths: AbstractSet[str],
+        results: dict[str, Any],
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
@@ -201,12 +204,12 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for key in sorted(envs):
+        for env_key in sorted(envs):
             try:
-                value = self._env.get_compound(key)
-            except (AttributeError, TypeError):
-                return (None, f"Key nonexistent: {key}")
-            sign.update(f"{key}={value}\n".encode())
+                value = self._env.get_compound(env_key)
+            except (AttributeError, TypeError, ValueError):
+                return (None, f"Key nonexistent: {env_key}")
+            sign.update(f"{env_key}={value}\n".encode())
 
         expanded_files = []
         for path in sorted(paths):
