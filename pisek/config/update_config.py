@@ -193,9 +193,14 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         elif task_type == "communication":
             config["tests"]["judge_type"] = "cms-communication"
 
+    if task_type == "communication":
+        config["task"]["task_type"] = "interactive"
+
+    maybe_rename_key(config, "tests", "tests", "checker", "validator")
+
     OLD_NAME = {
         ProgramType.gen: "in_gen",
-        ProgramType.checker: "checker",
+        ProgramType.validator: "checker",
         ProgramType.primary_solution: "solve",
         ProgramType.secondary_solution: "sec_solve",
         ProgramType.judge: "judge",
@@ -265,6 +270,10 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
             maybe_rename_key(config, section, section, "source", "run")
 
     maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
+
+    maybe_move_key(config, "name", "all_tests", "tests")
+    maybe_move_key(config, "in_globs", "all_tests", "tests")
+    maybe_move_key(config, "predecessors", "all_tests", "tests")
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}

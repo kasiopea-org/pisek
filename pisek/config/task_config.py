@@ -98,7 +98,7 @@ class TaskConfig(BaseEnv):
 
     in_gen: OptionalStr
     gen_type: GenType
-    checker: OptionalStr
+    validator: OptionalStr
     out_check: OutCheck
     out_judge: OptionalStr
     judge_type: OptionalJudgeType
@@ -156,9 +156,9 @@ class TaskConfig(BaseEnv):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def checker_path(self) -> TaskPath:
-        assert self.checker is not None
-        return self._full_path(ProgramType.checker, self.checker)
+    def validator_path(self) -> TaskPath:
+        assert self.validator is not None
+        return self._full_path(ProgramType.validator, self.validator)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -201,7 +201,7 @@ class TaskConfig(BaseEnv):
             ("task", "score_precision"),
             ("tests", "in_gen"),
             ("tests", "gen_type"),
-            ("tests", "checker"),
+            ("tests", "validator"),
             ("tests", "out_check"),
             ("tests", "in_format"),
             ("tests", "out_format"),
@@ -240,7 +240,7 @@ class TaskConfig(BaseEnv):
 
         PROGRAMS = [
             (ProgramType.gen, args["in_gen"]),
-            (ProgramType.checker, args["checker"]),
+            (ProgramType.validator, args["validator"]),
             (ProgramType.judge, args["out_judge"]),
         ]
         for t, program in PROGRAMS:
@@ -299,19 +299,16 @@ class TaskConfig(BaseEnv):
 
     @model_validator(mode="after")
     def validate_model(self):
-        if (
-            self.task_type == TaskType.communication
-            and self.out_check != OutCheck.judge
-        ):
+        if self.task_type == TaskType.interactive and self.out_check != OutCheck.judge:
             raise PydanticCustomError(
-                "communication_must_have_judge",
-                "For communication task 'out_check' must be 'judge'",
+                "interactive_must_have_judge",
+                "For interactive task 'out_check' must be 'judge'",
                 {"task_type": self.task_type, "out_check": self.out_check},
             )
 
         JUDGE_TYPES = {
             TaskType.batch: [None, JudgeType.opendata_v1, JudgeType.cms_batch],
-            TaskType.communication: [JudgeType.cms_communication],
+            TaskType.interactive: [JudgeType.cms_communication],
         }
 
         if self.judge_type not in JUDGE_TYPES[self.task_type]:
@@ -423,7 +420,7 @@ class TestConfig(BaseEnv):
         else:
             args = {
                 key: configs.get_from_candidates(
-                    [(number.section, key), ("all_tests", key)]
+                    [(number.section, key), ("tests", key)]
                 )
                 for key in KEYS
             }

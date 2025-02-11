@@ -7,12 +7,11 @@ score_precision=0
 
 [tests]
 gen_type=cms-old
-checker=
+validator=
 judge_needs_in=1
 judge_needs_out=1
 static_subdir=.
 
-[all_tests]
 name=@auto 
 in_globs=@ith
 predecessors=@previous
@@ -24,7 +23,7 @@ in_globs=sample*.in
 predecessors=
 
 [all_solutions]
-source=@auto
+run=@auto
 primary=no
 points=X
 points_above=X

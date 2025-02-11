@@ -77,7 +77,7 @@ class RunBatchSolution(RunSolution):
         )
 
 
-class RunCommunication(RunCMSJudge, RunSolution):
+class RunInteractive(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,

@@ -15,7 +15,7 @@ from enum import StrEnum, auto
 
 class TaskType(StrEnum):
     batch = auto()
-    communication = auto()
+    interactive = auto()
 
 
 class OutCheck(StrEnum):
@@ -51,7 +51,7 @@ class DataFormat(StrEnum):
 
 class ProgramType(StrEnum):
     gen = auto()
-    checker = auto()
+    validator = auto()
     primary_solution = auto()
     secondary_solution = auto()
     judge = auto()

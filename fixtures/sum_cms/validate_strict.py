@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Checker based on Kasiopea's checker template from Pali Madaj.
+# Validator based on Kasiopea's validator template from Pali Madaj.
 import sys
 import argparse
 
 
 def main(diff):
-    BOUNDS = [(0, 1e9), (-1e9, 1e9), (-1e18, 1e18)]
-    assert 0 <= diff < len(BOUNDS)
+    # Here BOUNDS[2] are stricter than what the generator really creates.
+    BOUNDS = [(0, 1e9), (-1e9, 1e9), (-1e9, 1e9)]
     read_values(2, *BOUNDS[diff])
 
 

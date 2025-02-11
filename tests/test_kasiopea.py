@@ -197,14 +197,14 @@ class TestPythonCRLF(TestSumKasiopea):
             f.write("\r\n".join(new_program))
 
 
-class TestStrictChecker(TestSumKasiopea):
-    """A checker whose bounds are stricter than what the generator creates."""
+class TestStrictValidator(TestSumKasiopea):
+    """A validator whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
         return False
 
     def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_strict.py")
+        overwrite_file(self.task_dir, "validate.py", "validate_strict.py")
 
 
 class TestDirtySample(TestSumKasiopea):

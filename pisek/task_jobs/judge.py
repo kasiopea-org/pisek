@@ -68,7 +68,7 @@ class JudgeManager(TaskJobManager):
 
         # All samples must be static, therefore they exist already
         samples = self._get_samples()
-        if self._env.config.task_type == TaskType.communication:
+        if self._env.config.task_type == TaskType.interactive:
             return jobs
 
         for inp, out in samples:

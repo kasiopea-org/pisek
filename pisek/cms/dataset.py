@@ -51,7 +51,7 @@ def create_dataset(
             ("", ""),
             "comparator" if config.out_check == OutCheck.judge else "diff",
         )
-    elif config.task_type == TaskType.communication:
+    elif config.task_type == TaskType.interactive:
         task_type = "Communication"
         task_params = (1, "stub" if config.stub is not None else "alone", "std_io")
     else:
@@ -137,7 +137,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 
     if config.task_type == TaskType.batch:
         judge_name = "checker"
-    elif config.task_type == TaskType.communication:
+    elif config.task_type == TaskType.interactive:
         judge_name = "manager"
 
     judge = files.put_file_from_path(
@@ -169,7 +169,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 
     if config.task_type == TaskType.batch:
         stub_basename = "grader"
-    elif config.task_type == TaskType.communication:
+    elif config.task_type == TaskType.interactive:
         stub_basename = "stub"
 
     directory, target_basename = path.split(config.stub.path)

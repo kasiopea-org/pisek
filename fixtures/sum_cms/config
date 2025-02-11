@@ -12,7 +12,7 @@ version=v2
 # generator source file
 in_gen=gen
 
-checker=check
+checker=validate
 
 out_check=judge
 # judge source file

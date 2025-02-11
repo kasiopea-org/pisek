@@ -23,17 +23,35 @@ version=v3
 use=organization-config
 # Config to use defaults from (defaults to none)
 
-task_type=communication
+# Values of keys are loaded in the following way:
+# 1. We try to find a given (section,key) in the task config
+# 2. If not found, we go to the config specified by the use key.
+# 3. If we are in the topmost config, we reset to the task config and
+#    try searching for the defaulting section and key of this key.
+# 4. If there is no defaulting key, we either return the default value, or fail if there is none.
+#
+# For example, consider:
+#   use=organization-config
+#   ([section],key) defaults to ([default_section],key)
+#   ([default_section],key) defaults to 42 if not present
+# Then we search in this order:
+# 1. this config,         [section], key
+# 2. organization-config, [section], key
+# 3. this config,         [default_section], key
+# 4. organization-config, [default_section], key
+# 5. If still not found, return 42
+
+task_type=interactive
 # Task type:
 # - batch (default)
-# - communication
+# - interactive
 
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Reference to the run section specifying how to run the generator (if empty, only static inputs are used)
 # See [run] for more
 
@@ -53,11 +71,12 @@ out_format=text
 # Format of output:
 #   text    ASCII plain text (LF newlines) (default)
 #   binary  can be anything
+# When set to text, pisek will check that the file ends with a line feed.
 #
 # TODO: Mention auto normalization in Server mode when it's done (#137)
 
-checker=check
-# Reference to the run section specifying how to run the checker
+validator=validate
+# Reference to the run section specifying how to run the validator
 # See [run] for more
 #
 # No value means no checking (default)
@@ -68,8 +87,8 @@ out_check=judge
 #   - tokens: compare token-by-token with correct output (tokens are seperated by whitespace)
 #   - shuffle: like tokens, but allow permutation of tokens
 #   - judge: check with a custom program (called a 'judge')
-# In communication, only judge is allowed
-# For more see docs/batch_judge.md or docs/communication_judge.md
+# In interactive, only judge is allowed
+# For more see docs/batch_judge.md or docs/interactive_judge.md
 
 out_judge=judge
 # Only for out_check=judge (required in that case)
@@ -84,20 +103,20 @@ judge_type=cms-batch
 # - cms-batch
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#checker
 # - opendata-v1
-#       ./judge [test] [seed] < output
+#       ./judge <test> <seed> < output
 #       $TEST_INPUT=[input] $TEST_OUTPUT=[correct_output]
 #       return code 0 means correct, 1 wrong
 #
-# For task_type=communication:
+# For task_type=interactive:
 # - cms-communication
 #       https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=manager#communication
 #
-# See docs/batch_judge.md or docs/communication_judge.md for details
+# See docs/batch_judge.md or docs/interactive_judge.md for details
 
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output (default)
+# Set to 1 if judge needs input/correct output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
@@ -133,18 +152,17 @@ shuffle_ignore_case=0
 static_subdir=static_tests/
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
-[test01]
-# Section for each test (indexed from one)
-# Keys default to [all_tests] keys if test is not set
+# Defaults for [testXX] keys:
 
-name=Test 1
+name=@auto
 # Name of the test
 # @auto expands to "Test [test number]" (default)
 
-points=3
-# Number of points (<int>) (required)
+points=2
+# Number of points for this test (<int>)
+# (required in [tests] or each [testXX])
 
-in_globs=01*.in
+in_globs=@ith
 # Which new inputs are introduced in this test.
 # Supports expansion of * and ? as in shell
 # @ith expands to {test_number:02}*.in (default)
@@ -152,25 +170,27 @@ in_globs=01*.in
 predecessors=
 # Space separated list of test easier than this test
 # Inputs from these test are included into this test as well
-# @previous expands to previous test (or nothing if test has number <= 1) (default)
+# @previous expands to previous test (or nothing if test has number <= 1)
+
+[test01]
+# Section for each test (indexed from one)
+# Keys default to [tests] keys if not set
+name=Test 1
+points=3
+in_globs=01*.in
+predecessors=
 
 [test00]
 # Section for samples test
-# Can be omitted and has the following defaults: (doesn't use [all_tests] defaults)
+# Can be omitted and has the following defaults: (doesn't use [tests] defaults)
 name=Samples
 points=0
 in_globs=sample*.in
 predecessors=
 
-[all_tests]
-# Defaults for all tests
-# If not specified the defaults are:
-name=@auto
-in_globs=@ith
-predecessors=@previous
-
 [solution_correct]
 # Section for each solution
+# This solution is named "correct"
 # Keys default to [all_solution] keys
 
 run=solve
@@ -209,7 +229,7 @@ tests=X10
 [all_solutions]
 # Defaults for all solutions
 # If not specified the defaults are:
-source=@auto
+run=@auto
 primary=no
 points=X
 points_above=X
@@ -222,12 +242,12 @@ tests=@auto
 stub=src/stub
 # Only for C/C++ CMS tasks
 # Link each solution with given program (without suffix) (defaults to none)
-# Used commonly for communication tasks
+# Used commonly for interactive tasks
 
 headers=src/a-plus-b.h
 # Only for C/C++ CMS tasks
 # Allow each solution to include the given headers (defaults to none)
-# Used commonly for communication tasks
+# Used commonly for interactive tasks
 
 
 [run]
@@ -236,9 +256,9 @@ headers=src/a-plus-b.h
 # The run section for each program is optional. If it is missing, its contents are autogenerated,
 # by looking for most specific section with the given key set, according to this hierarchy:
 #                                          [run]
-#       [run_gen]          [run_checker]          [run_judge]                         [run_solution]
+#       [run_gen]          [run_validator]          [run_judge]                         [run_solution]
 #                                                                    [run_primary_solution] [run_secondary_solution]
-# [run_gen_{program}] [run_checker_{program}] [run_judge_{program}]              [run_solution_{program}]
+# [run_gen_{program}] [run_validator_{program}] [run_judge_{program}]              [run_solution_{program}]
 
 exec=@auto
 # Filename of the program to execute (without suffix)

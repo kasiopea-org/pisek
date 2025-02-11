@@ -9,7 +9,7 @@ in_gen=
 gen_type=
 in_format=
 out_format=
-checker=
+validator=
 
 out_check=
 out_judge=
@@ -39,16 +39,15 @@ shuffle_ignore_case=
 
 static_subdir=
 
-[test\d{2}]
-#!regex
-#!default all_tests
 name=
-points=
 in_globs=
 predecessors=
 
-[all_tests]
+[test\d{2}]
+#!regex
+#!default tests
 name=
+points=
 in_globs=
 predecessors=
 
@@ -71,7 +70,7 @@ tests=
 subtasks=
 
 [all_solutions]
-source=
+run=
 primary=
 points=
 points_above=
@@ -114,7 +113,7 @@ process_limit=
 args=
 subdir=
 
-[run_checker]
+[run_validator]
 #!default run
 exec=
 time_limit=
@@ -125,9 +124,9 @@ process_limit=
 args=
 subdir=
 
-[run_checker_(.*)]
+[run_validator_(.*)]
 #!regex
-#!default checker
+#!default run_validator
 exec=
 time_limit=
 clock_mul=
@@ -195,7 +194,7 @@ subdir=
 
 [run_judge_(.*)]
 #!regex
-#!default checker
+#!default run_judge
 exec=
 time_limit=
 clock_mul=
