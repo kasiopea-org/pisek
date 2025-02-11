@@ -155,7 +155,7 @@ shuffle_ignore_case=0
 # Only for out_check=shuffle
 # If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
 
-# Defaults for [testXY] keys:
+# Defaults for [testXX] keys:
 
 name=@auto
 # Name of the test
@@ -163,7 +163,7 @@ name=@auto
 
 points=2
 # Number of points for this test (<int>)
-# (required in in [tests] or each [testXY])
+# (required in [tests] or each [testXX])
 
 in_globs=@ith
 # Which new inputs are introduced in this test.
