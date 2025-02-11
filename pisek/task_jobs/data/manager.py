@@ -42,7 +42,7 @@ class DataManager(TaskJobManager):
             output_path = input_path.replace_suffix(".out")
 
             if (
-                self._env.config.task_type == TaskType.communication
+                self._env.config.task_type == TaskType.interactive
                 or output_path.exists()
             ):
                 static_testcase_infos.append(TestcaseInfo.static(name))
@@ -101,7 +101,7 @@ class DataManager(TaskJobManager):
                 )
             if (
                 mode == TestcaseGenerationMode.static
-                and self._env.config.task_type != TaskType.communication
+                and self._env.config.task_type != TaskType.interactive
             ):
                 jobs.append(
                     LinkData(

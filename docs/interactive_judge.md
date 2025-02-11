@@ -1,9 +1,9 @@
-# Communication judge
+# Interactive judge
 
-The communication judge gets the input and means of communication with contestant's solution.
+The interactive judge gets the input and means of communication with contestant's solution.
 It should report whether the contestant solution is correct.
 
-There is currently only one communication `judge_type` supported:
+There is currently only one interactive `judge_type` supported:
 
 ## CMS-communication judge
 *See [CMS documentation](https://cms.readthedocs.io/en/v1.4/Task%20types.html?highlight=Manager#communication) for more, however only one user process is supported.*

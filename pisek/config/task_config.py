@@ -301,19 +301,16 @@ class TaskConfig(BaseEnv):
 
     @model_validator(mode="after")
     def validate_model(self):
-        if (
-            self.task_type == TaskType.communication
-            and self.out_check != OutCheck.judge
-        ):
+        if self.task_type == TaskType.interactive and self.out_check != OutCheck.judge:
             raise PydanticCustomError(
-                "communication_must_have_judge",
-                "For communication task 'out_check' must be 'judge'",
+                "interactive_must_have_judge",
+                "For interactive task 'out_check' must be 'judge'",
                 {"task_type": self.task_type, "out_check": self.out_check},
             )
 
         JUDGE_TYPES = {
             TaskType.batch: [None, JudgeType.opendata_v1, JudgeType.cms_batch],
-            TaskType.communication: [JudgeType.cms_communication],
+            TaskType.interactive: [JudgeType.cms_communication],
         }
 
         if self.judge_type not in JUDGE_TYPES[self.task_type]:
