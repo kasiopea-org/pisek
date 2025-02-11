@@ -155,18 +155,17 @@ shuffle_ignore_case=0
 # Only for out_check=shuffle
 # If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
 
-[test01]
-# Section for each test (indexed from one)
-# Keys default to [all_tests] keys if test is not set
+# Defaults for [testXY] keys:
 
-name=Test 1
+name=@auto
 # Name of the test
 # @auto expands to "Test [test number]" (default)
 
-points=3
-# Number of points (<int>) (required)
+points=2
+# Number of points for this test (<int>)
+# (required in in [tests] or each [testXY])
 
-in_globs=01*.in
+in_globs=@ith
 # Which new inputs are introduced in this test.
 # Supports expansion of * and ? as in shell
 # @ith expands to {test_number:02}*.in (default)
@@ -174,22 +173,23 @@ in_globs=01*.in
 predecessors=
 # Space separated list of test easier than this test
 # Inputs from these test are included into this test as well
-# @previous expands to previous test (or nothing if test has number <= 1) (default)
+# @previous expands to previous test (or nothing if test has number <= 1)
+
+[test01]
+# Section for each test (indexed from one)
+# Keys default to [tests] keys if not set
+name=Test 1
+points=3
+in_globs=01*.in
+predecessors=
 
 [test00]
 # Section for samples test
-# Can be omitted and has the following defaults: (doesn't use [all_tests] defaults)
+# Can be omitted and has the following defaults: (doesn't use [tests] defaults)
 name=Samples
 points=0
 in_globs=sample*.in
 predecessors=
-
-[all_tests]
-# Defaults for all tests
-# If not specified the defaults are:
-name=@auto
-in_globs=@ith
-predecessors=@previous
 
 [solution_correct]
 # Section for each solution

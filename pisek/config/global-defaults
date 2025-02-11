@@ -15,11 +15,9 @@ tokens_float_abs_error=
 shuffle_ignore_case=0
 in_format=text
 out_format=text
-
-[all_tests]
 name=@auto
 in_globs=@ith
-predecessors=@previous
+predecessors=
 
 [test00]
 name=Samples

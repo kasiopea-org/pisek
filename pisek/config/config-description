@@ -39,16 +39,15 @@ shuffle_mode=
 shuffle_ignore_case=
 #!if tests out_check=shuffle
 
-[test\d{2}]
-#!regex
-#!default all_tests
 name=
-points=
 in_globs=
 predecessors=
 
-[all_tests]
+[test\d{2}]
+#!regex
+#!default tests
 name=
+points=
 in_globs=
 predecessors=
 
