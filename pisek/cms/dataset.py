@@ -139,7 +139,9 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     assert config.out_judge is not None
 
     run_section = config.runs[f"judge_{config.out_judge}"]
-    judge_path = TaskPath.executable_path(env, path.splitext(run_section.exec.name)[0]).path
+    judge_path = TaskPath.executable_path(
+        env, path.splitext(run_section.exec.name)[0]
+    ).path
 
     if config.task_type == TaskType.batch:
         judge_name = "checker"
