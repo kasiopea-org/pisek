@@ -2,7 +2,6 @@
 # Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
-name=guess
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 use=interactive
@@ -43,3 +42,6 @@ tests=1P
 [solution_solve_0b]
 points=0
 tests=1W
+
+[cms]
+name=guess

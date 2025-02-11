@@ -75,8 +75,16 @@ def generate_testcases(env: Env) -> list[InputPath]:
     return pipeline.input_dataset()
 
 
+def check_config(env: Env):
+    if env.config.cms.name is None:
+        raise RuntimeError(
+            "The name key in the [cms] section must be set to run CMS commands."
+        )
+
+
 @with_env
 def create(env: Env, args: Namespace) -> int:
+    check_config(env)
     testcases = generate_testcases(env)
     session = Session()
 
@@ -100,6 +108,7 @@ def create(env: Env, args: Namespace) -> int:
 
 @with_env
 def update(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)
@@ -113,6 +122,7 @@ def update(env: Env, args: Namespace) -> int:
 
 @with_env
 def add(env: Env, args: Namespace) -> int:
+    check_config(env)
     testcases = generate_testcases(env)
     session = Session()
 
@@ -135,6 +145,7 @@ def add(env: Env, args: Namespace) -> int:
 
 @with_env
 def submit(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     username = args.username
@@ -161,6 +172,7 @@ def get_dataset_from_args(session: SessionType, task: Task, args: Namespace) -> 
 
 @with_env
 def testing_log(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)
@@ -172,6 +184,7 @@ def testing_log(env: Env, args: Namespace) -> int:
 
 @with_env
 def check(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)

@@ -20,9 +20,6 @@ version=v3
 
 # You can use 'pisek update' to update the config to the highest version.
 
-name=a-plus-b
-# Name of task (for automatic CMS import) (required)
-
 use=organization-config
 # Config to use defaults from (defaults to none)
 
@@ -51,9 +48,6 @@ task_type=interactive
 
 score_precision=0
 # How many decimal digits scores are rounded to (defaults to 0)
-
-static_subdir=static_tests
-# Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 [tests]
 
@@ -154,6 +148,9 @@ shuffle_mode=lines
 shuffle_ignore_case=0
 # Only for out_check=shuffle
 # If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
+
+static_subdir=static_tests/
+# Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 # Defaults for [testXX] keys:
 
@@ -341,6 +338,8 @@ generator_respects_seed=on
 # Settings related to the CMS importer
 # See CMS docs (https://cms.readthedocs.io/en/latest/) for details
 
+name=a-plus-b
+# Name of task, which will appear in the task URL (required for CMS commands)
 title=A plus B
 # The name of the task shown on the task description page 
 # @name expands to the task name (default)
