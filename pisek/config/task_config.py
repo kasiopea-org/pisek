@@ -548,18 +548,6 @@ class SolutionConfig(BaseEnv):
             )
         return value
 
-    @field_validator("primary", mode="before")
-    @classmethod
-    def convert_yesno(cls, value: str) -> bool:
-        if value == "yes":
-            return True
-        elif value == "no":
-            return False
-        raise PydanticCustomError(
-            "primary_invalid",
-            "Must be one of (yes, no)",
-        )
-
     @field_validator("tests", mode="after")
     def validate_tests(cls, value, info: ValidationInfo):
         if info.context is None:
