@@ -199,7 +199,7 @@ predecessors=
 [solution_correct]
 # Section for each solution
 # This solution is named "correct"
-# Keys default to [all_solution] keys
+# Keys default to [solution] keys
 
 run=solve
 # Reference to the run section specifying how to run this solution
@@ -234,7 +234,7 @@ tests=X10
 # @any - string of XX...
 # @auto - @all if this is primary solution, @any otherwise (default)
 
-[all_solutions]
+[solutions]
 # Defaults for all solutions
 # If not specified the defaults are:
 run=@auto
@@ -244,7 +244,7 @@ points_above=X
 points_below=X
 tests=@auto
 
-# There are also keys that are specific to [all_solutions]
+# There are also keys that are specific to [solutions]
 # and cannot be configured on a per solution basis:
 
 stub=src/stub

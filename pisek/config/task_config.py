@@ -206,8 +206,8 @@ class TaskConfig(BaseEnv):
             ("tests", "in_format"),
             ("tests", "out_format"),
             ("tests", "static_subdir"),
-            ("all_solutions", "stub"),
-            ("all_solutions", "headers"),
+            ("solutions", "stub"),
+            ("solutions", "headers"),
         ]
         OUT_CHECK_SPECIFIC_KEYS = [
             ((None, "judge"), "out_judge", ""),
@@ -507,9 +507,7 @@ class SolutionConfig(BaseEnv):
             "tests",
         ]
         args = {
-            key: configs.get_from_candidates(
-                [(name.section, key), ("all_solutions", key)]
-            )
+            key: configs.get_from_candidates([(name.section, key), ("solutions", key)])
             for key in KEYS
         }
 
@@ -521,7 +519,7 @@ class SolutionConfig(BaseEnv):
         # This way we get some time to migrate
         try:
             args["tests"] = configs.get_from_candidates(
-                [(name.section, "subtasks"), ("all_solutions", "subtasks")]
+                [(name.section, "subtasks"), ("solutions", "subtasks")]
             )
         except TaskConfigError:
             pass
