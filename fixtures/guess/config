@@ -16,7 +16,7 @@ out_check=judge
 out_judge=src/judge
 judge_type=cms-communication
 
-[all_solutions]
+[solutions]
 stub=src/stub
 headers=src/guess.h
 
