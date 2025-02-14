@@ -9,6 +9,13 @@
 # - Only ! value is !unset, which is always invalid
 # - @ values autoexpand depending on context
 
+# Bool type switches can have the following values:
+# True values:
+#   - 1, True, true, t, yes, y, on
+# False values:
+#   - 0, False, false, f, no, n, off
+
+
 [task]
 
 version=v3
@@ -116,17 +123,18 @@ judge_type=cms-batch
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/correct output (default)
+# Whether the judge needs the input/correct output (bool)
+# Both default to true
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
-# If set to 1, newline characters will be ignored when checking the output,
+# If set to true, newline characters will be ignored when checking the output,
 # as if they were any other whitespace characters
-# If set to 0, newline characters are only ignored at the end of the file (default)
+# If set to false, newline characters are only ignored at the end of the file (default)
 
 tokens_ignore_case=0
 # Only for out_check=tokens
-# If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
+# If set to true, ASCII characters will be compared in a case-insensitive manner (defaults to false)
 
 tokens_float_rel_error=0.00001
 tokens_float_abs_error=1e-30
@@ -147,7 +155,7 @@ shuffle_mode=lines
 
 shuffle_ignore_case=0
 # Only for out_check=shuffle
-# If set to 1, ASCII characters will be compared in a case-insensitive manner (defaults to 0)
+# If set to true, ASCII characters will be compared in a case-insensitive manner (defaults to false)
 
 static_subdir=static_tests/
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
@@ -200,7 +208,7 @@ run=solve
 # @auto expands to name of the section without "solution_" (in this case to "correct") (default)
 
 primary=yes
-# Use this solution to generate correct outputs? (defaults to no)
+# Use this solution to generate correct outputs? (bool, defaults to false)
 # Exactly one solution has to be set to primary
 # (or zero if there are no solutions in config)
 
@@ -315,7 +323,7 @@ output_max_size=5
 # Please be careful with this section as disabling checks can make
 # task making into a minefield
 
-# Values are on/off: 
+# Each value is a bool:
 
 solution_for_each_tests=off
 # checks that a dedicated solution exists for each test (aside from samples) (defaults to off)
