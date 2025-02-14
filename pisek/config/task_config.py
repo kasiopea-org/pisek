@@ -702,27 +702,21 @@ class CMSConfig(BaseEnv):
     @classmethod
     def convert_title(cls, value: str, info: ValidationInfo) -> str:
         if value == "@name":
-            if info.context is None:
-                raise RuntimeError(MISSING_VALIDATION_CONTEXT)
+            name = info.data.get("name")
+            name = "unnamed-task" if name is None else name
 
-            return info.context.get("name", "unnamed-task")
+            return name
         else:
             return value
 
     @field_validator("submission_format", mode="after")
     @classmethod
     def convert_format(cls, value: list[str], info: ValidationInfo) -> list[str]:
-        if info.context is None:
-            raise RuntimeError(MISSING_VALIDATION_CONTEXT)
+        name = info.data.get("name")
+        name = "unnamed-task" if name is None else name
 
         return [
-            (
-                CMSConfig.get_default_file_name(
-                    info.context.get("name", "unnamed-task")
-                )
-                if n == "@name"
-                else n
-            )
+            (CMSConfig.get_default_file_name(name) if n == "@name" else n)
             for n in value
         ]
 
