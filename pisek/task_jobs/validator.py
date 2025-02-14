@@ -66,13 +66,13 @@ class ValidatorJob(ProgramsJob):
         test: int,
         **kwargs,
     ):
-        super().__init__(env=env, name=f"Check {input_:n} on test {test}", **kwargs)
+        super().__init__(env=env, name=f"Validate {input_:n} on test {test}", **kwargs)
         self.validator = validator
         self.test = test
         self.input = input_
         self.log_file = input_.to_log(f"{validator}{test}")
 
-    def _check(self) -> RunResult:
+    def _validate(self) -> RunResult:
         return self._run_program(
             ProgramType.validator,
             self.validator,
@@ -82,7 +82,7 @@ class ValidatorJob(ProgramsJob):
         )
 
     def _run(self) -> RunResult:
-        result = self._check()
+        result = self._validate()
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
                 f"Validator failed on {self.input:p} (test {self.test}):",
