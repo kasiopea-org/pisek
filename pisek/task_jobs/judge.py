@@ -656,11 +656,13 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
         return os.path.join(gettempdir(), f"the-{name}-is-not-available-{uuid4()}")
 
     def _judge(self) -> SolutionResult:
-        self._access_file(self.input)
-        self._access_file(self.output)
-        self._access_file(self.correct_output)
-
         config = self._env.config
+
+        self._access_file(self.output)
+        if config.judge_needs_in:
+            self._access_file(self.input)
+        if config.judge_needs_out:
+            self._access_file(self.correct_output)
 
         result = self._run_program(
             ProgramType.judge,

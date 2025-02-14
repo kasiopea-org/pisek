@@ -138,16 +138,21 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 testcase_info, seed, test
             )
             run_sol = run_batch_sol
-            link = SymlinkData(
-                self._env,
-                testcase_info.reference_output(self._env, seed),
-                testcase_info.reference_output(
-                    self._env, seed, solution=self.solution_label
-                ),
-            )
-            jobs += [run_batch_sol, link, run_judge]
-            link.add_prerequisite(run_batch_sol)
-            run_judge.add_prerequisite(link)
+            if self._env.config.judge_needs_out:
+                link = SymlinkData(
+                    self._env,
+                    testcase_info.reference_output(self._env, seed),
+                    testcase_info.reference_output(
+                        self._env, seed, solution=self.solution_label
+                    ),
+                )
+                jobs += [run_batch_sol, link, run_judge]
+                link.add_prerequisite(run_batch_sol)
+                run_judge.add_prerequisite(link)
+            else:
+                jobs += [run_batch_sol, run_judge]
+                run_judge.add_prerequisite(run_batch_sol)
+
             for add_job in self._check_output_jobs(run_batch_sol.output, run_batch_sol):
                 add_job.add_prerequisite(run_batch_sol)
                 jobs.append(add_job)
