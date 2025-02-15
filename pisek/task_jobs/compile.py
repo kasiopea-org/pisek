@@ -90,7 +90,7 @@ class Compile(ProgramsJob):
         self._access_file(self._load_compiled(self.program))
 
     def _compile_cpp(self, program: TaskPath):
-        cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
+        cpp_flags = ["-std=c++20", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         cpp_flags += self._add_stub("cpp")
 
