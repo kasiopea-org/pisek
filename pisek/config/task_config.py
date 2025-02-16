@@ -735,6 +735,7 @@ class ChecksConfig(BaseEnv):
     no_unused_inputs: bool
     all_inputs_in_last_test: bool
     generator_respects_seed: bool
+    one_input_in_each_nonsample_test: bool
 
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:

@@ -52,6 +52,7 @@ What pisek verifies:
     - They don't contain unprintable characters
     - They have a newline at the end
     - The files are reasonably small
+    - If `one_input_in_each_nonsample_test=on`, there is exactly one input in each non-sample test.
  - The task is complete
     - A CMS judge has no redundant lines in its stdout/stderr
     - If `solution_for_each_test=on`, there exists a dedicated solution for each test
