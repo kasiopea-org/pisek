@@ -594,7 +594,7 @@ class RunOpendataJudge(RunBatchJudge):
             self.judge,
             args=[
                 str(self.test),
-                f"{self.seed:x}" if self.seed is not None else OPENDATA_NO_SEED,
+                f"{self.seed:016x}" if self.seed is not None else OPENDATA_NO_SEED,
             ],
             stdin=self.output,
             stderr=self.judge_log_file,

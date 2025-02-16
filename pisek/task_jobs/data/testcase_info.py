@@ -49,7 +49,7 @@ class TestcaseInfo:
         filename = self.name
         if self.seeded:
             assert seed is not None
-            filename += f"_{seed:x}"
+            filename += f"_{seed:016x}"
         filename += ".in"
 
         return InputPath(env, filename, solution=solution)

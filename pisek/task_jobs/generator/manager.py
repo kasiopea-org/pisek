@@ -49,7 +49,7 @@ from .pisek_v1 import (
     PisekV1TestDeterminism,
 )
 
-SEED_BYTES = 4
+SEED_BYTES = 8
 SEED_RANGE = range(0, 1 << (SEED_BYTES * 8))
 
 
@@ -118,15 +118,19 @@ class TestcaseInfoMixin(JobManager):
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
+    def _get_seed(self, iteration: int, testcase_info: TestcaseInfo) -> int:
+        name_hash = blake2b(digest_size=SEED_BYTES)
+        name_hash.update(
+            f"{self._env.iteration} {iteration} {testcase_info.name}".encode()
+        )
+        return int.from_bytes(name_hash.digest())
+
     def _testcase_info_jobs(self, testcase_info: TestcaseInfo, test: int) -> list[Job]:
         seeds: list[Optional[int]]
         if testcase_info.seeded:
             seeds = []
             for i in range(testcase_info.repeat):
-                name_hash = blake2b(digest_size=SEED_BYTES)
-                name_hash.update(f"{self._env.iteration} {i}".encode())
-                name_hash.update(testcase_info.name.encode())
-                seeds.append(int.from_bytes(name_hash.digest()))
+                seeds.append(self._get_seed(i, testcase_info))
         else:
             seeds = [None]
 
@@ -234,10 +238,7 @@ class TestcaseInfoMixin(JobManager):
         jobs: list[Job] = []
 
         if len(seeds) == 1:
-            rand_gen = random.Random(self._env.iteration)  # Reproducibility!
-            while (seed := rand_gen.choice(SEED_RANGE)) == seeds[0]:
-                pass
-            seeds.append(seed)
+            seeds.append(seed := self._get_seed(1, testcase_info))
             jobs += [self._generate_input_job(testcase_info, seed)]
 
         jobs.append(

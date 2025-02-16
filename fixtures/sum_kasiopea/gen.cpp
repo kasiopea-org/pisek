@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <iostream>
+#include <string.h>
 #include <string>
 #include <random>
 using ll = long long;
@@ -17,6 +19,7 @@ int main(int argc, char* argv[]) {
     }
 
     int diff = atoi(argv[1]) - 1;
+    assert(strlen(argv[2]) == 16);
     int seed = strtoull(argv[2], NULL, 16) & 0x7fffffff;
     rng.seed(seed);
 
