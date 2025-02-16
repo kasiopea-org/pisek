@@ -489,8 +489,8 @@ class SolutionConfig(BaseEnv):
     primary: bool
     run: str
     points: MaybeInt
-    points_above: MaybeInt
-    points_below: MaybeInt
+    points_min: MaybeInt
+    points_max: MaybeInt
     tests: str
 
     def __init__(self, *args, **kwargs) -> None:
@@ -502,8 +502,8 @@ class SolutionConfig(BaseEnv):
             "primary",
             "run",
             "points",
-            "points_above",
-            "points_below",
+            "points_min",
+            "points_max",
             "tests",
         ]
         args = {
@@ -582,7 +582,7 @@ class SolutionConfig(BaseEnv):
 
     @model_validator(mode="after")
     def validate_model(self):
-        for points_limit in ["points_above", "points_below"]:
+        for points_limit in ["points_min", "points_max"]:
             if self.points is not None and getattr(self, points_limit) is not None:
                 raise PydanticCustomError(
                     "points_double_set",

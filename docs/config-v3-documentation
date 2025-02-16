@@ -215,8 +215,8 @@ primary=yes
 points=10
 # Points that program should get or X for any number of points (defaults to X)
 
-points_above=5
-points_below=7
+points_min=5
+points_max=7
 # Upper and lower bounds on points (defaults to X)
 # Cannot be set simultaneously with points
 
@@ -240,8 +240,8 @@ tests=X10
 run=@auto
 primary=no
 points=X
-points_above=X
-points_below=X
+points_min=X
+points_max=X
 tests=@auto
 
 # There are also keys that are specific to [solutions]

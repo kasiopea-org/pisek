@@ -36,7 +36,7 @@ points=10
 tests=11
 
 [solution_solve_subopt]
-points_above=5
+points_min=5
 tests=1P
 
 [solution_solve_0b]
