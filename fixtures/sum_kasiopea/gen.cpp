@@ -1,8 +1,8 @@
+#include <assert.h>
 #include <iostream>
 #include <string.h>
 #include <string>
 #include <random>
-#include <cassert>
 using ll = long long;
 using namespace std;
 
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     }
 
     int diff = atoi(argv[1]) - 1;
-    cerr << strlen(argv[2]) << endl;
+    assert(strlen(argv[2]) == 16);
     int seed = strtoull(argv[2], NULL, 16) & 0x7fffffff;
     rng.seed(seed);
 
