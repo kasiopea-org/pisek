@@ -49,7 +49,7 @@ If `input_name` is seeded the generator is run with:
 ```
 ./gen <input_name> <seed>
 ```
-Where `seed` is a hexadecimal number. The generator must be deterministic and
+Where `seed` is a 16-digit hexadecimal number. The generator must be deterministic and
 respect the seed.
 
 If `input_name` is unseeded the generator is called with  
@@ -73,6 +73,7 @@ The generator is run:
 ```
 ./gen <test> <seed>
 ```
+Where `seed` is 16-digit hexadecimal number.
 
 The generator should generate the input for this test to its stdout. The generator must be deterministic
 and respect the given seed.
