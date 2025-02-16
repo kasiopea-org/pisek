@@ -325,7 +325,7 @@ output_max_size=5
 
 # Each value is a bool:
 
-solution_for_each_tests=off
+solution_for_each_test=off
 # checks that a dedicated solution exists for each test (aside from samples) (defaults to off)
 # A dedicated solution for a test is one that:
 # - Gets full points on this test and its predecessors.
