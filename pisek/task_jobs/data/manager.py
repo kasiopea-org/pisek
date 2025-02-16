@@ -84,6 +84,7 @@ class DataManager(TaskJobManager):
             used_inputs - set(self._testcase_infos[self._env.config.tests_count - 1])
         )
         self._report_unused_inputs(set(all_testcase_infos) - used_inputs)
+        self._check_one_input_in_nonsample_test()
 
         jobs: list[Job] = []
 
@@ -156,6 +157,19 @@ class DataManager(TaskJobManager):
             else:
                 for inp in inputs:
                     self._warn(f"Input '{inp.name}.in' not included in last test.")
+
+    def _check_one_input_in_nonsample_test(self) -> None:
+        if not self._env.config.checks.one_input_in_each_nonsample_test:
+            return
+
+        for test_num, testcases in self._testcase_infos.items():
+            if test_num == 0:
+                continue
+            cnt = sum(tc.repeat for tc in testcases)
+            if cnt != 1:
+                self._warn(
+                    f"{self._env.config.tests[test_num].name} contains {cnt} testcases but should contain 1."
+                )
 
     def _short_inputs_list(self, inputs: Iterable[TestcaseInfo]) -> str:
         return self._short_list(

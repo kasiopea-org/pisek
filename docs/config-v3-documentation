@@ -342,6 +342,10 @@ all_inputs_in_last_test=off
 generator_respects_seed=on
 # Checks that the generator generates two different inputs for two different seeds (defaults to on)
 
+one_input_in_each_nonsample_test=off
+# Checks that each test (excluding samples) contains exactly one input (defaults to off)
+# Useful for opendata tasks
+
 [cms]
 # Settings related to the CMS importer
 # See CMS docs (https://cms.readthedocs.io/en/latest/) for details
