@@ -9,6 +9,7 @@ if len(sys.argv) == 1:
     exit()
 
 assert sys.argv[1] == "random-uniform"
+assert len(sys.argv[2]) == 16
 random = Random(int(sys.argv[2], base=16))
 
 nums = set()
