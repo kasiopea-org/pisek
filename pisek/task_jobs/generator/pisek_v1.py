@@ -137,7 +137,7 @@ class PisekV1GeneratorJob(ProgramsJob):
             assert self.seed is not None
             if self.seed < 0:
                 raise ValueError(f"seed {self.seed} is negative")
-            args.append(f"{self.seed:x}")
+            args.append(f"{self.seed:016x}")
 
         result = self._run_program(
             ProgramType.gen,
@@ -148,7 +148,7 @@ class PisekV1GeneratorJob(ProgramsJob):
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.generator} failed on input {self.testcase_info.name}, seed {self.seed:x}:",
+                f"{self.generator} failed on input {self.testcase_info.name}, seed {self.seed:016x}:",
                 result,
             )
 

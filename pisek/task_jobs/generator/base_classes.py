@@ -96,7 +96,7 @@ class GeneratorTestDeterminism(ProgramsJob):
         if not self._files_equal(self.input_path, original):
             raise PipelineItemFailure(
                 f"Generator is not deterministic. Files {self.input_path:p} and {original:p} differ"
-                + (f" (seed {self.seed:x})" if self.testcase_info.seeded else "")
+                + (f" (seed {self.seed:016x})" if self.testcase_info.seeded else "")
                 + "."
             )
         self._remove_file(original)
@@ -129,6 +129,6 @@ class GeneratorRespectsSeed(TaskJob):
         if self._files_equal(self.input1, self.input2):
             raise PipelineItemFailure(
                 f"Inputs generated with different seed are same:\n"
-                f"- {self.input1:p} (seed {self.seed1:x})\n"
-                f"- {self.input2:p} (seed {self.seed2:x})"
+                f"- {self.input1:p} (seed {self.seed1:016x})\n"
+                f"- {self.input2:p} (seed {self.seed2:016x})"
             )

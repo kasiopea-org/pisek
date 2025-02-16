@@ -56,13 +56,13 @@ class OpendataV1GeneratorJob(ProgramsJob):
         result = self._run_program(
             ProgramType.gen,
             self.generator,
-            args=[str(test), f"{self.seed:x}"],
+            args=[str(test), f"{self.seed:016x}"],
             stdout=self.input_path,
             stderr=self.input_path.to_log(self.generator),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.generator} failed on test {test}, seed {self.seed:x}:",
+                f"{self.generator} failed on test {test}, seed {self.seed:016x}:",
                 result,
             )
 
