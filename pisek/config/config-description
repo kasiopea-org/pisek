@@ -59,11 +59,11 @@ run=
 primary=
 
 points=
-#!if solution_(.*) points_above=X
-#!if solution_(.*) points_below=X
-points_above=
+#!if solution_(.*) points_min=X
+#!if solution_(.*) points_max=X
+points_min=
 #!if solution_(.*) points=X
-points_below=
+points_max=
 #!if solution_(.*) points=X
 
 tests=
@@ -73,8 +73,8 @@ subtasks=
 run=
 primary=
 points=
-points_above=
-points_below=
+points_min=
+points_max=
 tests=
 subtasks=
 stub=

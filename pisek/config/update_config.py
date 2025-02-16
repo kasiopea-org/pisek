@@ -268,6 +268,8 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         if re.match(r"solution_(.+)", section):
             maybe_rename_key(config, section, section, "subtasks", "tests")
             maybe_rename_key(config, section, section, "source", "run")
+            maybe_rename_key(config, section, section, "points_above", "points_min")
+            maybe_rename_key(config, section, section, "points_below", "points_max")
 
     maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
 

@@ -108,10 +108,10 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         if solution.points is not None and score != solution.points:
             score_missed_target = f"{solution.points}"
-        elif solution.points_above is not None and score < solution.points_above:
-            score_missed_target = f"above {solution.points_above}"
-        elif solution.points_below is not None and score > solution.points_below:
-            score_missed_target = f"below {solution.points_below}"
+        elif solution.points_min is not None and score < solution.points_min:
+            score_missed_target = f"above {solution.points_min}"
+        elif solution.points_max is not None and score > solution.points_max:
+            score_missed_target = f"below {solution.points_max}"
 
         message = f"{name}: {score} points"
 

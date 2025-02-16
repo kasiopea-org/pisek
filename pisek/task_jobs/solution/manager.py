@@ -262,20 +262,20 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             sub_job.as_expected(solution_conf.tests[sub_job.num])
 
         points = solution_conf.points
-        above = solution_conf.points_above
-        below = solution_conf.points_below
+        p_min = solution_conf.points_min
+        p_max = solution_conf.points_max
 
         if points is not None and self.solution_points != points:
             raise PipelineItemFailure(
                 f"Solution {self.solution_label} should have gotten {points} but got {self.solution_points} points."
             )
-        elif above is not None and self.solution_points < above:
+        elif p_min is not None and self.solution_points < p_min:
             raise PipelineItemFailure(
-                f"Solution {self.solution_label} should have gotten at least {above} but got {self.solution_points} points."
+                f"Solution {self.solution_label} should have gotten at least {p_min} but got {self.solution_points} points."
             )
-        elif below is not None and self.solution_points > below:
+        elif p_max is not None and self.solution_points > p_max:
             raise PipelineItemFailure(
-                f"Solution {self.solution_label} should have gotten at most {below} but got {self.solution_points} points."
+                f"Solution {self.solution_label} should have gotten at most {p_max} but got {self.solution_points} points."
             )
 
     def _compute_result(self) -> dict[str, Any]:

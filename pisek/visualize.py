@@ -202,15 +202,15 @@ class SolutionResults:
             achieved += min(map(lambda r: r.points(sub.points), results[num]))
 
         points = self._solution.points
-        points_above = self._solution.points_above
-        points_below = self._solution.points_below
+        points_min = self._solution.points_min
+        points_max = self._solution.points_max
 
         if points is not None and points != achieved:
             return f"{points}p"
-        if points_above is not None and not achieved >= points_above:
-            return f"at least {points_above}p"
-        if points_below is not None and not achieved <= points_below:
-            return f"at most {points_below}p"
+        if points_min is not None and not achieved >= points_min:
+            return f"at least {points_min}p"
+        if points_max is not None and not achieved <= points_max:
+            return f"at most {points_max}p"
 
         return None
 
