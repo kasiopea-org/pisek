@@ -230,8 +230,8 @@ tests=X10
 # T - timeout
 # X - any result
 #
-# Result of a test is the result of a worst testcase.
-# W!T require at least one testcase with corresponding verdict.
+# The result of a test is the result of the worst testcase.
+# W!T require at least one testcase with the corresponding verdict.
 #
 # @all - string of 11...
 # @any - string of XX...
