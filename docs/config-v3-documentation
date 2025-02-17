@@ -91,7 +91,7 @@ validator=validate
 out_check=judge
 # Describes how to check outputs (required)
 #   - diff: compare with correct output (discouraged, can be slow in some cases)
-#   - tokens: compare token-by-token with correct output (tokens are seperated by whitespace)
+#   - tokens: compare token-by-token with correct output (tokens are separated by whitespace)
 #   - shuffle: like tokens, but allow permutation of tokens
 #   - judge: check with a custom program (called a 'judge')
 # In interactive, only judge is allowed
@@ -229,6 +229,9 @@ tests=X10
 # ! - runtime error
 # T - timeout
 # X - any result
+#
+# The result of a test is the result of the worst testcase.
+# W!T require at least one testcase with the corresponding verdict.
 #
 # @all - string of 11...
 # @any - string of XX...
