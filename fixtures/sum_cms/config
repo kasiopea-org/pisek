@@ -24,7 +24,6 @@ judge_needs_out=1
 [checks]
 solution_for_each_subtask=on
 all_inputs_in_last_subtask=on
-one_input_in_each_nonsample_test=on
 
 [test01]
 name=Subtask A
