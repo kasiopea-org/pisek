@@ -46,7 +46,7 @@ P = ParamSpec("P")
 class TaskHelper:
     _env: Env
 
-    def globs_to_files(
+    def _globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
     ) -> list[TaskPath]:
         """Get files in given directory that match any glob."""
@@ -198,6 +198,12 @@ class TaskJob(Job, TaskHelper):
             stdout=subprocess.PIPE,
         )
         return diff.stdout.decode("utf-8")
+
+    def _globs_to_files(
+        self, globs: Iterable[str], directory: TaskPath
+    ) -> list[TaskPath]:
+        self._accessed_globs |= set(globs)
+        return super()._globs_to_files(globs, directory)
 
     def _quote_file(self, file: TaskPath, **kwargs) -> str:
         """Get shortened file contents"""
