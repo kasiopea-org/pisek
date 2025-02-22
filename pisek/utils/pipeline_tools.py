@@ -86,6 +86,7 @@ class Lock:
 
     def __enter__(self):
         try:
+            os.makedirs(os.path.dirname(self._lock_file), exist_ok=True)
             with open(self._lock_file, "x") as f:
                 f.write(f"Locked by pisek at {datetime.now()}")
         except FileExistsError:
