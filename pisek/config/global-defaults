@@ -36,7 +36,16 @@ tests=@auto
 stub=
 headers=
 
+# TODO: Add in other defaults & description
+[build]
+sources=@auto
+comp_args=
+extras=
+strategy=auto
+entrypoint=
+
 [run]
+build=@auto
 exec=@auto
 time_limit=360
 clock_mul=2
