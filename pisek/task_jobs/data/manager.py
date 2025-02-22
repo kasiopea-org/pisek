@@ -33,7 +33,7 @@ class DataManager(TaskJobManager, TestcaseInfoMixin):
         super().__init__("Processing data")
 
     def _get_jobs(self) -> list[Job]:
-        static_inputs = self.globs_to_files(
+        static_inputs = self._globs_to_files(
             ["*.in"], TaskPath.static_path(self._env, ".")
         )
 

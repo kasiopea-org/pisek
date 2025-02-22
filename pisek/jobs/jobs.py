@@ -19,6 +19,7 @@ from copy import deepcopy
 from enum import Enum, auto
 import dataclasses
 from functools import wraps
+import glob
 import hashlib
 import logging
 import os.path
@@ -173,6 +174,7 @@ class Job(PipelineItem, CaptureInitParams):
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
         self._accessed_envs: MutableSet[tuple[str, ...]] = set()
+        self._accessed_globs: MutableSet[str] = set()
         self._accessed_files: MutableSet[str] = set()
         self._terminal_output: list[tuple[str, bool]] = []
         self.name = name
@@ -195,6 +197,7 @@ class Job(PipelineItem, CaptureInitParams):
         self,
         envs: AbstractSet[tuple[str, ...]],
         paths: AbstractSet[str],
+        globs: AbstractSet[str],
         results: dict[str, Any],
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
@@ -233,6 +236,10 @@ class Job(PipelineItem, CaptureInitParams):
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
 
+        for g in sorted(globs):
+            glob_sign = f"{g} -> " + " ".join(glob.glob(g))
+            sign.update(glob_sign.encode())
+
         for name, result in sorted(results.items()):
             # Trying to prevent hashing object.__str__ which is non-deterministic
             assert (
@@ -250,6 +257,7 @@ class Job(PipelineItem, CaptureInitParams):
             sign, err = self._signature(
                 set(cache_entry.envs),
                 set(cache_entry.files),
+                set(cache_entry.globs),
                 self.prerequisites_results,
             )
             if cache_entry.signature == sign:
@@ -261,6 +269,7 @@ class Job(PipelineItem, CaptureInitParams):
         sign, err = self._signature(
             self._accessed_envs,
             self._accessed_files,
+            self._accessed_globs,
             self.prerequisites_results,
         )
         if sign is None:
@@ -273,6 +282,7 @@ class Job(PipelineItem, CaptureInitParams):
             result,
             self._accessed_envs,
             self._accessed_files,
+            self._accessed_globs,
             self.prerequisites_results,
             self._terminal_output,
         )
