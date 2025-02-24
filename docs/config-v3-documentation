@@ -277,7 +277,7 @@ subdir=
 # Subdirectory from where to look for the program (relative to the task directory)
 # (defaults to empty)
 
-# Execution limits, setting limit to 0 means unlimited:
+# Execution limits, setting limit to 0 means unlimited. Defaults are the following:
 time_limit=360
 # Execution time limit [seconds] (defaults to 360 s)
 clock_mul=
