@@ -52,7 +52,6 @@ class Build(TaskJob):
         self.build_section = build_section
     
     def _run(self):
-        # TODO: Cache glob corresponding to resolved files
         sources = self._globs_to_files(
             [s + ".*" for s in self.build_section.sources] + self.build_section.sources,
             TaskPath(".") # TODO: Fix
@@ -69,7 +68,7 @@ class Build(TaskJob):
 
         for source in sources:
             shutil.copy(source.path, os.path.join(WORKING_DIR, source.name))
-        target = TaskPath(BUILD_DIR, self.build_section.name)
+        target = TaskPath(BUILD_DIR, self.build_section.name) # TODO: Fix final place
         shutil.copy(
             os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR)),
             target.path

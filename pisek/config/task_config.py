@@ -299,7 +299,7 @@ class TaskConfig(BaseEnv):
         program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
     ) -> dict[str, ConfigValuesDict]:
         return {
-            f"{program_type}_{name.value}": BuildConfig.load_dict(
+            f"{program_type}:{name.value}": BuildConfig.load_dict(
                 program_type, name, configs
             )
         }
@@ -309,7 +309,7 @@ class TaskConfig(BaseEnv):
         program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
     ) -> dict[str, ConfigValuesDict]:
         return {
-            f"{program_type}_{name.value}": RunConfig.load_dict(
+            f"{program_type}:{name.value}": RunConfig.load_dict(
                 program_type, name, configs
             )
         }
@@ -619,14 +619,14 @@ def _get_program_type_defaults(
 ) -> list[str]:
     if program_type.is_solution():
         return [
-            f"{prefix}_solution_{program_name}",
+            f"{prefix}_solution:{program_name}",
             f"{prefix}_{program_type}",
             f"{prefix}_solution",
             f"{prefix}",
         ]
     else:
         return [
-            f"{prefix}_{program_type}_{program_name}",
+            f"{prefix}_{program_type}:{program_name}",
             f"{prefix}_{program_type}",
             f"{prefix}",
         ]

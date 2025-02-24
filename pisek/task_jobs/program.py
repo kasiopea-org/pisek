@@ -147,7 +147,7 @@ class ProgramsJob(TaskJob):
         env={},
     ) -> None:
         """Adds program to execution pool."""
-        run = self._env.config.runs[f"{program_type}_{program}"]
+        run = self._env.config.runs[f"{program_type}:{program}"]
         executable = self._load_compiled(run.exec)
 
         timeout: Optional[float] = None

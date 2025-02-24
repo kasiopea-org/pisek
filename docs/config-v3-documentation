@@ -265,7 +265,7 @@ headers=src/a-plus-b.h
 #                                          [run]
 #       [run_gen]          [run_validator]          [run_judge]                         [run_solution]
 #                                                                    [run_primary_solution] [run_secondary_solution]
-# [run_gen_{program}] [run_validator_{program}] [run_judge_{program}]              [run_solution_{program}]
+# [run_gen:{program}] [run_validator:{program}] [run_judge:{program}]              [run_solution:{program}]
 
 exec=@auto
 # Filename of the program to execute (without suffix)
@@ -300,7 +300,7 @@ process_limit=0
 # Overriding time_limit for solutions
 time_limit=3
 
-[run_solution_slow]
+[run_solution:slow]
 # Overriding time_limit for specific solution
 time_limit=10
 
