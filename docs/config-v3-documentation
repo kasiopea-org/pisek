@@ -277,16 +277,16 @@ subdir=
 # Subdirectory from where to look for the program (relative to the task directory)
 # (defaults to empty)
 
-# Execution limits, setting limit to 0 means unlimited:
+# Execution limits, setting limit to 0 means unlimited. Defaults are the following:
 time_limit=360
 # Execution time limit [seconds]
-clock_mul=
+clock_mul=2
 # Wall clock multiplier [1]
-clock_min=
+clock_min=1
 # Wall clock minimum [second]
-mem_limit=
+mem_limit=0
 # Memory limit [MB]
-process_limit=
+process_limit=1
 # Maximum number of processes -- at the moment,
 # limits greater than 1 are interpreted as "unlimited".
 # Please keep in mind that killing multiple processes
