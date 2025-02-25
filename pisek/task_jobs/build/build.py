@@ -48,7 +48,7 @@ class Build(TaskJob):
         build_section: BuildConfig,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Build {build_section.name}", **kwargs)
+        super().__init__(env=env, name=f"Build {build_section.name.replace(":", " ")}", **kwargs)
         self.build_section = build_section
     
     def _run(self):
@@ -68,7 +68,7 @@ class Build(TaskJob):
 
         for source in sources:
             shutil.copy(source.path, os.path.join(WORKING_DIR, source.name))
-        target = TaskPath(BUILD_DIR, self.build_section.name) # TODO: Fix final place
+        target = TaskPath(BUILD_DIR, self.build_section.program_name) # TODO: Fix final place
         shutil.copy(
             os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR)),
             target.path
