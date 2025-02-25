@@ -60,6 +60,13 @@ class ProgramType(StrEnum):
     def is_solution(self) -> bool:
         return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
+    @property
+    def role_name(self) -> str:
+        if self.is_solution():
+            return "solution"
+        else:
+            return self.name
+
 
 class BuildStrategyName(StrEnum):
     python = auto()

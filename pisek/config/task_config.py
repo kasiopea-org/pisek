@@ -248,9 +248,10 @@ class TaskConfig(BaseEnv):
             (ProgramType.judge, args["out_judge"]),
         ]
         for t, program in PROGRAMS:
-            if program:
-                runs |= TaskConfig.load_run(t, program, configs)
-                builds |= TaskConfig.load_build(t, program, configs)
+            if program.value:
+                r, b = TaskConfig.load_run(t, program, configs)
+                runs |= r
+                builds |= b
 
         # Load tests
         args["tests"] = tests = {}
@@ -272,7 +273,7 @@ class TaskConfig(BaseEnv):
                 )
                 assert isinstance(sol["primary"], ConfigValue)
                 assert isinstance(sol["run"], ConfigValue)
-                run_build_args = [
+                r, b = TaskConfig.load_run(
                     (
                         ProgramType.primary_solution
                         if sol["primary"].value == "yes"
@@ -280,9 +281,9 @@ class TaskConfig(BaseEnv):
                     ),
                     sol["run"],
                     configs,
-                ]
-                runs |= TaskConfig.load_run(*run_build_args)
-                builds |= TaskConfig.load_build(*run_build_args)
+                )
+                runs |= r
+                builds |= b
 
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
@@ -307,12 +308,18 @@ class TaskConfig(BaseEnv):
     @staticmethod
     def load_run(
         program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
-    ) -> dict[str, ConfigValuesDict]:
-        return {
-            f"{program_type}:{name.value}": RunConfig.load_dict(
-                program_type, name, configs
-            )
+    ) -> tuple[dict[str, ConfigValuesDict], dict[str, ConfigValuesDict]]:
+        run = RunConfig.load_dict(
+            program_type, name, configs
+        )
+        builds = {
+            name.value: BuildConfig.load_dict(name, configs)
+            for name in run["build"].split()
         }
+        return (
+            {f"{program_type}:{name.value}": run},
+            builds
+        )
 
     @model_validator(mode="after")
     def validate_model(self):
@@ -671,6 +678,9 @@ class RunConfig(BaseEnv):
         }
         if args["exec"].value == "@auto":
             args["exec"].value = name.value
+        if args["build"].value == "@auto":
+            args["build"].value = f"{program_type}:{name.value}"
+
         return {"_section": section_name} | args
 
 
@@ -681,12 +691,26 @@ class BuildConfig(BaseEnv):
     # TODO: extras
     strategy: BuildStrategyName
     # TODO: entrypoint
+    
+    @property
+    def program_name(self) -> str:
+        if ":" in self.name:
+            return self.name.split(":")[1]
+        else:
+            return self.name
 
     @classmethod
     def load_dict(
-        cls, program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
+        cls, name: ConfigValue, configs: ConfigHierarchy
     ) -> ConfigValuesDict:
-        default_sections = _get_program_type_defaults("build", program_type, name.value)
+        colons = name.value.count(":")
+        if colons == 0:
+            program = name
+        elif colons == 1:
+            pt, program = name.split(":")
+            default_sections = _get_program_type_defaults("build", ProgramType[pt.value], program.value)
+        else:
+            raise NotADirectoryError() # TODO
 
         section_name = configs.get_from_candidates(
             [(section, None) for section in default_sections]
@@ -696,10 +720,11 @@ class BuildConfig(BaseEnv):
                 [(section, key) for section in default_sections]
             )
             for key in cls.model_fields
-            if key != "name"
+            if key not in ("name", "program_name")
         }
         if args["sources"].value == "@auto":
-            args["sources"].value = name.value
+            args["sources"].value = program.value
+
         return {"_section": section_name, "name": name} | args
 
 

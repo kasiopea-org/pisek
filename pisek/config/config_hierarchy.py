@@ -60,6 +60,12 @@ class ConfigValue:
             text += f" (in config file {os.path.abspath(self.config)})"
 
         return text
+    
+    def split(self, sep: Optional[str] = None) -> str:
+        return [
+            ConfigValue(part, self.config, self.section, self.key, self.internal)
+            for part in self.value.split(sep=sep)
+        ]
 
 
 class ConfigHierarchy:
