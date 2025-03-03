@@ -17,6 +17,7 @@
 
 import fnmatch
 from functools import cached_property
+import os
 from pydantic_core import PydanticCustomError, ErrorDetails
 from pydantic import (
     Field,
@@ -313,8 +314,8 @@ class TaskConfig(BaseEnv):
             program_type, name, configs
         )
         builds = {
-            name.value: BuildConfig.load_dict(name, configs)
-            for name in run["build"].split()
+            build_name.value: BuildConfig.load_dict(build_name, configs)
+            for build_name in run["build"].split()
         }
         return (
             {f"{program_type}:{name.value}": run},
@@ -621,21 +622,21 @@ class SolutionConfig(BaseEnv):
         return self
 
 
-def _get_program_type_defaults(
-    prefix: str, program_type: ProgramType, program_name: str
+def get_run_defaults(
+    program_type: ProgramType, program_name: str
 ) -> list[str]:
     if program_type.is_solution():
         return [
-            f"{prefix}_solution:{program_name}",
-            f"{prefix}_{program_type}",
-            f"{prefix}_solution",
-            f"{prefix}",
+            f"run_solution:{program_name}",
+            f"run_{program_type}",
+            f"run_solution",
+            f"run",
         ]
     else:
         return [
-            f"{prefix}_{program_type}:{program_name}",
-            f"{prefix}_{program_type}",
-            f"{prefix}",
+            f"run_{program_type}:{program_name}",
+            f"run_{program_type}",
+            f"run",
         ]
 
 
@@ -665,7 +666,7 @@ class RunConfig(BaseEnv):
     def load_dict(
         cls, program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
     ) -> ConfigValuesDict:
-        default_sections = _get_program_type_defaults("run", program_type, name.value)
+        default_sections = get_run_defaults(program_type, name.value)
 
         section_name = configs.get_from_candidates(
             [(section, None) for section in default_sections]
@@ -679,7 +680,7 @@ class RunConfig(BaseEnv):
         if args["exec"].value == "@auto":
             args["exec"].value = name.value
         if args["build"].value == "@auto":
-            args["build"].value = f"{program_type}:{name.value}"
+            args["build"].value = f"{program_type.build_name}:{os.path.join(args['subdir'].value, name.value)}"
 
         return {"_section": section_name} | args
 
@@ -706,9 +707,14 @@ class BuildConfig(BaseEnv):
         colons = name.value.count(":")
         if colons == 0:
             program = name
+            default_sections = ["build"]
         elif colons == 1:
             pt, program = name.split(":")
-            default_sections = _get_program_type_defaults("build", ProgramType[pt.value], program.value)
+            default_sections = [
+                f"build_{pt.value}:{program.value}",
+                f"build_{pt.value}",
+                f"build",
+            ]
         else:
             raise NotADirectoryError() # TODO
 

@@ -58,6 +58,7 @@ class BuildStrategy(ABC):
 
     def build(self, directory: str) -> str:
         self.inputs = os.listdir(directory)
+        self.target = os.path.basename(self._build_section.program_name)
         with ChangedCWD(directory):
             return self._build()
 
@@ -82,7 +83,7 @@ class BuildStrategy(ABC):
         comp.wait()
         if comp.returncode != 0:
             raise PipelineItemFailure(f"Compilation of {program} failed.")
-        return program
+        return self.target
 
     def _build_script(self, program: str) -> str:
         self._check_shebang(program)
@@ -150,7 +151,7 @@ class Cpp(BuildBinary):
         # cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
-            ["g++", *self.inputs, "-o", self._build_section.program_name] + cpp_flags, self._build_section.program_name 
+            ["g++", *self.inputs, "-o", self.target] + cpp_flags, self._build_section.program_name 
         )
 
 AUTO_STRATEGIES: list[BuildStrategy] = [PythonSingleSource, Cpp]
