@@ -69,6 +69,7 @@ class Build(TaskJob):
         for source in sources:
             shutil.copy(source.path, os.path.join(WORKING_DIR, source.name))
         target = TaskPath(BUILD_DIR, self.build_section.program_name) # TODO: Fix final place
+        self.make_filedirs(target)
         shutil.copy(
             os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR)),
             target.path

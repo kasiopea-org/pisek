@@ -61,7 +61,7 @@ class ProgramType(StrEnum):
         return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
     @property
-    def role_name(self) -> str:
+    def build_name(self) -> str:
         if self.is_solution():
             return "solution"
         else:
