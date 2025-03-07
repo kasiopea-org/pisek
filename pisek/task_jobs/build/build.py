@@ -59,7 +59,6 @@ class BuildManager(TaskJobManager):
 
             for solution in self._env.solutions:
                 jobs.append(self._build(self._env.config.solutions[solution].run))
-                # TODO: Fix primary / first
 
         filtered_jobs = []
         for j in jobs:
@@ -67,8 +66,6 @@ class BuildManager(TaskJobManager):
                 filtered_jobs.append(j)
         return filtered_jobs
 
-
-    # TODO: Print used build strategies
 
 class Build(TaskJob):
     """Job that compiles a program."""
@@ -82,16 +79,30 @@ class Build(TaskJob):
         super().__init__(env=env, name=f"Build {build_section.program_name}", **kwargs)
         self.build_section = build_section
 
-    def _run(self):
-        sources = self._globs_to_files(
-            [s + ".*" for s in self.build_section.sources] + self.build_section.sources,
-            TaskPath(".") # TODO: Fix
-        )
+    def _run(self) -> None:
+        sources: list[TaskPath] = []
+        for part in self.build_section.sources:
+            part_sources = self._globs_to_files(
+                [f"{part}.*", part],
+                TaskPath(".")
+            )
+            if len(part_sources) == 0:
+                raise PipelineItemFailure(f"No source for '{part}'.")
+            for s in part_sources:
+                if s not in sources:
+                    sources.append(s)
+        
+        if any(map(lambda p: os.path.isdir(p.path), sources)) and any(map(lambda p: os.path.isfile(p.path), sources)):
+            raise PipelineItemFailure(f"Mixed files and directories for sources:\n" + tab(self._path_list(sources)))
+
 
         if self.build_section.strategy == BuildStrategyName.auto:
             strategy = self._resolve_strategy(sources)
         else:
             strategy = ALL_STRATEGIES[self.build_section.strategy]
+        
+        if self._env.verbosity >= 1:
+            self._print(self._colored(tab(f"Building '{self.build_section.program_name}' using build strategy '{strategy.name}'."), "magenta"))
 
         if os.path.exists(WORKING_DIR):
             shutil.rmtree(WORKING_DIR)
@@ -117,7 +128,7 @@ class Build(TaskJob):
         if len(applicable) == 0:
             raise PipelineItemFailure(
                 f"No applicable build strategy for [{self.build_section.section_name}] with sources:\n" +
-                tab("\n".join(source.col(self._env) for source in sources))
+                tab(self._path_list(sources))
             )
         elif len(applicable) >= 2:
             names = " ".join(s.name for s in applicable)

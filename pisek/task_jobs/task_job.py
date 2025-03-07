@@ -66,6 +66,9 @@ class TaskHelper:
 
         return text + "p"
 
+    def _path_list(self, paths: list[TaskPath]) -> str:
+        return "\n".join(path.col(self._env) for path in paths)
+
     @staticmethod
     def _short_list(arr: list[str], cutoff: int = 1) -> str:
         inputs_text = ", ".join(arr[:cutoff])
