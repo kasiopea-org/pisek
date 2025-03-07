@@ -155,7 +155,7 @@ class TaskConfig(BaseEnv):
             return [name for name, sol in self.solutions.items() if sol.primary][0]
 
     def get_solution_by_run(self, run: str) -> Optional[str]:
-        sources = (name for name, sol in self.solutions.items() if sol.run == run)
+        sources = (name for name, sol in self.solutions.items() if sol.run.name == run)
         return next(sources, None)
 
     def __init__(self, **kwargs):
@@ -465,8 +465,8 @@ class SolutionConfig(BaseEnv):
 
         sol_type = (
             ProgramType.primary_solution
-            if args["primary"].value in () else
-            ProgramType.secondary_solution
+            if args["primary"].value in ()
+            else ProgramType.secondary_solution
         )
 
         # XXX: Backwards compatibility hack for v3
@@ -549,9 +549,7 @@ class SolutionConfig(BaseEnv):
         return self
 
 
-def get_run_defaults(
-    program_type: ProgramType, program_name: str
-) -> list[str]:
+def get_run_defaults(program_type: ProgramType, program_name: str) -> list[str]:
     if program_type.is_solution():
         return [
             f"run_solution:{program_name}",
@@ -574,6 +572,7 @@ class RunConfig(BaseEnv):
 
     program_type: ProgramType
     name: str
+    subdir: str
     build: "BuildConfig"
     exec: TaskPathFromStr
     time_limit: float = Field(ge=0)  # [seconds]
@@ -583,7 +582,6 @@ class RunConfig(BaseEnv):
     process_limit: int = Field(ge=0)  # [1]
     # limit=0 means unlimited
     args: ListStr
-    subdir: str
 
     def clock_limit(self, override_time_limit: Optional[float] = None) -> float:
         tl = override_time_limit if override_time_limit is not None else self.time_limit
@@ -607,53 +605,57 @@ class RunConfig(BaseEnv):
             for key in cls.model_fields
             if key not in ("name", "program_type")
         }
-        if args["exec"].value == "@auto":
-            args["exec"].value = name.value
         if args["build"].value == "@auto":
-            args["build"].value = f"{program_type.build_name}:{os.path.join(args['subdir'].value, name.value)}"
+            args["build"].value = (
+                f"{program_type.build_name}:{os.path.join(args['subdir'].value, name.value)}"
+            )
 
         return {
             "_section": section_name,
-            "program_type": ConfigValue.make_internal(program_type.name, "run", "program_type"),
+            "program_type": ConfigValue.make_internal(
+                program_type.name, "run", "program_type"
+            ),
             "name": name,
             **args,
-            "build": BuildConfig.load_dict(args["build"], configs)
+            "build": BuildConfig.load_dict(args["build"], configs),
         }
 
+    @field_validator("exec", mode="before")
+    @classmethod
+    def convert_exec(cls, value: str, info: ValidationInfo) -> str:
+        if value == "@auto":
+            value = os.path.join(info.data.get('subdir'), info.data.get('name'))
+            return value
+        else:
+            return value
 
 
 class BuildConfig(BaseEnv):
-    name: str
+    section_name: str
+
     sources: ListStr
     comp_args: ListStr
     # TODO: extras
     strategy: BuildStrategyName
     # TODO: entrypoint
-    
+
     @property
     def program_name(self) -> str:
-        if ":" in self.name:
-            return self.name.split(":")[1]
-        else:
-            return self.name
+        return self.section_name.split(":", 1)[1]
 
     @classmethod
-    def load_dict(
-        cls, name: ConfigValue, configs: ConfigHierarchy
-    ) -> ConfigValuesDict:
-        colons = name.value.count(":")
-        if colons == 0:
-            program = name
-            default_sections = ["build"]
-        elif colons == 1:
-            pt, program = name.split(":")
-            default_sections = [
-                f"build_{pt.value}:{program.value}",
-                f"build_{pt.value}",
-                f"build",
-            ]
-        else:
-            raise NotADirectoryError() # TODO
+    def load_dict(cls, name: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:
+        program = name.value
+        default_sections = [f"build:{program}", "build"]
+        for pt in ProgramType:
+            prefix = f"{pt.build_name}:"
+            if name.value.startswith(prefix):
+                program = name.value.removeprefix(prefix)
+                default_sections = [
+                    f"build_{pt}:{program}",
+                    f"build_{pt}",
+                    f"build",
+                ]
 
         section_name = configs.get_from_candidates(
             [(section, None) for section in default_sections]
@@ -663,12 +665,18 @@ class BuildConfig(BaseEnv):
                 [(section, key) for section in default_sections]
             )
             for key in cls.model_fields
-            if key not in ("name", "program_name")
+            if key not in ("section_name")
         }
         if args["sources"].value == "@auto":
-            args["sources"].value = program.value
+            args["sources"].value = program
 
-        return {"_section": section_name, "name": name} | args
+        return {
+            "_section": section_name,
+            "section_name": ConfigValue.make_internal(
+                default_sections[0], default_sections[0]
+            ),
+            **args,
+        }
 
 
 class LimitsConfig(BaseEnv):

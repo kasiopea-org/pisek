@@ -50,7 +50,7 @@ class ConfigValue:
     internal: bool = False
 
     @staticmethod
-    def make_internal(value: str, section: str, key: str):
+    def make_internal(value: str, section: str, key: Optional[str] = None):
         return ConfigValue(value, "_internal", section, key, True)
 
     def location(self) -> str:
@@ -64,7 +64,7 @@ class ConfigValue:
             text += f" (in config file {os.path.abspath(self.config)})"
 
         return text
-    
+
     def split(self, sep: Optional[str] = None) -> list["ConfigValue"]:
         return [
             ConfigValue(part, self.config, self.section, self.key, self.internal)

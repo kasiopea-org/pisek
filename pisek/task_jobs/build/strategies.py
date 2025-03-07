@@ -63,7 +63,7 @@ class BuildStrategy(ABC):
             return self._build()
 
     @abstractmethod
-    def _build(cls) -> str:
+    def _build(self) -> str:
         pass
 
     @classmethod
@@ -82,6 +82,7 @@ class BuildStrategy(ABC):
 
         comp.wait()
         if comp.returncode != 0:
+            # TODO: Print the compilation command
             raise PipelineItemFailure(f"Compilation of {program} failed.")
         return self.target
 
@@ -100,9 +101,9 @@ class BuildStrategy(ABC):
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
-            raise PipelineItemFailure(f"Missing shebang in {program:p}")
+            raise PipelineItemFailure(f"Missing shebang in {program}")
         if first_line.endswith("\r\n"):
-            raise PipelineItemFailure(f"First line ends with '\\r\\n' in {program:p}")
+            raise PipelineItemFailure(f"First line ends with '\\r\\n' in {program}")
 
     def _check_tool(self, tool: str) -> None:
         """Checks that a tool exists."""
@@ -155,4 +156,4 @@ class Cpp(BuildBinary):
             ["g++", *self.inputs, "-o", self.target , "-I."] + cpp_flags, self._build_section.program_name 
         )
 
-AUTO_STRATEGIES: list[BuildStrategy] = [PythonSingleSource, Cpp]
+AUTO_STRATEGIES: list[type[BuildStrategy]] = [PythonSingleSource, Cpp]

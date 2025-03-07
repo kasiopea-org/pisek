@@ -26,7 +26,7 @@ class UnknownSolutions(TaskConfigError):
             if s.name == s.run:
                 return s.name
             else:
-                return f"{s.name} (run: {s.run})"
+                return f"{s.name} (run: {s.run.name})"
 
         unknown_text = "', '".join(unknown)
         sols_text = "\n".join(map(format_solution, solutions.values()))
