@@ -127,7 +127,7 @@ class RunJudge(ProgramsJob):
         env: Env,
         name: str,
         test: int,
-        judge: str,
+        judge: RunConfig,
         input_: InputPath,
         judge_log_file: LogPath,
         expected_verdict: Optional[Verdict],
@@ -218,7 +218,7 @@ class RunJudge(ProgramsJob):
         text += "\n"
         if judge_rr is not None:
             text += (
-                f"{self.judge}:\n"
+                f"{self.judge.name}:\n"
                 + tab(
                     self._format_run_result(
                         judge_rr,
@@ -270,7 +270,7 @@ class RunCMSJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
+        judge: RunConfig,
         **kwargs,
     ) -> None:
         super().__init__(env=env, judge=judge, **kwargs)
@@ -454,7 +454,7 @@ class RunJudgeLibJudge(RunBatchJudge):
                 Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
-            raise PipelineItemFailure(f"{self.judge} failed:\n{tab(stderr)}")
+            raise PipelineItemFailure(f"{self.judge.name} failed:\n{tab(stderr)}")
 
 
 class RunTokenJudge(RunJudgeLibJudge):
@@ -625,7 +625,7 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
+        judge: RunConfig,
         test: int,
         input_: InputPath,
         output: OutputPath,

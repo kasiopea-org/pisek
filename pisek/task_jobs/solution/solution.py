@@ -32,7 +32,7 @@ class RunSolution(ProgramsJob):
         self,
         env: Env,
         name: str,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
         **kwargs,
     ) -> None:
@@ -103,7 +103,7 @@ class RunInteractive(RunCMSJudge, RunSolution):
         self.sol_log_file = input_.to_log("solution")
         super().__init__(
             env=env,
-            name=f"Run {solution} on input {input_:n}",
+            name=f"Run {solution.name} on input {input_:n}",
             judge=judge,
             test=test,
             input_=input_,
@@ -163,4 +163,4 @@ class RunInteractive(RunCMSJudge, RunSolution):
         return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
-        return f"solution {self.solution} on input {self.input:p}"
+        return f"solution {self.solution.name} on input {self.input:p}"
