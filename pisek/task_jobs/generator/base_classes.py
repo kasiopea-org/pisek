@@ -39,7 +39,7 @@ class GenerateInput(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: str,
+        generator: RunConfig,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
@@ -70,7 +70,7 @@ class GeneratorTestDeterminism(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: str,
+        generator: RunConfig,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,

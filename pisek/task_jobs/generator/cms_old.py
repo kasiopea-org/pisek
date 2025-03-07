@@ -15,6 +15,7 @@ import shutil
 
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
+from pisek.config.task_config import RunConfig
 from pisek.utils.paths import TaskPath, LogPath
 from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
@@ -25,7 +26,7 @@ from .base_classes import GeneratorListInputs, GenerateInput
 class CmsOldListInputs(GeneratorListInputs):
     """Lists all inputs for cms-old generator - by running it."""
 
-    def __init__(self, env: Env, generator: str, **kwargs) -> None:
+    def __init__(self, env: Env, generator: RunConfig, **kwargs) -> None:
         super().__init__(env, generator, name="Run generator", **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
@@ -61,7 +62,7 @@ class CmsOldGenerate(GenerateInput):
     def __init__(
         self,
         env: Env,
-        generator: str,
+        generator: RunConfig,
         testcase_info: TestcaseInfo,
         seed: int,
         **kwargs,
