@@ -157,7 +157,7 @@ class Cpp(BuildBinary):
         # cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
-            ["g++", *self.inputs, "-o", self.target , "-I."] + cpp_flags, self._build_section.program_name 
+            ["g++", *self.inputs, "-o", self.target , "-I."] + cpp_flags + self._build_section.comp_args, self._build_section.program_name 
         )
 
 AUTO_STRATEGIES: list[type[BuildStrategy]] = [PythonSingleSource, Cpp]

@@ -654,8 +654,8 @@ class BuildConfig(BaseEnv):
             if name.value.startswith(prefix):
                 program = name.value.removeprefix(prefix)
                 default_sections = [
-                    f"build_{pt}:{program}",
-                    f"build_{pt}",
+                    f"build_{pt.build_name}:{program}",
+                    f"build_{pt.build_name}",
                     f"build",
                 ]
 
