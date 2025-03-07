@@ -79,7 +79,7 @@ class Build(TaskJob):
         build_section: BuildConfig,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Build {build_section.name.replace(":", " ")}", **kwargs)
+        super().__init__(env=env, name=f"Build {build_section.program_name}", **kwargs)
         self.build_section = build_section
 
     def _run(self):
@@ -101,7 +101,7 @@ class Build(TaskJob):
             shutil.copy(source.path, os.path.join(WORKING_DIR, source.name))
             self._access_file(source)
 
-        target = TaskPath(BUILD_DIR, self.build_section.program_name) # TODO: Fix final place
+        target = TaskPath(BUILD_DIR, self.build_section.program_name)
         self.make_filedirs(target)
         shutil.copy(
             os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR)),
@@ -109,14 +109,14 @@ class Build(TaskJob):
         )
         self._access_file(target)
 
-    def _resolve_strategy(self, sources: list[TaskPath]) -> BuildStrategy:
+    def _resolve_strategy(self, sources: list[TaskPath]) -> type[BuildStrategy]:
         applicable = []
         for strategy in AUTO_STRATEGIES:
             if strategy.applicable(self.build_section, list(map(lambda p: p.path, sources))):
                 applicable.append(strategy)
         if len(applicable) == 0:
             raise PipelineItemFailure(
-                f"No applicable build strategy for [build_{self.build_section.name}] with sources:\n" +
+                f"No applicable build strategy for [{self.build_section.section_name}] with sources:\n" +
                 tab("\n".join(source.col(self._env) for source in sources))
             )
         elif len(applicable) >= 2:

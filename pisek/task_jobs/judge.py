@@ -551,7 +551,7 @@ class RunOpendataJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: "RunConfig",
+        judge: RunConfig,
         test: int,
         input_: InputPath,
         output: OutputPath,
@@ -562,7 +562,7 @@ class RunOpendataJudge(RunBatchJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge=judge,
+            judge_name=judge.name,
             test=test,
             input_=input_,
             output=output,

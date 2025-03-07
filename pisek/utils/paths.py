@@ -97,7 +97,7 @@ class TaskPath:
 
     @staticmethod
     def executable_file(env: "Env", program: str) -> "TaskPath":
-        program = os.path.splitext(os.path.basename(program))[0]
+        program = os.path.splitext(program)[0]
         return TaskPath.executable_path(env, program)
 
     @staticmethod
@@ -111,7 +111,7 @@ class TaskPath:
 
 class JudgeablePath(TaskPath):
     def to_judge_log(self, judge: str) -> "LogPath":
-        return LogPath(self.replace_suffix(f".{judge}.log").path)
+        return LogPath(self.replace_suffix(f".{os.path.basename(judge)}.log").path)
 
 
 class SanitizablePath(TaskPath):
@@ -132,7 +132,7 @@ class InputPath(SanitizablePath):
         return OutputPath(self.replace_suffix(f".out").path)
 
     def to_log(self, program: str) -> "LogPath":
-        return LogPath(self.replace_suffix(f".{program}.log").path)
+        return LogPath(self.replace_suffix(f".{os.path.basename(program)}.log").path)
 
 
 class OutputPath(JudgeablePath, SanitizablePath):
@@ -154,7 +154,7 @@ class OutputPath(JudgeablePath, SanitizablePath):
 class LogPath(JudgeablePath):
     @staticmethod
     def generator_log(generator: str) -> "LogPath":
-        return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
+        return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{os.path.basename(generator)}.log")
 
 
 class RawPath(TaskPath):
