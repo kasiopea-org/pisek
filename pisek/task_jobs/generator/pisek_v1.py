@@ -104,7 +104,7 @@ class PisekV1ListInputs(GeneratorListInputs):
             ProgramType.gen,
             self.generator,
             stdout=self._get_inputs_list_path(),
-            stderr=LogPath.generator_log(self.generator),
+            stderr=LogPath.generator_log(self.generator.name),
         )
         if self._run_result.kind != RunResultKind.OK:
             raise self._create_program_failure(

@@ -42,7 +42,7 @@ class CmsOldListInputs(GeneratorListInputs):
             ProgramType.gen,
             self.generator,
             args=[gen_dir.path],
-            stderr=LogPath.generator_log(self.generator),
+            stderr=LogPath.generator_log(self.generator.name),
         )
         self._access_file(gen_dir)
 

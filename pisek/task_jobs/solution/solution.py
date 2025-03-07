@@ -108,7 +108,7 @@ class RunInteractive(RunCMSJudge, RunSolution):
             test=test,
             input_=input_,
             expected_verdict=expected_verdict,
-            judge_log_file=self.sol_log_file.to_judge_log(judge),
+            judge_log_file=self.sol_log_file.to_judge_log(judge.name),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
