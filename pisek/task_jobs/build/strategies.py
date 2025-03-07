@@ -12,17 +12,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+import logging
 import inspect
 import subprocess
 import os
 
 from pisek.env.env import Env
 from pisek.utils.util import ChangedCWD
+from pisek.utils.text import tab
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.config.config_types import BuildStrategyName
 from pisek.config.task_config import BuildConfig
 
-ALL_STRATEGIES: dict[BuildStrategyName, "BuildStrategy"] = {}
+logger = logging.getLogger(__name__)
+
+ALL_STRATEGIES: dict[BuildStrategyName, type["BuildStrategy"]] = {}
 
 class BuildStrategy(ABC):
     name: BuildStrategyName
@@ -54,7 +58,7 @@ class BuildStrategy(ABC):
         elif len(sources) == 1:
             return cls.applicable_on_directory(sources[0])
         else:
-            raise PipelineItemFailure("TODO")
+            assert False, "Mixed files and directories"
 
     def build(self, directory: str) -> str:
         self.inputs = os.listdir(directory)
@@ -73,6 +77,7 @@ class BuildStrategy(ABC):
     def _run_compilation(self, args: list[str], program: str, **kwargs) -> str:
         self._check_tool(args[0])
 
+        logger.debug("Compiling '" + " ".join(args) + "'")
         comp = subprocess.Popen(args, **kwargs, stderr=subprocess.PIPE)
         while comp.stderr is not None:
             line = comp.stderr.readline().decode()
@@ -82,8 +87,7 @@ class BuildStrategy(ABC):
 
         comp.wait()
         if comp.returncode != 0:
-            # TODO: Print the compilation command
-            raise PipelineItemFailure(f"Compilation of {program} failed.")
+            raise PipelineItemFailure(f"Compilation of {program} failed.\n" + tab(self._env.colored(" ".join(args), "yellow")))
         return self.target
 
     def _build_script(self, program: str) -> str:
