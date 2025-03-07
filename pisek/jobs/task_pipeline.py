@@ -75,26 +75,22 @@ class TaskPipeline(JobPipeline):
             judge[0].add_prerequisite(*inputs)
 
             # First solution generates inputs
-            first_solution_name = (
-                env.config.primary_solution
-                if env.config.judge_needs_out
-                or env.config.primary_solution in env.solutions
-                else env.solutions[0]
+            assert (
+                not env.config.judge_needs_out
+                or env.solutions[0] == env.config.primary_solution
             )
 
             named_pipeline.append(
                 first_solution := (
-                    SolutionManager(first_solution_name, True),
-                    f"{SOLUTION_MAN_CODE}{first_solution_name}",
+                    SolutionManager(env.solutions[0], True),
+                    f"{SOLUTION_MAN_CODE}{env.solutions[0]}",
                 )
             )
             solutions.append(first_solution)
             first_solution[0].add_prerequisite(*judge)
             self.input_generator = first_solution[0]
 
-            for sol_name in env.solutions:
-                if sol_name == first_solution_name:
-                    continue
+            for sol_name in env.solutions[1:]:
                 named_pipeline.append(
                     solution := (
                         SolutionManager(sol_name, False),
