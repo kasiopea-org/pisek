@@ -108,7 +108,7 @@ class Cache:
             -SAVED_LAST_SIGNATURES:
         ]
 
-        # Throttling saving saves time massively
+        # Throttling saves time massively
         if time.time() - self.last_save > CACHE_SAVE_INTERVAL:
             self.export()
 
