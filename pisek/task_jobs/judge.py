@@ -127,7 +127,7 @@ class RunJudge(ProgramsJob):
         env: Env,
         name: str,
         test: int,
-        judge: RunConfig,
+        judge_name: str,
         input_: InputPath,
         judge_log_file: LogPath,
         expected_verdict: Optional[Verdict],
@@ -136,7 +136,7 @@ class RunJudge(ProgramsJob):
         super().__init__(env=env, name=name, **kwargs)
         self.test = test
         self.input = input_
-        self.judge = judge
+        self.judge_name = judge_name
         self.judge_log_file = judge_log_file
         self.expected_verdict = expected_verdict
 
@@ -218,7 +218,7 @@ class RunJudge(ProgramsJob):
         text += "\n"
         if judge_rr is not None:
             text += (
-                f"{self.judge.name}:\n"
+                f"{self.judge_name}:\n"
                 + tab(
                     self._format_run_result(
                         judge_rr,
@@ -273,7 +273,7 @@ class RunCMSJudge(RunJudge):
         judge: RunConfig,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, judge=judge, **kwargs)
+        super().__init__(env=env, judge_name=judge.name, **kwargs)
         self.judge = judge
         self.points_file = self.judge_log_file.replace_suffix(".points")
 
@@ -322,7 +322,7 @@ class RunBatchJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: RunConfig,
+        judge_name: str,
         test: int,
         input_: InputPath,
         output: OutputPath,
@@ -333,10 +333,10 @@ class RunBatchJudge(RunJudge):
         super().__init__(
             env=env,
             name=f"Judge {output:p}",
-            judge=judge,
+            judge_name=judge_name,
             test=test,
             input_=input_,
-            judge_log_file=output.to_judge_log(judge),
+            judge_log_file=output.to_judge_log(judge_name),
             expected_verdict=expected_verdict,
             **kwargs,
         )
@@ -370,7 +370,7 @@ class RunDiffJudge(RunBatchJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge="diff",
+            judge_name="diff",
             test=test,
             input_=input_,
             output=output,
@@ -420,7 +420,7 @@ class RunJudgeLibJudge(RunBatchJudge):
         self._access_file(self.output)
         self._access_file(self.correct_output)
 
-        executable = TaskPath.executable_path(self._env, self.judge)
+        executable = TaskPath.executable_path(self._env, self.judge_name)
 
         judge = subprocess.run(
             [
@@ -454,7 +454,7 @@ class RunJudgeLibJudge(RunBatchJudge):
                 Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
-            raise PipelineItemFailure(f"{self.judge.name} failed:\n{tab(stderr)}")
+            raise PipelineItemFailure(f"{self.judge_name} failed:\n{tab(stderr)}")
 
 
 class RunTokenJudge(RunJudgeLibJudge):
@@ -471,7 +471,7 @@ class RunTokenJudge(RunJudgeLibJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge="judge-token",
+            judge_name="judge-token",
             test=test,
             input_=input_,
             output=output,
@@ -512,7 +512,7 @@ class RunShuffleJudge(RunJudgeLibJudge):
     ) -> None:
         super().__init__(
             env=env,
-            judge="judge-shuffle",
+            judge_name="judge-shuffle",
             test=test,
             input_=input_,
             output=output,

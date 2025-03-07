@@ -21,7 +21,6 @@ from pisek.config.config_types import DataFormat
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
-    from pisek.config.task_config import RunConfig
 
 BUILD_DIR = "build/"
 TESTS_DIR = "tests/"
@@ -111,8 +110,8 @@ class TaskPath:
 
 
 class JudgeablePath(TaskPath):
-    def to_judge_log(self, judge: "RunConfig") -> "LogPath":
-        return LogPath(self.replace_suffix(f".{judge.name}.log").path)
+    def to_judge_log(self, judge: str) -> "LogPath":
+        return LogPath(self.replace_suffix(f".{judge}.log").path)
 
 
 class SanitizablePath(TaskPath):
@@ -154,8 +153,8 @@ class OutputPath(JudgeablePath, SanitizablePath):
 
 class LogPath(JudgeablePath):
     @staticmethod
-    def generator_log(generator: "RunConfig") -> "LogPath":
-        return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator.name}.log")
+    def generator_log(generator: str) -> "LogPath":
+        return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
 
 
 class RawPath(TaskPath):
