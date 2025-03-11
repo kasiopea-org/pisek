@@ -159,9 +159,7 @@ class TestcaseInfoMixin(JobManager):
     def _skip_testcase(
         self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
-        return not self._env.config.tests[test].new_in_test(
-            testcase_info.input_path(self._env, seed).name
-        )
+        return testcase_info.input_path(self._env, seed) in self.inputs
 
     def _generate_input_jobs(
         self,

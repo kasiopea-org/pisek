@@ -64,6 +64,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         )
         self._compile_job = compile_
 
+        self._sols: dict[TaskPath, RunSolution] = {}
         self._judges: dict[TaskPath, RunJudge] = {}
 
         for sub_num, inputs in self._all_testcases().items():
@@ -76,12 +77,19 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
     def _skip_testcase(
         self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
-        input_path = testcase_info.input_path(
-            self._env, seed, solution=self.solution_label
-        )
-        if input_path in self._judges:
-            self.tests[-1].previous_jobs.append(self._judges[input_path])
-        return super()._skip_testcase(testcase_info, seed, test)
+        skip = super()._skip_testcase(testcase_info, seed, test)
+        if skip:
+            input_path = testcase_info.input_path(
+                self._env, seed, solution=self.solution_label
+            )
+            if self._env.config.tests[test].new_in_test(input_path.name):
+                self.tests[-1].new_run_jobs.append(self._sols[input_path])
+                self.tests[-1].new_jobs.append(self._judges[input_path])
+                self._sols[input_path].require()
+            else:
+                self.tests[-1].previous_jobs.append(self._judges[input_path])
+
+        return skip
 
     def _generate_input_jobs(
         self,
@@ -161,6 +169,7 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             run_sol = run_judge = self._create_interactive_jobs(input_path, test)
             jobs.append(run_sol)
 
+        self._sols[input_path] = run_sol
         self._judges[input_path] = run_judge
         self.tests[-1].new_jobs.append(run_judge)
         self.tests[-1].new_run_jobs.append(run_sol)
@@ -312,6 +321,7 @@ class TestJobGroup(TaskHelper):
         self.new_run_jobs: list[RunSolution] = []
         self.previous_jobs: list[RunJudge] = []
         self.new_jobs: list[RunJudge] = []
+        self._canceled: bool = False
 
     @property
     def all_jobs(self) -> list[RunJudge]:
@@ -503,5 +513,9 @@ class TestJobGroup(TaskHelper):
         return result, definitive, breaker_job
 
     def cancel(self):
+        if self._canceled:
+            return
+
+        self._canceled = True
         for job in self.new_run_jobs:
-            job.cancel()
+            job.unrequire()
