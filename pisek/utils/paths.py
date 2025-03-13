@@ -17,6 +17,7 @@
 from dataclasses import dataclass
 import os
 from typing import Optional, TYPE_CHECKING
+from pisek.config.config_types import DataFormat
 
 if TYPE_CHECKING:
     from pisek.env.env import Env
@@ -28,7 +29,6 @@ INTERNALS_DIR = ".pisek/"
 GENERATED_SUBDIR = "_generated/"
 INPUTS_SUBDIR = "_inputs/"
 FUZZING_OUTPUTS_SUBDIR = "_fuzzing/"
-SANITIZED_SUBDIR = "_sanitized/"
 
 
 @dataclass(frozen=True)
@@ -115,12 +115,10 @@ class JudgeablePath(TaskPath):
 
 
 class SanitizablePath(TaskPath):
-    def to_sanitized(self) -> "SanitizedPath":
-        name = self.name + ".clean"
-        dirname = os.path.basename(os.path.dirname(self.path))
-        if dirname != INPUTS_SUBDIR:
-            name = name.replace(".", f".{dirname}.", 1)
-        return SanitizedPath(TESTS_DIR, SANITIZED_SUBDIR, name)
+    def to_raw(self, format: DataFormat) -> "RawPath":
+        if format == DataFormat.binary:
+            return RawPath(self.path)
+        return RawPath(self.path + ".raw")
 
 
 class InputPath(SanitizablePath):
@@ -159,5 +157,6 @@ class LogPath(JudgeablePath):
         return LogPath(TESTS_DIR, INPUTS_SUBDIR, f"{generator}.log")
 
 
-class SanitizedPath(TaskPath):
-    pass
+class RawPath(TaskPath):
+    def to_sanitized_output(self) -> OutputPath:
+        return OutputPath(self.path.removesuffix(".raw"))

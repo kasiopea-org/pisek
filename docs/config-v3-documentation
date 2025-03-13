@@ -69,18 +69,14 @@ gen_type=opendata-v1
 # - opendata-v1
 # For more see docs/generator.md
 
-in_format=text
-# Format of input:
-#   text    ASCII plain text (LF newlines) (default)
-#   binary  can be anything
-
+in_format=strict-text
 out_format=text
-# Format of output:
-#   text    ASCII plain text (LF newlines) (default)
-#   binary  can be anything
-# When set to text, pisek will check that the file ends with a line feed.
-#
-# TODO: Mention auto normalization in Server mode when it's done (#137)
+# Format of input/output:
+#   text        UTF-8 or UTF-16 encoded ASCII printable characters, with an optional BOM.
+#               All lines (including the last one) are automatically converted to be terminated with a LF character.
+#   strict-text ASCII printable characters. (default)
+#               All lines (including the last one) must already be terminated with a LF character.
+#   binary      Can be anything.
 
 validator=validate
 # Reference to the run section specifying how to run the validator
