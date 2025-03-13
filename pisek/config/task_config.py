@@ -44,6 +44,7 @@ from pisek.config.config_types import (
     ShuffleMode,
     DataFormat,
     ProgramType,
+    BuildStrategyName,
     CMSFeedbackLevel,
     CMSScoreMode,
 )
@@ -122,6 +123,7 @@ class TaskConfig(BaseEnv):
     solutions: dict[str, "SolutionConfig"]
 
     runs: dict[str, "RunConfig"]
+    builds: dict[str, "BuildConfig"]
     solution_time_limit: float = Field(ge=0)  # Needed for visualization
 
     limits: "LimitsConfig"
@@ -225,7 +227,9 @@ class TaskConfig(BaseEnv):
             key: configs.get(section, key) for section, key in GLOBAL_KEYS
         }
         runs: dict[str, Any] = {}
+        builds: dict[str, Any] = {}
         args["runs"] = runs
+        args["builds"] = builds
 
         # Load judge specific keys
         for (task_type, out_check), key, default in OUT_CHECK_SPECIFIC_KEYS:
@@ -246,6 +250,7 @@ class TaskConfig(BaseEnv):
         for t, program in PROGRAMS:
             if program:
                 runs |= TaskConfig.load_run(t, program, configs)
+                builds |= TaskConfig.load_build(t, program, configs)
 
         # Load tests
         args["tests"] = tests = {}
@@ -267,7 +272,7 @@ class TaskConfig(BaseEnv):
                 )
                 assert isinstance(sol["primary"], ConfigValue)
                 assert isinstance(sol["run"], ConfigValue)
-                runs |= TaskConfig.load_run(
+                run_build_args = [
                     (
                         ProgramType.primary_solution
                         if sol["primary"].value == "yes"
@@ -275,7 +280,9 @@ class TaskConfig(BaseEnv):
                     ),
                     sol["run"],
                     configs,
-                )
+                ]
+                runs |= TaskConfig.load_run(*run_build_args)
+                builds |= TaskConfig.load_build(*run_build_args)
 
         args["limits"] = LimitsConfig.load_dict(configs)
         args["cms"] = CMSConfig.load_dict(configs)
@@ -286,6 +293,16 @@ class TaskConfig(BaseEnv):
         )
 
         return args
+
+    @staticmethod
+    def load_build(
+        program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
+    ) -> dict[str, ConfigValuesDict]:
+        return {
+            f"{program_type}_{name.value}": BuildConfig.load_dict(
+                program_type, name, configs
+            )
+        }
 
     @staticmethod
     def load_run(
@@ -597,11 +614,30 @@ class SolutionConfig(BaseEnv):
         return self
 
 
+def _get_program_type_defaults(
+    prefix: str, program_type: ProgramType, program_name: str
+) -> list[str]:
+    if program_type.is_solution():
+        return [
+            f"{prefix}_solution_{program_name}",
+            f"{prefix}_{program_type}",
+            f"{prefix}_solution",
+            f"{prefix}",
+        ]
+    else:
+        return [
+            f"{prefix}_{program_type}_{program_name}",
+            f"{prefix}_{program_type}",
+            f"{prefix}",
+        ]
+
+
 class RunConfig(BaseEnv):
     """Configuration of running an program"""
 
     _section: str
 
+    build: ListStr
     exec: TaskPathFromStr
     time_limit: float = Field(ge=0)  # [seconds]
     clock_mul: float = Field(ge=0)  # [1]
@@ -622,19 +658,7 @@ class RunConfig(BaseEnv):
     def load_dict(
         cls, program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
     ) -> ConfigValuesDict:
-        if program_type.is_solution():
-            default_sections = [
-                f"run_solution_{name.value}",
-                f"run_{program_type}",
-                "run_solution",
-                "run",
-            ]
-        else:
-            default_sections = [
-                f"run_{program_type}_{name.value}",
-                f"run_{program_type}",
-                "run",
-            ]
+        default_sections = _get_program_type_defaults("run", program_type, name.value)
 
         section_name = configs.get_from_candidates(
             [(section, None) for section in default_sections]
@@ -649,12 +673,34 @@ class RunConfig(BaseEnv):
             args["exec"].value = name.value
         return {"_section": section_name} | args
 
-    @field_validator("exec", mode="before")
+
+class BuildConfig(BaseEnv):
+    name: str
+    sources: ListStr
+    comp_args: ListStr
+    # TODO: extras
+    strategy: BuildStrategyName
+    # TODO: entrypoint
+
     @classmethod
-    def convert_auto(cls, value: str, info: ValidationInfo) -> str:
-        if value == "@auto":
-            value = info.data.get("name", "")
-        return value
+    def load_dict(
+        cls, program_type: ProgramType, name: ConfigValue, configs: ConfigHierarchy
+    ) -> ConfigValuesDict:
+        default_sections = _get_program_type_defaults("build", program_type, name.value)
+
+        section_name = configs.get_from_candidates(
+            [(section, None) for section in default_sections]
+        )
+        args = {
+            key: configs.get_from_candidates(
+                [(section, key) for section in default_sections]
+            )
+            for key in cls.model_fields
+            if key != "name"
+        }
+        if args["sources"].value == "@auto":
+            args["sources"].value = name.value
+        return {"_section": section_name, "name": name} | args
 
 
 class LimitsConfig(BaseEnv):

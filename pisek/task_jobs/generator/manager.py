@@ -23,7 +23,6 @@ from pisek.utils.paths import TaskPath, InputPath, OutputPath, SanitizablePath
 from pisek.config.config_types import GenType, DataFormat
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
-from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.data import InputSmall, OutputSmall, LinkData
 from pisek.task_jobs.tools import IsClean, Sanitize
@@ -63,10 +62,8 @@ class PrepareGenerator(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         assert self._env.config.in_gen is not None
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, self._env.config.in_gen_path),
             list_inputs := list_inputs_job(self._env, self._env.config.in_gen),
         ]
-        list_inputs.add_prerequisite(compile_gen)
         self._list_inputs = list_inputs
 
         return jobs

@@ -28,7 +28,6 @@ from pisek.task_jobs.data.data import SymlinkData
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.task_manager import TaskJobManager
-from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 from pisek.task_jobs.generator.manager import TestcaseInfoMixin
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
@@ -56,13 +55,6 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
         self._solution = self._env.config.solutions[self.solution_label].run
 
         jobs: list[Job] = []
-
-        jobs.append(
-            compile_ := Compile(
-                self._env, self._env.config.solution_path(self.solution_label), True
-            )
-        )
-        self._compile_job = compile_
 
         self._sols: dict[TaskPath, RunSolution] = {}
         self._judges: dict[TaskPath, RunJudge] = {}
@@ -191,7 +183,6 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
             self.is_primary,
             input_path,
         )
-        run_solution.add_prerequisite(self._compile_job)
 
         out = input_path.to_output()
         run_judge = judge_job(
