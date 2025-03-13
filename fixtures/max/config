@@ -1,0 +1,35 @@
+# Pisek fixture
+# Source: $(pisek)/docs/config-v3-documentation for more information
+
+[task]
+version=v3
+
+[tests]
+in_gen=gen
+gen_type=pisek-v1
+# validator=validate
+
+out_check=judge
+# judge source file
+out_judge=solve_judge
+judge_type=cms-batch
+judge_needs_in=1
+judge_needs_out=0
+
+[test01]
+points=1
+in_globs=*.in
+predecessors=0
+
+[checks]
+solution_for_each_test=on
+all_inputs_in_last_test=on
+
+[solution_solve_judge]
+primary=yes
+
+[run_solution]
+time_limit=0.2
+
+[build_gen:gen]
+sources=gen/gen gen/random
