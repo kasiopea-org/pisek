@@ -1,0 +1,9 @@
+# Max
+
+Fixture for complicated build & run sections.
+
+## Statement
+First containing number of integers $N$.
+Second line contains $N$ integers.
+
+Output maximum of those integers.
