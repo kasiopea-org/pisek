@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import cache
 import os
 import random
@@ -282,7 +282,7 @@ class RunCMSJudge(RunJudge):
             points_str = f.read().split("\n")[0]
         try:
             points = Decimal(points_str)
-        except ValueError:
+        except (ValueError, InvalidOperation):
             raise self._create_program_failure(
                 "Judge didn't write points on stdout:", result
             )
