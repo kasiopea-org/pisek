@@ -108,7 +108,7 @@ class TestDirtySample(TestSumCMS):
             f.write("1 2")
 
 
-class TestNoLFInTextInput(TestSumCMS):
+class TestNoLFInStrictTextInput(TestSumCMS):
     """Input without newline at the end with in_format=text."""
 
     def expecting_success(self):
@@ -116,6 +116,21 @@ class TestNoLFInTextInput(TestSumCMS):
 
     def modify_task(self):
         def modification_fn(raw_config):
+            raw_config["tests"]["in_gen"] = "gen_no_lf"
+            raw_config["tests"]["validator"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInTextInput(TestSumCMS):
+    """Input without newline at the end with in_format=text."""
+
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["in_format"] = "text"
             raw_config["tests"]["in_gen"] = "gen_no_lf"
             raw_config["tests"]["validator"] = ""
 
@@ -141,10 +156,25 @@ class TestNoLFInTextOutput(TestSumCMS):
     """Output without newline at the end with out_format=text."""
 
     def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["solution_solve"]["source"] = "solve_no_lf"
+            raw_config["tests"]["validator"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInStrictTextOutput(TestSumCMS):
+    """Output without newline at the end with out_format=text."""
+
+    def expecting_success(self):
         return False
 
     def modify_task(self):
         def modification_fn(raw_config):
+            raw_config["tests"]["out_format"] = "strict-text"
             raw_config["solution_solve"]["source"] = "solve_no_lf"
             raw_config["tests"]["validator"] = ""
 

@@ -19,14 +19,14 @@ from typing import cast, Any, Optional
 from hashlib import blake2b
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, InputPath, OutputPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath, SanitizablePath
 from pisek.config.config_types import GenType, DataFormat
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.program import RunResultKind
-from pisek.task_jobs.data.data import InputSmall, OutputSmall
-from pisek.task_jobs.tools import IsClean
+from pisek.task_jobs.data.data import InputSmall, OutputSmall, LinkData
+from pisek.task_jobs.tools import IsClean, Sanitize
 from pisek.task_jobs.validator import ValidatorJob
 from pisek.task_jobs.solution.solution import RunBatchSolution
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
@@ -202,7 +202,8 @@ class TestcaseInfoMixin(JobManager):
                 jobs.append(test_det)
                 test_det.add_prerequisite(gen_inp)
 
-        jobs += self._check_input_jobs(input_path)
+        if testcase_info.generation_mode == TestcaseGenerationMode.generated:
+            jobs += self._check_input_jobs(input_path)
 
         if self._env.config.validator is not None and test > 0:
             jobs.append(
@@ -258,9 +259,11 @@ class TestcaseInfoMixin(JobManager):
         self, input_path: InputPath, prerequisite: Optional[Job] = None
     ) -> list[Job]:
         jobs: list[Job] = []
-        if self._env.config.in_format == DataFormat.text:
-            jobs.append(input_clean := IsClean(self._env, input_path))
-            input_clean.add_prerequisite(prerequisite)
+
+        sanitize = self._sanitize_job(input_path, self._env.config.in_format)
+        if sanitize is not None:
+            jobs.append(sanitize)
+            sanitize.add_prerequisite(prerequisite)
 
         if self._env.config.limits.input_max_size != 0:
             jobs.append(input_small := InputSmall(self._env, input_path))
@@ -269,22 +272,28 @@ class TestcaseInfoMixin(JobManager):
         return jobs
 
     def _check_output_jobs(
-        self, output_path: OutputPath, prerequisite: Optional[RunBatchSolution]
+        self, output_path: OutputPath, prerequisite: Optional[Job]
     ) -> list[Job]:
         jobs: list[Job] = []
-        if self._env.config.out_format == DataFormat.text:
-            jobs.append(out_clean := IsClean(self._env, output_path))
-            if prerequisite is not None:
-                out_clean.add_prerequisite(
-                    prerequisite,
-                    condition=lambda r: r.kind == RunResultKind.OK,
-                )
+
+        sanitize = self._sanitize_job(output_path, self._env.config.out_format)
+        if sanitize is not None:
+            jobs.append(sanitize)
+            sanitize.add_prerequisite(prerequisite, name="create_source")
 
         if self._env.config.limits.output_max_size != 0:
             jobs.append(out_small := OutputSmall(self._env, output_path))
             out_small.add_prerequisite(prerequisite)
 
         return jobs
+
+    def _sanitize_job(self, path: SanitizablePath, format: DataFormat) -> Optional[Job]:
+        if format == DataFormat.text:
+            return Sanitize(self._env, path.to_raw(format), path)
+        elif format == DataFormat.strict_text:
+            return IsClean(self._env, path.to_raw(format), path)
+        else:
+            return None
 
     def _compute_result(self) -> dict[str, Any]:
         return {"inputs": list(sorted(self.inputs, key=lambda i: i.name))}

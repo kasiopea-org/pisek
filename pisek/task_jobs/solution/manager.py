@@ -142,6 +142,15 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                 testcase_info, seed, test
             )
             run_sol = run_batch_sol
+
+            jobs.append(run_batch_sol)
+
+            for add_job in self._check_output_jobs(
+                run_batch_sol.output.to_sanitized_output(), run_batch_sol
+            ):
+                run_judge.add_prerequisite(add_job)
+                jobs.append(add_job)
+
             if self._env.config.judge_needs_out:
                 link = SymlinkData(
                     self._env,
@@ -150,16 +159,13 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
                         self._env, seed, solution=self.solution_label
                     ),
                 )
-                jobs += [run_batch_sol, link, run_judge]
+                jobs.append(link)
                 link.add_prerequisite(run_batch_sol)
                 run_judge.add_prerequisite(link)
             else:
-                jobs += [run_batch_sol, run_judge]
                 run_judge.add_prerequisite(run_batch_sol)
 
-            for add_job in self._check_output_jobs(run_batch_sol.output, run_batch_sol):
-                add_job.add_prerequisite(run_batch_sol)
-                jobs.append(add_job)
+            jobs.append(run_judge)
 
         elif self._env.config.task_type == TaskType.interactive:
             run_sol = run_judge = self._create_interactive_jobs(input_path, test)

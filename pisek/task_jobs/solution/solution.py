@@ -74,7 +74,7 @@ class RunBatchSolution(RunSolution):
             **kwargs,
         )
         self.input = input_
-        self.output = input_.to_output()
+        self.output = input_.to_output().to_raw(env.config.out_format)
         self.log_file = input_.to_log("solution")
 
     def _run(self) -> RunResult:

@@ -90,12 +90,13 @@ class GeneratorTestDeterminism(ProgramsJob):
         )
 
     def _run(self) -> None:
-        original = self.input_path.replace_suffix(".in2")
-        self._rename_file(self.input_path, original)
+        input_path = self.input_path.to_raw(self._env.config.in_format)
+        original = input_path.replace_suffix(".second")
+        self._rename_file(input_path, original)
         self._gen()
-        if not self._files_equal(self.input_path, original):
+        if not self._files_equal(input_path, original):
             raise PipelineItemFailure(
-                f"Generator is not deterministic. Files {self.input_path:p} and {original:p} differ"
+                f"Generator is not deterministic. Files {input_path:p} and {original:p} differ"
                 + (f" (seed {self.seed:016x})" if self.testcase_info.seeded else "")
                 + "."
             )
@@ -118,8 +119,12 @@ class GeneratorRespectsSeed(TaskJob):
         self.testcase_info = testcase_info
         self.seed1 = seed1
         self.seed2 = seed2
-        self.input1 = testcase_info.input_path(self._env, seed1)
-        self.input2 = testcase_info.input_path(self._env, seed2)
+        self.input1 = testcase_info.input_path(self._env, seed1).to_raw(
+            env.config.in_format
+        )
+        self.input2 = testcase_info.input_path(self._env, seed2).to_raw(
+            env.config.in_format
+        )
         super().__init__(
             env=env,
             name=f"Generator respects seed ({self.input1:n} and {self.input2:n})",

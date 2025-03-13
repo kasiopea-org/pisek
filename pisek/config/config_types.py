@@ -46,6 +46,7 @@ class ShuffleMode(StrEnum):
 
 class DataFormat(StrEnum):
     text = auto()
+    strict_text = "strict-text"
     binary = auto()
 
 

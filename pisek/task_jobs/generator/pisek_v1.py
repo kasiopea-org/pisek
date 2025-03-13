@@ -143,7 +143,7 @@ class PisekV1GeneratorJob(ProgramsJob):
             ProgramType.gen,
             self.generator,
             args=args,
-            stdout=self.input_path,
+            stdout=self.input_path.to_raw(self._env.config.in_format),
             stderr=self.input_path.to_log(self.generator),
         )
         if result.kind != RunResultKind.OK:
