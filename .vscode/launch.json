@@ -11,8 +11,9 @@
             "module": "pisek.__main__",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "cwd": "${workspaceFolder}/fixtures/",
+            "cwd": "${workspaceFolder}/fixtures",
             "args": ["test"],
+            "env": {"PISEK_DIRECTORY": "${workspaceFolder}/fixtures/pisek"}
         }
     ]
 }
