@@ -32,7 +32,6 @@ from pisek.utils.text import tab
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
-from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
 from pisek.task_jobs.tools import PrepareTokenJudge, PrepareShuffleJudge
 from pisek.task_jobs.solution.solution_result import (
@@ -55,12 +54,12 @@ class JudgeManager(TaskJobManager):
         jobs: list[Job] = []
         comp: Optional[Job] = None
 
+        # TODO: Fix
         if self._env.config.out_check == OutCheck.judge:
             if self._env.config.out_judge is None:
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
                 )
-            jobs.append(comp := Compile(self._env, self._env.config.out_judge_path))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
         elif self._env.config.out_check == OutCheck.shuffle:

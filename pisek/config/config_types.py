@@ -61,6 +61,12 @@ class ProgramType(StrEnum):
         return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
 
+class BuildStrategyName(StrEnum):
+    python = auto()
+    cpp = auto()
+    auto = auto()
+
+
 class CMSFeedbackLevel(StrEnum):
     full = auto()
     restricted = auto()
