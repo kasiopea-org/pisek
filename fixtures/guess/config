@@ -24,6 +24,7 @@ headers=src/guess.h
 name=Test A
 points=10
 in_globs=*.in
+predecessors=0
 
 [run_solution]
 # Time limit (seconds) for the solutions

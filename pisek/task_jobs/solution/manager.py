@@ -74,22 +74,18 @@ class SolutionManager(TaskJobManager, TestcaseInfoMixin):
 
         return jobs
 
-    def _skip_testcase(
+    def _register_skipped_testcase(
         self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
-    ) -> bool:
-        skip = super()._skip_testcase(testcase_info, seed, test)
-        if skip:
-            input_path = testcase_info.input_path(
-                self._env, seed, solution=self.solution_label
-            )
-            if self._env.config.tests[test].new_in_test(input_path.name):
-                self.tests[-1].new_run_jobs.append(self._sols[input_path])
-                self.tests[-1].new_jobs.append(self._judges[input_path])
-                self._sols[input_path].require()
-            else:
-                self.tests[-1].previous_jobs.append(self._judges[input_path])
-
-        return skip
+    ) -> None:
+        input_path = testcase_info.input_path(
+            self._env, seed, solution=self.solution_label
+        )
+        if self._env.config.tests[test].new_in_test(input_path.name):
+            self.tests[-1].new_run_jobs.append(self._sols[input_path])
+            self.tests[-1].new_jobs.append(self._judges[input_path])
+            self._sols[input_path].require()
+        else:
+            self.tests[-1].previous_jobs.append(self._judges[input_path])
 
     def _generate_input_jobs(
         self,

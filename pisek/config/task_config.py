@@ -378,12 +378,13 @@ class TaskConfig(BaseEnv):
                 return list(sorted(set(l)))
 
             test.all_predecessors = normalize_list(all_predecessors)
-            test.all_globs = normalize_list(
+            test.prev_globs = normalize_list(
                 sum(
                     (self.tests[p].in_globs for p in test.all_predecessors),
-                    start=test.in_globs,
+                    start=[],
                 )
             )
+            test.all_globs = normalize_list(test.prev_globs + test.in_globs)
             computed.add(num)
 
             return test.all_predecessors
@@ -400,6 +401,7 @@ class TestConfig(BaseEnv):
     name: str
     points: int = Field(ge=0)
     in_globs: ListStr
+    prev_globs: list[str] = []
     all_globs: list[str] = []
     direct_predecessors: list[int]
     all_predecessors: list[int] = []
@@ -408,7 +410,9 @@ class TestConfig(BaseEnv):
         return any(fnmatch.fnmatch(filename, g) for g in self.all_globs)
 
     def new_in_test(self, filename: str) -> bool:
-        return any(fnmatch.fnmatch(filename, g) for g in self.in_globs)
+        return not any(
+            fnmatch.fnmatch(filename, g) for g in self.prev_globs
+        ) and self.in_test(filename)
 
     @staticmethod
     def load_dict(number: ConfigValue, configs: ConfigHierarchy) -> ConfigValuesDict:
