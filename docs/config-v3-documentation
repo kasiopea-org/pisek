@@ -72,9 +72,9 @@ gen_type=opendata-v1
 in_format=strict-text
 out_format=text
 # Format of input/output:
-#   text        UTF-8 or UTF-16 encoded ASCII printable characters, with an optional BOM.
+#   text        UTF-8 or UTF-16 encoded ASCII printable characters, with an optional BOM. (default for out_format)
 #               All lines (including the last one) are automatically converted to be terminated with a LF character.
-#   strict-text ASCII printable characters. (default)
+#   strict-text ASCII printable characters. (default for in_format)
 #               All lines (including the last one) must already be terminated with a LF character.
 #   binary      Can be anything.
 
