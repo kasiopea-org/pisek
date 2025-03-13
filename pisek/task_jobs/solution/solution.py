@@ -36,8 +36,18 @@ class RunSolution(ProgramsJob):
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
+        self._needed_by = 1
         self.solution = solution
         self.is_primary = is_primary
+
+    def require(self):
+        self._needed_by += 1
+
+    def unrequire(self):
+        self._needed_by -= 1
+        if self._needed_by == 0:
+            self.cancel()
+        assert self._needed_by >= 0
 
     def _solution_type(self) -> ProgramType:
         return (

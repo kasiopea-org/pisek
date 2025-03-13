@@ -137,8 +137,11 @@ class TestcaseInfoMixin(JobManager):
         jobs: list[Job] = []
         self._gen_inputs_job = {}
 
+        skipped: bool = False
         for i, seed in enumerate(seeds):
             if self._skip_testcase(testcase_info, seed, test):
+                skipped = True
+                self._register_skipped_testcase(testcase_info, seed, test)
                 continue
 
             self.inputs.add(testcase_info.input_path(self._env, seed))
@@ -150,7 +153,11 @@ class TestcaseInfoMixin(JobManager):
 
             jobs += inp_jobs + out_jobs
 
-        if self._env.config.checks.generator_respects_seed and testcase_info.seeded:
+        if (
+            self._env.config.checks.generator_respects_seed
+            and testcase_info.seeded
+            and not skipped
+        ):
             jobs += self._respects_seed_jobs(
                 testcase_info, cast(list[int], seeds), test
             )
@@ -159,9 +166,12 @@ class TestcaseInfoMixin(JobManager):
     def _skip_testcase(
         self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
-        return not self._env.config.tests[test].new_in_test(
-            testcase_info.input_path(self._env, seed).name
-        )
+        return testcase_info.input_path(self._env, seed) in self.inputs
+
+    def _register_skipped_testcase(
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
+    ) -> None:
+        pass
 
     def _generate_input_jobs(
         self,
@@ -229,11 +239,6 @@ class TestcaseInfoMixin(JobManager):
             testcase_info.generation_mode == TestcaseGenerationMode.generated
             and testcase_info.seeded
         )
-
-        if not self._env.config.tests[test].new_in_test(
-            testcase_info.input_path(self._env, seeds[0]).name
-        ):
-            return []
 
         jobs: list[Job] = []
 
