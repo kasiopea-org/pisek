@@ -91,7 +91,7 @@ class GeneratorTestDeterminism(ProgramsJob):
 
     def _run(self) -> None:
         input_path = self.input_path.to_raw(self._env.config.in_format)
-        original = input_path.replace_suffix(".second")
+        original = input_path.to_second()
         self._rename_file(input_path, original)
         self._gen()
         if not self._files_equal(input_path, original):

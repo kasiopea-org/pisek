@@ -160,3 +160,9 @@ class LogPath(JudgeablePath):
 class RawPath(TaskPath):
     def to_sanitized_output(self) -> OutputPath:
         return OutputPath(self.path.removesuffix(".raw"))
+
+    def to_sanitized_input(self, env: "Env") -> InputPath:
+        return InputPath(env, self.path.removesuffix(".raw"))
+
+    def to_second(self) -> TaskPath:
+        return self.replace_suffix(".raw2")
