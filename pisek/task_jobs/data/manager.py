@@ -77,7 +77,7 @@ class DataManager(TaskJobManager, TestcaseInfoMixin):
         for testcase_info in self._testcase_infos[0]:
             if testcase_info.generation_mode != TestcaseGenerationMode.static:
                 raise PipelineItemFailure(
-                    f"Sample inputs must be static, but '{inp_path}' is {testcase_info.generation_mode}."
+                    f"Sample inputs must be static, but '{testcase_info.name}' is {testcase_info.generation_mode}."
                 )
 
         used_inputs = set(sum(self._testcase_infos.values(), start=[]))
