@@ -214,6 +214,7 @@ no_unused_inputs=
 all_inputs_in_last_test=
 generator_respects_seed=
 one_input_in_each_nonsample_test=
+fuzz_test_judge=
 
 [cms]
 name=
