@@ -40,4 +40,4 @@ def warn(msg: str, err: type, strict: bool = False) -> None:
     """Warn if strict is False, otherwise raise error."""
     if strict:
         raise err(msg)
-    eprint(ColorSettings.colored(f"Warning: {msg}", "yellow"))
+    eprint(ColorSettings.colored(msg, "yellow"))
