@@ -279,16 +279,16 @@ subdir=
 
 # Execution limits, setting limit to 0 means unlimited:
 time_limit=360
-# Execution time limit [seconds]
+# Execution time limit [seconds] (defaults to 360 s)
 clock_mul=
-# Wall clock multiplier [1]
+# Wall clock multiplier [1] (defaults to 2x)
 clock_min=
-# Wall clock minimum [second]
+# Wall clock minimum [second] (defaults to 1 s)
 mem_limit=
-# Memory limit [MB]
+# Memory limit [MB] (defaults to unlimited)
 process_limit=
 # Maximum number of processes -- at the moment,
-# limits greater than 1 are interpreted as "unlimited".
+# limits greater than 1 are interpreted as "unlimited". (defaults to 1)
 # Please keep in mind that killing multiple processes
 # upon errors is inherently unreliable.
 

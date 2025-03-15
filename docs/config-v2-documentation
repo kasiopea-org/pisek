@@ -184,11 +184,11 @@ subtasks=X10
 #   solve       Primary solution
 #   sec_solve   Secondary solution usually subject to much less strict limits.
 # and LIMIT is one of:
-#   time_limit  Execution time limit [seconds]
-#   clock_limit Wall clock time limit [seconds]
-#   mem_limit   Memory limit [MB]
+#   time_limit  Execution time limit [seconds] (defaults to 360 s)
+#   clock_limit Wall clock time limit [seconds] (defaults to min(2 * time_limit, 1 s))
+#   mem_limit   Memory limit [MB]  (defaults to unlimited)
 #   process_limit   Maximum number of processes -- at the moment,
-#           limits greater than 1 are interpreted as "unlimited".
+#           limits greater than 1 are interpreted as "unlimited". (defaults to 1)
 #           Please keep in mind that killing of multiple processes
 #           upon errors is inherently unreliable.
 #
