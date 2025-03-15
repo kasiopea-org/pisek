@@ -180,7 +180,7 @@ class SanitizeAbstact(TaskJob):
     def _run(self) -> None:
         result = self.prerequisites_results.get("create_source", None)
         if isinstance(result, RunResult) and result.kind != RunResultKind.OK:
-            self._link_file(self.input, self.output)
+            self._link_file(self.input, self.output, overwrite=True)
             return
 
         self._sanitize()
