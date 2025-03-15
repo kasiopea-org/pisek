@@ -27,13 +27,13 @@ from uuid import uuid4
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, InputPath, OutputPath, LogPath
 from pisek.config.config_types import TaskType, ProgramType, OutCheck, JudgeType
+from pisek.config.task_config import RunConfig
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 from pisek.task_jobs.chaos_monkey import Incomplete, ChaosMonkey
-from pisek.task_jobs.tools import PrepareTokenJudge, PrepareShuffleJudge
 from pisek.task_jobs.solution.solution_result import (
     Verdict,
     SolutionResult,
@@ -53,17 +53,6 @@ class JudgeManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job] = []
         comp: Optional[Job] = None
-
-        # TODO: Fix
-        if self._env.config.out_check == OutCheck.judge:
-            if self._env.config.out_judge is None:
-                raise RuntimeError(
-                    f"Unset judge for out_check={self._env.config.out_check.name}"
-                )
-        elif self._env.config.out_check == OutCheck.tokens:
-            jobs.append(comp := PrepareTokenJudge(self._env))
-        elif self._env.config.out_check == OutCheck.shuffle:
-            jobs.append(comp := PrepareShuffleJudge(self._env))
 
         # All samples must be static, therefore they exist already
         samples = self._get_samples()
@@ -333,7 +322,7 @@ class RunBatchJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
+        judge: RunConfig,
         test: int,
         input_: InputPath,
         output: OutputPath,
@@ -562,7 +551,7 @@ class RunOpendataJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: str,
+        judge: "RunConfig",
         test: int,
         input_: InputPath,
         output: OutputPath,

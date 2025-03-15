@@ -22,7 +22,7 @@ from typing import Optional, Any, Union, Callable
 import signal
 import subprocess
 
-from pisek.config.task_config import ProgramType
+from pisek.config.task_config import ProgramType, RunConfig
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, LogPath
 from pisek.jobs.jobs import PipelineItemFailure
@@ -139,7 +139,7 @@ class ProgramsJob(TaskJob):
     def _load_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: RunConfig,
         args: list[str] = [],
         stdin: Optional[Union[TaskPath, int]] = None,
         stdout: Optional[Union[TaskPath, int]] = None,
@@ -147,8 +147,7 @@ class ProgramsJob(TaskJob):
         env={},
     ) -> None:
         """Adds program to execution pool."""
-        run = self._env.config.runs[f"{program_type}:{program}"]
-        executable = self._load_compiled(run.exec)
+        executable = self._load_compiled(program.exec)
 
         timeout: Optional[float] = None
         if program_type.is_solution():
@@ -156,11 +155,11 @@ class ProgramsJob(TaskJob):
 
         self._load_executable(
             executable=executable,
-            args=run.args + args,
-            time_limit=run.time_limit if timeout is None else timeout,
-            clock_limit=run.clock_limit(timeout),
-            mem_limit=run.mem_limit,
-            process_limit=run.process_limit,
+            args=program.args + args,
+            time_limit=program.time_limit if timeout is None else timeout,
+            clock_limit=program.clock_limit(timeout),
+            mem_limit=program.mem_limit,
+            process_limit=program.process_limit,
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
@@ -273,7 +272,7 @@ class ProgramsJob(TaskJob):
     def _run_program(
         self,
         program_type: ProgramType,
-        program: str,
+        program: RunConfig,
         **kwargs,
     ) -> RunResult:
         """Loads one program and runs it."""

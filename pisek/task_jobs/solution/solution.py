@@ -17,8 +17,9 @@ import time
 from typing import Optional
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, InputPath
+from pisek.utils.paths import InputPath
 from pisek.config.config_types import ProgramType
+from pisek.config.task_config import RunConfig
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import RunCMSJudge
@@ -61,14 +62,14 @@ class RunBatchSolution(RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
         input_: InputPath,
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Run {solution} on input {input_:n}",
+            name=f"Run {solution.name} on input {input_:n}",
             solution=solution,
             is_primary=is_primary,
             **kwargs,
@@ -91,9 +92,9 @@ class RunInteractive(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
-        judge: str,
+        judge: RunConfig,
         test: int,
         input_: InputPath,
         expected_verdict: Optional[Verdict] = None,

@@ -143,15 +143,16 @@ class Cpp(BuildBinary):
     name = BuildStrategyName.cpp
     @classmethod
     def applicable_on_files(cls, files: list[str]) -> bool:
-        return cls._ends_with(files, [".hpp", ".cpp", ".cc"])
+        return cls._ends_with(files, [".h", ".hpp", ".cpp", ".cc"])
     
     def _build(self) -> str:
-        cpp_flags = ["-std=c++20", "-O2", "-Wall", "-lm", "-Wshadow",] # self._c_colors()]
+        cpp_flags = ["-std=c++20", "-O2", "-Wall", "-lm", "-Wshadow"]
+        cpp_flags.append("-fdiagnostics-color=" + ("never" if self._env.no_colors else "always"))
 
         # cpp_flags += self._add_stub("cpp")
 
         return self._run_compilation(
-            ["g++", *self.inputs, "-o", self.target] + cpp_flags, self._build_section.program_name 
+            ["g++", *self.inputs, "-o", self.target , "-I."] + cpp_flags, self._build_section.program_name 
         )
 
 AUTO_STRATEGIES: list[BuildStrategy] = [PythonSingleSource, Cpp]

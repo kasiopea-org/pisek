@@ -16,7 +16,7 @@
 
 from pisek.env.env import Env
 from pisek.utils.paths import InputPath
-from pisek.config.task_config import ProgramType
+from pisek.config.task_config import ProgramType, RunConfig
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
 
@@ -27,7 +27,7 @@ class ValidatorJob(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        validator: str,
+        validator: RunConfig,
         input_: InputPath,
         test: int,
         **kwargs,
@@ -36,7 +36,7 @@ class ValidatorJob(ProgramsJob):
         self.validator = validator
         self.test = test
         self.input = input_
-        self.log_file = input_.to_log(f"{validator}{test}")
+        self.log_file = input_.to_log(f"{validator.name}{test}")
 
     def _validate(self) -> RunResult:
         return self._run_program(
