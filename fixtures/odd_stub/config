@@ -12,9 +12,11 @@ static_subdir=.
 in_gen=gen
 gen_type=pisek-v1
 out_check=shuffle
-stub=stubs/grader
-headers=stubs/odd.h
 shuffle_mode=lines
+
+[build_solution]
+cms_stub=stubs/grader
+cms_headers=stubs/odd.h
 
 [test01]
 points=10

@@ -16,9 +16,9 @@ out_check=judge
 out_judge=src/judge
 judge_type=cms-communication
 
-[solutions]
-stub=src/stub
-headers=src/guess.h
+[build_solution]
+cms_stub=src/stub
+cms_headers=src/guess.h
 
 [test01]
 name=Test A

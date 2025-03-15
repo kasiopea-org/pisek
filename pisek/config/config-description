@@ -204,6 +204,18 @@ process_limit=
 args=
 subdir=
 
+# TODO: Add in other defaults & description
+[build]
+sources=
+comp_args=
+extras=
+strategy=
+entrypoint=
+
+[build_solution]
+cms_stub=
+cms_headers=
+
 [limits]
 input_max_size=
 output_max_size=

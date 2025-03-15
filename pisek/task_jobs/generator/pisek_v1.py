@@ -144,7 +144,7 @@ class PisekV1GeneratorJob(ProgramsJob):
             self.generator,
             args=args,
             stdout=self.input_path.to_raw(self._env.config.in_format),
-            stderr=self.input_path.to_log(self.generator),
+            stderr=self.input_path.to_log(self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
