@@ -87,7 +87,7 @@ class JudgeManager(TaskJobManager):
                 judge_j.add_prerequisite(comp)
 
             should_fuzz = (
-                self._env.config.checks.fuzz_test_judge
+                self._env.config.checks.judge_handles_fuzzed_outputs
                 and os.stat(out.path).st_size > 0
             )
 
