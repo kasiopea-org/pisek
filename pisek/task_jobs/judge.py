@@ -86,7 +86,12 @@ class JudgeManager(TaskJobManager):
             if comp is not None:
                 judge_j.add_prerequisite(comp)
 
-            if os.stat(out.path).st_size > 0:
+            should_fuzz = (
+                self._env.config.checks.fuzz_test_judge
+                and os.stat(out.path).st_size > 0
+            )
+
+            if should_fuzz:
                 JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
 
                 total = sum(map(lambda x: x[1], JOBS))
