@@ -207,7 +207,7 @@ class Job(PipelineItem, CaptureInitParams):
         for env_key in sorted(envs):
             try:
                 value = self._env.get_compound(env_key)
-            except (AttributeError, TypeError, ValueError):
+            except (AttributeError, TypeError, ValueError, KeyError):
                 return (None, f"Key nonexistent: {env_key}")
             sign.update(f"{env_key}={value}\n".encode())
 
