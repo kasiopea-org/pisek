@@ -44,8 +44,8 @@ def maybe_delete_key(config: ConfigParser, section: str, key: str):
 
 
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
-    maybe_rename_key(config, "task", "samples_subdir", "static_subdir", "static_subdir")
-    maybe_rename_key(config, "tests", "solution_manager", "stub", "stub")
+    maybe_rename_key(config, "task", "task", "samples_subdir", "static_subdir")
+    maybe_rename_key(config, "tests", "tests", "solution_manager", "stub")
 
     subtask_points = []
     for section in sorted(config.sections()):
