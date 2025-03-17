@@ -16,9 +16,9 @@
 
 from abc import abstractmethod
 from importlib.resources import files
-from typing import Optional
-
+import os
 import subprocess
+
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath, SanitizablePath
@@ -160,6 +160,11 @@ class TextPreprocAbstract(ProgramsJob):
     """Abstract job that has method for file sanitization."""
 
     def _run_text_preproc(self, input_: TaskPath, output: TaskPath) -> None:
+        try:
+            os.remove(self.output.path)
+        except FileNotFoundError:
+            pass
+
         result = self._run_tool(
             "text-preproc",
             stdin=input_,
@@ -180,7 +185,7 @@ class SanitizeAbstact(TaskJob):
     def _run(self) -> None:
         result = self.prerequisites_results.get("create_source", None)
         if isinstance(result, RunResult) and result.kind != RunResultKind.OK:
-            self._link_file(self.input, self.output, overwrite=True)
+            self._copy_file(self.input, self.output)
             return
 
         self._sanitize()
