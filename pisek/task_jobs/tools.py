@@ -161,7 +161,7 @@ class TextPreprocAbstract(ProgramsJob):
 
     def _run_text_preproc(self, input_: TaskPath, output: TaskPath) -> None:
         try:
-            os.remove(self.output.path)
+            os.remove(output.path)
         except FileNotFoundError:
             pass
 
