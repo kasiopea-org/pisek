@@ -323,6 +323,12 @@ def main(argv):
 
     result = None
 
+    if args.subcommand == "version":
+        return print_version()
+    elif args.subcommand == "license":
+        print(license_gnu if args.print else license)
+        return 0
+
     if not is_task_dir(PATH, args.pisek_dir):
         # !!! Ensure this is always run before clean_directory !!!
         return 1
@@ -339,9 +345,7 @@ def main(argv):
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    if args.subcommand == "version":
-        result = print_version()
-    elif args.subcommand == "test":
+    if args.subcommand == "test":
         if args.target == "generator":
             result = test_generator(args)
         elif args.target == "solution":
@@ -386,8 +390,6 @@ def main(argv):
         result = not clean_directory(args)
     elif args.subcommand == "visualize":
         result = visualize(PATH, **vars(args))
-    elif args.subcommand == "license":
-        print(license_gnu if args.print else license)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 
