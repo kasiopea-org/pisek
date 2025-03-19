@@ -65,7 +65,7 @@ class InputSmall(DataJob):
     def __init__(self, env: Env, input_: InputPath, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Input {input_:n} is smaller than {env.config.limits.input_max_size}MB",
+            name=f"Input {input_:p} is smaller than {env.config.limits.input_max_size}MB",
             data=input_,
             **kwargs,
         )
@@ -84,7 +84,7 @@ class OutputSmall(DataJob):
     def __init__(self, env: Env, output: OutputPath, **kwargs) -> None:
         super().__init__(
             env=env,
-            name=f"Output {output:n} is smaller than {env.config.limits.output_max_size}MB",
+            name=f"Output {output:p} is smaller than {env.config.limits.output_max_size}MB",
             data=output,
             **kwargs,
         )

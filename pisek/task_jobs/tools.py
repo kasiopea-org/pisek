@@ -200,7 +200,7 @@ class Sanitize(SanitizeAbstact, TextPreprocAbstract):
 
     def __init__(self, env: Env, input_: TaskPath, output: TaskPath, **kwargs) -> None:
         super().__init__(
-            env, input_, output, name=f"Sanitize {input_:n} -> {output:n}", **kwargs
+            env, input_, output, name=f"Sanitize {input_:p} -> {output:p}", **kwargs
         )
 
     def _sanitize(self):
@@ -212,12 +212,12 @@ class IsClean(SanitizeAbstact, TextPreprocAbstract):
 
     def __init__(self, env: Env, input_: TaskPath, output: TaskPath, **kwargs) -> None:
         super().__init__(
-            env, input_, output, name=f"Check {input_:n} is clean", **kwargs
+            env, input_, output, name=f"Check {input_:p} is clean", **kwargs
         )
 
     def _sanitize(self):
         self._run_text_preproc(self.input, self.output)
         if not self._files_equal(self.input, self.output):
             raise PipelineItemFailure(
-                f"File {self.input:n} is not clean. Check encoding, missing newline at the end or \\r."
+                f"File {self.input:p} is not clean. Check encoding, missing newline at the end or \\r."
             )
