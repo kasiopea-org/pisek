@@ -17,8 +17,10 @@ out_judge=src/judge
 judge_type=cms-communication
 
 [build_solution]
-cms_stub=src/stub
-cms_headers=src/guess.h
+headers_c=src/guess.h
+extra_sources_c=src/stub.c
+headers_cpp=src/guess.h
+extra_sources_cpp=src/stub.cpp
 
 [test01]
 name=Test A

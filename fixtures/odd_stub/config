@@ -15,8 +15,8 @@ out_check=shuffle
 shuffle_mode=lines
 
 [build_solution]
-cms_stub=stubs/grader
-cms_headers=stubs/odd.h
+headers_cpp=stubs/odd.h
+extra_sources_cpp=stubs/grader
 
 [test01]
 points=10
