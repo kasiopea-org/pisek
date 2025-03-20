@@ -28,9 +28,11 @@ logger = logging.getLogger(__name__)
 
 ALL_STRATEGIES: dict[BuildStrategyName, type["BuildStrategy"]] = {}
 
+
 class BuildStrategy(ABC):
     name: BuildStrategyName
     extra_files: list[str] = []
+
     def __init__(self, build_section: BuildConfig, env: Env, _print) -> None:
         self._build_section = build_section
         self._env = env
@@ -92,7 +94,10 @@ class BuildStrategy(ABC):
 
         comp.wait()
         if comp.returncode != 0:
-            raise PipelineItemFailure(f"Compilation of {program} failed.\n" + tab(self._env.colored(" ".join(args), "yellow")))
+            raise PipelineItemFailure(
+                f"Compilation of {program} failed.\n"
+                + tab(self._env.colored(" ".join(args), "yellow"))
+            )
         return self.target
 
     def _build_script(self, program: str) -> str:
@@ -140,10 +145,11 @@ class BuildBinary(BuildStrategy):
     @classmethod
     def applicable_on_directory(cls, directory: str) -> bool:
         return False
-    
+
 
 class PythonSingleSource(BuildScript):
     name = BuildStrategyName.python
+
     @classmethod
     def applicable_on_files(cls, files: list[str]) -> bool:
         return len(files) == 1 and files[0].endswith(".py")
@@ -152,34 +158,62 @@ class PythonSingleSource(BuildScript):
 class C(BuildBinary):
     name = BuildStrategyName.c
     extra_files: list[str] = ["headers_c", "extra_sources_c"]
+
     @classmethod
     def applicable_on_files(cls, files: list[str]) -> bool:
         return cls._all_end_with(files, [".h", ".c"])
-    
+
     def _build(self) -> str:
         c_flags = ["-std=c17", "-O2", "-Wall", "-lm", "-Wshadow"]
-        c_flags.append("-fdiagnostics-color=" + ("never" if self._env.no_colors else "always"))
+        c_flags.append(
+            "-fdiagnostics-color=" + ("never" if self._env.no_colors else "always")
+        )
 
         sources = filter(lambda i: i.endswith(".c"), self.inputs)
         return self._run_compilation(
-            ["gcc", *sources, "-o", self.target , "-I."] + c_flags + self._build_section.comp_args, self._build_section.program_name 
+            ["gcc", *sources, "-o", self.target, "-I."]
+            + c_flags
+            + self._build_section.comp_args,
+            self._build_section.program_name,
         )
 
 
 class Cpp(BuildBinary):
     name = BuildStrategyName.cpp
     extra_files: list[str] = ["headers_cpp", "extra_sources_cpp"]
+
     @classmethod
     def applicable_on_files(cls, files: list[str]) -> bool:
         return cls._all_end_with(files, [".h", ".hpp", ".cpp", ".cc"])
-    
+
     def _build(self) -> str:
         cpp_flags = ["-std=c++20", "-O2", "-Wall", "-lm", "-Wshadow"]
-        cpp_flags.append("-fdiagnostics-color=" + ("never" if self._env.no_colors else "always"))
+        cpp_flags.append(
+            "-fdiagnostics-color=" + ("never" if self._env.no_colors else "always")
+        )
 
         sources = filter(lambda i: self._ends_with(i, [".cpp", ".cc"]), self.inputs)
         return self._run_compilation(
-            ["g++", *sources, "-o", self.target , "-I."] + cpp_flags + self._build_section.comp_args, self._build_section.program_name 
+            ["g++", *sources, "-o", self.target, "-I."]
+            + cpp_flags
+            + self._build_section.comp_args,
+            self._build_section.program_name,
         )
 
-AUTO_STRATEGIES: list[type[BuildStrategy]] = [PythonSingleSource, C, Cpp]
+
+class Pascal(BuildBinary):
+    name = BuildStrategyName.pascal
+
+    @classmethod
+    def applicable_on_files(cls, files: list[str]) -> bool:
+        return cls._all_end_with(files, [".pas"])
+
+    def _build(self) -> str:
+        pas_flags = ["-gl", "-O3", "-Sg", "-o" + self.target, "-FE."]
+        return self._run_compilation(
+            ["fpc"] + pas_flags + self.inputs + self._build_section.comp_args,
+            self._build_section.program_name,
+        )
+
+
+AUTO_STRATEGIES: list[type[BuildStrategy]] = [PythonSingleSource, C, Cpp, Pascal]

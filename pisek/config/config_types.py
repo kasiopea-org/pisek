@@ -72,6 +72,7 @@ class BuildStrategyName(StrEnum):
     python = auto()
     c = auto()
     cpp = auto()
+    pascal = auto()
     auto = auto()
 
 

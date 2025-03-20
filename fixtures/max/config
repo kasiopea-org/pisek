@@ -28,6 +28,9 @@ all_inputs_in_last_test=on
 [solution_solve_judge]
 primary=yes
 
+[solution_solve_pascal]
+tests=@all
+
 [run_solution]
 time_limit=0.2
 
