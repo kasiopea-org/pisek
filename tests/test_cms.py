@@ -40,16 +40,8 @@ class TestMissingInputFilesForTest(TestSumCMS):
 class TestOldInputsDeleted(TestSumCMS):
     """Do we get rid of out-of-date inputs?"""
 
-    def expecting_success(self):
-        return False
-
     def modify_task(self):
-        task_config = load_config(self.task_dir)
         self.inputs_dir = os.path.join(self.task_dir, TESTS_DIR, GENERATED_SUBDIR)
-
-        # We only care about the generation part, so remove solve.py to stop the tests
-        # right after the generator finishes.
-        os.remove(os.path.join(self.task_dir, "solve.py"))
 
         os.makedirs(os.path.join(self.inputs_dir), exist_ok=True)
 

@@ -50,10 +50,10 @@ class CmsOldListInputs(GeneratorListInputs):
             raise self._create_program_failure("Generator failed:", run_result)
 
         testcases = []
-        for inp in os.listdir(TaskPath.generated_path(self._env, ".").path):
-            if inp.endswith(".in"):
+        for inp in self._globs_to_files(["*"], TaskPath.generated_path(self._env, ".")):
+            if inp.path.endswith(".in"):
                 testcases.append(
-                    TestcaseInfo.generated(inp.removesuffix(".in"), seeded=False)
+                    TestcaseInfo.generated(inp.path.removesuffix(".in"), seeded=False)
                 )
         return testcases
 
