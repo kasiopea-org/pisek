@@ -371,6 +371,14 @@ def main(argv):
             err.add_note("Failed to locate CMS installation")
             raise
 
+        from logging import StreamHandler
+        from sys import stdout
+
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            if isinstance(handler, StreamHandler) and handler.stream is stdout:
+                root_logger.removeHandler(handler)
+
         if args.cms_subcommand == "create":
             result = cms.create(args)
         elif args.cms_subcommand == "update":
