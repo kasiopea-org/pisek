@@ -70,6 +70,7 @@ class ProgramType(StrEnum):
 
 class BuildStrategyName(StrEnum):
     python = auto()
+    c = auto()
     cpp = auto()
     auto = auto()
 

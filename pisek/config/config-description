@@ -226,6 +226,11 @@ extras=
 strategy=
 entrypoint=
 
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
 [build:(.*)]
 #!regex
 #!default build
@@ -235,6 +240,11 @@ extras=
 strategy=
 entrypoint=
 
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
 [build_gen]
 #!default build
 sources=
@@ -242,6 +252,11 @@ comp_args=
 extras=
 strategy=
 entrypoint=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [build_gen:(.*)]
 #!regex
@@ -252,6 +267,11 @@ extras=
 strategy=
 entrypoint=
 
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
 [build_validator]
 #!default build
 sources=
@@ -259,6 +279,11 @@ comp_args=
 extras=
 strategy=
 entrypoint=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [build_validator:(.*)]
 #!regex
@@ -269,6 +294,11 @@ extras=
 strategy=
 entrypoint=
 
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
 [build_solution]
 #!default build
 sources=
@@ -276,6 +306,11 @@ comp_args=
 extras=
 strategy=
 entrypoint=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [build_solution:(.*)]
 #!regex
@@ -286,6 +321,11 @@ extras=
 strategy=
 entrypoint=
 
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
 [build_judge]
 #!default build
 sources=
@@ -293,6 +333,11 @@ comp_args=
 extras=
 strategy=
 entrypoint=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [build_judge:(.*)]
 #!regex
@@ -302,6 +347,11 @@ comp_args=
 extras=
 strategy=
 entrypoint=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [limits]
 input_max_size=

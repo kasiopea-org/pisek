@@ -641,6 +641,11 @@ class BuildConfig(BaseEnv):
     strategy: BuildStrategyName
     # TODO: entrypoint
 
+    headers_c: ListStr
+    extra_sources_c: ListStr
+    headers_cpp: ListStr
+    extra_sources_cpp: ListStr
+
     @property
     def program_name(self) -> str:
         return self.section_name.split(":", 1)[1]

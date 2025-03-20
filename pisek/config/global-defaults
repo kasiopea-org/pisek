@@ -42,9 +42,10 @@ extras=
 strategy=auto
 entrypoint=
 
-[build_solution]
-cms_stub=
-cms_headers=
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [run]
 build=@auto

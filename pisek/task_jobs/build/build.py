@@ -79,15 +79,19 @@ class Build(TaskJob):
         super().__init__(env=env, name=f"Build {build_section.program_name}", **kwargs)
         self.build_section = build_section
 
+    def _resolve_glob(self, glob: str) -> list[TaskPath]:
+        result = self._globs_to_files(
+            [f"{glob}.*", glob],
+            TaskPath(".")
+        )
+        if len(result) == 0:
+            raise PipelineItemFailure(f"No paths matching '{glob}'.")
+        return result
+
     def _run(self) -> None:
         sources: list[TaskPath] = []
         for part in self.build_section.sources:
-            part_sources = self._globs_to_files(
-                [f"{part}.*", part],
-                TaskPath(".")
-            )
-            if len(part_sources) == 0:
-                raise PipelineItemFailure(f"No source for '{part}'.")
+            part_sources = self._resolve_glob(part)
             for s in part_sources:
                 if s not in sources:
                     sources.append(s)
@@ -95,12 +99,19 @@ class Build(TaskJob):
         if any(map(lambda p: os.path.isdir(p.path), sources)) and any(map(lambda p: os.path.isfile(p.path), sources)):
             raise PipelineItemFailure(f"Mixed files and directories for sources:\n" + tab(self._path_list(sources)))
 
-
         if self.build_section.strategy == BuildStrategyName.auto:
             strategy = self._resolve_strategy(sources)
         else:
             strategy = ALL_STRATEGIES[self.build_section.strategy]
         
+        for extra in strategy.extra_files:
+            for part in getattr(self.build_section, extra):
+                new_sources = self._resolve_glob(part)
+                for source in new_sources:
+                    if os.path.isdir(source.path):
+                        raise PipelineItemFailure(f"{extra} matched directory '{source}'.")
+                sources += new_sources
+
         if self._env.verbosity >= 1:
             self._print(self._colored(tab(f"Building '{self.build_section.program_name}' using build strategy '{strategy.name}'."), "magenta"))
 
