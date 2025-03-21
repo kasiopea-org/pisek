@@ -817,7 +817,7 @@ def load_config(
         config_hierarchy = ConfigHierarchy(path, not suppress_warnings, pisek_directory)
         config_values = TaskConfig.load_dict(config_hierarchy)
         config = TaskConfig(**_to_values(config_values))
-        config_hierarchy.check_unused_keys()
+        config_hierarchy.check_all()
         if config_hierarchy.check_todos() and not suppress_warnings:
             warn("Unsolved TODOs in config.", TaskConfigError, strict)
         return config
