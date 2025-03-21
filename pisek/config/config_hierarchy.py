@@ -220,10 +220,10 @@ class ConfigHierarchy:
                         + (f" in section [{r_section}]" if section != r_section else "")
                         + "?)"
                     )
-    
+
     def check_duplicate_builds(self) -> None:
         sections: dict[str, str] = {}
-        for config in self._configs: 
+        for config in self._configs:
             for section in config.sections():
                 if section.startswith("build") and ":" in section:
                     _, program = section.split(":", 1)
