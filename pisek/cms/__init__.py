@@ -58,7 +58,7 @@ from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.paths import InputPath
+from pisek.utils.paths import InputPath, TaskPath
 from pisek.utils.pipeline_tools import with_env
 from pisek.config.config_types import TaskType
 from pisek.utils.util import clean_non_relevant_files
@@ -206,14 +206,16 @@ def export(env: Env, args: Namespace) -> int:
 
     config = env.config
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
-    solution = config.solutions[config.primary_solution].raw_source
 
     for input in testcases:
         name = input.name.removesuffix(".in")
-        output = None
+        output: TaskPath | None = None
 
         if outputs_needed:
-            output = TaskPath.output_file(env, input.name, solution)
+            output = input.to_output()
+
+            if not path.exists(output.path):
+                output = TaskPath.data_path(env, config.primary_solution, output.name)
 
         copyfile(input.path, path.join(directory, f"{name}.in"))
 
