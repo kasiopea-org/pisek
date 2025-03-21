@@ -34,19 +34,6 @@ points_min=X
 points_max=X
 tests=@auto
 
-# TODO: Add in other defaults & description
-[build]
-sources=@auto
-comp_args=
-extras=
-strategy=auto
-entrypoint=
-
-headers_c=
-extra_sources_c=
-headers_cpp=
-extra_sources_cpp=
-
 [run]
 build=@auto
 exec=@auto
@@ -57,6 +44,18 @@ mem_limit=0
 process_limit=1
 args=
 subdir=
+
+[build]
+sources=@auto
+comp_args=
+extras=
+entrypoint=
+strategy=auto
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [limits]
 input_max_size=50

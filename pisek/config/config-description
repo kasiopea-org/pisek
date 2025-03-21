@@ -218,13 +218,12 @@ args=
 subdir=
 
 # -------------- builds--------------
-# TODO: Add in other defaults & description
 [build]
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -237,8 +236,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -250,8 +249,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -264,8 +263,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -277,8 +276,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -291,8 +290,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -304,8 +303,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -318,8 +317,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -331,8 +330,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
@@ -345,8 +344,8 @@ extra_sources_cpp=
 sources=
 comp_args=
 extras=
-strategy=
 entrypoint=
+strategy=
 
 headers_c=
 extra_sources_c=
