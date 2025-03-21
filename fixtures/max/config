@@ -34,6 +34,9 @@ tests=@all
 [solution_solve_cpp]
 tests=@all
 
+[solution_solve_py]
+tests=@all
+
 
 [run_solution]
 time_limit=0.2
@@ -43,3 +46,7 @@ sources=gen/gen gen/random
 
 [build_solution:solve_cpp]
 sources=solve_cpp/solve.cpp solve_cpp/max.hpp
+
+[build_solution:solve_py]
+sources=solve_py/solve solve_py/lib
+entrypoint=solve
