@@ -246,17 +246,6 @@ tests=@auto
 # There are also keys that are specific to [solutions]
 # and cannot be configured on a per solution basis:
 
-stub=src/stub
-# Only for C/C++ CMS tasks
-# Link each solution with given program (without suffix) (defaults to none)
-# Used commonly for interactive tasks
-
-headers=src/a-plus-b.h
-# Only for C/C++ CMS tasks
-# Allow each solution to include the given headers (defaults to none)
-# Used commonly for interactive tasks
-
-
 [run]
 # Sections describing running a program.
 #
@@ -379,3 +368,13 @@ score_mode=max_subtask
 feedback_level=restricted
 # Specifies how much information is given to the contestants about their submission
 # May be 'full' or 'restricted' (default)
+
+stub=src/stub
+# Only for C/C++
+# Link each solution with given program (without suffix) (defaults to none)
+# Used commonly for interactive tasks
+
+headers=src/a-plus-b.h
+# Only for C/C++
+# Allow each solution to include the given headers (defaults to none)
+# Used commonly for interactive tasks

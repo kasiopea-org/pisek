@@ -375,3 +375,6 @@ max_submissions=
 min_submission_interval=
 score_mode=
 feedback_level=
+
+stub=
+headers=

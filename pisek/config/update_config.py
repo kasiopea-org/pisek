@@ -229,8 +229,8 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
                 f"{limit}_limit",
             )
 
-    maybe_move_key(config, "stub", "tests", "solutions")
-    maybe_move_key(config, "headers", "tests", "solutions")
+    maybe_move_key(config, "stub", "tests", "cms")
+    maybe_move_key(config, "headers", "tests", "cms")
     maybe_move_key(config, "static_subdir", "task", "tests")
 
     if contest_type == "cms":

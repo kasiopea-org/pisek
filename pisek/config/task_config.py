@@ -715,6 +715,9 @@ class CMSConfig(BaseEnv):
     score_mode: CMSScoreMode
     feedback_level: CMSFeedbackLevel
 
+    stub: OptionalTaskPathFromStr
+    headers: ListTaskPathFromStr
+
     @classmethod
     def load_dict(cls, configs: ConfigHierarchy) -> ConfigValuesDict:
         KEYS = [
@@ -727,6 +730,8 @@ class CMSConfig(BaseEnv):
             "min_submission_interval",
             "score_mode",
             "feedback_level",
+            "stub",
+            "headers",
         ]
 
         return {key: configs.get("cms", key) for key in KEYS}

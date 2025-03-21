@@ -222,7 +222,7 @@ class ConfigHierarchy:
                     )
     
     def check_duplicate_builds(self) -> None:
-        sections = {}
+        sections: dict[str, str] = {}
         for config in self._configs: 
             for section in config.sections():
                 if section.startswith("build") and ":" in section:
