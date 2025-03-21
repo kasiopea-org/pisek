@@ -44,7 +44,7 @@ class CmsOldListInputs(GeneratorListInputs):
             args=[gen_dir.path],
             stderr=LogPath.generator_log(self.generator.name),
         )
-        self._access_file(gen_dir)
+        self._access_dir(gen_dir)
 
         if run_result.kind != RunResultKind.OK:
             raise self._create_program_failure("Generator failed:", run_result)

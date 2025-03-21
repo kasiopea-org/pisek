@@ -151,9 +151,10 @@ class Build(TaskJob):
         )
         if os.path.isdir(built):
             shutil.copytree(built, target.path)
+            self._access_dir(target)
         else:
             shutil.copy(built, target.path)
-        self._access_file(target)
+            self._access_file(target)
 
     def _resolve_strategy(self, sources: list[TaskPath]) -> type[BuildStrategy]:
         applicable = []

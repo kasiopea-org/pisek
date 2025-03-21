@@ -113,6 +113,10 @@ class TaskHelper:
 class TaskJob(Job, TaskHelper):
     """Job class that implements useful methods"""
 
+    def _access_dir(self, dirname: TaskPath) -> None:
+        for file in self._globs_to_files(["**"], dirname):
+            self._access_file(file)
+
     @staticmethod
     def _file_access(files: int):
         """Adds first i args as accessed files."""

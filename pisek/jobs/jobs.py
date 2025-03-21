@@ -223,13 +223,10 @@ class Job(PipelineItem, CaptureInitParams):
 
             if os.path.isfile(path):
                 expanded_files.append(path)
-            elif os.path.isdir(path):
-                for dir_, _, dir_files in os.walk(path):
-                    for path in dir_files:
-                        expanded_files.append(os.path.join(dir_, path))
-            else:
-                assert not os.path.exists(path)
+            elif not os.path.exists(path):
                 return (None, f"File nonexistent: {path}")
+            else:
+                raise ValueError(f"'{path}' is a directory")
 
         for file in sorted(expanded_files):
             with open(file, "rb") as f:
