@@ -95,10 +95,8 @@ class ProgramsJob(TaskJob):
             self._env, os.path.join(program.path, "run")
         )
 
-        if self._file_exists(executable):
+        if self._is_file(executable) or self._is_file(executable_dir):
             return executable
-        elif self._file_exists(executable_dir):
-            return executable_dir
         else:
             raise PipelineItemFailure(
                 f"Program {executable:p} does not exist, "
@@ -118,7 +116,14 @@ class ProgramsJob(TaskJob):
         stderr: Optional[LogPath] = None,
         env={},
     ):
-        self._access_file(executable)
+        if self._is_file(executable):
+            self._access_file(executable)
+        elif self._is_dir(executable):
+            self._access_dir(executable)
+            executable = executable.join("run")
+        else:
+            raise ValueError(f"'{executable.path}' should be file or directory")
+
         if isinstance(stdin, TaskPath):
             self._access_file(stdin)
         if isinstance(stdout, TaskPath):

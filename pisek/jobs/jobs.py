@@ -214,7 +214,6 @@ class Job(PipelineItem, CaptureInitParams):
                 return (None, f"Key nonexistent: {env_key}")
             sign.update(f"{env_key}={value}\n".encode())
 
-        expanded_files = []
         for path in sorted(paths):
             while os.path.islink(path):
                 path = os.path.normpath(
@@ -222,16 +221,13 @@ class Job(PipelineItem, CaptureInitParams):
                 )
 
             if os.path.isfile(path):
-                expanded_files.append(path)
-            elif not os.path.exists(path):
-                return (None, f"File nonexistent: {path}")
+                with open(path, "rb") as f:
+                    file_sign = hashlib.file_digest(f, "sha256")
+                sign.update(f"{path}={file_sign.hexdigest()}\n".encode())
+            elif os.path.isdir(path):
+                sign.update(f"{path} is directory\n".encode())
             else:
-                raise ValueError(f"'{path}' is a directory")
-
-        for file in sorted(expanded_files):
-            with open(file, "rb") as f:
-                file_sign = hashlib.file_digest(f, "sha256")
-            sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
+                return (None, f"File nonexistent: {path}")
 
         for g in sorted(globs):
             glob_sign = f"{g} -> " + " ".join(glob.glob(g))

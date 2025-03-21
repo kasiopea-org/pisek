@@ -142,8 +142,16 @@ class TaskJob(Job, TaskHelper):
         return open(filename.path, mode, **kwargs)
 
     @_file_access(1)
-    def _file_exists(self, filename: TaskPath):
-        return os.path.isfile(filename.path)
+    def _exists(self, path: TaskPath):
+        return os.path.exists(path.path)
+
+    @_file_access(1)
+    def _is_file(self, path: TaskPath):
+        return os.path.isfile(path.path)
+
+    @_file_access(1)
+    def _is_dir(self, path: TaskPath):
+        return os.path.isdir(path.path)
 
     def _remove_file(self, filename: TaskPath):
         "Removes given file. It must be created inside this job."
