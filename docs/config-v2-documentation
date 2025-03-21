@@ -30,7 +30,7 @@ task_type=communication
 
 solutions_subdir=solutions/
 # Try to find solutions in this folder relative to config (defaults to .)
-static_subdir=static_tests/
+static_subdir=static_tests
 # Try to find static inputs and outputs in this folder relative to config (defaults to .)
 
 tests = ??? (ignored)
@@ -38,7 +38,7 @@ tests = ??? (ignored)
 
 [tests]
 
-in_gen=src/gen
+in_gen=gen
 # Source code of generator (without suffix) (required)
 
 checker=check
@@ -61,7 +61,7 @@ out_judge=judge
 judge_needs_in=0
 judge_needs_out=0
 # Only for task_type=batch and out_check=judge
-# Set to 1 if judge needs input/output (default)
+# Set to 1 if judge needs input/correct output (default)
 
 tokens_ignore_newlines=0
 # Only for out_check=tokens
@@ -111,30 +111,30 @@ online_validity = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
 [test01]
-# Section for each subtask (indexed from one)
+# Section for each test (indexed from one)
 
-name=Subtask 1
-# Name of the subtask
-# @auto expands to "Subtask [subtask number]" (default)
+name=Test 1
+# Name of the test
+# @auto expands to "Test [test number]" (default)
 
 points=3
 # Number of points (<int>) (required)
 
 in_globs=01*.in
-# Which new inputs are introduced in this subtask.
+# Which new inputs are introduced in this test.
 # Supports expansion of * and ? as in shell
-# @ith expands to {subtask_number:02}*.in (default)
+# @ith expands to {test_number:02}*.in (default)
 
 file_name = ??? (ignored)
 # Ignored (because of compatibility with KSP/Kasiopea web)
 
 predecessors =
-# Space separated list of subtasks easier than this subtask
-# Inputs from these subtasks are included into this subtask as well
-# @previous expands to previous subtask (or nothing if subtask has number <= 1) (default)
+# Space separated list of tests easier than this test
+# Inputs from these tests are included into this test as well
+# @previous expands to previous test (or nothing if test has number <= 1) (default)
 
 [test00]
-# Section for samples subtasks
+# Section for samples tests
 # Can be omitted and has the following defaults:
 name=Samples
 points=0
@@ -162,7 +162,7 @@ points_below=7
 # Cannot be set simultaneously with points
 
 subtasks=X10
-# String describing result on each subtask:
+# String describing result on each test:
 # 1 - success
 # 0 - fail
 # P - partial success
@@ -184,21 +184,15 @@ subtasks=X10
 #   solve       Primary solution
 #   sec_solve   Secondary solution usually subject to much less strict limits.
 # and LIMIT is one of:
-#   time_limit  Execution time limit [seconds]
-#   clock_limit Wall clock time limit [seconds]
-#   mem_limit   Memory limit [MB]
+#   time_limit  Execution time limit [seconds] (defaults to 360 s)
+#   clock_limit Wall clock time limit [seconds] (defaults to max(2 * time_limit, 1 s))
+#   mem_limit   Memory limit [MB]  (defaults to unlimited)
 #   process_limit   Maximum number of processes -- at the moment,
-#           limits greater than 1 are interpreted as "unlimited".
+#           limits greater than 1 are interpreted as "unlimited". (defaults to 1)
 #           Please keep in mind that killing of multiple processes
 #           upon errors is inherently unreliable.
 #
 # Setting limit to 0 means unlimited
-#
-# Defaults:
-#   time_limit     360s
-#   clock_limit    360s
-#   mem_limit      unlimited
-#   process_limit  1
 
 solve_time_limit=3
 

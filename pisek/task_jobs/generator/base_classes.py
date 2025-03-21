@@ -24,9 +24,7 @@ from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationM
 class GeneratorListInputs(ProgramsJob):
     """Lists all inputs generator can generate."""
 
-    def __init__(
-        self, env: Env, generator: TaskPath, *, name: str = "", **kwargs
-    ) -> None:
+    def __init__(self, env: Env, generator: str, *, name: str = "", **kwargs) -> None:
         self.generator = generator
         super().__init__(env=env, name=name or "List generator inputs", **kwargs)
 
@@ -41,7 +39,7 @@ class GenerateInput(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: TaskPath,
+        generator: str,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
@@ -72,7 +70,7 @@ class GeneratorTestDeterminism(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        generator: TaskPath,
+        generator: str,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
         *,
@@ -87,18 +85,19 @@ class GeneratorTestDeterminism(ProgramsJob):
         self.input_path = testcase_info.input_path(env, seed)
         super().__init__(
             env=env,
-            name=name or f"Generator is deterministic ({self.testcase_info.name})",
+            name=name or f"Generator is deterministic (on {self.input_path:p})",
             **kwargs,
         )
 
     def _run(self) -> None:
-        original = self.input_path.replace_suffix(".in2")
-        self._rename_file(self.input_path, original)
+        input_path = self.input_path.to_raw(self._env.config.in_format)
+        original = input_path.to_second()
+        self._rename_file(input_path, original)
         self._gen()
-        if not self._files_equal(self.input_path, original):
+        if not self._files_equal(input_path, original):
             raise PipelineItemFailure(
-                f"Generator is not deterministic. Files {self.input_path:p} and {original:p} differ"
-                + (f" (seed {self.seed:x})" if self.testcase_info.seeded else "")
+                f"Generator is not deterministic. Files {input_path:p} and {original:p} differ"
+                + (f" (seed {self.seed:016x})" if self.testcase_info.seeded else "")
                 + "."
             )
         self._remove_file(original)
@@ -120,8 +119,12 @@ class GeneratorRespectsSeed(TaskJob):
         self.testcase_info = testcase_info
         self.seed1 = seed1
         self.seed2 = seed2
-        self.input1 = testcase_info.input_path(self._env, seed1)
-        self.input2 = testcase_info.input_path(self._env, seed2)
+        self.input1 = testcase_info.input_path(self._env, seed1).to_raw(
+            env.config.in_format
+        )
+        self.input2 = testcase_info.input_path(self._env, seed2).to_raw(
+            env.config.in_format
+        )
         super().__init__(
             env=env,
             name=f"Generator respects seed ({self.input1:n} and {self.input2:n})",
@@ -131,6 +134,6 @@ class GeneratorRespectsSeed(TaskJob):
         if self._files_equal(self.input1, self.input2):
             raise PipelineItemFailure(
                 f"Inputs generated with different seed are same:\n"
-                f"- {self.input1:p} (seed {self.seed1:x})\n"
-                f"- {self.input2:p} (seed {self.seed2:x})"
+                f"- {self.input1:p} (seed {self.seed1:016x})\n"
+                f"- {self.input2:p} (seed {self.seed2:016x})"
             )

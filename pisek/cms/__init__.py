@@ -58,26 +58,36 @@ from pisek.cms.task import create_task, get_task, set_task_settings
 from pisek.env.env import Env, TestingTarget
 from pisek.jobs.cache import Cache
 from pisek.jobs.task_pipeline import TaskPipeline
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import InputPath
 from pisek.utils.pipeline_tools import with_env
 from pisek.config.config_types import TaskType
+from pisek.utils.util import clean_non_relevant_files
 
 
-def generate_testcases(env: Env) -> list[TaskPath]:
+def generate_testcases(env: Env) -> list[InputPath]:
     env = env.fork()
     env.solutions = [env.config.primary_solution]
     env.target = TestingTarget.solution
 
     pipeline = TaskPipeline(env)
 
-    if pipeline.run_jobs(Cache(env), env) != 0:
+    if pipeline.run_jobs(Cache(), env) != 0:
         raise RuntimeError("Failed to test primary solution, cannot upload to CMS")
+    clean_non_relevant_files(pipeline.all_accessed_files)
 
     return pipeline.input_dataset()
 
 
+def check_config(env: Env):
+    if env.config.cms.name is None:
+        raise RuntimeError(
+            "The name key in the [cms] section must be set to run CMS commands."
+        )
+
+
 @with_env
 def create(env: Env, args: Namespace) -> int:
+    check_config(env)
     testcases = generate_testcases(env)
     session = Session()
 
@@ -101,6 +111,7 @@ def create(env: Env, args: Namespace) -> int:
 
 @with_env
 def update(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)
@@ -114,6 +125,7 @@ def update(env: Env, args: Namespace) -> int:
 
 @with_env
 def add(env: Env, args: Namespace) -> int:
+    check_config(env)
     testcases = generate_testcases(env)
     session = Session()
 
@@ -136,6 +148,7 @@ def add(env: Env, args: Namespace) -> int:
 
 @with_env
 def submit(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     username = args.username
@@ -162,6 +175,7 @@ def get_dataset_from_args(session: SessionType, task: Task, args: Namespace) -> 
 
 @with_env
 def testing_log(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)
@@ -173,6 +187,7 @@ def testing_log(env: Env, args: Namespace) -> int:
 
 @with_env
 def check(env: Env, args: Namespace) -> int:
+    check_config(env)
     session = Session()
 
     task = get_task(session, env.config)

@@ -22,7 +22,7 @@ from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 from pisek.task_jobs.testing_log import TESTING_LOG
 from pisek.task_jobs.solution.solution_result import Verdict
-from pisek.config.task_config import SolutionConfig, SubtaskConfig
+from pisek.config.task_config import SolutionConfig, TestConfig
 from pisek.utils.text import eprint, tab
 
 
@@ -108,10 +108,10 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         if solution.points is not None and score != solution.points:
             score_missed_target = f"{solution.points}"
-        elif solution.points_above is not None and score < solution.points_above:
-            score_missed_target = f"above {solution.points_above}"
-        elif solution.points_below is not None and score > solution.points_below:
-            score_missed_target = f"below {solution.points_below}"
+        elif solution.points_min is not None and score < solution.points_min:
+            score_missed_target = f"above {solution.points_min}"
+        elif solution.points_max is not None and score > solution.points_max:
+            score_missed_target = f"below {solution.points_max}"
 
         message = f"{name}: {score} points"
 
@@ -122,7 +122,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         print(message)
 
-        subtasks: list[tuple[int, SubtaskConfig]] = list(config.subtasks.items())
+        subtasks: list[tuple[int, TestConfig]] = list(config.tests.items())
         fractions = get_subtask_score_fractions(result.score_details)
 
         if fractions is None or len(fractions) != len(subtasks):
@@ -134,7 +134,7 @@ def check_results(session: Session, env: Env, dataset: Dataset) -> bool:
 
         target: str
         for (num, subtask), fraction, target in zip(
-            subtasks, fractions, solution.subtasks
+            subtasks, fractions, solution.tests
         ):
             name = subtask.name or f"Subtask {num}"
 

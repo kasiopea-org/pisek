@@ -51,11 +51,12 @@ class ConfigSectionDescription:
     def __init__(self, section: str) -> None:
         self.section = section
         self.defaults_to: list[str] = []
+        self.dynamic_default: bool = False
         self.similarity_function: Optional[Callable[[str, str], int]] = None
 
     def similarity(self, section: str) -> int:
         if self.similarity_function is None:
-            return 5
+            return 5 if self.section != section else 0
         else:
             return self.similarity_function(self.section, section)
 
@@ -68,6 +69,7 @@ class ConfigKeyDescription:
         self.section = section
         self.key = key
         self.defaults_to: list[tuple[str, str]] = []
+        self.dynamic_default: bool = False
         self.applicability_conditions: list[ApplicabilityCondition] = []
 
     def get(self, config: "ConfigHierarchy", section: str) -> str:
@@ -76,6 +78,8 @@ class ConfigKeyDescription:
         ).value
 
     def defaults(self) -> list[tuple[str, str]]:
+        if self.dynamic_default:
+            raise NotImplementedError("Dynamic defaulting not implemented")
         return self.defaults_to + [(d, self.key) for d in self.section.defaults_to]
 
     def similarity(self, key: str) -> int:
@@ -132,6 +136,15 @@ class ConfigKeysHelper:
                             if len(args) != 2:
                                 self._invalid_function_args(fun, args)
                             last_key.defaults_to.append((args[0], args[1]))
+                    elif fun == "dynamic_default":
+                        if last_key is None:
+                            if len(args) != 0:
+                                self._invalid_function_args(fun, args)
+                            section.dynamic_default = True
+                        else:
+                            if len(args) != 0:
+                                self._invalid_function_args(fun, args)
+                            last_key.dynamic_default = True
                     else:
                         raise ValueError(
                             f"invalid config-description function: '{fun}'"
@@ -168,21 +181,33 @@ class ConfigKeysHelper:
             f"invalid config-description function {fun_name} arguments: '{' '.join(args)}'"
         )
 
-    def find_section(self, section: str) -> str:
-        return min(
-            self.sections.values(),
-            key=lambda s: editdistance.distance(section, s.section),
-        ).section
+    def find_section(self, section: str) -> tuple[int, str]:
+        for candidate in self.sections.values():
+            if candidate.similarity(section) == 0:
+                return (0, candidate.section)
+
+        recommendation = min(
+            (editdistance.distance(section, s.section), s.section)
+            for s in self.sections.values()
+        )
+        assert recommendation[0] > 0
+        return recommendation
 
     def find_key(
         self, section: str, key: str, config: "ConfigHierarchy"
-    ) -> Optional[tuple[str, str]]:
-        best_key = min(self.keys.values(), key=lambda k: k.score(section, key))
-        if not (text := best_key.applicable(section, config)):
-            return (best_key.section.transform_name(section), best_key.key)
-        elif best_key.score(section, key) == 0:
-            raise TaskConfigError(
-                f"Key '{key}' not applicable in this context:\n{tab(text).rstrip()}"
-            )
-        else:
-            return None
+    ) -> tuple[int, str, str]:
+        for candidate in self.keys.values():
+            if candidate.score(section, key) == 0:
+                if text := candidate.applicable(section, config):
+                    raise TaskConfigError(
+                        f"Key '{key}' not allowed in this context:\n{tab(text).rstrip()}"
+                    )
+                else:
+                    return (0, section, candidate.key)
+
+        recommendation = min(
+            (k.score(section, key), k.section.transform_name(section), k.key)
+            for k in self.keys.values()
+        )
+        assert recommendation[0] > 0
+        return recommendation

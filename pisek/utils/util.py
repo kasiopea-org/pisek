@@ -18,9 +18,9 @@ import os
 import shutil
 from typing import Optional
 
-from pisek.jobs.cache import CACHE_FILENAME
+from pisek.jobs.cache import CACHE_CONTENT_FILE
 from pisek.config.task_config import load_config
-from pisek.utils.paths import BUILD_DIR, TESTS_DIR
+from pisek.utils.paths import BUILD_DIR, TESTS_DIR, INTERNALS_DIR
 
 
 def rm_f(fn):
@@ -39,15 +39,24 @@ def _clean_subdirs(task_dir: str, subdirs: list[str]) -> None:
             pass
 
 
-def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
+def is_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
+    # XXX: Safeguard, raises an exception if task_dir isn't really a task
+    # directory
     config = load_config(
         task_dir, suppress_warnings=True, pisek_directory=pisek_directory
     )
-    if config is None:
-        return False
-    # XXX: ^ safeguard, raises an exception if task_dir isn't really a task
-    # directory
+    return config is not None
 
-    rm_f(os.path.join(task_dir, CACHE_FILENAME))
-    _clean_subdirs(task_dir, [BUILD_DIR, TESTS_DIR])
+
+def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
+    rm_f(os.path.join(task_dir, CACHE_CONTENT_FILE))
+    _clean_subdirs(task_dir, [BUILD_DIR, TESTS_DIR, INTERNALS_DIR])
     return True
+
+
+def clean_non_relevant_files(accessed_files: set[str]) -> None:
+    for root, _, files in os.walk(TESTS_DIR):
+        for file in files:
+            path = os.path.join(root, file)
+            if path not in accessed_files:
+                os.remove(path)

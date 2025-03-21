@@ -6,6 +6,8 @@ name=odd-stub
 contest_type=cms
 version=v2
 
+static_subdir=.
+
 [tests]
 in_gen=gen
 gen_type=pisek-v1
@@ -30,3 +32,6 @@ subtasks=11
 
 [solution_solve_rev]
 subtasks=11
+
+[cms]
+name=odd-stub

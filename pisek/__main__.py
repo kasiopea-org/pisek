@@ -16,12 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
+import logging
 import os
-from typing import Optional
-import sys
 import signal
+import sys
+from typing import Optional
 
-from pisek.utils.util import clean_task_dir
+from pisek.utils.util import is_task_dir, clean_task_dir
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
 from pisek.license import license, license_gnu
@@ -31,6 +32,9 @@ from pisek.version import print_version
 
 from pisek.jobs.task_pipeline import TaskPipeline
 from pisek.utils.pipeline_tools import run_pipeline, PATH, locked_folder
+from pisek.utils.paths import INTERNALS_DIR
+
+LOG_FILE = os.path.join(INTERNALS_DIR, "log")
 
 
 def sigint_handler(sig, frame):
@@ -86,12 +90,11 @@ def main(argv):
         )
 
     def add_argument_dataset(parser):
-        group = parser.add_mutually_exclusive_group()
+        group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
             "--dataset",
             "-d",
             type=str,
-            required=False,
             help="use the dataset with the description DESCRIPTION",
         )
 
@@ -181,22 +184,17 @@ def main(argv):
         help="interpret warnings as failures (for final check)",
     )
     parser_test.add_argument(
-        "--repeat-inputs",
+        "--repeat",
         "-n",
         type=int,
         default=1,
-        help="generate REPEAT_INPUTS times more inputs (seeded inputs only)",
+        help="test task REPEAT times giving generator different seeds. (Changes seeded inputs only.)",
     )
     parser_test.add_argument(
         "--all-inputs",
         "-a",
         action="store_true",
         help="test each solution on all inputs",
-    )
-    parser_test.add_argument(
-        "--skip-on-timeout",
-        action="store_true",
-        help="skip all following inputs on first timeout",
     )
     parser_test.add_argument(
         "--testing-log",
@@ -236,7 +234,7 @@ def main(argv):
         "--bundle",
         "-b",
         action="store_true",
-        help="don't group inputs by subtask",
+        help="don't group inputs by test",
     )
     parser_visualize.add_argument(
         "--solutions",
@@ -337,13 +335,29 @@ def main(argv):
 
     result = None
 
-    if args.clean:
-        if not clean_directory(args):
-            return 1
-
     if args.subcommand == "version":
-        result = print_version()
-    elif args.subcommand == "test":
+        return print_version()
+    elif args.subcommand == "license":
+        print(license_gnu if args.print else license)
+        return 0
+
+    if not is_task_dir(PATH, args.pisek_dir):
+        # !!! Ensure this is always run before clean_directory !!!
+        return 1
+
+    if args.clean:
+        clean_directory(args)
+
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    open(LOG_FILE, "w").close()
+    logging.basicConfig(
+        filename=LOG_FILE,
+        encoding="utf-8",
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    if args.subcommand == "test":
         if args.target == "generator":
             result = test_generator(args)
         elif args.target == "solution":
@@ -369,6 +383,14 @@ def main(argv):
             err.add_note("Failed to locate CMS installation")
             raise
 
+        from logging import StreamHandler
+        from sys import stdout
+
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            if isinstance(handler, StreamHandler) and handler.stream is stdout:
+                root_logger.removeHandler(handler)
+
         if args.cms_subcommand == "create":
             result = cms.create(args)
         elif args.cms_subcommand == "update":
@@ -390,8 +412,6 @@ def main(argv):
         result = not clean_directory(args)
     elif args.subcommand == "visualize":
         result = visualize(PATH, **vars(args))
-    elif args.subcommand == "license":
-        print(license_gnu if args.print else license)
     else:
         raise RuntimeError(f"Unknown subcommand {args.subcommand}")
 

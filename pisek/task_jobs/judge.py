@@ -20,10 +20,12 @@ from functools import cache
 import os
 import random
 import subprocess
-from typing import Any, Optional, Union, Callable
+from typing import Any, Optional, Union
+from tempfile import gettempdir
+from uuid import uuid4
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath, LogPath
 from pisek.config.config_types import TaskType, ProgramType, OutCheck, JudgeType
 from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.utils.text import tab
@@ -58,7 +60,7 @@ class JudgeManager(TaskJobManager):
                 raise RuntimeError(
                     f"Unset judge for out_check={self._env.config.out_check.name}"
                 )
-            jobs.append(comp := Compile(self._env, self._env.config.out_judge))
+            jobs.append(comp := Compile(self._env, self._env.config.out_judge_path))
         elif self._env.config.out_check == OutCheck.tokens:
             jobs.append(comp := PrepareTokenJudge(self._env))
         elif self._env.config.out_check == OutCheck.shuffle:
@@ -66,7 +68,7 @@ class JudgeManager(TaskJobManager):
 
         # All samples must be static, therefore they exist already
         samples = self._get_samples()
-        if self._env.config.task_type == TaskType.communication:
+        if self._env.config.task_type == TaskType.interactive:
             return jobs
 
         for inp, out in samples:
@@ -84,7 +86,12 @@ class JudgeManager(TaskJobManager):
             if comp is not None:
                 judge_j.add_prerequisite(comp)
 
-            if os.stat(out.path).st_size > 0:
+            should_fuzz = (
+                self._env.config.checks.judge_handles_fuzzed_outputs
+                and os.stat(out.path).st_size > 0
+            )
+
+            if should_fuzz:
                 JOBS = [(Incomplete, 10), (ChaosMonkey, 50)]
 
                 total = sum(map(lambda x: x[1], JOBS))
@@ -94,7 +101,7 @@ class JudgeManager(TaskJobManager):
                 for job, times in JOBS:
                     for _ in range(times):
                         seed = seeds.pop()
-                        inv_out = TaskPath.invalid_file(self._env, out.name, seed)
+                        inv_out = out.to_fuzzing(seed)
                         jobs += [
                             invalidate := job(self._env, out, inv_out, seed),
                             run_judge := judge_job(
@@ -131,17 +138,17 @@ class RunJudge(ProgramsJob):
         self,
         env: Env,
         name: str,
-        subtask: int,
-        judge_name: str,
-        input_: TaskPath,
-        judge_log_file: TaskPath,
+        test: int,
+        judge: str,
+        input_: InputPath,
+        judge_log_file: LogPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
-        self.subtask = subtask
+        self.test = test
         self.input = input_
-        self.judge_name = judge_name
+        self.judge = judge
         self.judge_log_file = judge_log_file
         self.expected_verdict = expected_verdict
 
@@ -223,7 +230,7 @@ class RunJudge(ProgramsJob):
         text += "\n"
         if judge_rr is not None:
             text += (
-                f"{self.judge_name}:\n"
+                f"{self.judge}:\n"
                 + tab(
                     self._format_run_result(
                         judge_rr,
@@ -266,7 +273,7 @@ class RunJudge(ProgramsJob):
         return self.rel_to_abs_points(1.0)
 
     def rel_to_abs_points(self, rel_points: float) -> float:
-        return self._env.config.subtasks[self.subtask].points * rel_points
+        return self._env.config.tests[self.test].points * rel_points
 
 
 class RunCMSJudge(RunJudge):
@@ -275,12 +282,12 @@ class RunCMSJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge: TaskPath,
+        judge: str,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, judge_name=judge.name, **kwargs)
+        super().__init__(env=env, judge=judge, **kwargs)
         self.judge = judge
-        self.points_file = TaskPath.points_file(self._env, self.judge_log_file.name)
+        self.points_file = self.judge_log_file.replace_suffix(".points")
 
     def _load_points(self, result: RunResult) -> Decimal:
         with self._open_file(result.stdout_file) as f:
@@ -327,21 +334,21 @@ class RunBatchJudge(RunJudge):
     def __init__(
         self,
         env: Env,
-        judge_name: str,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        judge: str,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Judge {output:n}",
-            judge_name=judge_name,
-            subtask=subtask,
+            name=f"Judge {output:p}",
+            judge=judge,
+            test=test,
             input_=input_,
-            judge_log_file=TaskPath.log_file(self._env, output.name, judge_name),
+            judge_log_file=output.to_judge_log(judge),
             expected_verdict=expected_verdict,
             **kwargs,
         )
@@ -367,16 +374,16 @@ class RunDiffJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
             env=env,
-            judge_name="diff",
-            subtask=subtask,
+            judge="diff",
+            test=test,
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -425,7 +432,7 @@ class RunJudgeLibJudge(RunBatchJudge):
         self._access_file(self.output)
         self._access_file(self.correct_output)
 
-        executable = TaskPath.executable_path(self._env, self.judge_name)
+        executable = TaskPath.executable_path(self._env, self.judge)
 
         judge = subprocess.run(
             [
@@ -459,7 +466,7 @@ class RunJudgeLibJudge(RunBatchJudge):
                 Verdict.wrong_answer, None, self._solution_run_res, rr, Decimal(0)
             )
         else:
-            raise PipelineItemFailure(f"{self.judge_name} failed:\n{tab(stderr)}")
+            raise PipelineItemFailure(f"{self.judge} failed:\n{tab(stderr)}")
 
 
 class RunTokenJudge(RunJudgeLibJudge):
@@ -468,16 +475,16 @@ class RunTokenJudge(RunJudgeLibJudge):
     def __init__(
         self,
         env: Env,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
             env=env,
-            judge_name="judge-token",
-            subtask=subtask,
+            judge="judge-token",
+            test=test,
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -509,16 +516,16 @@ class RunShuffleJudge(RunJudgeLibJudge):
     def __init__(
         self,
         env: Env,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
     ) -> None:
         super().__init__(
             env=env,
-            judge_name="judge-shuffle",
-            subtask=subtask,
+            judge="judge-shuffle",
+            test=test,
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -556,19 +563,19 @@ class RunOpendataJudge(RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: TaskPath,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        judge: str,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         seed: Optional[int],
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
-            judge_name=judge.name,
-            subtask=subtask,
+            judge=judge,
+            test=test,
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -591,8 +598,8 @@ class RunOpendataJudge(RunBatchJudge):
             ProgramType.judge,
             self.judge,
             args=[
-                str(self.subtask),
-                f"{self.seed:x}" if self.seed is not None else OPENDATA_NO_SEED,
+                str(self.test),
+                f"{self.seed:016x}" if self.seed is not None else OPENDATA_NO_SEED,
             ],
             stdin=self.output,
             stderr=self.judge_log_file,
@@ -630,18 +637,18 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
     def __init__(
         self,
         env: Env,
-        judge: TaskPath,
-        subtask: int,
-        input_: TaskPath,
-        output: TaskPath,
-        correct_output: TaskPath,
+        judge: str,
+        test: int,
+        input_: InputPath,
+        output: OutputPath,
+        correct_output: OutputPath,
         expected_verdict: Optional[Verdict],
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
             judge=judge,
-            subtask=subtask,
+            test=test,
             input_=input_,
             output=output,
             correct_output=correct_output,
@@ -649,16 +656,33 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
             **kwargs,
         )
 
+    @staticmethod
+    def _invalid_path(name: str):
+        return os.path.join(gettempdir(), f"the-{name}-is-not-available-{uuid4()}")
+
     def _judge(self) -> SolutionResult:
-        self._access_file(self.input)
+        config = self._env.config
+
         self._access_file(self.output)
-        self._access_file(self.correct_output)
+        if config.judge_needs_in:
+            self._access_file(self.input)
+        if config.judge_needs_out:
+            self._access_file(self.correct_output)
+
         result = self._run_program(
             ProgramType.judge,
             self.judge,
             args=[
-                self.input.path,
-                self.correct_output.path,
+                (
+                    self.input.path
+                    if config.judge_needs_in
+                    else RunCMSBatchJudge._invalid_path("input")
+                ),
+                (
+                    self.correct_output.path
+                    if config.judge_needs_out
+                    else RunCMSBatchJudge._invalid_path("output")
+                ),
                 self.output.path,
             ],
             stdout=self.points_file,
@@ -670,10 +694,10 @@ class RunCMSBatchJudge(RunCMSJudge, RunBatchJudge):
 
 
 def judge_job(
-    input_: TaskPath,
-    output: TaskPath,
-    correct_output: TaskPath,
-    subtask: int,
+    input_: InputPath,
+    output: OutputPath,
+    correct_output: OutputPath,
+    test: int,
     seed: Optional[int],
     expected_verdict: Optional[Verdict],
     env: Env,
@@ -682,17 +706,15 @@ def judge_job(
 ]:
     """Returns JudgeJob according to contest type."""
     if env.config.out_check == OutCheck.diff:
-        return RunDiffJudge(
-            env, subtask, input_, output, correct_output, expected_verdict
-        )
+        return RunDiffJudge(env, test, input_, output, correct_output, expected_verdict)
 
     if env.config.out_check == OutCheck.tokens:
         return RunTokenJudge(
-            env, subtask, input_, output, correct_output, expected_verdict
+            env, test, input_, output, correct_output, expected_verdict
         )
     elif env.config.out_check == OutCheck.shuffle:
         return RunShuffleJudge(
-            env, subtask, input_, output, correct_output, expected_verdict
+            env, test, input_, output, correct_output, expected_verdict
         )
 
     if env.config.out_judge is None:
@@ -702,7 +724,7 @@ def judge_job(
         return RunCMSBatchJudge(
             env,
             env.config.out_judge,
-            subtask,
+            test,
             input_,
             output,
             correct_output,
@@ -712,7 +734,7 @@ def judge_job(
         return RunOpendataV1Judge(
             env,
             env.config.out_judge,
-            subtask,
+            test,
             input_,
             output,
             correct_output,

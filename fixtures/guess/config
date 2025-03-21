@@ -2,46 +2,47 @@
 # Source: $(pisek)/docs/config-v3-documentation for more information
 
 [task]
-name=guess
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
-use=communication
+use=interactive
 
-solutions_subdir=solutions/
 version=v3
 
 [tests]
-# generator source file
-in_gen=src/gen
-
-# checker=check
+in_gen=
+# validator=validate
 
 out_check=judge
 out_judge=src/judge
 judge_type=cms-communication
 
-[all_solutions]
+[solutions]
 stub=src/stub
 headers=src/guess.h
 
 [test01]
-name=Subtask A
+name=Test A
 points=10
 in_globs=*.in
+predecessors=0
 
-[limits]
-# Time limit (seconds) for the model solution (first listed)
-solve_time_limit=0.2
+[run_solution]
+# Time limit (seconds) for the solutions
+time_limit=0.2
+subdir=solutions/
 
 [solution_solve]
 primary=yes
 points=10
-subtasks=11
+tests=11
 
 [solution_solve_subopt]
-points_above=5
-subtasks=1P
+points_min=5
+tests=1P
 
 [solution_solve_0b]
 points=0
-subtasks=1W
+tests=1W
+
+[cms]
+name=guess

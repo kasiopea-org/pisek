@@ -29,7 +29,7 @@ class TestGeneratorDoesNotCreateTests(TestSumCMS):
         overwrite_file(self.task_dir, "gen.py", "gen_dummy.py")
 
 
-class TestMissingInputFilesForSubtask(TestSumCMS):
+class TestMissingInputFilesForTest(TestSumCMS):
     def expecting_success(self):
         return False
 
@@ -54,7 +54,7 @@ class TestOldInputsDeleted(TestSumCMS):
         os.makedirs(os.path.join(self.inputs_dir), exist_ok=True)
 
         with open(os.path.join(self.inputs_dir, "01_outdated.in"), "w") as f:
-            # This old input does not conform to the subtask! Get rid of it.
+            # This old input does not conform to the test! Get rid of it.
             f.write("-3 -2\n")
 
     def check_end_state(self):
@@ -87,14 +87,14 @@ class TestInvalidJudgeScore(TestSumCMS):
         overwrite_file(self.task_dir, "judge.cpp", "judge_invalid_score.cpp")
 
 
-class TestStrictChecker(TestSumCMS):
-    """A checker whose bounds are stricter than what the generator creates."""
+class TestStrictValidator(TestSumCMS):
+    """A validator whose bounds are stricter than what the generator creates."""
 
     def expecting_success(self):
         return False
 
     def modify_task(self):
-        overwrite_file(self.task_dir, "check.py", "check_strict.py")
+        overwrite_file(self.task_dir, "validate.py", "validate_strict.py")
 
 
 class TestDirtySample(TestSumCMS):
@@ -108,7 +108,7 @@ class TestDirtySample(TestSumCMS):
             f.write("1 2")
 
 
-class TestNoLFInTextInput(TestSumCMS):
+class TestNoLFInStrictTextInput(TestSumCMS):
     """Input without newline at the end with in_format=text."""
 
     def expecting_success(self):
@@ -117,7 +117,22 @@ class TestNoLFInTextInput(TestSumCMS):
     def modify_task(self):
         def modification_fn(raw_config):
             raw_config["tests"]["in_gen"] = "gen_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInTextInput(TestSumCMS):
+    """Input without newline at the end with in_format=text."""
+
+    def expecting_success(self):
+        return True
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["in_format"] = "text"
+            raw_config["tests"]["in_gen"] = "gen_no_lf"
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -132,7 +147,7 @@ class TestNoLFInBinaryInput(TestSumCMS):
         def modification_fn(raw_config):
             raw_config["tests"]["in_format"] = "binary"
             raw_config["tests"]["in_gen"] = "gen_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -141,12 +156,27 @@ class TestNoLFInTextOutput(TestSumCMS):
     """Output without newline at the end with out_format=text."""
 
     def expecting_success(self):
-        return False
+        return True
 
     def modify_task(self):
         def modification_fn(raw_config):
             raw_config["solution_solve"]["source"] = "solve_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
+
+        modify_config(self.task_dir, modification_fn)
+
+
+class TestNoLFInStrictTextOutput(TestSumCMS):
+    """Output without newline at the end with out_format=text."""
+
+    def expecting_success(self):
+        return False
+
+    def modify_task(self):
+        def modification_fn(raw_config):
+            raw_config["tests"]["out_format"] = "strict-text"
+            raw_config["solution_solve"]["source"] = "solve_no_lf"
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 
@@ -161,7 +191,7 @@ class TestNoLFInBinaryOutput(TestSumCMS):
         def modification_fn(raw_config):
             raw_config["tests"]["out_format"] = "binary"
             raw_config["solution_solve"]["source"] = "solve_no_lf"
-            raw_config["tests"]["checker"] = ""
+            raw_config["tests"]["validator"] = ""
 
         modify_config(self.task_dir, modification_fn)
 

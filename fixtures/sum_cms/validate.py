@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Checker based on Kasiopea's checker template from Pali Madaj.
+# Validator based on Kasiopea's validator template from Pali Madaj.
 import sys
 import argparse
 
 
 def main(diff):
-    # Here BOUNDS[2] are stricter than what the generator really creates.
-    BOUNDS = [(0, 1e9), (-1e9, 1e9), (-1e9, 1e9)]
+    BOUNDS = [(0, 1e9), (-1e9, 1e9), (-1e18, 1e18)]
+    assert 0 <= diff < len(BOUNDS)
     read_values(2, *BOUNDS[diff])
 
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Nacte ze stdin vstupy ulohy a zkontroluje jejich spravnost"
     )
-    parser.add_argument("subtask", type=int, help="subtask (indexovany od 1)")
+    parser.add_argument("test", type=int, help="test (indexovany od 1)")
     args = parser.parse_args()
-    main(args.subtask - 1)
+    main(args.test - 1)
     expect_eof()

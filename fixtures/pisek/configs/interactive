@@ -1,6 +1,5 @@
 [task]
-scoring=min
-task_type=communication
+task_type=interactive
 version=v3
 
 [tests]

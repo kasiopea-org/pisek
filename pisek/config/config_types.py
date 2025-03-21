@@ -15,7 +15,7 @@ from enum import StrEnum, auto
 
 class TaskType(StrEnum):
     batch = auto()
-    communication = auto()
+    interactive = auto()
 
 
 class OutCheck(StrEnum):
@@ -46,21 +46,19 @@ class ShuffleMode(StrEnum):
 
 class DataFormat(StrEnum):
     text = auto()
+    strict_text = "strict-text"
     binary = auto()
 
 
-class Scoring(StrEnum):
-    equal = auto()
-    min = auto()
-
-
 class ProgramType(StrEnum):
-    tool = auto()
-    in_gen = auto()
-    checker = auto()
-    solve = auto()
-    sec_solve = auto()
+    gen = auto()
+    validator = auto()
+    primary_solution = auto()
+    secondary_solution = auto()
     judge = auto()
+
+    def is_solution(self) -> bool:
+        return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
 
 class CMSFeedbackLevel(StrEnum):

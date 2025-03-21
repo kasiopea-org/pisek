@@ -36,10 +36,10 @@ class Compile(ProgramsJob):
         use_stub: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(env=env, name=f"Compile {program:n}", **kwargs)
+        super().__init__(env=env, name=f"Compile {program:p}", **kwargs)
         self.program = program
         self.use_stub = use_stub
-        self.target = TaskPath.executable_file(self._env, program.name)
+        self.target = TaskPath.executable_file(self._env, program.path)
 
         self.stub = None
         self.headers = []
@@ -90,7 +90,7 @@ class Compile(ProgramsJob):
         self._access_file(self._load_compiled(self.program))
 
     def _compile_cpp(self, program: TaskPath):
-        cpp_flags = ["-std=c++17", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
+        cpp_flags = ["-std=c++20", "-O2", "-Wall", "-lm", "-Wshadow", self._c_colors()]
 
         cpp_flags += self._add_stub("cpp")
 
@@ -156,12 +156,7 @@ class Compile(ProgramsJob):
             raise PipelineItemFailure(f"Missing tool: {tool}")
 
     def _compile_script(self, program: TaskPath) -> None:
-        if not self.valid_shebang(program):
-            raise PipelineItemFailure(
-                f"{program} has invalid shebang. "
-                "For Python should first line be '#!/usr/bin/env python3' or similar.\n"
-                "Check also that you are using linux eol."
-            )
+        self.check_shebang(program)
 
         with open(program.path, "r", newline="\n") as f:
             interpreter = f.readline().strip().lstrip("#!")
@@ -170,27 +165,15 @@ class Compile(ProgramsJob):
         shutil.copyfile(program.path, self.target.path)
         self._chmod_exec(self.target)
 
-    @staticmethod
-    def valid_shebang(program: TaskPath) -> bool:
+    def check_shebang(self, program: TaskPath) -> None:
         """Check if file has shebang and if the shebang is valid"""
-
-        with open(program.path, "r", newline="\n") as f:
+        with self._open_file(program, "r", newline="\n") as f:
             first_line = f.readline()
 
         if not first_line.startswith("#!"):
-            return False
-
+            raise PipelineItemFailure(f"Missing shebang in {program:p}")
         if first_line.endswith("\r\n"):
-            return False
-
-        if os.path.splitext(program.path)[1] == ".py":
-            return any(
-                first_line == f"#!/usr/bin/env {interpreter}\n"
-                for interpreter in VALID_PYTHON_INTERPRETERS
-            )
-        else:
-            # No check performed for non-Python at the moment
-            return True
+            raise PipelineItemFailure(f"First line ends with '\\r\\n' in {program:p}")
 
     @staticmethod
     def _chmod_exec(filepath: TaskPath) -> None:

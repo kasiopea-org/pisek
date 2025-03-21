@@ -18,16 +18,17 @@ from collections import deque
 
 from pisek.jobs.job_pipeline import JobPipeline
 from pisek.env.env import Env, TestingTarget
-
+from pisek.utils.paths import InputPath
 from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
     GENERATOR_MAN_CODE,
-    CHECKER_MAN_CODE,
+    VALIDATOR_MAN_CODE,
     JUDGE_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
 
+from pisek.jobs.jobs import JobManager
 from pisek.task_jobs.tools import ToolsManager
 from pisek.task_jobs.data.manager import DataManager
 from pisek.task_jobs.generator.manager import (
@@ -35,12 +36,11 @@ from pisek.task_jobs.generator.manager import (
     RunGenerator,
     TestcaseInfoMixin,
 )
-from pisek.task_jobs.checker import CheckerManager
+from pisek.task_jobs.validator import ValidatorManager
 from pisek.task_jobs.judge import JudgeManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
-from pisek.utils.paths import TaskPath
 
 
 class TaskPipeline(JobPipeline):
@@ -48,21 +48,26 @@ class TaskPipeline(JobPipeline):
 
     def __init__(self, env: Env):
         super().__init__()
-        named_pipeline = [
-            tools := (ToolsManager(), TOOLS_MAN_CODE),
-            generator := (PrepareGenerator(), GENERATOR_MAN_CODE),
-            checker := (CheckerManager(), CHECKER_MAN_CODE),
+        named_pipeline: list[tuple[JobManager, str]] = [
+            tools := (ToolsManager(), TOOLS_MAN_CODE)
+        ]
+        if env.config.in_gen is not None:
+            named_pipeline.append(generator := (PrepareGenerator(), GENERATOR_MAN_CODE))
+        named_pipeline += [
+            validator := (ValidatorManager(), VALIDATOR_MAN_CODE),
             inputs := (DataManager(), INPUTS_MAN_CODE),
         ]
-        generator[0].add_prerequisite(*tools)
-        checker[0].add_prerequisite(*tools)
-        inputs[0].add_prerequisite(*generator)
-        inputs[0].add_prerequisite(*checker)
+
+        if env.config.in_gen is not None:
+            generator[0].add_prerequisite(*tools)
+            inputs[0].add_prerequisite(*generator)
+        validator[0].add_prerequisite(*tools)
+        inputs[0].add_prerequisite(*validator)
 
         solutions = []
         self.input_generator: TestcaseInfoMixin
 
-        if env.target == TestingTarget.generator:
+        if env.target == TestingTarget.generator or not env.config.solutions:
             named_pipeline.append(gen_inputs := (RunGenerator(), ""))
             gen_inputs[0].add_prerequisite(*inputs)
             self.input_generator = gen_inputs[0]
@@ -110,7 +115,7 @@ class TaskPipeline(JobPipeline):
             for solution in solutions:
                 testing_log[0].add_prerequisite(*solution)
 
-        if env.target in (TestingTarget.solution, TestingTarget.all):
+        if solutions:
             named_pipeline.append(completeness_check := (CompletenessCheck(), ""))
             completeness_check[0].add_prerequisite(*judge)
             for solution in solutions:
@@ -118,7 +123,7 @@ class TaskPipeline(JobPipeline):
 
         self.pipeline = deque(map(lambda x: x[0], named_pipeline))
 
-    def input_dataset(self) -> list[TaskPath]:
+    def input_dataset(self) -> list[InputPath]:
         if self.input_generator.result is None:
             raise RuntimeError("Input dataset has not been computed yet.")
         return self.input_generator.result["inputs"]

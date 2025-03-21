@@ -31,7 +31,7 @@ pisek test
 ```
 
 This command tests the task in the current directory.
-It tests all task parts (generator, checker, solutions and judge).
+It tests all task parts (generator, validator, solutions and judge).
 
 ### Task testing overview
 
@@ -40,21 +40,22 @@ What pisek verifies:
  - The generator generates inputs
     - Generator is deterministic
     - Generator respects seed on seeded inputs
- - The checker accepts all inputs
+ - The validator accepts all inputs
  - The judge works
     - It accepts the samples
     - It doesn't crash on malicious output
  - The solutions finish as expected
     - They get the expected number of points
-    - They succeed/fail on each subtask as expected
+    - They succeed/fail on each test (group of testcases) as expected
  - Data files (inputs and outputs) are valid
     - They are in the correct encoding
     - They don't contain unprintable characters
     - They have a newline at the end
     - The files are reasonably small
+    - If `one_input_in_each_nonsample_test=on`, there is exactly one input in each non-sample test.
  - The task is complete
     - A CMS judge has no redundant lines in its stdout/stderr
-    - If `solution_for_each_subtask=on`, there exists a dedicated solution for each subtask
+    - If `solution_for_each_test=on`, there exists a dedicated solution for each test
  
 
 ### Testing given programs

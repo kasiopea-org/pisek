@@ -2,7 +2,7 @@
 # Source: $(pisek)/docs/config-v2-documentation for more information
 
 [task]
-name=sum-cms
+name=sum
 # CMS tasks have a different judge and generator format than Kasiopea
 # (generator doesn't require seed)
 contest_type=cms
@@ -12,7 +12,7 @@ version=v2
 # generator source file
 in_gen=gen
 
-checker=check
+checker=validate
 
 out_check=judge
 # judge source file

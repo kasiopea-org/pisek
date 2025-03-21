@@ -1,6 +1,6 @@
 # Task overview
 *The Task overview is for those who are familiar with competitive programming but haven't made tasks yet.*
-*If you already made some tasks, look at the task type diagrams [here](#batch-task) and [here](#communication-task), to brush up on potential differences in terminology.*
+*If you already made some tasks, look at the task type diagrams [here](#batch-task) and [here](#interactive-task), to brush up on potential differences in terminology.*
 
 ## Task components
 
@@ -11,14 +11,14 @@ There are several task components the author needs to write.
 The task statement is there for contestant to read.
 Pisek doesn't handle task statements, so you are free to write them however you want.
 
-### Subtasks
+### Tests
 
-Pisek however does need to know about subtasks. Those usually are some additional restrictions
-on the task statements to allow weaker solutions to get some points. These can be lower limits
-for slower solutions, or special cases of the original task statement.
+Pisek however does need to know about tests (groups of testcases). Those usually are
+some additional restrictions on the task statements to allow weaker solutions to get some points.
+These can be lower limits for slower solutions, or special cases of the original task statement.
 
-Some tasks have only one subtask (ICPC tasks) while others have many (IOI tasks).
-Subtasks need to be entered in the config.
+Some tasks have only one test (i.e. ICPC tasks) while others have many (IOI tasks).
+Tests need to be entered in the config.
 
 ### Solution
 
@@ -39,22 +39,22 @@ Ideally the generator should generate diverse enough inputs to break any wrong s
 The judge is used for determining whether a given solution is correct.
 It greatly differs between task types, so you can read more there.
 
-### Checker
+### Validator
 
-The checker is used for checking whether inputs produced by generator
+The validator is used for validating inputs produced by generator
 conform to the task statement. It adds an additional degree of safety.
 
 ## Task types
 
 There are few types of tasks pisek supports:
 1. [Batch tasks](#batch-task)
-2. [Communication tasks](#communication-task)
+2. [Interactive tasks](#interactive-task)
 
 ### Batch task
 
 ```mermaid
 graph TD;
-    G[Generator] -->|Input| C[Checker];
+    G[Generator] -->|Input| C[Validator];
     G -->|Input| S[Solution];
     G -->|Input| CS[Correct solution];
     S -->|Output| J[Judge];
@@ -67,23 +67,23 @@ graph TD;
 A batch judge gets the solution output and should say whether it is correct.
 It can also get the correct output (from the primary solution) if specified in the config.
 
-### Communication task
+### Interactive task
 
 ```mermaid
 graph TD;
-    G[Generator] -->|Input| C[Checker];
+    G[Generator] -->|Input| C[Validator];
     G -->|Input| J[Judge];
     J ==>|Communication| S[Solution];
     S ==>|Communication| J;
 ```
 
-Communication task should be used when part of the input should remain hidden
+Interactive task should be used when part of the input should remain hidden
 from the contestant's solution. For example when it can ask questions about the input.
 
-#### Communication judge
-*More details about the communication judges are in [communication_judge.md](./communication_judge.md).*
+#### Interactive judge
+*More details about the interactive judges are in [interactive_judge.md](./interactive_judge.md).*
 
-The judge in a communication task gets the task input and is run together with the solution.
+The judge in a interactive task gets the task input and is run together with the solution.
 The solution can make requests to the judge about the input. Finally, the judge says
 whether the solution is correct.
 

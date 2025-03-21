@@ -12,20 +12,21 @@
 
 from typing import Any, Iterable
 
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
 from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.config.config_types import TaskType
 from pisek.task_jobs.task_manager import TaskJobManager, GENERATOR_MAN_CODE
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
-from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.validator import ValidatorJob
+from pisek.task_jobs.generator.manager import TestcaseInfoMixin
 
-from .data import LinkInput, LinkOutput
+from .data import LinkData
 
 TEST_SEED = 25265
 SHORTEN_INPUTS_CUTOFF = 3
 
 
-class DataManager(TaskJobManager):
+class DataManager(TaskJobManager, TestcaseInfoMixin):
     """Moves data to correct folders."""
 
     def __init__(self) -> None:
@@ -42,46 +43,49 @@ class DataManager(TaskJobManager):
             output_path = input_path.replace_suffix(".out")
 
             if (
-                self._env.config.task_type == TaskType.communication
+                self._env.config.task_type == TaskType.interactive
                 or output_path.exists()
             ):
                 static_testcase_infos.append(TestcaseInfo.static(name))
             else:
                 static_testcase_infos.append(TestcaseInfo.mixed(name))
 
-        all_testcase_infos = (
-            static_testcase_infos
-            + self.prerequisites_results[GENERATOR_MAN_CODE]["inputs"]
-        )
+        all_testcase_infos = list(static_testcase_infos)
+        if self._env.config.in_gen is not None:
+            all_testcase_infos += self.prerequisites_results[GENERATOR_MAN_CODE][
+                "inputs"
+            ]
+
         all_testcase_infos.sort(key=lambda info: info.name)
 
-        # put inputs in subtasks
+        # put inputs in tests
         self._testcase_infos: dict[int, list[TestcaseInfo]] = {}
 
-        for sub in self._env.config.subtasks.values():
-            self._testcase_infos[sub.num] = []
+        for test in self._env.config.tests.values():
+            self._testcase_infos[test.num] = []
 
             for testcase_info in all_testcase_infos:
                 inp_path = testcase_info.input_path(self._env, TEST_SEED).name
-                if sub.in_subtask(inp_path):
-                    self._testcase_infos[sub.num].append(testcase_info)
+                if test.in_test(inp_path):
+                    self._testcase_infos[test.num].append(testcase_info)
 
-            if len(self._testcase_infos[sub.num]) == 0:
+            if len(self._testcase_infos[test.num]) == 0:
                 raise PipelineItemFailure(
-                    f"No inputs for subtask {sub.num} with globs {sub.all_globs}."
+                    f"No inputs for test {test.num} with globs {test.all_globs}."
                 )
 
         for testcase_info in self._testcase_infos[0]:
             if testcase_info.generation_mode != TestcaseGenerationMode.static:
                 raise PipelineItemFailure(
-                    f"Sample inputs must be static, but '{inp_path}' is {testcase_info.generation_mode}."
+                    f"Sample inputs must be static, but '{testcase_info.name}' is {testcase_info.generation_mode}."
                 )
 
         used_inputs = set(sum(self._testcase_infos.values(), start=[]))
         self._report_not_included_inputs(
-            used_inputs - set(self._testcase_infos[self._env.config.subtasks_count - 1])
+            used_inputs - set(self._testcase_infos[self._env.config.tests_count - 1])
         )
         self._report_unused_inputs(set(all_testcase_infos) - used_inputs)
+        self._check_one_input_in_nonsample_test()
 
         jobs: list[Job] = []
 
@@ -90,33 +94,41 @@ class DataManager(TaskJobManager):
             mode = testcase.generation_mode
 
             if mode in (TestcaseGenerationMode.static, TestcaseGenerationMode.mixed):
+                input_target_path = InputPath(self._env, f"{name}.in")
                 jobs.append(
-                    LinkInput(self._env, TaskPath.static_path(self._env, f"{name}.in"))
-                )
-            if (
-                mode == TestcaseGenerationMode.static
-                and self._env.config.task_type != TaskType.communication
-            ):
-                jobs.append(
-                    LinkOutput(
-                        self._env, TaskPath.static_path(self._env, f"{name}.out")
+                    link := LinkData(
+                        self._env,
+                        TaskPath.static_path(self._env, f"{name}.in"),
+                        input_target_path.to_raw(self._env.config.in_format),
                     )
                 )
+                jobs.extend(self._check_input_jobs(input_target_path, link))
+            if (
+                mode == TestcaseGenerationMode.static
+                and self._env.config.task_type != TaskType.interactive
+            ):
+                output_target_path = OutputPath.static(f"{name}.out")
+                jobs.append(
+                    link := LinkData(
+                        self._env,
+                        TaskPath.static_path(self._env, f"{name}.out"),
+                        output_target_path.to_raw(self._env.config.out_format),
+                    )
+                )
+                jobs.extend(self._check_output_jobs(output_target_path, link))
 
-        for subtask, testcases in self._testcase_infos.items():
+        for test_num, testcases in self._testcase_infos.items():
             for testcase in testcases:
                 if testcase.generation_mode == TestcaseGenerationMode.generated:
                     continue
 
-                if subtask > 0 and self._env.config.checker is not None:
+                if test_num > 0 and self._env.config.validator is not None:
                     jobs.append(
-                        CheckerJob(
+                        ValidatorJob(
                             self._env,
-                            self._env.config.checker,
-                            TaskPath.static_path(
-                                self._env, testcase.input_path(self._env).name
-                            ),
-                            subtask,
+                            self._env.config.validator,
+                            testcase.input_path(self._env, None),
+                            test_num,
                         )
                     )
 
@@ -140,16 +152,29 @@ class DataManager(TaskJobManager):
         self, not_included_inputs: Iterable[TestcaseInfo]
     ) -> None:
         inputs = list(sorted(not_included_inputs, key=lambda inp: inp.name))
-        if self._env.config.checks.all_inputs_in_last_subtask and inputs:
+        if self._env.config.checks.all_inputs_in_last_test and inputs:
             if self._env.verbosity <= 0:
                 self._warn(
                     f"{len(inputs)} input{'s' if len(inputs) >= 2 else ''} "
-                    "not included in last subtask. "
+                    "not included in last test. "
                     f"({self._short_inputs_list(inputs)})"
                 )
             else:
                 for inp in inputs:
-                    self._warn(f"Input '{inp.name}.in' not included in last subtask.")
+                    self._warn(f"Input '{inp.name}.in' not included in last test.")
+
+    def _check_one_input_in_nonsample_test(self) -> None:
+        if not self._env.config.checks.one_input_in_each_nonsample_test:
+            return
+
+        for test_num, testcases in self._testcase_infos.items():
+            if test_num == 0:
+                continue
+            cnt = sum(tc.repeat for tc in testcases)
+            if cnt != 1:
+                self._warn(
+                    f"{self._env.config.tests[test_num].name} contains {cnt} testcases but should contain 1."
+                )
 
     def _short_inputs_list(self, inputs: Iterable[TestcaseInfo]) -> str:
         return self._short_list(

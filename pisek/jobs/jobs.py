@@ -17,16 +17,19 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum, auto
+import dataclasses
 from functools import wraps
 import hashlib
+import logging
 import os.path
 import sys
 from typing import Optional, AbstractSet, MutableSet, Any, Callable, NamedTuple
-import yaml
 
-from pisek.jobs.cache import NoAliasDumper, Cache, CacheEntry
+from pisek.jobs.cache import Cache, CacheEntry
 from pisek.env.env import Env
 from pisek.utils.paths import TaskPath
+
+logger = logging.getLogger(__name__)
 
 
 class State(Enum):
@@ -51,7 +54,7 @@ class CaptureInitParams:
     """
 
     _initialized = False
-    _accessed_envs: MutableSet[str]
+    _accessed_envs: MutableSet[tuple[str, ...]]
 
     def __init_subclass__(cls):
         real_init = cls.__init__
@@ -169,7 +172,7 @@ class Job(PipelineItem, CaptureInitParams):
 
     def __init__(self, env: Env, name: str) -> None:
         self._env = env
-        self._accessed_envs: MutableSet[str] = set()
+        self._accessed_envs: MutableSet[tuple[str, ...]] = set()
         self._accessed_files: MutableSet[str] = set()
         self._terminal_output: list[tuple[str, bool]] = []
         self.name = name
@@ -184,8 +187,15 @@ class Job(PipelineItem, CaptureInitParams):
         """Add file this job depends on."""
         self._accessed_files.add(filename.path)
 
+    @property
+    def accessed_files(self) -> set[str]:
+        return set(self._accessed_files)
+
     def _signature(
-        self, envs: AbstractSet[str], paths: AbstractSet[str], results: dict[str, Any]
+        self,
+        envs: AbstractSet[tuple[str, ...]],
+        paths: AbstractSet[str],
+        results: dict[str, Any],
     ) -> tuple[Optional[str], Optional[str]]:
         """Compute a signature (i.e. hash) of given envs, files and prerequisites results."""
         sign = hashlib.sha256()
@@ -194,31 +204,43 @@ class Job(PipelineItem, CaptureInitParams):
         for key, val in self._kwargs.items():
             sign.update(f"{key}={val}\n".encode())
 
-        for key in sorted(envs):
+        for env_key in sorted(envs):
             try:
-                value = self._env.get_compound(key)
-            except (AttributeError, TypeError):
-                return (None, f"Key nonexistent: {key}")
-            sign.update(f"{key}={value}\n".encode())
+                value = self._env.get_compound(env_key)
+            except (AttributeError, TypeError, ValueError, KeyError):
+                return (None, f"Key nonexistent: {env_key}")
+            sign.update(f"{env_key}={value}\n".encode())
 
         expanded_files = []
         for path in sorted(paths):
+            while os.path.islink(path):
+                path = os.path.normpath(
+                    os.path.join(os.path.dirname(path), os.readlink(path))
+                )
+
             if os.path.isfile(path):
                 expanded_files.append(path)
-            else:
+            elif os.path.isdir(path):
                 for dir_, _, dir_files in os.walk(path):
                     for path in dir_files:
                         expanded_files.append(os.path.join(dir_, path))
+            else:
+                assert not os.path.exists(path)
+                return (None, f"File nonexistent: {path}")
 
         for file in sorted(expanded_files):
-            if not os.path.exists(file):
-                return (None, "File nonexistent")
             with open(file, "rb") as f:
                 file_sign = hashlib.file_digest(f, "sha256")
             sign.update(f"{file}={file_sign.hexdigest()}\n".encode())
 
         for name, result in sorted(results.items()):
-            sign.update(f"{name}={yaml.dump(result, Dumper=NoAliasDumper)}".encode())
+            # Trying to prevent hashing object.__str__ which is non-deterministic
+            assert (
+                result is None
+                or isinstance(result, (str, int, float))
+                or dataclasses.is_dataclass(result)
+            )
+            sign.update(f"{name}={result}\00".encode())
 
         return (sign.hexdigest(), None)
 
@@ -241,12 +263,7 @@ class Job(PipelineItem, CaptureInitParams):
             self._accessed_files,
             self.prerequisites_results,
         )
-        if err == "File nonexistent":
-            raise RuntimeError(
-                f"Cannot compute signature of job {self.name}. "
-                f"Check if something else is changing files in task directory."
-            )
-        elif sign is None:
+        if sign is None:
             raise RuntimeError(
                 f"Computing signature of job {self.name} failed:\n  {err}."
             )
@@ -269,12 +286,15 @@ class Job(PipelineItem, CaptureInitParams):
 
         cached = False
         if self.name in cache and (entry := self._find_entry(cache[self.name])):
+            logger.info(f"Loading cached '{self.name}'")
             cached = True
             cache.move_to_top(entry)
             for msg, stderr in entry.output:
                 self._print(msg, end="", stderr=stderr)
+            self._accessed_files = set(entry.files)
             self.result = entry.result
         else:
+            logger.info(f"Running '{self.name}'")
             try:
                 self._env.clear_accesses()
                 self.result = self._run()

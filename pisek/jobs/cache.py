@@ -14,60 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Iterable, TextIO
+import time
+from typing import Any, Iterable
 import os
-import yaml
+import pickle
 
 from pisek.version import __version__
 from pisek.utils.text import eprint
 from pisek.utils.colors import ColorSettings
-from pisek.env.env import Env
+from pisek.utils.paths import INTERNALS_DIR
 
-CACHE_FILENAME = ".pisek_cache"
+
+CACHE_VERSION_FILE = os.path.join(INTERNALS_DIR, "cache_version")
+CACHE_CONTENT_FILE = os.path.join(INTERNALS_DIR, "cache")
 SAVED_LAST_SIGNATURES = 5
+CACHE_SAVE_INTERVAL = 1  # seconds
 
 
-class NoAliasDumper(yaml.Dumper):
-    def ignore_aliases(self, data):
-        return True
-
-
-class CacheInfo(yaml.YAMLObject):
-    """Object for cache metadata."""
-
-    yaml_tag = "!Info"
-
-    def __init__(self, version: str = __version__) -> None:
-        self.version = version
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(version={self.version})"
-
-    @staticmethod
-    def read(f: TextIO) -> "CacheInfo":
-        tag = f.readline().removeprefix("- ").strip()
-        if tag != CacheInfo.yaml_tag:
-            return CacheInfo("?.?.?")
-        version = f.readline().removeprefix("  version:").strip()
-        return CacheInfo(version)
-
-    def yaml_export(self) -> str:
-        return yaml.dump(
-            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
-        )
-
-
-class CacheEntry(yaml.YAMLObject):
+class CacheEntry:
     """Object representing single cached job."""
-
-    yaml_tag = "!Entry"
 
     def __init__(
         self,
         name: str,
         signature: str,
         result: Any,
-        envs: Iterable[str],
+        envs: Iterable[tuple[str, ...]],
         files: Iterable[str],
         prerequisites_results: Iterable[str],
         output: list[tuple[str, bool]],
@@ -87,22 +59,41 @@ class CacheEntry(yaml.YAMLObject):
             f"envs={self.envs}, files={self.files}, output={self.output})"
         )
 
-    def yaml_export(self) -> str:
-        return yaml.dump(
-            [self], allow_unicode=True, sort_keys=False, Dumper=NoAliasDumper
-        )
-
 
 class Cache:
     """Object representing all cached jobs."""
 
-    def __init__(self, env: Env) -> None:
-        self._load(env)
+    def __init__(self) -> None:
+        os.makedirs(INTERNALS_DIR, exist_ok=True)
+        with open(CACHE_VERSION_FILE, "w") as f:
+            f.write(f"{__version__}\n")
+        self.cache: dict[str, list[CacheEntry]] = {}
+        self.last_save = time.time()
 
-    def _new_cache_file(self) -> None:
-        """Create new cache file with metadata."""
-        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
-            f.write(CacheInfo().yaml_export())
+    @classmethod
+    def load(cls) -> "Cache":
+        """Load cache file."""
+        if not os.path.exists(CACHE_VERSION_FILE) or not os.path.exists(
+            CACHE_CONTENT_FILE
+        ):
+            return Cache()
+
+        with open(CACHE_VERSION_FILE) as f:
+            version = f.read().strip()
+
+        if version != __version__:
+            eprint(
+                ColorSettings.colored(
+                    "Different version of .pisek_cache file found. Starting from scratch...",
+                    "yellow",
+                )
+            )
+            return Cache()
+
+        cache = Cache()
+        with open(CACHE_CONTENT_FILE, "rb") as f:
+            cache.cache = pickle.load(f)
+        return cache
 
     def add(self, cache_entry: CacheEntry):
         """Add entry to cache."""
@@ -110,8 +101,14 @@ class Cache:
             self.cache[cache_entry.name] = []
         self.cache[cache_entry.name].append(cache_entry)
 
-        with open(CACHE_FILENAME, "a", encoding="utf-8") as f:
-            f.write(cache_entry.yaml_export())
+        # trim number of entries per cache name in order to limit cache size
+        self.cache[cache_entry.name] = self.cache[cache_entry.name][
+            -SAVED_LAST_SIGNATURES:
+        ]
+
+        # Throttling saving saves time massively
+        if time.time() - self.last_save > CACHE_SAVE_INTERVAL:
+            self.export()
 
     def __contains__(self, name: str) -> bool:
         return name in self.cache
@@ -125,28 +122,6 @@ class Cache:
     def last_entry(self, name: str) -> CacheEntry:
         return self[name][-1]
 
-    def _load(self, env: Env) -> None:
-        """Load cache file."""
-        self.cache: dict[str, list[CacheEntry]] = {}
-        if not os.path.exists(CACHE_FILENAME):
-            return self._new_cache_file()
-
-        with open(CACHE_FILENAME, encoding="utf-8") as f:
-            if CacheInfo.read(f).version != __version__:
-                eprint(
-                    ColorSettings.colored(
-                        "Different version of .pisek_cache file found. Starting from scratch...",
-                        "yellow",
-                    )
-                )
-                return self._new_cache_file()
-
-            entries = yaml.full_load(f)
-            for entry in entries:
-                if entry.name not in self.cache:
-                    self.cache[entry.name] = []
-                self.cache[entry.name].append(entry)
-
     def move_to_top(self, entry: CacheEntry):
         """Move given entry to most recent position."""
         if entry in self.cache[entry.name]:
@@ -158,9 +133,7 @@ class Cache:
             )
 
     def export(self) -> None:
-        """Export cache into a file. (Removes unnecessary entries.)"""
-        with open(CACHE_FILENAME, "w", encoding="utf-8") as f:
-            f.write(CacheInfo().yaml_export())
-            for job, entries in self.cache.items():
-                for cache_entry in entries[-SAVED_LAST_SIGNATURES:]:
-                    f.write(cache_entry.yaml_export())
+        """Export cache into a file."""
+        with open(CACHE_CONTENT_FILE, "wb") as f:
+            pickle.dump(self.cache, f)
+        self.last_save = time.time()

@@ -39,36 +39,34 @@ class CompletenessCheck(TaskJobManager):
             ]
         return judge_outs
 
-    def _check_solution_succeeds_only_on(
-        self, sol_name: str, subtasks: list[int]
-    ) -> bool:
-        subtasks_res = self.prerequisites_results[f"{SOLUTION_MAN_CODE}{sol_name}"][
-            "subtasks"
+    def _check_solution_succeeds_only_on(self, sol_name: str, tests: list[int]) -> bool:
+        tests_res = self.prerequisites_results[f"{SOLUTION_MAN_CODE}{sol_name}"][
+            "tests"
         ]
-        for num in self._env.config.subtasks:
+        for num in self._env.config.tests:
             if num == 0:
                 continue  # Skip samples
-            if (subtasks_res[num] == Verdict.ok) != (num in subtasks):
+            if (tests_res[num] == Verdict.ok) != (num in tests):
                 return False
         return True
 
     def _check_dedicated_solutions(self) -> None:
-        """Checks that each subtask has it's own dedicated solution."""
-        if self._env.config.checks.solution_for_each_subtask:
-            for num, subtask in self._env.config.subtasks.items():
+        """Checks that each test has it's own dedicated solution."""
+        if self._env.config.checks.solution_for_each_test:
+            for num, test in self._env.config.tests.items():
                 if num == 0:
                     continue  # Samples
 
                 ok = False
                 for solution in self._env.solutions:
                     if self._check_solution_succeeds_only_on(
-                        solution, [num] + subtask.all_predecessors
+                        solution, [num] + test.all_predecessors
                     ):
                         ok = True
                         break
 
                 if not ok:
-                    self._warn(f"{subtask.name} has no dedicated solution")
+                    self._warn(f"{test.name} has no dedicated solution")
 
     def _check_cms_judge(self) -> None:
         """Checks that cms judge's stdout & stderr contains only one line."""

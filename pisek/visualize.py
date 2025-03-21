@@ -23,7 +23,6 @@ from pisek.utils.colors import ColorSettings
 from pisek.utils.terminal import terminal_width
 from pisek.config.task_config import load_config
 from pisek.config.task_config import TaskConfig
-from pisek.config.config_types import Scoring
 from pisek.config.select_solutions import expand_solutions, UnknownSolutions
 from pisek.task_jobs.solution.solution_result import Verdict
 from pisek.task_jobs.solution.verdicts_eval import evaluate_verdicts
@@ -43,9 +42,9 @@ class LoggedResult:
     test: str
     original_verdict: Verdict
 
-    def points(self, subtask_points: int) -> Decimal:
+    def points(self, test_points: int) -> Decimal:
         if self.relative_points is not None:
-            return self.relative_points * subtask_points
+            return self.relative_points * test_points
         elif self.absolute_points is not None:
             return self.absolute_points
         else:
@@ -125,31 +124,21 @@ class SolutionResults:
         self._results = results
 
         self._results.sort(
-            key=lambda r: (self._get_subtask(r), r.verdict.value, r.time, r.test)
+            key=lambda r: (self._get_test(r), r.verdict.value, r.time, r.test)
         )
 
-    def _get_subtask(self, result: LoggedResult) -> int:
+    def _get_test(self, result: LoggedResult) -> int:
         return min(
-            i
-            for i, sub in self._config.subtasks.items()
-            if sub.new_in_subtask(result.test)
+            i for i, sub in self._config.tests.items() if sub.new_in_test(result.test)
         )
 
     def _evaluate_results(
-        self, results: list[LoggedResult], subtask_num: int
+        self, results: list[LoggedResult], test_num: int
     ) -> tuple[bool, bool, Optional[LoggedResult]]:
-        if self._config.scoring == Scoring.equal:
-            results = list(
-                filter(
-                    lambda r: self._config.subtasks[subtask_num].new_in_subtask(r.test),
-                    results,
-                )
-            )
-
         ok, definitive, breaker = evaluate_verdicts(
             self._config,
             list(map(lambda r: r.verdict, results)),
-            self._solution.subtasks[subtask_num],
+            self._solution.tests[test_num],
         )
         return ok, definitive, results[breaker] if breaker is not None else None
 
@@ -185,21 +174,21 @@ class SolutionResults:
     def get_all(self) -> list[LoggedResult]:
         return self._results
 
-    def get_by_subtask(self) -> list[list[LoggedResult]]:
-        by_subtask: list[list[LoggedResult]] = [
-            [] for _ in range(self._config.subtasks_count)
+    def get_by_test(self) -> list[list[LoggedResult]]:
+        by_test: list[list[LoggedResult]] = [
+            [] for _ in range(self._config.tests_count)
         ]
         for res in self._results:
-            for num, sub in self._config.subtasks.items():
-                if sub.in_subtask(res.test):
-                    by_subtask[num].append(res)
+            for num, sub in self._config.tests.items():
+                if sub.in_test(res.test):
+                    by_test[num].append(res)
 
-        return by_subtask
+        return by_test
 
-    def check_subtask(self, num: int) -> Optional[str]:
-        results = self.get_by_subtask()
+    def check_test(self, num: int) -> Optional[str]:
+        results = self.get_by_test()
 
-        expected = self._solution.subtasks[num]
+        expected = self._solution.tests[num]
         ok, _, breaker = self._evaluate_results(results[num], num)
         if not ok:
             failed_test = f" ({breaker.test})" if breaker else ""
@@ -208,35 +197,35 @@ class SolutionResults:
 
     def check_points(self) -> Optional[str]:
         achieved = Decimal(0)
-        results = self.get_by_subtask()
-        for num, sub in self._config.subtasks.items():
+        results = self.get_by_test()
+        for num, sub in self._config.tests.items():
             achieved += min(map(lambda r: r.points(sub.points), results[num]))
 
         points = self._solution.points
-        points_above = self._solution.points_above
-        points_below = self._solution.points_below
+        points_min = self._solution.points_min
+        points_max = self._solution.points_max
 
         if points is not None and points != achieved:
             return f"{points}p"
-        if points_above is not None and not achieved >= points_above:
-            return f"at least {points_above}p"
-        if points_below is not None and not achieved <= points_below:
-            return f"at most {points_below}p"
+        if points_min is not None and not achieved >= points_min:
+            return f"at least {points_min}p"
+        if points_max is not None and not achieved <= points_max:
+            return f"at most {points_max}p"
 
         return None
 
     def check_all(self) -> list[str]:
         fails = []
-        for num in self._config.subtasks:
-            if (err := self.check_subtask(num)) is not None:
-                fails.append(f"{err} on {self._config.subtasks[num].name}")
+        for num in self._config.tests:
+            if (err := self.check_test(num)) is not None:
+                fails.append(f"{err} on {self._config.tests[num].name}")
         if (err := self.check_points()) is not None:
             fails.append(f"get {err}")
 
         return fails
 
     def get_timeout_range(self, num: int) -> tuple[float, float]:
-        results = self.get_by_subtask()[num]
+        results = self.get_by_test()[num]
         times = [0] + list(map(lambda r: r.time, results))
         times.sort()
         min_possible = len(times) - 1
@@ -292,7 +281,7 @@ def visualize(
     if testing_log["source"] == "cms":
         limit_default = config.cms.time_limit
     else:
-        limit_default = config.limits.solve.time_limit
+        limit_default = config.solution_time_limit
     time_limit = limit_default if limit is None else limit
 
     filter_fn = show_all if filter == "all" else show_slowest
@@ -328,16 +317,14 @@ def visualize(
                 wrong_solutions[sol] = True
             print(f"{sol}{err_msg}")
 
-            for num, group_res in enumerate(sol_res.get_by_subtask()):
-                subtask_err = sol_res.check_subtask(num)
+            for num, group_res in enumerate(sol_res.get_by_test()):
+                test_err = sol_res.check_test(num)
                 err_msg = ""
-                if subtask_err is not None:
-                    err_msg = ColorSettings.colored(
-                        f" should result {subtask_err}", "red"
-                    )
+                if test_err is not None:
+                    err_msg = ColorSettings.colored(f" should result {test_err}", "red")
                     wrong_solutions[sol] = True
 
-                print(tab(f"{config.subtasks[num].name}{err_msg}"))
+                print(tab(f"{config.tests[num].name}{err_msg}"))
                 for res in filter_fn(group_res):
                     print(
                         tab(tab(res.to_str(time_limit, segment_cnt, max_test_length)))
@@ -366,7 +353,7 @@ def visualize(
     min_possible = 0.0
     max_possible = inf
     for sol, sol_res in results.items():
-        for num in config.subtasks:
+        for num in config.tests:
             a, b = sol_res.get_timeout_range(num)
             min_possible = max(a, min_possible)
             max_possible = min(b, max_possible)

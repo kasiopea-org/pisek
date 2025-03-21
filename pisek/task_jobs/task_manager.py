@@ -10,8 +10,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pisek.utils.paths import TaskPath
-from pisek.config.task_config import SubtaskConfig
+from pisek.utils.paths import TaskPath, InputPath, OutputPath
+from pisek.config.task_config import TestConfig
 from pisek.jobs.status import StatusJobManager
 from pisek.task_jobs.task_job import TaskHelper
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
@@ -20,7 +20,7 @@ from pisek.task_jobs.data.testcase_info import TestcaseInfo
 TOOLS_MAN_CODE = "tools"
 GENERATOR_MAN_CODE = "generator"
 INPUTS_MAN_CODE = "inputs"
-CHECKER_MAN_CODE = "checker"
+VALIDATOR_MAN_CODE = "validator"
 JUDGE_MAN_CODE = "judge"
 SOLUTION_MAN_CODE = "solution_"
 DATA_MAN_CODE = "data"
@@ -29,20 +29,20 @@ DATA_MAN_CODE = "data"
 class TaskJobManager(StatusJobManager, TaskHelper):
     """JobManager class that implements useful methods"""
 
-    def _get_samples(self) -> list[tuple[TaskPath, TaskPath]]:
+    def _get_samples(self) -> list[tuple[InputPath, OutputPath]]:
         """Returns the list [(sample1.in, sample1.out), …]."""
         return [
             (
                 inp.input_path(self._env),
-                TaskPath.output_static_file(self._env, inp.name),
+                inp.reference_output(self._env),
             )
-            for inp in self._subtask_testcases(self._env.config.subtasks[0])
+            for inp in self._test_testcases(self._env.config.tests[0])
         ]
 
-    def _subtask_testcases(self, subtask: SubtaskConfig) -> list[TestcaseInfo]:
-        """Get all inputs of given subtask."""
-        return self.prerequisites_results[INPUTS_MAN_CODE]["testcase_info"][subtask.num]
+    def _test_testcases(self, test: TestConfig) -> list[TestcaseInfo]:
+        """Get all inputs of given test."""
+        return self.prerequisites_results[INPUTS_MAN_CODE]["testcase_info"][test.num]
 
     def _all_testcases(self) -> dict[int, list[TestcaseInfo]]:
-        """Get all inputs grouped by subtask."""
+        """Get all inputs grouped by test."""
         return self.prerequisites_results[INPUTS_MAN_CODE]["testcase_info"]

@@ -23,19 +23,19 @@ from pisek.config.config_errors import TaskConfigError
 from pisek.config.config_types import ProgramType
 
 
-def rename_key(config: ConfigParser, section: str, key_from: str, key_to: str):
-    if key_from in config[section]:
-        config[section][key_to] = config[section][key_from]
-        del config[section][key_from]
-
-
-def move_key(config: ConfigParser, key: str, section_from: str, section_to: str):
-    if key in config[section_from]:
+def maybe_rename_key(
+    config: ConfigParser, section_from: str, section_to: str, key_from: str, key_to: str
+):
+    if section_from in config and key_from in config[section_from]:
         if section_to not in config:
-            config.add_section("all_solutions")
+            config.add_section(section_to)
 
-        config[section_to][key] = config[section_from][key]
-        del config[section_from][key]
+        config[section_to][key_to] = config[section_from][key_from]
+        del config[section_from][key_from]
+
+
+def maybe_move_key(config: ConfigParser, key: str, section_from: str, section_to: str):
+    maybe_rename_key(config, section_from, section_to, key, key)
 
 
 def maybe_delete_key(config: ConfigParser, section: str, key: str):
@@ -44,10 +44,8 @@ def maybe_delete_key(config: ConfigParser, section: str, key: str):
 
 
 def update_to_v2(config: ConfigParser, task_path: str) -> None:
-    config["task"]["version"] = "v2"
-
-    rename_key(config, "task", "samples_subdir", "static_subdir")
-    rename_key(config, "tests", "solution_manager", "stub")
+    maybe_rename_key(config, "task", "task", "samples_subdir", "static_subdir")
+    maybe_rename_key(config, "tests", "tests", "solution_manager", "stub")
 
     subtask_points = []
     for section in sorted(config.sections()):
@@ -195,17 +193,50 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
         elif task_type == "communication":
             config["tests"]["judge_type"] = "cms-communication"
 
-    if "limits" not in config:
-        config.add_section("limits")
-    for program_type in ProgramType:
-        config["limits"][f"{program_type}_clock_mul"] = "0"
-        config["limits"][f"{program_type}_clock_min"] = config.get(
-            "limits", f"{program_type}_clock_limit", fallback="360"
-        )
-        maybe_delete_key(config, "limits", f"{program_type}_clock_limit")
+    if task_type == "communication":
+        config["task"]["task_type"] = "interactive"
 
-    move_key(config, "stub", "tests", "all_solutions")
-    move_key(config, "headers", "tests", "all_solutions")
+    maybe_rename_key(config, "tests", "tests", "checker", "validator")
+
+    OLD_NAME = {
+        ProgramType.gen: "in_gen",
+        ProgramType.validator: "checker",
+        ProgramType.primary_solution: "solve",
+        ProgramType.secondary_solution: "sec_solve",
+        ProgramType.judge: "judge",
+    }
+
+    for new_program_type in ProgramType:
+        old_program_type = OLD_NAME[new_program_type]
+        if new_program_type == ProgramType.primary_solution:
+            section = "run_solution"
+        else:
+            section = f"run_{new_program_type}"
+
+        config.add_section(section)
+        config[section]["clock_mul"] = "0"
+        config[section]["clock_min"] = config.get(
+            "limits", f"{old_program_type}_clock_limit", fallback="360"
+        )
+        maybe_delete_key(config, "limits", f"{old_program_type}_clock_limit")
+
+        for limit in ("time", "mem", "process"):
+            maybe_rename_key(
+                config,
+                "limits",
+                section,
+                f"{old_program_type}_{limit}_limit",
+                f"{limit}_limit",
+            )
+
+    maybe_move_key(config, "stub", "tests", "solutions")
+    maybe_move_key(config, "headers", "tests", "solutions")
+    maybe_move_key(config, "static_subdir", "task", "tests")
+
+    if contest_type == "cms":
+        maybe_move_key(config, "name", "task", "cms")
+    elif contest_type == "kasiopea":
+        maybe_delete_key(config, "task", "name")
 
     IGNORED_KEYS = [
         ("task", "tests"),
@@ -216,9 +247,35 @@ def update_to_v3(config: ConfigParser, task_path: str) -> None:
     for section, key in IGNORED_KEYS:
         maybe_delete_key(config, section, key)
 
+    maybe_rename_key(
+        config,
+        "checks",
+        "checks",
+        "solution_for_each_subtask",
+        "solution_for_each_test",
+    )
+    maybe_rename_key(
+        config,
+        "checks",
+        "checks",
+        "all_inputs_in_last_subtask",
+        "all_inputs_in_last_test",
+    )
+
     for section in config.sections():
         if re.match(r"test\d{2}", section):
             maybe_delete_key(config, section, "file_name")
+        if re.match(r"solution_(.+)", section):
+            maybe_rename_key(config, section, section, "subtasks", "tests")
+            maybe_rename_key(config, section, section, "source", "run")
+            maybe_rename_key(config, section, section, "points_above", "points_min")
+            maybe_rename_key(config, section, section, "points_below", "points_max")
+
+    maybe_rename_key(config, "task", "run_solution", "solutions_subdir", "subdir")
+
+    maybe_move_key(config, "name", "all_tests", "tests")
+    maybe_move_key(config, "in_globs", "all_tests", "tests")
+    maybe_move_key(config, "predecessors", "all_tests", "tests")
 
 
 OUTDATED_VERSIONS = {"v1": ("v2", update_to_v2)}
@@ -254,3 +311,5 @@ def update_config(config: ConfigParser, task_path: str, infos: bool = True) -> N
 
     if version != NEWEST_VERSION:
         raise RuntimeError("Config updating failed.")
+
+    config["task"]["version"] = NEWEST_VERSION

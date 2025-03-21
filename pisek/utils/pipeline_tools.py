@@ -22,22 +22,49 @@ import sys
 from typing import Callable
 
 from pisek.jobs.job_pipeline import JobPipeline
+from pisek.utils.util import clean_non_relevant_files
 from pisek.utils.text import eprint
+from pisek.utils.terminal import TARGET_LINE_WIDTH
+from pisek.utils.paths import INTERNALS_DIR
+from pisek.utils.colors import ColorSettings
 from pisek.env.env import Env
 from pisek.jobs.cache import Cache
 
 PATH = "."
 
-LOCK_FILE = ".pisek_lock"
+LOCK_FILE = os.path.join(INTERNALS_DIR, "lock")
 
 
 def run_pipeline(path: str, pipeline_class: Callable[[Env], JobPipeline], **env_args):
     with ChangedCWD(path):
         env = Env.load(**env_args)
         if env is None:
-            return 1
-        pipeline = pipeline_class(env.fork())
-        return pipeline.run_jobs(Cache(env), env)
+            return True
+        cache = Cache.load()
+
+        all_accessed_files: set[str] = set()
+        for i in range(env.repeat):
+            env.iteration = i  # XXX: Dirty trick
+            if env.repeat > 1:
+                if i != 0:
+                    print()
+                text = f" Run {i+1}/{env.repeat} "
+                text = (
+                    ((TARGET_LINE_WIDTH - len(text)) // 2) * "-"
+                    + text
+                    + ((TARGET_LINE_WIDTH - len(text) + 1) // 2) * "-"
+                )
+                print(ColorSettings.colored(text, "cyan"))
+                print()
+
+            pipeline = pipeline_class(env.fork())
+            result = pipeline.run_jobs(cache, env)
+            if result:
+                return result
+            all_accessed_files |= pipeline.all_accessed_files
+
+        clean_non_relevant_files(all_accessed_files)
+        return False
 
 
 class ChangedCWD:
@@ -59,10 +86,13 @@ class Lock:
 
     def __enter__(self):
         try:
+            os.makedirs(os.path.dirname(self._lock_file), exist_ok=True)
             with open(self._lock_file, "x") as f:
                 f.write(f"Locked by pisek at {datetime.now()}")
         except FileExistsError:
-            eprint("Another pisek instance running in same directory.")
+            eprint(
+                f"Another pisek instance running in same directory. (Lockfile '{LOCK_FILE}')"
+            )
             sys.exit(2)
 
         self._locked = True

@@ -20,7 +20,6 @@ from decimal import Decimal
 from enum import Enum
 from functools import partial, cache
 from typing import Callable, Optional, TYPE_CHECKING
-import yaml
 
 from pisek.task_jobs.run_result import RunResult
 
@@ -64,7 +63,7 @@ class SolutionResult(ABC):
     judge_rr: Optional[RunResult]
 
     @abstractmethod
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
+    def points(self, env: "Env", test_points: int) -> Decimal:
         pass
 
     def mark(self) -> str:
@@ -79,8 +78,8 @@ class RelativeSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     relative_points: Decimal
 
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
-        return (self.relative_points * subtask_points).quantize(
+    def points(self, env: "Env", test_points: int) -> Decimal:
+        return (self.relative_points * test_points).quantize(
             Decimal("0.1") ** env.config.score_precision
         )
 
@@ -98,61 +97,13 @@ class AbsoluteSolutionResult(SolutionResult):
     judge_rr: Optional[RunResult]
     absolute_points: Decimal
 
-    def points(self, env: "Env", subtask_points: int) -> Decimal:
+    def points(self, env: "Env", test_points: int) -> Decimal:
         return self.absolute_points
 
     def mark(self) -> str:
         if self.verdict == Verdict.partial_ok:
             return f"[={self.absolute_points}]"
         return super().mark()
-
-
-def abs_sol_result_representer(dumper, sol_result: AbsoluteSolutionResult):
-    return dumper.represent_sequence(
-        "!AbsoluteSolutionResult",
-        [
-            sol_result.verdict.name,
-            sol_result.message,
-            sol_result.solution_rr,
-            sol_result.judge_rr,
-            str(sol_result.absolute_points),
-        ],
-    )
-
-
-def abs_sol_result_constructor(loader, value) -> AbsoluteSolutionResult:
-    verdict, message, points, sol_rr, judge_rr = loader.construct_sequence(value)
-    return AbsoluteSolutionResult(
-        Verdict[verdict], message, sol_rr, judge_rr, Decimal(points)
-    )
-
-
-yaml.add_representer(AbsoluteSolutionResult, abs_sol_result_representer)
-yaml.add_constructor("!AbsoluteSolutionResult", abs_sol_result_constructor)
-
-
-def rel_sol_result_representer(dumper, sol_result: RelativeSolutionResult):
-    return dumper.represent_sequence(
-        "!RelativeSolutionResult",
-        [
-            sol_result.verdict.name,
-            sol_result.message,
-            sol_result.solution_rr,
-            sol_result.judge_rr,
-            str(sol_result.relative_points),
-        ],
-    )
-
-
-def rel_sol_result_constructor(loader, value) -> RelativeSolutionResult:
-    verdict, message, sol_rr, judge_rr, points = loader.construct_sequence(value)
-    return RelativeSolutionResult(
-        Verdict[verdict], message, sol_rr, judge_rr, Decimal(points)
-    )
-
-
-yaml.add_representer(RelativeSolutionResult, rel_sol_result_representer)
-yaml.add_constructor("!RelativeSolutionResult", rel_sol_result_constructor)
 
 
 def verdict_always(res: Verdict) -> bool:
@@ -173,8 +124,8 @@ def specific_verdict(res: Verdict, verdict: Verdict) -> bool:
 
 # Specifies how expected str should be interpreted
 # First function must be true for all
-# Second function must be true for any/all according to scoring (min/equal)
-SUBTASK_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
+# Second function must be true for any
+TEST_SPEC: dict[str, tuple[Callable[[Verdict], bool], Callable[[Verdict], bool]]] = {
     "1": (verdict_1point, verdict_always),
     "0": (verdict_always, verdict_0points),
     "X": (verdict_always, verdict_always),

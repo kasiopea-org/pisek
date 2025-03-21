@@ -16,17 +16,18 @@
 
 import random
 from typing import cast, Any, Optional
+from hashlib import blake2b
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath, OutputPath, SanitizablePath
 from pisek.config.config_types import GenType, DataFormat
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
 from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.program import RunResultKind
-from pisek.task_jobs.data.data import InputSmall, OutputSmall
-from pisek.task_jobs.tools import IsClean
-from pisek.task_jobs.checker import CheckerJob
+from pisek.task_jobs.data.data import InputSmall, OutputSmall, LinkData
+from pisek.task_jobs.tools import IsClean, Sanitize
+from pisek.task_jobs.validator import ValidatorJob
 from pisek.task_jobs.solution.solution import RunBatchSolution
 from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
 
@@ -48,7 +49,8 @@ from .pisek_v1 import (
     PisekV1TestDeterminism,
 )
 
-SEED_RANGE = range(0, 16**8)
+SEED_BYTES = 8
+SEED_RANGE = range(0, 1 << (SEED_BYTES * 8))
 
 
 class PrepareGenerator(TaskJobManager):
@@ -59,11 +61,10 @@ class PrepareGenerator(TaskJobManager):
         super().__init__("Prepare generator")
 
     def _get_jobs(self) -> list[Job]:
-        generator = self._env.config.in_gen
-
+        assert self._env.config.in_gen is not None
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, generator),
-            list_inputs := list_inputs_job(self._env, generator),
+            compile_gen := Compile(self._env, self._env.config.in_gen_path),
+            list_inputs := list_inputs_job(self._env, self._env.config.in_gen),
         ]
         list_inputs.add_prerequisite(compile_gen)
         self._list_inputs = list_inputs
@@ -74,7 +75,7 @@ class PrepareGenerator(TaskJobManager):
         return {"inputs": self._list_inputs.result}
 
 
-def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
+def list_inputs_job(env: Env, generator: str) -> GeneratorListInputs:
     LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
@@ -85,7 +86,7 @@ def list_inputs_job(env: Env, generator: TaskPath) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
@@ -97,7 +98,7 @@ def generate_input(
 
 
 def generator_test_determinism(
-    env: Env, generator: TaskPath, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,
@@ -113,55 +114,70 @@ def generator_test_determinism(
 
 class TestcaseInfoMixin(JobManager):
     def __init__(self, name: str, **kwargs) -> None:
-        self.inputs: set[TaskPath] = set()
+        self.inputs: set[InputPath] = set()
         self._gen_inputs_job: dict[Optional[int], GenerateInput] = {}
         super().__init__(name=name, **kwargs)
 
-    def _testcase_info_jobs(
-        self, testcase_info: TestcaseInfo, subtask: int
-    ) -> list[Job]:
+    def _get_seed(self, iteration: int, testcase_info: TestcaseInfo) -> int:
+        name_hash = blake2b(digest_size=SEED_BYTES)
+        name_hash.update(
+            f"{self._env.iteration} {iteration} {testcase_info.name}".encode()
+        )
+        return int.from_bytes(name_hash.digest())
+
+    def _testcase_info_jobs(self, testcase_info: TestcaseInfo, test: int) -> list[Job]:
         seeds: list[Optional[int]]
         if testcase_info.seeded:
-            repeat = testcase_info.repeat * self._env.repeat_inputs
-            seeds = random.Random(4).sample(SEED_RANGE, repeat)  # Reproducibility!
+            seeds = []
+            for i in range(testcase_info.repeat):
+                seeds.append(self._get_seed(i, testcase_info))
         else:
-            repeat = 1
             seeds = [None]
 
         jobs: list[Job] = []
         self._gen_inputs_job = {}
 
+        skipped: bool = False
         for i, seed in enumerate(seeds):
-            if self._skip_testcase(testcase_info, seed, subtask):
+            if self._skip_testcase(testcase_info, seed, test):
+                skipped = True
+                self._register_skipped_testcase(testcase_info, seed, test)
                 continue
 
             self.inputs.add(testcase_info.input_path(self._env, seed))
 
-            inp_jobs = self._generate_input_jobs(testcase_info, seed, subtask, i == 0)
-            out_jobs = self._solution_jobs(testcase_info, seed, subtask)
+            inp_jobs = self._generate_input_jobs(testcase_info, seed, test, i == 0)
+            out_jobs = self._solution_jobs(testcase_info, seed, test)
             if seed in self._gen_inputs_job and len(out_jobs) > 0:
                 out_jobs[0].add_prerequisite(self._gen_inputs_job[seed])
 
             jobs += inp_jobs + out_jobs
 
-        if self._env.config.checks.generator_respects_seed and testcase_info.seeded:
+        if (
+            self._env.config.checks.generator_respects_seed
+            and testcase_info.seeded
+            and not skipped
+        ):
             jobs += self._respects_seed_jobs(
-                testcase_info, cast(list[int], seeds), subtask
+                testcase_info, cast(list[int], seeds), test
             )
         return jobs
 
     def _skip_testcase(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> bool:
-        return not self._env.config.subtasks[subtask].new_in_subtask(
-            testcase_info.input_path(self._env, seed).name
-        )
+        return testcase_info.input_path(self._env, seed) in self.inputs
+
+    def _register_skipped_testcase(
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
+    ) -> None:
+        pass
 
     def _generate_input_jobs(
         self,
         testcase_info: TestcaseInfo,
         seed: Optional[int],
-        subtask: int,
+        test: int,
         test_determinism: bool,
     ) -> list[Job]:
         jobs: list[Job] = []
@@ -178,6 +194,7 @@ class TestcaseInfoMixin(JobManager):
             testcase_info.generation_mode == TestcaseGenerationMode.generated
             and test_determinism
         ):
+            assert self._env.config.in_gen is not None
             test_det = generator_test_determinism(
                 self._env, self._env.config.in_gen, testcase_info, seed
             )
@@ -185,15 +202,16 @@ class TestcaseInfoMixin(JobManager):
                 jobs.append(test_det)
                 test_det.add_prerequisite(gen_inp)
 
-        jobs += self._check_input_jobs(input_path)
+        if testcase_info.generation_mode == TestcaseGenerationMode.generated:
+            jobs += self._check_input_jobs(input_path)
 
-        if self._env.config.checker is not None and subtask > 0:
+        if self._env.config.validator is not None and test > 0:
             jobs.append(
-                check_input := CheckerJob(
+                check_input := ValidatorJob(
                     self._env,
-                    self._env.config.checker,
+                    self._env.config.validator,
                     input_path,
-                    subtask,
+                    test,
                 )
             )
             check_input.add_prerequisite(gen_inp)
@@ -203,6 +221,7 @@ class TestcaseInfoMixin(JobManager):
     def _generate_input_job(
         self, testcase_info: TestcaseInfo, seed: Optional[int]
     ) -> GenerateInput:
+        assert self._env.config.in_gen is not None
         gen_inp = generate_input(
             self._env, self._env.config.in_gen, testcase_info, seed
         )
@@ -210,30 +229,22 @@ class TestcaseInfoMixin(JobManager):
         return gen_inp
 
     def _solution_jobs(
-        self, testcase_info: TestcaseInfo, seed: Optional[int], subtask: int
+        self, testcase_info: TestcaseInfo, seed: Optional[int], test: int
     ) -> list[Job]:
         return []
 
     def _respects_seed_jobs(
-        self, testcase_info: TestcaseInfo, seeds: list[int], subtask: int
+        self, testcase_info: TestcaseInfo, seeds: list[int], test: int
     ) -> list[Job]:
         assert (
             testcase_info.generation_mode == TestcaseGenerationMode.generated
             and testcase_info.seeded
         )
 
-        if not self._env.config.subtasks[subtask].new_in_subtask(
-            testcase_info.input_path(self._env, seeds[0]).name
-        ):
-            return []
-
         jobs: list[Job] = []
 
         if len(seeds) == 1:
-            rand_gen = random.Random(5)  # Reproducibility!
-            while (seed := rand_gen.choice(SEED_RANGE)) == seeds[0]:
-                pass
-            seeds.append(seed)
+            seeds.append(seed := self._get_seed(1, testcase_info))
             jobs += [self._generate_input_job(testcase_info, seed)]
 
         jobs.append(
@@ -245,12 +256,14 @@ class TestcaseInfoMixin(JobManager):
         return jobs
 
     def _check_input_jobs(
-        self, input_path: TaskPath, prerequisite: Optional[Job] = None
+        self, input_path: InputPath, prerequisite: Optional[Job] = None
     ) -> list[Job]:
         jobs: list[Job] = []
-        if self._env.config.in_format == DataFormat.text:
-            jobs.append(input_clean := IsClean(self._env, input_path))
-            input_clean.add_prerequisite(prerequisite)
+
+        sanitize = self._sanitize_job(input_path, self._env.config.in_format)
+        if sanitize is not None:
+            jobs.append(sanitize)
+            sanitize.add_prerequisite(prerequisite)
 
         if self._env.config.limits.input_max_size != 0:
             jobs.append(input_small := InputSmall(self._env, input_path))
@@ -259,22 +272,28 @@ class TestcaseInfoMixin(JobManager):
         return jobs
 
     def _check_output_jobs(
-        self, output_path: TaskPath, prerequisite: Optional[RunBatchSolution]
+        self, output_path: OutputPath, prerequisite: Optional[Job]
     ) -> list[Job]:
         jobs: list[Job] = []
-        if self._env.config.out_format == DataFormat.text:
-            jobs.append(out_clean := IsClean(self._env, output_path))
-            if prerequisite is not None:
-                out_clean.add_prerequisite(
-                    prerequisite,
-                    condition=lambda r: r.kind == RunResultKind.OK,
-                )
+
+        sanitize = self._sanitize_job(output_path, self._env.config.out_format)
+        if sanitize is not None:
+            jobs.append(sanitize)
+            sanitize.add_prerequisite(prerequisite, name="create_source")
 
         if self._env.config.limits.output_max_size != 0:
             jobs.append(out_small := OutputSmall(self._env, output_path))
             out_small.add_prerequisite(prerequisite)
 
         return jobs
+
+    def _sanitize_job(self, path: SanitizablePath, format: DataFormat) -> Optional[Job]:
+        if format == DataFormat.text:
+            return Sanitize(self._env, path.to_raw(format), path)
+        elif format == DataFormat.strict_text:
+            return IsClean(self._env, path.to_raw(format), path)
+        else:
+            return None
 
     def _compute_result(self) -> dict[str, Any]:
         return {"inputs": list(sorted(self.inputs, key=lambda i: i.name))}

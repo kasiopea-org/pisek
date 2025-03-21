@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass, field
+import logging
 import os
 import tempfile
 from typing import Optional, Any, Union, Callable
@@ -23,11 +24,13 @@ import subprocess
 
 from pisek.config.task_config import ProgramType
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, LogPath
 from pisek.jobs.jobs import PipelineItemFailure
 from pisek.utils.text import tab
 from pisek.task_jobs.run_result import RunResultKind, RunResult
 from pisek.task_jobs.task_job import TaskJob
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -95,19 +98,19 @@ class ProgramsJob(TaskJob):
             )
         return executable
 
-    def _load_program(
+    def _load_executable(
         self,
-        program_type: ProgramType,
-        program: TaskPath,
-        args: list[str] = [],
+        executable: TaskPath,
+        args: list[str],
+        time_limit: float,
+        clock_limit: float,
+        mem_limit: int,
+        process_limit: int,
         stdin: Optional[Union[TaskPath, int]] = None,
         stdout: Optional[Union[TaskPath, int]] = None,
-        stderr: Optional[TaskPath] = None,
+        stderr: Optional[LogPath] = None,
         env={},
-    ) -> None:
-        """Adds program to execution pool."""
-        executable = self._load_compiled(program)
-
+    ):
         self._access_file(executable)
         if isinstance(stdin, TaskPath):
             self._access_file(stdin)
@@ -122,12 +125,46 @@ class ProgramsJob(TaskJob):
             ProgramPoolItem(
                 executable=executable,
                 args=args,
+                time_limit=time_limit,
+                clock_limit=clock_limit,
+                mem_limit=mem_limit,
+                process_limit=process_limit,
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,
                 env=env,
-                **self._get_limits(program_type),
             )
+        )
+
+    def _load_program(
+        self,
+        program_type: ProgramType,
+        program: str,
+        args: list[str] = [],
+        stdin: Optional[Union[TaskPath, int]] = None,
+        stdout: Optional[Union[TaskPath, int]] = None,
+        stderr: Optional[LogPath] = None,
+        env={},
+    ) -> None:
+        """Adds program to execution pool."""
+        run = self._env.config.runs[f"{program_type}_{program}"]
+        executable = self._load_compiled(run.exec)
+
+        timeout: Optional[float] = None
+        if program_type.is_solution():
+            timeout = self._env.timeout
+
+        self._load_executable(
+            executable=executable,
+            args=run.args + args,
+            time_limit=run.time_limit if timeout is None else timeout,
+            clock_limit=run.clock_limit(timeout),
+            mem_limit=run.mem_limit,
+            process_limit=run.process_limit,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
         )
 
     def _load_callback(self, callback: Callable[[subprocess.Popen], None]) -> None:
@@ -145,9 +182,9 @@ class ProgramsJob(TaskJob):
             os.close(fd)
             meta_files.append(meta_file)
 
-            running_pool.append(
-                subprocess.Popen(**pool_item.to_popen(minibox, meta_file))
-            )
+            popen = pool_item.to_popen(minibox, meta_file)
+            logger.debug("Executing './" + " ".join(popen["args"]) + "'")
+            running_pool.append(subprocess.Popen(**popen))
 
         callback_exec = False
         while True:
@@ -236,11 +273,35 @@ class ProgramsJob(TaskJob):
     def _run_program(
         self,
         program_type: ProgramType,
-        program: TaskPath,
+        program: str,
         **kwargs,
     ) -> RunResult:
         """Loads one program and runs it."""
         self._load_program(program_type, program, **kwargs)
+        return self._run_programs()[0]
+
+    def _run_tool(
+        self,
+        program: str,
+        args: list[str] = [],
+        stdin: Optional[Union[TaskPath, int]] = None,
+        stdout: Optional[Union[TaskPath, int]] = None,
+        stderr: Optional[LogPath] = None,
+        env={},
+    ) -> RunResult:
+        """Loads one program and runs it."""
+        self._load_executable(
+            TaskPath.executable_path(self._env, program),
+            args=args,
+            time_limit=300,
+            clock_limit=300,
+            mem_limit=0,
+            process_limit=1,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+        )
         return self._run_programs()[0]
 
     def _create_program_failure(self, msg: str, res: RunResult, **kwargs):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Does not generate any tests for the third subtask.
+# Does not generate any tests for the third test.
 
 import sys
 import os

@@ -164,10 +164,11 @@ The `submit` command checks which solutions have already been submitted, and won
 Once the submissions have finished evaluating, you can check the results with the `check` command:
 
 ```sh
-pisek cms check -d [dataset]
+pisek cms check (-d DATASET | -a)
 ```
 
 Set the `-d`/`--dataset` argument to the description of the dataset you're interested in.
+(Or `-a/--active-dataset` for the active dataset.)
 
 This will print out how many points each solution received, as well as how well it did on each subtask:
 
@@ -193,10 +194,11 @@ You can also generate a JSON file with details on how each solution did on each 
 To do that, simply use the `testing-log` command:
 
 ```sh
-pisek cms testing-log -d [dataset]
+pisek cms testing-log (-d DATASET | -a)
 ```
 
 Again, set the `-d`/`--dataset` argument to the description of the target dataset.
+(Or `-a/--active-dataset` for the active dataset.)
 
 The format is compatible with the file generated when running Pisek with the `--testing-log` argument.
 Note that if the submission failed for any reason, the `result` key will be set to `wrong_answer`,

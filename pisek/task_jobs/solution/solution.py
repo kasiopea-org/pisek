@@ -17,7 +17,7 @@ import time
 from typing import Optional
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath
+from pisek.utils.paths import TaskPath, InputPath
 from pisek.config.config_types import ProgramType
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
@@ -31,42 +31,51 @@ class RunSolution(ProgramsJob):
         self,
         env: Env,
         name: str,
-        solution: TaskPath,
+        solution: str,
         is_primary: bool,
         **kwargs,
     ) -> None:
         super().__init__(env=env, name=name, **kwargs)
+        self._needed_by = 1
         self.solution = solution
         self.is_primary = is_primary
 
+    def require(self):
+        self._needed_by += 1
+
+    def unrequire(self):
+        self._needed_by -= 1
+        if self._needed_by == 0:
+            self.cancel()
+        assert self._needed_by >= 0
+
     def _solution_type(self) -> ProgramType:
-        return (ProgramType.solve) if self.is_primary else (ProgramType.sec_solve)
+        return (
+            (ProgramType.primary_solution)
+            if self.is_primary
+            else (ProgramType.secondary_solution)
+        )
 
 
 class RunBatchSolution(RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: TaskPath,
+        solution: str,
         is_primary: bool,
-        input_: TaskPath,
-        output: Optional[TaskPath] = None,
+        input_: InputPath,
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Run {solution:n} on input {input_:n}",
+            name=f"Run {solution} on input {input_:n}",
             solution=solution,
             is_primary=is_primary,
             **kwargs,
         )
         self.input = input_
-        self.output = (
-            output
-            if output
-            else TaskPath.output_file(self._env, self.input.name, solution.name)
-        )
-        self.log_file = TaskPath.log_file(self._env, input_.name, self.solution.name)
+        self.output = input_.to_output().to_raw(env.config.out_format)
+        self.log_file = input_.to_log("solution")
 
     def _run(self) -> RunResult:
         return self._run_program(
@@ -78,35 +87,30 @@ class RunBatchSolution(RunSolution):
         )
 
 
-class RunCommunication(RunCMSJudge, RunSolution):
+class RunInteractive(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: TaskPath,
+        solution: str,
         is_primary: bool,
-        judge: TaskPath,
-        subtask: int,
-        input_: TaskPath,
+        judge: str,
+        test: int,
+        input_: InputPath,
         expected_verdict: Optional[Verdict] = None,
         **kwargs,
     ):
+        self.sol_log_file = input_.to_log("solution")
         super().__init__(
             env=env,
-            name=f"Run {solution:n} on input {input_:n}",
+            name=f"Run {solution} on input {input_:n}",
             judge=judge,
-            subtask=subtask,
+            test=test,
             input_=input_,
             expected_verdict=expected_verdict,
-            judge_log_file=TaskPath.log_file(
-                self._env, input_.name, f"{solution.name}.{judge.name}"
-            ),
+            judge_log_file=self.sol_log_file.to_judge_log(judge),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
-        )
-        self.solution = solution
-        self.sol_log_file = TaskPath.log_file(
-            self._env, self.input.name, self.solution.name
         )
 
     def _get_solution_run_res(self) -> RunResult:
@@ -158,4 +162,4 @@ class RunCommunication(RunCMSJudge, RunSolution):
         return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
-        return f"solution {self.solution:p} on input {self.input:p}"
+        return f"solution {self.solution} on input {self.input:p}"

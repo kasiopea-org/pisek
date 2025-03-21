@@ -53,7 +53,7 @@ The CMS batch judge format as described in the [CMS documentation](https://cms.r
 
 It is run as follows (having filenames given as arguments):
 ```
-./judge [input] [correct output] [contestant output]
+./judge <input> <correct output> <contestant output>
 ```
 
 The judge should print a relative number of points (a float between 0.0 and 1.0) to it's stdout as a single line.
@@ -65,9 +65,9 @@ There will be a warning otherwise.
 
 The opendata-v1 judge is run in this way:
 ```
-./judge [subtask] [seed] < contestant-output
+./judge <test> <seed> < contestant-output
 ```
-Where `subtask` is the inputs subtask and `seed` its generating seed.
+Where `test` is testcase's test number and `seed` testcase's generating seed.
 (The arguments are the same as were given to the `opendata-v1` generator
 this input has (probably) been generated with.)
 If the input was not generated with a seed (static or unseeded), `seed` will be `-`.

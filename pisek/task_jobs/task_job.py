@@ -20,48 +20,31 @@ import glob
 from math import ceil
 import os
 import shutil
-from typing import Any, Callable, Iterable, Literal, Optional
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    Iterable,
+    Literal,
+    Optional,
+    ParamSpec,
+    TypeVar,
+)
 
 import subprocess
 from pisek.env.env import Env
-from pisek.config.task_config import ProgramLimits
+from pisek.config.task_config import RunConfig
 from pisek.utils.paths import TaskPath
 from pisek.utils.text import tab
 from pisek.config.task_config import ProgramType
 from pisek.jobs.jobs import Job
-from pisek.task_jobs.data.testcase_info import TestcaseInfo, TestcaseGenerationMode
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class TaskHelper:
     _env: Env
-
-    def _get_limits(self, program_type: ProgramType) -> dict[str, Any]:
-        """Get execution limits for given program type."""
-        limits: ProgramLimits = getattr(self._env.config.limits, program_type.name)
-        time_limit = limits.time_limit
-
-        if program_type in (ProgramType.solve, ProgramType.sec_solve):
-            if self._env.timeout is not None:
-                time_limit = self._env.timeout
-
-        return {
-            "time_limit": time_limit,
-            "clock_limit": limits.clock_limit(time_limit),
-            "mem_limit": limits.mem_limit,
-            "process_limit": limits.process_limit,
-        }
-
-    def _get_reference_output(
-        self, testcase_info: TestcaseInfo, seed: Optional[int] = None
-    ):
-        input_path = testcase_info.input_path(self._env, seed)
-        if testcase_info.generation_mode == TestcaseGenerationMode.static:
-            return TaskPath.output_static_file(self._env, input_path.name)
-        else:
-            primary_sol = self._env.config.solutions[
-                self._env.config.primary_solution
-            ].raw_source
-            return TaskPath.output_file(self._env, input_path.name, primary_sol)
 
     def globs_to_files(
         self, globs: Iterable[str], directory: TaskPath
@@ -131,10 +114,14 @@ class TaskJob(Job, TaskHelper):
     def _file_access(files: int):
         """Adds first i args as accessed files."""
 
-        def dec(f: Callable[..., Any]) -> Callable[..., Any]:
-            def g(self, *args, **kwargs):
+        def dec(
+            f: Callable[Concatenate["TaskJob", P], T],
+        ) -> Callable[Concatenate["TaskJob", P], T]:
+            def g(self: "TaskJob", *args: P.args, **kwargs: P.kwargs) -> T:
                 for i in range(files):
-                    self._access_file(args[i])
+                    arg = args[i]
+                    assert isinstance(arg, TaskPath)
+                    self._access_file(arg)
                 return f(self, *args, **kwargs)
 
             return g
@@ -181,7 +168,24 @@ class TaskJob(Job, TaskHelper):
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
-        return os.link(filename.path, dst.path)
+
+        # os.link should follow symlinks, but doesn't:
+        # https://bugs.python.org/issue37612
+        source = filename.path
+        while os.path.islink(source):
+            source = os.readlink(source)
+
+        return os.link(source, dst.path)
+
+    @_file_access(2)
+    def _symlink_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):
+        self.make_filedirs(dst)
+        if overwrite and os.path.exists(dst.path):
+            os.remove(dst.path)
+
+        return os.symlink(
+            os.path.relpath(filename.path, os.path.dirname(dst.path)), dst.path
+        )
 
     @_file_access(2)
     def _files_equal(self, file_a: TaskPath, file_b: TaskPath) -> bool:

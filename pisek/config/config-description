@@ -1,19 +1,15 @@
 [task]
 version=
-name=
 use=
 task_type=
-scoring=
 score_precision=
-solutions_subdir=
-static_subdir=
 
 [tests]
 in_gen=
 gen_type=
 in_format=
 out_format=
-checker=
+validator=
 
 out_check=
 out_judge=
@@ -41,98 +37,187 @@ shuffle_mode=
 shuffle_ignore_case=
 #!if tests out_check=shuffle
 
-[test\d{2}]
-#!regex
-#!default all_tests
+static_subdir=
+
 name=
-points=
 in_globs=
 predecessors=
 
-[all_tests]
+[test\d{2}]
+#!regex
+#!default tests
 name=
+points=
 in_globs=
 predecessors=
 
 [solution_(.*)]
 #!regex
-#!default all_solutions
+#!default solutions
 
-source=
+run=
 primary=
 
 points=
-#!if solution_(.*) points_above=X
-#!if solution_(.*) points_below=X
-points_above=
+#!if solution_(.*) points_min=X
+#!if solution_(.*) points_max=X
+points_min=
 #!if solution_(.*) points=X
-points_below=
+points_max=
 #!if solution_(.*) points=X
 
+tests=
 subtasks=
 
-[all_solutions]
-source=
+[solutions]
+run=
 primary=
 points=
-points_above=
-points_below=
+points_min=
+points_max=
+tests=
 subtasks=
 stub=
 headers=
 
+[run]
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_gen]
+#!default run
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_gen_(.*)]
+#!regex
+#!default run_gen
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_validator]
+#!default run
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_validator_(.*)]
+#!regex
+#!default run_validator
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_solution]
+#!default run
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_primary_solution]
+#!default run_solution
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_secondary_solution]
+#!default run_solution
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_solution_(.*)]
+#!regex
+#!dynamic_default
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_judge]
+#!default run
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
+[run_judge_(.*)]
+#!regex
+#!default run_judge
+exec=
+time_limit=
+clock_mul=
+clock_min=
+mem_limit=
+process_limit=
+args=
+subdir=
+
 [limits]
-tool_time_limit=
-tool_clock_mul=
-tool_clock_min=
-tool_mem_limit=
-tool_process_limit=
-
-in_gen_time_limit=
-in_gen_clock_mul=
-in_gen_clock_min=
-in_gen_mem_limit=
-in_gen_process_limit=
-
-checker_time_limit=
-checker_clock_mul=
-checker_clock_min=
-checker_mem_limit=
-checker_process_limit=
-
-judge_time_limit=
-judge_clock_mul=
-judge_clock_min=
-judge_mem_limit=
-judge_process_limit=
-
-solve_time_limit=
-solve_clock_mul=
-solve_clock_min=
-solve_mem_limit=
-solve_process_limit=
-
-sec_solve_time_limit=
-#!default limits solve_time_limit
-sec_solve_clock_mul=
-#!default limits solve_clock_mul
-sec_solve_clock_min=
-#!default limits solve_clock_min
-sec_solve_mem_limit=
-#!default limits solve_mem_limit
-sec_solve_process_limit=
-#!default limits solve_process_limit
-
 input_max_size=
 output_max_size=
 
 [checks]
-solution_for_each_subtask=
+solution_for_each_test=
 no_unused_inputs=
-all_inputs_in_last_subtask=
+all_inputs_in_last_test=
 generator_respects_seed=
+one_input_in_each_nonsample_test=
+judge_handles_fuzzed_outputs=
 
 [cms]
+name=
 title=
 submission_format=
 time_limit=
