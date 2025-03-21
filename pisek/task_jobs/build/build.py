@@ -125,10 +125,11 @@ class Build(TaskJob):
 
         target = TaskPath(BUILD_DIR, self.build_section.program_name)
         self.make_filedirs(target)
-        shutil.copy(
-            os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR)),
-            target.path
-        )
+        built = os.path.join(WORKING_DIR, strategy(self.build_section, self._env, self._print).build(WORKING_DIR))
+        if os.path.isdir(built):
+            shutil.copytree(built, target.path)
+        else:
+            shutil.copy(built, target.path)
         self._access_file(target)
 
     def _resolve_strategy(self, sources: list[TaskPath]) -> type[BuildStrategy]:

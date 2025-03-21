@@ -639,7 +639,7 @@ class BuildConfig(BaseEnv):
     comp_args: ListStr
     # TODO: extras
     strategy: BuildStrategyName
-    # TODO: entrypoint
+    entrypoint: str
 
     headers_c: ListStr
     extra_sources_c: ListStr

@@ -45,21 +45,21 @@ class BuildStrategy(ABC):
 
     @classmethod
     @abstractmethod
-    def applicable_on_files(cls, files: list[str]) -> bool:
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
         pass
 
     @classmethod
     @abstractmethod
-    def applicable_on_directory(cls, directory: str) -> bool:
+    def applicable_on_directory(cls, build: BuildConfig, directory: str) -> bool:
         pass
 
     @classmethod
     def applicable(cls, build: BuildConfig, sources: list[str]) -> bool:
         directories = any(os.path.isdir(s) for s in sources)
         if not directories:
-            return cls.applicable_on_files(sources)
+            return cls.applicable_on_files(build, sources)
         elif len(sources) == 1:
-            return cls.applicable_on_directory(sources[0])
+            return cls.applicable_on_directory(build, sources[0])
         else:
             assert False, "Mixed files and directories"
 
@@ -133,7 +133,7 @@ class BuildStrategy(ABC):
 
 class BuildScript(BuildStrategy):
     @classmethod
-    def applicable_on_directory(cls, directory: str) -> bool:
+    def applicable_on_directory(cls, build: BuildConfig, directory: str) -> bool:
         return False
 
     def _build(self) -> str:
@@ -143,16 +143,36 @@ class BuildScript(BuildStrategy):
 
 class BuildBinary(BuildStrategy):
     @classmethod
-    def applicable_on_directory(cls, directory: str) -> bool:
+    def applicable_on_directory(cls, build: BuildConfig, directory: str) -> bool:
         return False
 
 
-class PythonSingleSource(BuildScript):
+class Python(BuildScript):
     name = BuildStrategyName.python
 
     @classmethod
-    def applicable_on_files(cls, files: list[str]) -> bool:
-        return len(files) == 1 and files[0].endswith(".py")
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
+        if not cls._all_end_with(files, [".py"]):
+            return False
+        if len(files) > 1 and build.entrypoint == "":
+            raise PipelineItemFailure(f"For multiple python files 'entrypoint' must be set (in section [{build.section_name}]).")
+        return True
+    
+    def _build(self):
+        if len(self.inputs) == 1:
+            return self._build_script(self.inputs[0])
+        else:
+            assert "run" not in self.inputs
+            if (entrypoint := self._build_section.entrypoint + ".py") in self.inputs:
+                pass
+            elif (entrypoint := self._build_section.entrypoint) in self.inputs:
+                pass
+            else:
+                raise PipelineItemFailure(f"Entrypoint '{self._build_section.entrypoint}' not in sources.")
+
+            os.rename(self._build_script(entrypoint), "run")
+            return "."
+
 
 
 class C(BuildBinary):
@@ -160,7 +180,7 @@ class C(BuildBinary):
     extra_files: list[str] = ["headers_c", "extra_sources_c"]
 
     @classmethod
-    def applicable_on_files(cls, files: list[str]) -> bool:
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
         return cls._all_end_with(files, [".h", ".c"])
 
     def _build(self) -> str:
@@ -183,7 +203,7 @@ class Cpp(BuildBinary):
     extra_files: list[str] = ["headers_cpp", "extra_sources_cpp"]
 
     @classmethod
-    def applicable_on_files(cls, files: list[str]) -> bool:
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
         return cls._all_end_with(files, [".h", ".hpp", ".cpp", ".cc"])
 
     def _build(self) -> str:
@@ -205,7 +225,7 @@ class Pascal(BuildBinary):
     name = BuildStrategyName.pascal
 
     @classmethod
-    def applicable_on_files(cls, files: list[str]) -> bool:
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
         return cls._all_end_with(files, [".pas"])
 
     def _build(self) -> str:
@@ -216,4 +236,4 @@ class Pascal(BuildBinary):
         )
 
 
-AUTO_STRATEGIES: list[type[BuildStrategy]] = [PythonSingleSource, C, Cpp, Pascal]
+AUTO_STRATEGIES: list[type[BuildStrategy]] = [Python, C, Cpp, Pascal]

@@ -91,12 +91,17 @@ class ProgramsJob(TaskJob):
     def _load_compiled(self, program: TaskPath) -> TaskPath:
         """Loads name of compiled program."""
         executable = TaskPath.executable_file(self._env, program.path)
-        if not self._file_exists(executable):
+        executable_dir = TaskPath.executable_file(self._env, os.path.join(program.path, "run"))
+
+        if self._file_exists(executable):
+            return executable
+        elif self._file_exists(executable_dir):
+            return executable_dir
+        else:
             raise PipelineItemFailure(
                 f"Program {executable:p} does not exist, "
                 f"although it should have been compiled already."
             )
-        return executable
 
     def _load_executable(
         self,
