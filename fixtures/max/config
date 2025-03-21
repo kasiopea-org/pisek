@@ -31,8 +31,15 @@ primary=yes
 [solution_solve_pascal]
 tests=@all
 
+[solution_solve_cpp]
+tests=@all
+
+
 [run_solution]
 time_limit=0.2
 
 [build_gen:gen]
 sources=gen/gen gen/random
+
+[build_solution:solve_cpp]
+sources=solve_cpp/solve.cpp solve_cpp/max.hpp
