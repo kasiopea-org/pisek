@@ -44,7 +44,7 @@ from cms.db.session import Session
 from cms.db.task import Dataset, Task
 from sqlalchemy.orm import Session as SessionType
 from sqlalchemy.exc import IntegrityError
-from os import path, makedirs
+from os import path, makedirs, symlink
 from shutil import copyfile
 
 from pisek.cms.dataset import (
@@ -200,9 +200,10 @@ def check(env: Env, args: Namespace) -> int:
 @with_env
 def export(env: Env, args: Namespace) -> int:
     testcases = generate_testcases(env)
-
     directory = args.output
-    makedirs(directory, exist_ok=True)
+
+    tests_directory = path.join(directory, "tests")
+    makedirs(tests_directory, exist_ok=True)
 
     config = env.config
     outputs_needed = config.task_type == TaskType.batch and config.judge_needs_out
@@ -217,9 +218,31 @@ def export(env: Env, args: Namespace) -> int:
             if not path.exists(output.path):
                 output = TaskPath.data_path(env, config.primary_solution, output.name)
 
-        copyfile(input.path, path.join(directory, f"{name}.in"))
+        copyfile(input.path, path.join(tests_directory, f"{name}.in"))
 
         if output is not None:
-            copyfile(output.path, path.join(directory, f"{name}.out"))
+            copyfile(output.path, path.join(tests_directory, f"{name}.out"))
+
+        for test in range(env.config.tests_count):
+            if env.config.tests[test].in_test(input.name):
+                subtask_directory = path.join(directory, "subtasks", str(test))
+                makedirs(subtask_directory, exist_ok=True)
+
+                symlink(
+                    path.relpath(
+                        path.join(tests_directory, f"{name}.in"),
+                        subtask_directory,
+                    ),
+                    path.join(subtask_directory, f"{name}.in"),
+                )
+
+                if output is not None:
+                    symlink(
+                        path.relpath(
+                            path.join(tests_directory, f"{name}.out"),
+                            subtask_directory,
+                        ),
+                        path.join(subtask_directory, f"{name}.out"),
+                    )
 
     return 0
