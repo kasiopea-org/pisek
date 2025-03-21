@@ -37,6 +37,9 @@ tests=@all
 [solution_solve_py]
 tests=@all
 
+[solution_solve_bash]
+tests=@all
+
 
 [run_solution]
 time_limit=0.2

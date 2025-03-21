@@ -91,7 +91,9 @@ class ProgramsJob(TaskJob):
     def _load_compiled(self, program: TaskPath) -> TaskPath:
         """Loads name of compiled program."""
         executable = TaskPath.executable_file(self._env, program.path)
-        executable_dir = TaskPath.executable_file(self._env, os.path.join(program.path, "run"))
+        executable_dir = TaskPath.executable_file(
+            self._env, os.path.join(program.path, "run")
+        )
 
         if self._file_exists(executable):
             return executable

@@ -155,9 +155,11 @@ class Python(BuildScript):
         if not cls._all_end_with(files, [".py"]):
             return False
         if len(files) > 1 and build.entrypoint == "":
-            raise PipelineItemFailure(f"For multiple python files 'entrypoint' must be set (in section [{build.section_name}]).")
+            raise PipelineItemFailure(
+                f"For multiple python files 'entrypoint' must be set (in section [{build.section_name}])."
+            )
         return True
-    
+
     def _build(self):
         if len(self.inputs) == 1:
             return self._build_script(self.inputs[0])
@@ -168,11 +170,20 @@ class Python(BuildScript):
             elif (entrypoint := self._build_section.entrypoint) in self.inputs:
                 pass
             else:
-                raise PipelineItemFailure(f"Entrypoint '{self._build_section.entrypoint}' not in sources.")
+                raise PipelineItemFailure(
+                    f"Entrypoint '{self._build_section.entrypoint}' not in sources."
+                )
 
             os.rename(self._build_script(entrypoint), "run")
             return "."
 
+
+class Shell(BuildScript):
+    name = BuildStrategyName.shell
+
+    @classmethod
+    def applicable_on_files(cls, build: BuildConfig, files: list[str]) -> bool:
+        return len(files) == 1 and files[0].endswith(".sh")
 
 
 class C(BuildBinary):
@@ -236,4 +247,4 @@ class Pascal(BuildBinary):
         )
 
 
-AUTO_STRATEGIES: list[type[BuildStrategy]] = [Python, C, Cpp, Pascal]
+AUTO_STRATEGIES: list[type[BuildStrategy]] = [Python, Shell, C, Cpp, Pascal]
