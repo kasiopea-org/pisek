@@ -37,7 +37,7 @@ from pisek.task_jobs.generator.manager import (
     TestcaseInfoMixin,
 )
 from pisek.task_jobs.judge import JudgeManager
-from pisek.task_jobs.build.build import BuildManager
+from pisek.task_jobs.builder.build import BuildManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck

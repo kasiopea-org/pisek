@@ -27,7 +27,7 @@ from pisek.jobs.jobs import Job, PipelineItemFailure
 from pisek.task_jobs.task_job import TaskJob
 from pisek.task_jobs.task_manager import TaskJobManager
 
-from pisek.task_jobs.build.strategies import (
+from pisek.task_jobs.builder.strategies import (
     BuildStrategy,
     AUTO_STRATEGIES,
     ALL_STRATEGIES,
