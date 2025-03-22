@@ -169,9 +169,21 @@ class TaskJob(Job, TaskHelper):
         return len(content.strip()) > 0
 
     @_file_access(2)
-    def _copy_file(self, filename: TaskPath, dst: TaskPath):
+    def _copy_file(self, filename: TaskPath, dst: TaskPath) -> None:
         self.make_filedirs(dst)
-        return shutil.copy(filename.path, dst.path)
+        shutil.copy(filename.path, dst.path)
+
+    def _copy_dir(self, path: TaskPath, dst: TaskPath) -> None:
+        self.make_filedirs(dst)
+        shutil.copytree(path.path, dst.path)
+        self._access_dir(path)
+        self._access_dir(dst)
+
+    def _copy_target(self, path: TaskPath, dst: TaskPath):
+        if self._is_dir(path):
+            self._copy_dir(path, dst)
+        else:
+            self._copy_file(path, dst)
 
     @_file_access(2)
     def _rename_file(self, filename: TaskPath, dst: TaskPath) -> None:
