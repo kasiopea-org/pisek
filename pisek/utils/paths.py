@@ -70,6 +70,9 @@ class TaskPath:
         else:
             return False
 
+    def __lt__(self, other_path: "TaskPath") -> bool:
+        return self.path < other_path.path
+
     def col(self, env: "Env") -> str:
         return env.colored(
             self.path + ("/" if os.path.isdir(self.path) else ""), "magenta"
