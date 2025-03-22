@@ -49,6 +49,10 @@ class ConfigValue:
     key: Optional[str]
     internal: bool = False
 
+    @staticmethod
+    def make_internal(value: str, section: str, key: Optional[str] = None):
+        return ConfigValue(value, "_internal", section, key, True)
+
     def location(self) -> str:
         text = f"section [{self.section}]"
         if self.key is not None:
@@ -60,6 +64,12 @@ class ConfigValue:
             text += f" (in config file {os.path.abspath(self.config)})"
 
         return text
+
+    def split(self, sep: Optional[str] = None) -> list["ConfigValue"]:
+        return [
+            ConfigValue(part, self.config, self.section, self.key, self.internal)
+            for part in self.value.split(sep=sep)
+        ]
 
 
 class ConfigHierarchy:
@@ -210,6 +220,23 @@ class ConfigHierarchy:
                         + (f" in section [{r_section}]" if section != r_section else "")
                         + "?)"
                     )
+
+    def check_duplicate_builds(self) -> None:
+        sections: dict[str, str] = {}
+        for config in self._configs:
+            for section in config.sections():
+                if section.startswith("build") and ":" in section:
+                    _, program = section.split(":", 1)
+                    if program in sections:
+                        raise TaskConfigError(
+                            f"Duplicate build sections [{section}] and [{sections[program]}]."
+                            "Colliding suffixes are not allowed."
+                        )
+                    sections[program] = section
+
+    def check_all(self) -> None:
+        self.check_unused_keys()
+        self.check_duplicate_builds()
 
     def check_todos(self) -> bool:
         """Check whether lowest config contains TODO in comments."""

@@ -60,6 +60,22 @@ class ProgramType(StrEnum):
     def is_solution(self) -> bool:
         return self in (ProgramType.primary_solution, ProgramType.secondary_solution)
 
+    @property
+    def build_name(self) -> str:
+        if self.is_solution():
+            return "solution"
+        else:
+            return self.name
+
+
+class BuildStrategyName(StrEnum):
+    python = auto()
+    shell = auto()
+    c = auto()
+    cpp = auto()
+    pascal = auto()
+    auto = auto()
+
 
 class CMSFeedbackLevel(StrEnum):
     full = auto()

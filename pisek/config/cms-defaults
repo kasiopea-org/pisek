@@ -29,8 +29,6 @@ points=X
 points_min=X
 points_max=X
 tests=@auto
-stub=
-headers=
 
 [run]
 exec=@auto
@@ -67,3 +65,6 @@ min_submission_interval=0
 
 score_mode=max_subtask
 feedback_level=restricted
+
+stub=
+headers=

@@ -41,6 +41,7 @@ class CacheEntry:
         result: Any,
         envs: Iterable[tuple[str, ...]],
         files: Iterable[str],
+        globs: Iterable[str],
         prerequisites_results: Iterable[str],
         output: list[tuple[str, bool]],
     ) -> None:
@@ -50,13 +51,14 @@ class CacheEntry:
         self.prerequisites_results = list(sorted(prerequisites_results))
         self.envs = list(sorted(envs))
         self.files = list(sorted(files))
+        self.globs = list(sorted(globs))
         self.output = output
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(name={self.name}, signature={self.signature}, "
             f"result={self.result}, prerequisites_results={self.prerequisites_results}, "
-            f"envs={self.envs}, files={self.files}, output={self.output})"
+            f"envs={self.envs}, files={self.files}, globs={self.globs}, output={self.output})"
         )
 
 
@@ -106,7 +108,7 @@ class Cache:
             -SAVED_LAST_SIGNATURES:
         ]
 
-        # Throttling saving saves time massively
+        # Throttling saves time massively
         if time.time() - self.last_save > CACHE_SAVE_INTERVAL:
             self.export()
 

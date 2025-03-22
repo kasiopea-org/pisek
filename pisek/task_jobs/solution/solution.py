@@ -17,8 +17,9 @@ import time
 from typing import Optional
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, InputPath
+from pisek.utils.paths import InputPath
 from pisek.config.config_types import ProgramType
+from pisek.config.task_config import RunConfig
 from pisek.task_jobs.program import RunResult, ProgramsJob
 from pisek.task_jobs.solution.solution_result import Verdict, SolutionResult
 from pisek.task_jobs.judge import RunCMSJudge
@@ -31,7 +32,7 @@ class RunSolution(ProgramsJob):
         self,
         env: Env,
         name: str,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
         **kwargs,
     ) -> None:
@@ -61,14 +62,14 @@ class RunBatchSolution(RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
         input_: InputPath,
         **kwargs,
     ) -> None:
         super().__init__(
             env=env,
-            name=f"Run {solution} on input {input_:n}",
+            name=f"Run {solution.name} on input {input_:n}",
             solution=solution,
             is_primary=is_primary,
             **kwargs,
@@ -91,9 +92,9 @@ class RunInteractive(RunCMSJudge, RunSolution):
     def __init__(
         self,
         env: Env,
-        solution: str,
+        solution: RunConfig,
         is_primary: bool,
-        judge: str,
+        judge: RunConfig,
         test: int,
         input_: InputPath,
         expected_verdict: Optional[Verdict] = None,
@@ -102,12 +103,12 @@ class RunInteractive(RunCMSJudge, RunSolution):
         self.sol_log_file = input_.to_log("solution")
         super().__init__(
             env=env,
-            name=f"Run {solution} on input {input_:n}",
+            name=f"Run {solution.name} on input {input_:n}",
             judge=judge,
             test=test,
             input_=input_,
             expected_verdict=expected_verdict,
-            judge_log_file=self.sol_log_file.to_judge_log(judge),
+            judge_log_file=self.sol_log_file.to_judge_log(judge.name),
             solution=solution,
             is_primary=is_primary,
             **kwargs,
@@ -162,4 +163,4 @@ class RunInteractive(RunCMSJudge, RunSolution):
         return self._load_solution_result(self._judge_run_result)
 
     def _judging_message(self) -> str:
-        return f"solution {self.solution} on input {self.input:p}"
+        return f"solution {self.solution.name} on input {self.input:p}"

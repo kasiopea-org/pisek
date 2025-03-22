@@ -14,45 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pisek.jobs.jobs import State, Job, PipelineItemFailure
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, InputPath
-from pisek.config.task_config import ProgramType
-from pisek.task_jobs.task_manager import TaskJobManager
+from pisek.utils.paths import InputPath
+from pisek.config.task_config import ProgramType, RunConfig
 from pisek.task_jobs.run_result import RunResult, RunResultKind
 from pisek.task_jobs.program import ProgramsJob
-from pisek.task_jobs.compile import Compile
-
-
-class ValidatorManager(TaskJobManager):
-    """Runs validator on inputs."""
-
-    def __init__(self):
-        self.skipped_validator = ""
-        super().__init__("Prepare validator")
-
-    def _get_jobs(self) -> list[Job]:
-        if self._env.config.validator is None:
-            if self._env.strict:
-                raise PipelineItemFailure("No validator specified in config.")
-            else:
-                self.skipped_validator = self._colored(
-                    "Warning: No validator specified in config.\n"
-                    "It is recommended to set `validator` is section [tests]",
-                    "yellow",
-                )
-            return []
-
-        return [Compile(self._env, self._env.config.validator_path)]
-
-    def _get_status(self) -> str:
-        if self.skipped_validator:
-            if self.state == State.succeeded:
-                return self.skipped_validator
-            else:
-                return ""
-        else:
-            return super()._get_status()
 
 
 class ValidatorJob(ProgramsJob):
@@ -61,7 +27,7 @@ class ValidatorJob(ProgramsJob):
     def __init__(
         self,
         env: Env,
-        validator: str,
+        validator: RunConfig,
         input_: InputPath,
         test: int,
         **kwargs,
@@ -70,7 +36,7 @@ class ValidatorJob(ProgramsJob):
         self.validator = validator
         self.test = test
         self.input = input_
-        self.log_file = input_.to_log(f"{validator}{test}")
+        self.log_file = input_.to_log(f"{validator.name}{test}")
 
     def _validate(self) -> RunResult:
         return self._run_program(

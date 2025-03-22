@@ -1,0 +1,55 @@
+# Pisek fixture
+# Source: $(pisek)/docs/config-v3-documentation for more information
+
+[task]
+version=v3
+
+[tests]
+in_gen=gen
+gen_type=pisek-v1
+# validator=validate
+
+out_check=judge
+# judge source file
+out_judge=solve_judge
+judge_type=cms-batch
+judge_needs_in=1
+judge_needs_out=0
+
+[test01]
+points=1
+in_globs=*.in
+predecessors=0
+
+[checks]
+solution_for_each_test=on
+all_inputs_in_last_test=on
+
+[solution_solve_judge]
+primary=yes
+
+[solution_solve_pascal]
+tests=@all
+
+[solution_solve_cpp]
+tests=@all
+
+[solution_solve_py]
+tests=@all
+
+[solution_solve_bash]
+tests=@all
+
+
+[run_solution]
+time_limit=0.2
+
+[build_gen:gen]
+sources=gen/gen gen/random
+
+[build_solution:solve_cpp]
+sources=solve_cpp/solve.cpp solve_cpp/max.hpp
+
+[build_solution:solve_py]
+sources=solve_py/solve solve_py/lib
+entrypoint=solve

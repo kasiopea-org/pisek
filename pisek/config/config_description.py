@@ -162,6 +162,8 @@ class ConfigKeysHelper:
                     )
                     self.sections[section.section] = section
 
+                elif line.startswith("#"):
+                    pass
                 else:
                     raise ValueError(f"invalid config-description line: '{line}'")
 

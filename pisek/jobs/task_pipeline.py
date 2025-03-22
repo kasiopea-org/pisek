@@ -22,8 +22,8 @@ from pisek.utils.paths import InputPath
 from pisek.task_jobs.task_manager import (
     TOOLS_MAN_CODE,
     INPUTS_MAN_CODE,
+    BUILD_MAN_CODE,
     GENERATOR_MAN_CODE,
-    VALIDATOR_MAN_CODE,
     JUDGE_MAN_CODE,
     SOLUTION_MAN_CODE,
 )
@@ -36,8 +36,8 @@ from pisek.task_jobs.generator.manager import (
     RunGenerator,
     TestcaseInfoMixin,
 )
-from pisek.task_jobs.validator import ValidatorManager
 from pisek.task_jobs.judge import JudgeManager
+from pisek.task_jobs.builder.build import BuildManager
 from pisek.task_jobs.solution.manager import SolutionManager
 from pisek.task_jobs.testing_log import CreateTestingLog
 from pisek.task_jobs.completeness_check import CompletenessCheck
@@ -49,20 +49,18 @@ class TaskPipeline(JobPipeline):
     def __init__(self, env: Env):
         super().__init__()
         named_pipeline: list[tuple[JobManager, str]] = [
-            tools := (ToolsManager(), TOOLS_MAN_CODE)
+            tools := (ToolsManager(), TOOLS_MAN_CODE),
+            build := (BuildManager(), BUILD_MAN_CODE),
         ]
+        build[0].add_prerequisite(*tools)
         if env.config.in_gen is not None:
             named_pipeline.append(generator := (PrepareGenerator(), GENERATOR_MAN_CODE))
-        named_pipeline += [
-            validator := (ValidatorManager(), VALIDATOR_MAN_CODE),
-            inputs := (DataManager(), INPUTS_MAN_CODE),
-        ]
+            generator[0].add_prerequisite(*build)
+        named_pipeline.append(inputs := (DataManager(), INPUTS_MAN_CODE))
 
+        inputs[0].add_prerequisite(*build)
         if env.config.in_gen is not None:
-            generator[0].add_prerequisite(*tools)
             inputs[0].add_prerequisite(*generator)
-        validator[0].add_prerequisite(*tools)
-        inputs[0].add_prerequisite(*validator)
 
         solutions = []
         self.input_generator: TestcaseInfoMixin
@@ -77,26 +75,22 @@ class TaskPipeline(JobPipeline):
             judge[0].add_prerequisite(*inputs)
 
             # First solution generates inputs
-            first_solution_name = (
-                env.config.primary_solution
-                if env.config.judge_needs_out
-                or env.config.primary_solution in env.solutions
-                else env.solutions[0]
+            assert (
+                not env.config.judge_needs_out
+                or env.solutions[0] == env.config.primary_solution
             )
 
             named_pipeline.append(
                 first_solution := (
-                    SolutionManager(first_solution_name, True),
-                    f"{SOLUTION_MAN_CODE}{first_solution_name}",
+                    SolutionManager(env.solutions[0], True),
+                    f"{SOLUTION_MAN_CODE}{env.solutions[0]}",
                 )
             )
             solutions.append(first_solution)
             first_solution[0].add_prerequisite(*judge)
             self.input_generator = first_solution[0]
 
-            for sol_name in env.solutions:
-                if sol_name == first_solution_name:
-                    continue
+            for sol_name in env.solutions[1:]:
                 named_pipeline.append(
                     solution := (
                         SolutionManager(sol_name, False),

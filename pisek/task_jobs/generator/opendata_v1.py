@@ -14,7 +14,8 @@ from typing import Optional
 
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
-from pisek.utils.paths import TaskPath, InputPath, OutputPath
+from pisek.config.task_config import RunConfig
+from pisek.utils.paths import InputPath
 from pisek.task_jobs.program import ProgramsJob, RunResultKind
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
 
@@ -24,7 +25,7 @@ from .base_classes import GeneratorListInputs, GenerateInput, GeneratorTestDeter
 class OpendataV1ListInputs(GeneratorListInputs):
     """Lists all inputs for opendata-v1 generator - one for each test."""
 
-    def __init__(self, env: Env, generator: str, **kwargs) -> None:
+    def __init__(self, env: Env, generator: RunConfig, **kwargs) -> None:
         super().__init__(env=env, generator=generator, **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
@@ -38,7 +39,7 @@ class OpendataV1ListInputs(GeneratorListInputs):
 class OpendataV1GeneratorJob(ProgramsJob):
     """Abstract class for jobs with OnlineGenerator."""
 
-    generator: str
+    generator: RunConfig
     seed: Optional[int]
     testcase_info: TestcaseInfo
     input_path: InputPath
@@ -58,11 +59,11 @@ class OpendataV1GeneratorJob(ProgramsJob):
             self.generator,
             args=[str(test), f"{self.seed:016x}"],
             stdout=self.input_path.to_raw(self._env.config.in_format),
-            stderr=self.input_path.to_log(self.generator),
+            stderr=self.input_path.to_log(self.generator.name),
         )
         if result.kind != RunResultKind.OK:
             raise self._create_program_failure(
-                f"{self.generator} failed on test {test}, seed {self.seed:016x}:",
+                f"{self.generator.name} failed on test {test}, seed {self.seed:016x}:",
                 result,
             )
 

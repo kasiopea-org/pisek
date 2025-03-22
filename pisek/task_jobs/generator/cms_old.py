@@ -15,6 +15,7 @@ import shutil
 
 from pisek.env.env import Env
 from pisek.config.config_types import ProgramType
+from pisek.config.task_config import RunConfig
 from pisek.utils.paths import TaskPath, LogPath
 from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.testcase_info import TestcaseInfo
@@ -25,7 +26,7 @@ from .base_classes import GeneratorListInputs, GenerateInput
 class CmsOldListInputs(GeneratorListInputs):
     """Lists all inputs for cms-old generator - by running it."""
 
-    def __init__(self, env: Env, generator: str, **kwargs) -> None:
+    def __init__(self, env: Env, generator: RunConfig, **kwargs) -> None:
         super().__init__(env, generator, name="Run generator", **kwargs)
 
     def _run(self) -> list[TestcaseInfo]:
@@ -41,18 +42,18 @@ class CmsOldListInputs(GeneratorListInputs):
             ProgramType.gen,
             self.generator,
             args=[gen_dir.path],
-            stderr=LogPath.generator_log(self.generator),
+            stderr=LogPath.generator_log(self.generator.name),
         )
-        self._access_file(gen_dir)
+        self._access_dir(gen_dir)
 
         if run_result.kind != RunResultKind.OK:
             raise self._create_program_failure("Generator failed:", run_result)
 
         testcases = []
-        for inp in os.listdir(TaskPath.generated_path(self._env, ".").path):
-            if inp.endswith(".in"):
+        for inp in self._globs_to_files(["*"], TaskPath.generated_path(self._env, ".")):
+            if inp.path.endswith(".in"):
                 testcases.append(
-                    TestcaseInfo.generated(inp.removesuffix(".in"), seeded=False)
+                    TestcaseInfo.generated(inp.path.removesuffix(".in"), seeded=False)
                 )
         return testcases
 
@@ -61,7 +62,7 @@ class CmsOldGenerate(GenerateInput):
     def __init__(
         self,
         env: Env,
-        generator: str,
+        generator: RunConfig,
         testcase_info: TestcaseInfo,
         seed: int,
         **kwargs,

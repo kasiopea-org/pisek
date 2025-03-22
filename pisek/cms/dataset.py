@@ -47,13 +47,13 @@ def create_dataset(
     if config.task_type == TaskType.batch:
         task_type = "Batch"
         task_params = (
-            "grader" if config.stub is not None else "alone",
+            "grader" if config.cms.stub is not None else "alone",
             ("", ""),
             "comparator" if config.out_check == OutCheck.judge else "diff",
         )
     elif config.task_type == TaskType.interactive:
         task_type = "Communication"
-        task_params = (1, "stub" if config.stub is not None else "alone", "std_io")
+        task_params = (1, "stub" if config.cms.stub is not None else "alone", "std_io")
     else:
         raise RuntimeError(f"Cannot upload {config.task_type} task to CMS")
 
@@ -138,7 +138,7 @@ def add_judge(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 
     assert config.out_judge is not None
 
-    run_section = config.runs[f"judge_{config.out_judge}"]
+    run_section = config.out_judge
     judge_path = TaskPath.executable_path(
         env, path.splitext(run_section.exec.name)[0]
     ).path
@@ -169,7 +169,7 @@ ERROR_STUBS = {
 def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     config = env.config
 
-    if config.stub is None:
+    if config.cms.stub is None:
         return
 
     if config.task_type == TaskType.batch:
@@ -177,7 +177,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     elif config.task_type == TaskType.interactive:
         stub_basename = "stub"
 
-    directory, target_basename = path.split(config.stub.path)
+    directory, target_basename = path.split(config.cms.stub.path)
     directory = path.normpath(directory)
 
     exts = set()
@@ -213,7 +213,7 @@ def add_stubs(session: Session, files: FileCacher, env: Env, dataset: Dataset):
 def add_headers(session: Session, files: FileCacher, env: Env, dataset: Dataset):
     config = env.config
 
-    for header in config.headers:
+    for header in config.cms.headers:
         name = header.name
         header = files.put_file_from_path(
             header.path, f"Header {name} for {config.cms.name}"

@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import random
 from typing import cast, Any, Optional
 from hashlib import blake2b
 
 from pisek.env.env import Env
-from pisek.utils.paths import TaskPath, InputPath, OutputPath, SanitizablePath
+from pisek.utils.paths import InputPath, OutputPath, SanitizablePath
 from pisek.config.config_types import GenType, DataFormat
+from pisek.config.task_config import RunConfig
 from pisek.jobs.jobs import Job, JobManager
 from pisek.task_jobs.task_manager import TaskJobManager
-from pisek.task_jobs.compile import Compile
 from pisek.task_jobs.program import RunResultKind
 from pisek.task_jobs.data.data import InputSmall, OutputSmall, LinkData
 from pisek.task_jobs.tools import IsClean, Sanitize
@@ -63,10 +62,8 @@ class PrepareGenerator(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         assert self._env.config.in_gen is not None
         jobs: list[Job] = [
-            compile_gen := Compile(self._env, self._env.config.in_gen_path),
             list_inputs := list_inputs_job(self._env, self._env.config.in_gen),
         ]
-        list_inputs.add_prerequisite(compile_gen)
         self._list_inputs = list_inputs
 
         return jobs
@@ -75,7 +72,7 @@ class PrepareGenerator(TaskJobManager):
         return {"inputs": self._list_inputs.result}
 
 
-def list_inputs_job(env: Env, generator: str) -> GeneratorListInputs:
+def list_inputs_job(env: Env, generator: RunConfig) -> GeneratorListInputs:
     LIST_INPUTS: dict[GenType, type[GeneratorListInputs]] = {
         GenType.opendata_v1: OpendataV1ListInputs,
         GenType.cms_old: CmsOldListInputs,
@@ -86,7 +83,7 @@ def list_inputs_job(env: Env, generator: str) -> GeneratorListInputs:
 
 
 def generate_input(
-    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: RunConfig, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> GenerateInput:
     return {
         GenType.opendata_v1: OpendataV1Generate,
@@ -98,7 +95,7 @@ def generate_input(
 
 
 def generator_test_determinism(
-    env: Env, generator: str, testcase_info: TestcaseInfo, seed: Optional[int]
+    env: Env, generator: RunConfig, testcase_info: TestcaseInfo, seed: Optional[int]
 ) -> Optional[GeneratorTestDeterminism]:
     TEST_DETERMINISM = {
         GenType.opendata_v1: OpendataV1TestDeterminism,

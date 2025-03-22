@@ -80,7 +80,10 @@ subtasks=
 stub=
 headers=
 
+# -------------- runs --------------
+
 [run]
+build=
 exec=
 time_limit=
 clock_mul=
@@ -92,6 +95,7 @@ subdir=
 
 [run_gen]
 #!default run
+build=
 exec=
 time_limit=
 clock_mul=
@@ -101,9 +105,10 @@ process_limit=
 args=
 subdir=
 
-[run_gen_(.*)]
+[run_gen:(.*)]
 #!regex
 #!default run_gen
+build=
 exec=
 time_limit=
 clock_mul=
@@ -115,6 +120,7 @@ subdir=
 
 [run_validator]
 #!default run
+build=
 exec=
 time_limit=
 clock_mul=
@@ -124,9 +130,10 @@ process_limit=
 args=
 subdir=
 
-[run_validator_(.*)]
+[run_validator:(.*)]
 #!regex
 #!default run_validator
+build=
 exec=
 time_limit=
 clock_mul=
@@ -138,6 +145,7 @@ subdir=
 
 [run_solution]
 #!default run
+build=
 exec=
 time_limit=
 clock_mul=
@@ -149,6 +157,7 @@ subdir=
 
 [run_primary_solution]
 #!default run_solution
+build=
 exec=
 time_limit=
 clock_mul=
@@ -160,6 +169,7 @@ subdir=
 
 [run_secondary_solution]
 #!default run_solution
+build=
 exec=
 time_limit=
 clock_mul=
@@ -169,9 +179,10 @@ process_limit=
 args=
 subdir=
 
-[run_solution_(.*)]
+[run_solution:(.*)]
 #!regex
 #!dynamic_default
+build=
 exec=
 time_limit=
 clock_mul=
@@ -183,6 +194,7 @@ subdir=
 
 [run_judge]
 #!default run
+build=
 exec=
 time_limit=
 clock_mul=
@@ -192,9 +204,10 @@ process_limit=
 args=
 subdir=
 
-[run_judge_(.*)]
+[run_judge:(.*)]
 #!regex
 #!default run_judge
+build=
 exec=
 time_limit=
 clock_mul=
@@ -203,6 +216,141 @@ mem_limit=
 process_limit=
 args=
 subdir=
+
+# -------------- builds--------------
+[build]
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build:(.*)]
+#!regex
+#!default build
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_gen]
+#!default build
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_gen:(.*)]
+#!regex
+#!default build_gen
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_validator]
+#!default build
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_validator:(.*)]
+#!regex
+#!default build_validator
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_solution]
+#!default build
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_solution:(.*)]
+#!regex
+#!default build_solution
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_judge]
+#!default build
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
+
+[build_judge:(.*)]
+#!regex
+#!default build_judge
+sources=
+comp_args=
+extras=
+entrypoint=
+strategy=
+
+headers_c=
+extra_sources_c=
+headers_cpp=
+extra_sources_cpp=
 
 [limits]
 input_max_size=
@@ -226,3 +374,6 @@ max_submissions=
 min_submission_interval=
 score_mode=
 feedback_level=
+
+stub=
+headers=
