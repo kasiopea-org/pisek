@@ -136,9 +136,10 @@ def resolve_solution(
     sources = solution.run.build.sources
     if len(sources) != 1:
         raise RuntimeError(
-            "For CMS import there must be exactly one source:\n  " + " ".join(sources)
+            "For CMS import there must be exactly one source:\n  "
+            + " ".join(map(lambda p: p.col(env), sources))
         )
-    source: TaskPath = TaskPath(sources[0])
+    source: TaskPath = sources[0]
 
     for language_name in contest.languages:
         language: Language = get_language(language_name)

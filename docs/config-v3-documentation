@@ -314,7 +314,7 @@ comp_args=
 # Additional compiler arguments, appended to the end
 # Defaults to empty
 extras=
-# TODO
+# Additional files to be copied to the build directory
 entrypoint=
 # For building some executables (e.g. python), entrypoint is needed.
 # Defaults to empty

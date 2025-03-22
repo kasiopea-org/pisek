@@ -83,60 +83,71 @@ class Build(TaskJob):
         super().__init__(env=env, name=f"Build {build_section.program_name}", **kwargs)
         self.build_section = build_section
 
-    def _resolve_glob(self, glob: str) -> list[TaskPath]:
-        result = self._globs_to_files([f"{glob}.*", glob], TaskPath("."))
+    def _resolve_program(self, glob: TaskPath) -> set[TaskPath]:
+        result = self._globs_to_files([f"{glob.path}.*", glob.path], TaskPath("."))
         if len(result) == 0:
-            raise PipelineItemFailure(f"No paths matching '{glob}'.")
-        return result
+            raise PipelineItemFailure(f"No paths found for {glob.col(self._env)}.")
+        return set(result)
 
-    def _run(self) -> None:
-        sources: list[TaskPath] = []
-        for part in self.build_section.sources:
-            part_sources = self._resolve_glob(part)
-            for s in part_sources:
-                if s not in sources:
-                    sources.append(s)
-
-        if any(map(lambda p: os.path.isdir(p.path), sources)) and any(
-            map(lambda p: os.path.isfile(p.path), sources)
-        ):
+    def _check_nonmixed_sources(self, sources: set[TaskPath]) -> None:
+        if any(map(self._is_dir, sources)) and any(map(self._is_file, sources)):
             raise PipelineItemFailure(
                 f"Mixed files and directories for sources:\n"
-                + tab(self._path_list(sources))
+                + tab(self._path_list(list(sorted(sources))))
             )
+
+    def _strategy_sources(
+        self, strategy: type[BuildStrategy], sources: set[TaskPath]
+    ) -> set[TaskPath]:
+        new_sources = set()
+        if strategy.extra_sources is not None:
+            for part in getattr(self.build_section, strategy.extra_sources):
+                new_sources |= self._resolve_program(part)
+        return sources | new_sources
+
+    def _strategy_extras(
+        self, strategy: type[BuildStrategy], extras: set[TaskPath]
+    ) -> set[TaskPath]:
+        new_extras = set()
+        if strategy.extra_nonsources is not None:
+            new_extras = set(getattr(self.build_section, strategy.extra_nonsources))
+        return extras | new_extras
+
+    def _run(self) -> None:
+        sources: set[TaskPath] = set()
+        extras: set[TaskPath] = set(self.build_section.extras)
+        for part in self.build_section.sources:
+            sources |= self._resolve_program(part)
+        self._check_nonmixed_sources(sources)
 
         if self.build_section.strategy == BuildStrategyName.auto:
             strategy = self._resolve_strategy(sources)
         else:
             strategy = ALL_STRATEGIES[self.build_section.strategy]
 
-        for extra in strategy.extra_files:
-            for part in getattr(self.build_section, extra):
-                new_sources = self._resolve_glob(part)
-                for source in new_sources:
-                    if os.path.isdir(source.path):
-                        raise PipelineItemFailure(
-                            f"{extra} matched directory '{source}'."
-                        )
-                sources += new_sources
+        sources = self._strategy_sources(strategy, sources)
+        extras = self._strategy_extras(strategy, extras)
+        self._check_nonmixed_sources(sources)
 
         if self._env.verbosity >= 1:
-            self._print(
-                self._colored(
-                    tab(
-                        f"Building '{self.build_section.program_name}' using build strategy '{strategy.name}'."
-                    ),
-                    "magenta",
-                )
-            )
+            msg = f"Building '{self.build_section.program_name}' using build strategy '{strategy.name}'."
+            self._print(self._colored(tab(msg), "magenta"))
 
         if os.path.exists(WORKING_DIR):
             shutil.rmtree(WORKING_DIR)
         os.makedirs(WORKING_DIR, exist_ok=True)
 
-        for source in sources:
-            shutil.copy(source.path, os.path.join(WORKING_DIR, source.name))
-            self._access_file(source)
+        for path in sources | extras:
+            # Intentionally avoiding caching results
+            dst = os.path.join(WORKING_DIR, path.name)
+            if self._is_dir(path):
+                shutil.copytree(path.path, dst)
+                self._access_dir(path)
+            elif self._is_file(path):
+                shutil.copy(path.path, dst)
+                self._access_file(path)
+            else:
+                raise PipelineItemFailure(f"No path {path.col(self._env)} exists.")
 
         target = TaskPath(BUILD_DIR, self.build_section.program_name)
         self.make_filedirs(target)
@@ -147,8 +158,13 @@ class Build(TaskJob):
 
         built = os.path.join(
             WORKING_DIR,
-            strategy(self.build_section, self._env, self._print).build(WORKING_DIR),
+            strategy(self.build_section, self._env, self._print).build(
+                WORKING_DIR,
+                list(map(lambda p: p.name, sources)),
+                list(map(lambda p: p.name, extras)),
+            ),
         )
+        # Intentionally avoiding caching sources
         if os.path.isdir(built):
             shutil.copytree(built, target.path)
             self._access_dir(target)
@@ -156,17 +172,18 @@ class Build(TaskJob):
             shutil.copy(built, target.path)
             self._access_file(target)
 
-    def _resolve_strategy(self, sources: list[TaskPath]) -> type[BuildStrategy]:
+    def _resolve_strategy(self, sources: set[TaskPath]) -> type[BuildStrategy]:
         applicable = []
         for strategy in AUTO_STRATEGIES:
+            strat_sources = self._strategy_sources(strategy, sources)
             if strategy.applicable(
-                self.build_section, list(map(lambda p: p.path, sources))
+                self.build_section, list(map(lambda p: p.path, strat_sources))
             ):
                 applicable.append(strategy)
         if len(applicable) == 0:
             raise PipelineItemFailure(
                 f"No applicable build strategy for [{self.build_section.section_name}] with sources:\n"
-                + tab(self._path_list(sources))
+                + tab(self._path_list(list(sorted(sources))))
             )
         elif len(applicable) >= 2:
             names = " ".join(s.name for s in applicable)

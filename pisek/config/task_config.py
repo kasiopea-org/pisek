@@ -635,16 +635,16 @@ class RunConfig(BaseEnv):
 class BuildConfig(BaseEnv):
     section_name: str
 
-    sources: ListStr
+    sources: ListTaskPathFromStr
     comp_args: ListStr
-    # TODO: extras
+    extras: ListTaskPathFromStr
     strategy: BuildStrategyName
     entrypoint: str
 
-    headers_c: ListStr
-    extra_sources_c: ListStr
-    headers_cpp: ListStr
-    extra_sources_cpp: ListStr
+    headers_c: ListTaskPathFromStr
+    extra_sources_c: ListTaskPathFromStr
+    headers_cpp: ListTaskPathFromStr
+    extra_sources_cpp: ListTaskPathFromStr
 
     @property
     def program_name(self) -> str:
