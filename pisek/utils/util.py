@@ -55,8 +55,9 @@ def clean_task_dir(task_dir: str, pisek_directory: Optional[str]) -> bool:
 
 
 def clean_non_relevant_files(accessed_files: set[str]) -> None:
+    accessed_dirs = {os.path.dirname(file) for file in accessed_files}
     for root, _, files in os.walk(TESTS_DIR):
         for file in files:
             path = os.path.join(root, file)
-            if path not in accessed_files:
+            if root in accessed_dirs and path not in accessed_files:
                 os.remove(path)
