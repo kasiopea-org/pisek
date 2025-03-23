@@ -428,7 +428,7 @@ class TestJobGroup(TaskHelper):
             return self._env.config.tests[num].name
 
         text = ""
-        max_inp_name_len = max(len(j.input.name) for j in self.new_jobs)
+        max_inp_name_len = max((len(j.input.name) for j in self.new_jobs), default=0)
         test_info = (
             right_aligned_text(
                 f"{self.test.name}: {self._format_points(self.points)}/{self._format_points(self.test.points)}",
