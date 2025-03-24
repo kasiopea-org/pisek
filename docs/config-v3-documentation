@@ -311,7 +311,7 @@ sources=@auto
 # List of sources needed for building the executable
 # @auto expands to {program} (default)
 comp_args=
-# Additional compiler arguments, appended to the end
+# Additional compiler arguments (Given after any other arguments.)
 # Defaults to empty
 extras=
 # Additional files to be copied to the build directory
@@ -336,6 +336,9 @@ headers_cpp=
 # Headers to include in the cpp strategy (defaults to empty)
 extra_sources_cpp=
 # Extra source files for the cpp strategy (defaults to empty)
+
+# It is recommended to set these keys in higher sections ([build_solution], [build],...)
+# And for concrete section use sources/extra keys.
 
 [limits]
 # Section with input/output size limits.
@@ -414,10 +417,10 @@ feedback_level=restricted
 
 stub=src/stub
 # Only for C/C++
-# Link each solution with given program (without suffix) (defaults to none)
+# Stub to upload to CMS (without suffix) (defaults to none)
 # Used commonly for interactive tasks
 
 headers=src/a-plus-b.h
 # Only for C/C++
-# Allow each solution to include the given headers (defaults to none)
+# Headers to upload to cms (defaults to none)
 # Used commonly for interactive tasks
