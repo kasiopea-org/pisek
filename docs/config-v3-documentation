@@ -316,11 +316,11 @@ comp_args=
 extras=
 # Additional files to be copied to the build directory
 entrypoint=
-# For building some executables (e.g. python), entrypoint is needed.
+# For building some executables (e.g. python), an entrypoint is needed.
 # Defaults to empty
 strategy=auto
 # Build strategy for building this program
-# 'auto' detects automatically which strategy to use (defaults)
+# 'auto' detects automatically which strategy to use (default)
 # Other strategies are:
 # - python
 # - shell

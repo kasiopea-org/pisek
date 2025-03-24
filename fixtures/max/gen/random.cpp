@@ -8,7 +8,7 @@ void seed_rng(int seed) {
 
 long long rand_range(long long from, long long to) {
     to = std::max(to, from);
-    // Vrati nahodny long long v intervalu [from, to] (tj. vcetne `to`).
+    // Returns a random long long from the interval [from, to] (including "to").
     std::uniform_int_distribution<long long> dist(from, to);
     return dist(rng);
 }
