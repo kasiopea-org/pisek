@@ -126,6 +126,7 @@ class BuildStrategy(ABC):
     def _check_tool(self, tool: str) -> None:
         """Checks that a tool exists."""
         try:
+            # tool.split() because some tools have more parts (e.g. '/usr/bin/env python3')
             subprocess.run(
                 tool.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=0
             )

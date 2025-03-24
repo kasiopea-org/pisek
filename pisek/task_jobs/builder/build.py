@@ -156,20 +156,18 @@ class Build(TaskJob):
         elif os.path.isfile(target.path):
             os.remove(target.path)
 
-        built = os.path.join(
+        executable_name = strategy(self.build_section, self._env, self._print).build(
             WORKING_DIR,
-            strategy(self.build_section, self._env, self._print).build(
-                WORKING_DIR,
-                list(map(lambda p: p.name, sources)),
-                list(map(lambda p: p.name, extras)),
-            ),
+            list(map(lambda p: p.name, sources)),
+            list(map(lambda p: p.name, extras)),
         )
+        executable = os.path.join(WORKING_DIR, executable_name)
         # Intentionally avoiding caching sources
-        if os.path.isdir(built):
-            shutil.copytree(built, target.path)
+        if os.path.isdir(executable):
+            shutil.copytree(executable, target.path)
             self._access_dir(target)
         else:
-            shutil.copy(built, target.path)
+            shutil.copy(executable, target.path)
             self._access_file(target)
 
     def _resolve_strategy(self, sources: set[TaskPath]) -> type[BuildStrategy]:
