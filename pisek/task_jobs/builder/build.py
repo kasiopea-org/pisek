@@ -33,7 +33,7 @@ from pisek.task_jobs.builder.strategies import (
     ALL_STRATEGIES,
 )
 
-WORKING_DIR = os.path.join(BUILD_DIR, "_pisek")
+WORKING_DIR = os.path.join(BUILD_DIR, "_workspace")
 
 
 class BuildManager(TaskJobManager):
