@@ -88,21 +88,6 @@ class ProgramsJob(TaskJob):
         self._program_pool: list[ProgramPoolItem] = []
         self._callback: Optional[Callable[[subprocess.Popen], None]] = None
 
-    def _load_compiled(self, program: TaskPath) -> TaskPath:
-        """Loads name of compiled program."""
-        executable = TaskPath.executable_file(self._env, program.path)
-        executable_dir = TaskPath.executable_file(
-            self._env, os.path.join(program.path, "run")
-        )
-
-        if self._is_file(executable) or self._is_file(executable_dir):
-            return executable
-        else:
-            raise PipelineItemFailure(
-                f"Program {executable:p} does not exist, "
-                f"although it should have been compiled already."
-            )
-
     def _load_executable(
         self,
         executable: TaskPath,
@@ -121,8 +106,12 @@ class ProgramsJob(TaskJob):
         elif self._is_dir(executable):
             self._access_dir(executable)
             executable = executable.join("run")
-        else:
-            raise ValueError(f"'{executable.path}' should be file or directory")
+
+        if not self._is_file(executable):
+            raise PipelineItemFailure(
+                f"Program {executable:p} does not exist, "
+                f"although it should have been compiled already."
+            )
 
         if isinstance(stdin, TaskPath):
             self._access_file(stdin)
@@ -159,14 +148,12 @@ class ProgramsJob(TaskJob):
         env={},
     ) -> None:
         """Adds program to execution pool."""
-        executable = self._load_compiled(program.exec)
-
         timeout: Optional[float] = None
         if program_type.is_solution():
             timeout = self._env.timeout
 
         self._load_executable(
-            executable=executable,
+            executable=TaskPath.executable_file(self._env, program.exec.path),
             args=program.args + args,
             time_limit=program.time_limit if timeout is None else timeout,
             clock_limit=program.clock_limit(timeout),
