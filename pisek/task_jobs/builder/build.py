@@ -40,7 +40,6 @@ class BuildManager(TaskJobManager):
     """Builds task programs."""
 
     def __init__(self):
-        self.skipped_validator = ""
         super().__init__("Build programs")
 
     def _build(self, run: Optional[RunConfig]) -> Optional["Build"]:
