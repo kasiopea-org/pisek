@@ -42,7 +42,7 @@ class BuildManager(TaskJobManager):
     def __init__(self):
         super().__init__("Build programs")
 
-    def _build(self, run: Optional[RunConfig]) -> Optional["Build"]:
+    def _build_program_job(self, run: Optional[RunConfig]) -> Optional["Build"]:
         if run is None:
             return None
         return Build(self._env, run.build)
@@ -50,18 +50,20 @@ class BuildManager(TaskJobManager):
     def _get_jobs(self) -> list[Job]:
         jobs: list[Job | None] = []
 
-        jobs.append(self._build(self._env.config.in_gen))
-        jobs.append(self._build(self._env.config.validator))
+        jobs.append(self._build_program_job(self._env.config.in_gen))
+        jobs.append(self._build_program_job(self._env.config.validator))
         if self._env.target in (TestingTarget.solution, TestingTarget.all):
             if self._env.config.out_check == OutCheck.judge:
-                jobs.append(self._build(self._env.config.out_judge))
+                jobs.append(self._build_program_job(self._env.config.out_judge))
             elif self._env.config.out_check == OutCheck.tokens:
                 jobs.append(PrepareTokenJudge(self._env))
             elif self._env.config.out_check == OutCheck.shuffle:
                 jobs.append(PrepareShuffleJudge(self._env))
 
             for solution in self._env.solutions:
-                jobs.append(self._build(self._env.config.solutions[solution].run))
+                jobs.append(
+                    self._build_program_job(self._env.config.solutions[solution].run)
+                )
 
         filtered_jobs = []
         for j in jobs:
