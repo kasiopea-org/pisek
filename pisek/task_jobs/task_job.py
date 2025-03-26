@@ -191,7 +191,9 @@ class TaskJob(Job, TaskHelper):
         return os.rename(filename.path, dst.path)
 
     @_file_access(2)
-    def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False) -> None:
+    def _link_file(
+        self, filename: TaskPath, dst: TaskPath, overwrite: bool = False
+    ) -> None:
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
@@ -205,7 +207,9 @@ class TaskJob(Job, TaskHelper):
         return os.link(source, dst.path)
 
     @_file_access(2)
-    def _symlink_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False) -> None:
+    def _symlink_file(
+        self, filename: TaskPath, dst: TaskPath, overwrite: bool = False
+    ) -> None:
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
