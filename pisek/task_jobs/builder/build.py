@@ -88,10 +88,18 @@ class Build(TaskJob):
             raise PipelineItemFailure(f"No paths found for {glob.col(self._env)}.")
         return set(result)
 
-    def _check_nonmixed_sources(self, sources: set[TaskPath]) -> None:
-        if any(map(self._is_dir, sources)) and any(map(self._is_file, sources)):
+    def _check_valid_sources(self, sources: set[TaskPath]) -> None:
+        """Checks that sources are one directory or multiple files."""
+        source_dir = any(map(self._is_dir, sources))
+        source_file = any(map(self._is_file, sources))
+        if source_dir and source_file:
             raise PipelineItemFailure(
                 f"Mixed files and directories for sources:\n"
+                + tab(self._path_list(list(sorted(sources))))
+            )
+        elif source_dir and len(sources) > 1:
+            raise PipelineItemFailure(
+                f"Only one directory allowed in sources:\n"
                 + tab(self._path_list(list(sorted(sources))))
             )
 
@@ -117,7 +125,7 @@ class Build(TaskJob):
         extras: set[TaskPath] = set(self.build_section.extras)
         for part in self.build_section.sources:
             sources |= self._resolve_program(part)
-        self._check_nonmixed_sources(sources)
+        self._check_valid_sources(sources)
 
         if self.build_section.strategy == BuildStrategyName.auto:
             strategy = self._resolve_strategy(sources)
@@ -126,7 +134,7 @@ class Build(TaskJob):
 
         sources = self._strategy_sources(strategy, sources)
         extras = self._strategy_extras(strategy, extras)
-        self._check_nonmixed_sources(sources)
+        self._check_valid_sources(sources)
 
         if self._env.verbosity >= 1:
             msg = f"Building '{self.build_section.program_name}' using build strategy '{strategy.name}'."
