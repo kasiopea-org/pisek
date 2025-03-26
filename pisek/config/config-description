@@ -229,6 +229,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build:(.*)]
 #!regex
@@ -243,6 +244,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_gen]
 #!default build
@@ -256,6 +258,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_gen:(.*)]
 #!regex
@@ -270,6 +273,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_validator]
 #!default build
@@ -283,6 +287,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_validator:(.*)]
 #!regex
@@ -297,6 +302,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_solution]
 #!default build
@@ -310,6 +316,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_solution:(.*)]
 #!regex
@@ -324,6 +331,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_judge]
 #!default build
@@ -337,6 +345,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [build_judge:(.*)]
 #!regex
@@ -351,6 +360,7 @@ headers_c=
 extra_sources_c=
 headers_cpp=
 extra_sources_cpp=
+extra_sources_py=
 
 [limits]
 input_max_size=

@@ -154,6 +154,7 @@ class BuildBinary(BuildStrategy):
 
 class Python(BuildScript):
     name = BuildStrategyName.python
+    extra_sources: Optional[str] = "extra_sources_py"
 
     @classmethod
     def applicable_on_files(cls, build: BuildConfig, sources: list[str]) -> bool:

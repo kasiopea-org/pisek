@@ -645,6 +645,7 @@ class BuildConfig(BaseEnv):
     extra_sources_c: ListTaskPathFromStr
     headers_cpp: ListTaskPathFromStr
     extra_sources_cpp: ListTaskPathFromStr
+    extra_sources_py: ListTaskPathFromStr
 
     @property
     def program_name(self) -> str:
