@@ -142,28 +142,28 @@ class TaskJob(Job, TaskHelper):
         return open(filename.path, mode, **kwargs)
 
     @_file_access(1)
-    def _exists(self, path: TaskPath):
+    def _exists(self, path: TaskPath) -> bool:
         return os.path.exists(path.path)
 
     @_file_access(1)
-    def _is_file(self, path: TaskPath):
+    def _is_file(self, path: TaskPath) -> bool:
         return os.path.isfile(path.path)
 
     @_file_access(1)
-    def _is_dir(self, path: TaskPath):
+    def _is_dir(self, path: TaskPath) -> bool:
         return os.path.isdir(path.path)
 
-    def _remove_file(self, filename: TaskPath):
+    def _remove_file(self, filename: TaskPath) -> None:
         "Removes given file. It must be created inside this job."
         self._accessed_files.remove(filename.path)
         return os.remove(filename.path)
 
     @_file_access(1)
-    def _file_size(self, filename: TaskPath):
+    def _file_size(self, filename: TaskPath) -> int:
         return os.path.getsize(filename.path)
 
     @_file_access(1)
-    def _file_not_empty(self, filename: TaskPath):
+    def _file_not_empty(self, filename: TaskPath) -> bool:
         with self._open_file(filename) as f:
             content = f.read()
         return len(content.strip()) > 0
@@ -179,7 +179,7 @@ class TaskJob(Job, TaskHelper):
         self._access_dir(path)
         self._access_dir(dst)
 
-    def _copy_target(self, path: TaskPath, dst: TaskPath):
+    def _copy_target(self, path: TaskPath, dst: TaskPath) -> None:
         if self._is_dir(path):
             self._copy_dir(path, dst)
         else:
@@ -191,7 +191,7 @@ class TaskJob(Job, TaskHelper):
         return os.rename(filename.path, dst.path)
 
     @_file_access(2)
-    def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):
+    def _link_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False) -> None:
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
@@ -205,7 +205,7 @@ class TaskJob(Job, TaskHelper):
         return os.link(source, dst.path)
 
     @_file_access(2)
-    def _symlink_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False):
+    def _symlink_file(self, filename: TaskPath, dst: TaskPath, overwrite: bool = False) -> None:
         self.make_filedirs(dst)
         if overwrite and os.path.exists(dst.path):
             os.remove(dst.path)
