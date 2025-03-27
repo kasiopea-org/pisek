@@ -338,7 +338,7 @@ extra_sources_cpp=
 # Extra source files for the cpp strategy (defaults to empty)
 
 # It is recommended to set these keys in higher sections ([build_solution], [build],...)
-# And for concrete section use sources/extra keys.
+# and use the sources and extra keys for program-specific sections
 
 [limits]
 # Section with input/output size limits.
@@ -422,5 +422,5 @@ stub=src/stub
 
 headers=src/a-plus-b.h
 # Only for C/C++
-# Headers to upload to cms (defaults to none)
+# Headers to upload to CMS (defaults to none)
 # Used commonly for interactive tasks
